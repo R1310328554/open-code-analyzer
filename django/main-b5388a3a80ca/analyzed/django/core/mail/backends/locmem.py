@@ -8,6 +8,7 @@ from django.core import mail
 from django.core.mail.backends.base import BaseEmailBackend
 
 
+# 测试用内存邮件后端 — 邮件存入 django.core.mail.outbox
 class EmailBackend(BaseEmailBackend):
     """
     An email backend for use during test sessions.
@@ -20,11 +21,13 @@ class EmailBackend(BaseEmailBackend):
 
     # RemovedInDjango70Warning: *args. (The only supported posarg will be
     # removed from BaseEmailBackend in Django 7.0.)
+    # 初始化 mail.outbox 列表
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not hasattr(mail, "outbox"):
             mail.outbox = []
 
+    # 深拷贝消息并追加到 outbox
     def send_messages(self, messages):
         """Redirect messages to the dummy outbox"""
         msg_count = 0

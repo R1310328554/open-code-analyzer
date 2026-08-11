@@ -12,6 +12,7 @@ from django.utils.regex_helper import _lazy_re_compile
 _slashes_re = _lazy_re_compile(rb"/+")
 
 
+# 限制读取字节数的流包装 — 防止超出 Content-Length
 class LimitedStream(IOBase):
     """
     Wrap another stream to disallow reading it past a number of bytes.
@@ -20,12 +21,14 @@ class LimitedStream(IOBase):
     https://github.com/pallets/werkzeug/blob/dbf78f67/src/werkzeug/wsgi.py#L828
     """
 
+    # 绑定底层 read/readline 与字节上限
     def __init__(self, stream, limit):
         self._read = stream.read
         self._readline = stream.readline
         self._pos = 0
         self.limit = limit
 
+    # 在 limit 内读取指定字节数
     def read(self, size=-1, /):
         _pos = self._pos
         limit = self.limit
@@ -39,6 +42,7 @@ class LimitedStream(IOBase):
         self._pos += len(data)
         return data
 
+    # 在 limit 内读取一行
     def readline(self, size=-1, /):
         _pos = self._pos
         limit = self.limit
@@ -53,7 +57,9 @@ class LimitedStream(IOBase):
         return line
 
 
+# WSGI 请求子类 — 从 environ 构造 META 与 LimitedStream
 class WSGIRequest(HttpRequest):
+    # 解析 SCRIPT_NAME、PATH_INFO 与请求体流
     def __init__(self, environ):
         script_name = get_script_name(environ)
         # If PATH_INFO is empty (e.g. accessing the SCRIPT_NAME URL without a
@@ -79,15 +85,18 @@ class WSGIRequest(HttpRequest):
         self._read_started = False
         self.resolver_match = None
 
+    # 从 wsgi.url_scheme 获取方案
     def _get_scheme(self):
         return self.environ.get("wsgi.url_scheme")
 
+    # 从 QUERY_STRING 构建 QueryDict
     @cached_property
     def GET(self):
         # The WSGI spec says 'QUERY_STRING' may be absent.
         raw_query_string = get_bytes_from_wsgi(self.environ, "QUERY_STRING", "")
         return QueryDict(raw_query_string, encoding=self._encoding)
 
+    # 懒解析 POST 数据
     def _get_post(self):
         if not hasattr(self, "_post"):
             self._load_post_and_files()
@@ -96,11 +105,13 @@ class WSGIRequest(HttpRequest):
     def _set_post(self, post):
         self._post = post
 
+    # 从 HTTP_COOKIE 解析 Cookie
     @cached_property
     def COOKIES(self):
         raw_cookie = get_str_from_wsgi(self.environ, "HTTP_COOKIE", "")
         return parse_cookie(raw_cookie)
 
+    # 懒解析上传文件
     @property
     def FILES(self):
         if not hasattr(self, "_files"):
@@ -110,13 +121,16 @@ class WSGIRequest(HttpRequest):
     POST = property(_get_post, _set_post)
 
 
+# WSGI 请求处理器 — 同步中间件链与 start_response 协议
 class WSGIHandler(base.BaseHandler):
     request_class = WSGIRequest
 
+    # 加载同步中间件
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.load_middleware()
 
+    # WSGI 入口：构造请求、获取响应并返回可迭代 body
     def __call__(self, environ, start_response):
         set_script_prefix(get_script_name(environ))
         signals.request_started.send(sender=self.__class__, environ=environ)
@@ -144,6 +158,7 @@ class WSGIHandler(base.BaseHandler):
         return response
 
 
+# 从 environ 提取 PATH_INFO 字符串
 def get_path_info(environ):
     """Return the HTTP request's PATH_INFO as a string."""
     path_info = get_bytes_from_wsgi(environ, "PATH_INFO", "/")
@@ -151,6 +166,7 @@ def get_path_info(environ):
     return repercent_broken_unicode(path_info).decode()
 
 
+# 计算 SCRIPT_NAME（含 mod_rewrite 与 FORCE_SCRIPT_NAME）
 def get_script_name(environ):
     """
     Return the equivalent of the HTTP request's SCRIPT_NAME environment
@@ -184,6 +200,7 @@ def get_script_name(environ):
     return script_name.decode()
 
 
+# 从 WSGI environ 取 bytes 值（修复 ISO-8859-1 误解码）
 def get_bytes_from_wsgi(environ, key, default):
     """
     Get a value from the WSGI environ dictionary as bytes.
@@ -197,6 +214,7 @@ def get_bytes_from_wsgi(environ, key, default):
     return value.encode("iso-8859-1")
 
 
+# 从 WSGI environ 取 str 值
 def get_str_from_wsgi(environ, key, default):
     """
     Get a value from the WSGI environ dictionary as str.

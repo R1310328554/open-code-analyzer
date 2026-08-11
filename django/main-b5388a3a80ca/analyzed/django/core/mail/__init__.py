@@ -1,4 +1,6 @@
 """
+# 邮件发送工具包 — mailers、便捷函数与 EmailMessage 重导出
+Tools for sending email."""
 Tools for sending email.
 """
 
@@ -65,11 +67,13 @@ __all__ = [
 ]
 
 
+# 模块级 MailersHandler 实例
 mailers = MailersHandler()
 
 
 # RemovedInDjango70Warning.
 @deprecate_posargs(RemovedInDjango70Warning, ["fail_silently"])
+# 加载邮件后端实例（已弃用，推荐 mailers）
 def get_connection(backend=None, *, fail_silently=False, **kwds):
     """Load an email backend and return an instance of it.
 
@@ -110,6 +114,7 @@ def get_connection(backend=None, *, fail_silently=False, **kwds):
         "html_message",
     ],
 )
+# 便捷发送单封邮件给收件人列表
 def send_mail(
     subject,
     message,
@@ -192,6 +197,7 @@ def send_mail(
         "connection",
     ],
 )
+# 批量发送多封邮件，返回成功发送数量
 def send_mass_mail(
     datatuple,
     *,
@@ -258,6 +264,7 @@ def send_mass_mail(
 
 
 # RemovedInDjango70Warning: fail_silently and connection args.
+# 向 ADMINS/MANAGERS 等设置中的收件人发送服务器通知
 def _send_server_message(
     *,
     setting_name,
@@ -325,6 +332,7 @@ def _send_server_message(
 @deprecate_posargs(
     RemovedInDjango70Warning, ["fail_silently", "connection", "html_message"]
 )
+# 向 ADMINS 设置中的管理员发送邮件
 def mail_admins(
     subject,
     message,
@@ -350,6 +358,7 @@ def mail_admins(
 @deprecate_posargs(
     RemovedInDjango70Warning, ["fail_silently", "connection", "html_message"]
 )
+# 向 MANAGERS 设置中的经理发送邮件
 def mail_managers(
     subject,
     message,
@@ -386,6 +395,7 @@ _deprecate_on_import = {
 
 
 # RemovedInDjango70Warning.
+# 延迟导入已弃用的 BadHeaderError/SafeMIME* 符号
 def __getattr__(name):
     try:
         msg = _deprecate_on_import[name]

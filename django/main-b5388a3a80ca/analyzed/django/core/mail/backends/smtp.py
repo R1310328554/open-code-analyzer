@@ -15,11 +15,13 @@ from django.utils.encoding import force_str, punycode
 from django.utils.functional import cached_property
 
 
+# SMTP 邮件后端 — 管理 TLS/SSL 连接与 sendmail
 class EmailBackend(BaseEmailBackend):
     """
     A wrapper that manages the SMTP network connection.
     """
 
+    # 从参数或 settings/MAILERS OPTIONS 配置主机与认证
     def __init__(
         self,
         host=None,
@@ -98,10 +100,12 @@ class EmailBackend(BaseEmailBackend):
             else:
                 self.port = 25
 
+    # 按 use_ssl 选择 SMTP_SSL 或 SMTP
     @property
     def connection_class(self):
         return smtplib.SMTP_SSL if self.use_ssl else smtplib.SMTP
 
+    # 构建 TLS 客户端 SSL 上下文
     @cached_property
     def ssl_context(self):
         if self.ssl_certfile or self.ssl_keyfile:
@@ -111,6 +115,7 @@ class EmailBackend(BaseEmailBackend):
         else:
             return ssl.create_default_context()
 
+    # 建立 SMTP 连接，可选 STARTTLS 与 login
     def open(self):
         """
         Ensure an open connection to the email server. Return whether or not a
@@ -154,6 +159,7 @@ class EmailBackend(BaseEmailBackend):
             if not self.fail_silently:
                 raise
 
+    # 安全关闭 SMTP 连接（处理 TLS 断开异常）
     def _close_connection(self, connection):
         try:
             connection.quit()
@@ -167,6 +173,7 @@ class EmailBackend(BaseEmailBackend):
                 return
             raise
 
+    # 关闭部分连接与主 connection
     def close(self):
         """Close the connection to the email server."""
         if self._partial_connection is not None:
@@ -180,6 +187,7 @@ class EmailBackend(BaseEmailBackend):
             finally:
                 self.connection = None
 
+    # 加锁批量发送，必要时自动 open/close
     def send_messages(self, email_messages):
         """
         Send one or more EmailMessage objects and return the number of email
@@ -204,6 +212,7 @@ class EmailBackend(BaseEmailBackend):
                     self.close()
         return num_sent
 
+    # 调用 connection.sendmail 发送单封邮件
     def _send(self, email_message):
         """A helper method that does the actual sending."""
         if not email_message.recipients():
@@ -219,6 +228,7 @@ class EmailBackend(BaseEmailBackend):
             return False
         return True
 
+    # 解析并规范化收件人地址，支持 IDNA 与 SMTPUTF8
     def prep_address(self, address, force_ascii=True):
         """
         Return the addr-spec portion of an email address. Raises ValueError for

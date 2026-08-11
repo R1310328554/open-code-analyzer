@@ -8,13 +8,16 @@ import threading
 from django.core.mail.backends.base import BaseEmailBackend
 
 
+# 控制台邮件后端 — 将邮件内容写入 stdout 或指定 stream
 class EmailBackend(BaseEmailBackend):
+    # 配置输出流与线程锁
     def __init__(self, fail_silently=False, **kwargs):
         self.stream = kwargs.pop("stream", sys.stdout)
         self._lock = threading.RLock()
         super().__init__(**kwargs)
         self.fail_silently = fail_silently
 
+    # 解码并格式化写入单封邮件
     def write_message(self, message):
         msg = message.message()
         msg_data = msg.as_bytes()
@@ -26,6 +29,7 @@ class EmailBackend(BaseEmailBackend):
         self.stream.write("-" * 79)
         self.stream.write("\n")
 
+    # 线程安全地批量写入所有邮件
     def send_messages(self, email_messages):
         """Write all messages to the stream in a thread-safe way."""
         if not email_messages:

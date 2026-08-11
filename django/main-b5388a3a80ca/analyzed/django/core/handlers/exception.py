@@ -22,6 +22,7 @@ from django.utils.log import log_response
 from django.views import debug
 
 
+# 装饰 get_response：捕获异常并转为 HttpResponse
 def convert_exception_to_response(get_response):
     """
     Wrap the given get_response callable in exception-to-response conversion.
@@ -37,6 +38,7 @@ def convert_exception_to_response(get_response):
     """
     if iscoroutinefunction(get_response):
 
+        # 异步路径：在线程中调用 response_for_exception
         @wraps(get_response)
         async def inner(request):
             try:
@@ -50,6 +52,7 @@ def convert_exception_to_response(get_response):
         return inner
     else:
 
+        # 同步路径：直接调用 response_for_exception
         @wraps(get_response)
         def inner(request):
             try:
@@ -61,6 +64,7 @@ def convert_exception_to_response(get_response):
         return inner
 
 
+# 按异常类型映射 404/403/400/500 响应并记录日志
 def response_for_exception(request, exc):
     if isinstance(exc, Http404):
         if settings.DEBUG:
@@ -160,6 +164,7 @@ def response_for_exception(request, exc):
     return response
 
 
+# 调用 URLconf 中对应 status 的 error handler
 def get_exception_response(request, resolver, status_code, exception):
     try:
         callback = resolver.resolve_error_handler(status_code)
@@ -171,6 +176,7 @@ def get_exception_response(request, resolver, status_code, exception):
     return response
 
 
+# 未捕获异常：DEBUG 技术页或 500 error handler
 def handle_uncaught_exception(request, resolver, exc_info):
     """
     Processing for any otherwise uncaught exceptions (those that will

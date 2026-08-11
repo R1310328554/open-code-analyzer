@@ -18,12 +18,14 @@ from .exception import convert_exception_to_response
 logger = logging.getLogger("django.request")
 
 
+# HTTP 处理器基类 — 中间件链加载与同步/异步响应路径
 class BaseHandler:
     _view_middleware = None
     _template_response_middleware = None
     _exception_middleware = None
     _middleware_chain = None
 
+    # 从 MIDDLEWARE 构建洋葱式中间件链
     def load_middleware(self, is_async=False):
         """
         Populate middleware lists from settings.MIDDLEWARE.
@@ -103,6 +105,7 @@ class BaseHandler:
         # as a flag for initialization being complete.
         self._middleware_chain = handler
 
+    # 在 sync/async 模式间包装 handler 方法
     def adapt_method_mode(
         self,
         is_async,
@@ -135,6 +138,7 @@ class BaseHandler:
             return async_to_sync(method)
         return method
 
+    # 同步入口：执行中间件链并记录 4xx/5xx 日志
     def get_response(self, request):
         """Return an HttpResponse object for the given HttpRequest."""
         # Setup default url resolver for this thread
@@ -151,6 +155,7 @@ class BaseHandler:
             )
         return response
 
+    # 异步响应路径，避免 WSGI 强制 async_to_sync 开销
     async def get_response_async(self, request):
         """
         Asynchronous version of get_response.
@@ -173,6 +178,7 @@ class BaseHandler:
             )
         return response
 
+    # 同步核心：解析视图、执行中间件、渲染模板响应
     def _get_response(self, request):
         """
         Resolve and call the view, then apply view, exception, and
@@ -227,6 +233,7 @@ class BaseHandler:
 
         return response
 
+    # 异步核心：同上，支持协程视图与模板渲染
     async def _get_response_async(self, request):
         """
         Resolve and call the view, then apply view, exception, and
@@ -299,6 +306,7 @@ class BaseHandler:
             raise RuntimeError("Response is still a coroutine.")
         return response
 
+    # 解析 URL 并设置 request.resolver_match
     def resolve_request(self, request):
         """
         Retrieve/set the urlconf for the request. Return the view resolved,
@@ -316,6 +324,7 @@ class BaseHandler:
         request.resolver_match = resolver_match
         return resolver_match
 
+    # 校验视图返回 HttpResponse 而非 None 或未 await 的协程
     def check_response(self, response, callback, name=None):
         """
         Raise an error if the view returned None or an uncalled coroutine.
@@ -344,6 +353,7 @@ class BaseHandler:
 
     # Other utility methods.
 
+    # 为 ATOMIC_REQUESTS 数据库包装 transaction.atomic
     def make_view_atomic(self, view):
         non_atomic_requests = getattr(view, "_non_atomic_requests", set())
         for alias, settings_dict in connections.settings.items():
@@ -355,6 +365,7 @@ class BaseHandler:
                 view = transaction.atomic(using=alias)(view)
         return view
 
+    # 依次调用 process_exception 中间件处理异常
     def process_exception_by_middleware(self, exception, request):
         """
         Pass the exception to the exception middleware. If no middleware
@@ -367,6 +378,7 @@ class BaseHandler:
         return None
 
 
+# request_finished 时重置线程 urlconf
 def reset_urlconf(sender, **kwargs):
     """Reset the URLconf after each request is finished."""
     set_urlconf(None)

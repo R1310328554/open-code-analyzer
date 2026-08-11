@@ -9,7 +9,9 @@ from django.core.mail import InvalidMailer
 from django.core.mail.backends.console import EmailBackend as ConsoleEmailBackend
 
 
+# 文件邮件后端 — 每封邮件写入独立 .log 文件
 class EmailBackend(ConsoleEmailBackend):
+    # 校验并创建 file_path 目录
     def __init__(self, fail_silently=False, file_path=None, **kwargs):
         self._fname = None
         # Since we're using the console-based backend as a base, force the
@@ -70,11 +72,13 @@ class EmailBackend(ConsoleEmailBackend):
                 alias=self.alias,
             )
 
+    # 以 bytes 形式写入邮件内容与分隔线
     def write_message(self, message):
         self.stream.write(message.message().as_bytes() + b"\n")
         self.stream.write(b"-" * 79)
         self.stream.write(b"\n")
 
+    # 生成带时间戳的唯一日志文件名
     def _get_filename(self):
         """Return a unique file name."""
         if self._fname is None:
@@ -83,12 +87,14 @@ class EmailBackend(ConsoleEmailBackend):
             self._fname = os.path.join(self.file_path, fname)
         return self._fname
 
+    # 以追加模式打开日志文件
     def open(self):
         if self.stream is None:
             self.stream = open(self._get_filename(), "ab")
             return True
         return False
 
+    # 关闭文件流并重置 stream
     def close(self):
         try:
             if self.stream is not None:

@@ -4,6 +4,7 @@ import pathlib
 from django.core.exceptions import SuspiciousFileOperation
 
 
+# 校验文件名安全，拒绝路径遍历与危险 basename
 def validate_file_name(name, allow_relative_path=False):
     # Remove potentially dangerous names
     if os.path.basename(name) in {"", ".", ".."}:
@@ -23,6 +24,7 @@ def validate_file_name(name, allow_relative_path=False):
     return name
 
 
+# 文件代理混入 — 将 read/write/seek 等方法转发到底层 file 对象
 class FileProxyMixin:
     """
     A mixin class used to forward file methods to an underlying file
@@ -48,10 +50,12 @@ class FileProxyMixin:
     write = property(lambda self: self.file.write)
     writelines = property(lambda self: self.file.writelines)
 
+    # 判断底层文件是否已关闭
     @property
     def closed(self):
         return not self.file or self.file.closed
 
+    # 文件是否可读（委托底层或默认 True）
     def readable(self):
         if self.closed:
             return False
@@ -59,6 +63,7 @@ class FileProxyMixin:
             return self.file.readable()
         return True
 
+    # 文件是否可写
     def writable(self):
         if self.closed:
             return False
@@ -66,6 +71,7 @@ class FileProxyMixin:
             return self.file.writable()
         return "w" in getattr(self.file, "mode", "")
 
+    # 文件是否可 seek
     def seekable(self):
         if self.closed:
             return False
@@ -73,5 +79,6 @@ class FileProxyMixin:
             return self.file.seekable()
         return True
 
+    # 迭代底层 file 对象
     def __iter__(self):
         return iter(self.file)

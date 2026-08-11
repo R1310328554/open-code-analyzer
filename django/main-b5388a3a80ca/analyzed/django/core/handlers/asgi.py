@@ -27,6 +27,7 @@ from django.utils.functional import cached_property
 logger = logging.getLogger("django.request")
 
 
+# 从 ASGI scope 或 FORCE_SCRIPT_NAME 获取脚本前缀
 def get_script_prefix(scope):
     """
     Return the script prefix to use from either the scope or a setting.
@@ -36,6 +37,7 @@ def get_script_prefix(scope):
     return scope.get("root_path", "") or ""
 
 
+# ASGI 请求子类 — 从 scope 解码并包装请求体流
 class ASGIRequest(HttpRequest):
     """
     Custom request subclass that decodes from an ASGI-standard request dict
@@ -46,6 +48,7 @@ class ASGIRequest(HttpRequest):
     # body and aborts.
     body_receive_timeout = 60
 
+    # 解析 path、META、headers 与 body 流
     def __init__(self, scope, body_file):
         self.scope = scope
         self._post_parse_error = False
@@ -115,13 +118,16 @@ class ASGIRequest(HttpRequest):
         # Other bits.
         self.resolver_match = None
 
+    # 懒加载 QueryDict 形式的查询参数
     @cached_property
     def GET(self):
         return QueryDict(self.META["QUERY_STRING"])
 
+    # 从 scope.scheme 获取 URL 方案
     def _get_scheme(self):
         return self.scope.get("scheme") or super()._get_scheme()
 
+    # 懒解析 POST 表单数据
     def _get_post(self):
         if not hasattr(self, "_post"):
             self._load_post_and_files()
@@ -130,6 +136,7 @@ class ASGIRequest(HttpRequest):
     def _set_post(self, post):
         self._post = post
 
+    # 懒解析上传文件
     def _get_files(self):
         if not hasattr(self, "_files"):
             self._load_post_and_files()
@@ -138,15 +145,18 @@ class ASGIRequest(HttpRequest):
     POST = property(_get_post, _set_post)
     FILES = property(_get_files)
 
+    # 从 HTTP_COOKIE 解析 Cookie 字典
     @cached_property
     def COOKIES(self):
         return parse_cookie(self.META.get("HTTP_COOKIE", ""))
 
+    # 关闭请求体流
     def close(self):
         super().close()
         self._stream.close()
 
 
+# ASGI HTTP 请求处理器 — 异步入口与响应发送
 class ASGIHandler(base.BaseHandler):
     """Handler for ASGI requests."""
 
@@ -154,10 +164,12 @@ class ASGIHandler(base.BaseHandler):
     # Size to chunk response bodies into for multiple response messages.
     chunk_size = 2**16
 
+    # 加载异步中间件链
     def __init__(self):
         super().__init__()
         self.load_middleware(is_async=True)
 
+    # ASGI 可调用入口，仅处理 http 类型连接
     async def __call__(self, scope, receive, send):
         """
         Async entrypoint - parses the request and hands off to get_response.
@@ -172,6 +184,7 @@ class ASGIHandler(base.BaseHandler):
         async with ThreadSensitiveContext():
             await self.handle(scope, receive, send)
 
+    # 读 body、创建请求、执行 get_response 并发送响应
     async def handle(self, scope, receive, send):
         """
         Handles the ASGI request. Called via the __call__ method.
@@ -217,6 +230,7 @@ class ASGIHandler(base.BaseHandler):
             else:
                 await sync_to_async(response.close)()
 
+    # 监听客户端断开，触发 RequestAborted
     async def listen_for_disconnect(self, receive):
         """Listen for disconnect from the client."""
         message = await receive()
@@ -225,6 +239,7 @@ class ASGIHandler(base.BaseHandler):
         # This should never happen.
         assert False, "Invalid ASGI message after request body: %s" % message["type"]
 
+    # 异步调用 get_response_async 并调整 FileResponse 块大小
     async def run_get_response(self, request):
         """Get async response."""
         # Use the async mode of BaseHandler.
@@ -236,6 +251,7 @@ class ASGIHandler(base.BaseHandler):
             response.block_size = self.chunk_size
         return response
 
+    # 从 ASGI receive 流读取 HTTP 请求体到 SpooledTemporaryFile
     async def read_body(self, receive):
         """Reads an HTTP body from an ASGI connection."""
         # Use the tempfile that auto rolls-over to a disk file as it fills up.
@@ -266,6 +282,7 @@ class ASGIHandler(base.BaseHandler):
         body_file.seek(0)
         return body_file
 
+    # 构造 ASGIRequest，解码失败时返回错误响应
     def create_request(self, scope, body_file):
         """
         Create the Request object and returns either (request, None) or
@@ -283,6 +300,7 @@ class ASGIHandler(base.BaseHandler):
         except RequestDataTooBig:
             return None, HttpResponse("413 Payload too large", status=413)
 
+    # 末级异常处理 — ASGI 无 WSGI 服务器兜底时返回纯文本 500
     def handle_uncaught_exception(self, request, resolver, exc_info):
         """Last-chance handler for exceptions."""
         # There's no WSGI server to catch the exception further up
@@ -295,6 +313,7 @@ class ASGIHandler(base.BaseHandler):
                 content_type="text/plain",
             )
 
+    # 编码响应头与 body，按 ASGI 协议分块发送
     async def send_response(self, response, send):
         """Encode and send a response out over ASGI."""
         # Collect cookies into headers. Have to preserve header case as there
@@ -349,6 +368,7 @@ class ASGIHandler(base.BaseHandler):
                     }
                 )
 
+    # 将响应体切分为 chunk_size 大小的 (chunk, last) 元组
     @classmethod
     def chunk_bytes(cls, data):
         """

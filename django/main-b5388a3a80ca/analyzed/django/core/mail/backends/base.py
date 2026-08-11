@@ -1,4 +1,5 @@
 """Base email backend class."""
+# 邮件后端抽象基类 — 定义 open/close/send_messages 契约"""Base email backend class."""
 
 from django.core.mail import InvalidMailer
 from django.utils.deprecation import RemovedInDjango70Warning, warn_about_external_use
@@ -7,6 +8,7 @@ from django.utils.deprecation import RemovedInDjango70Warning, warn_about_extern
 _NOT_PROVIDED = object()
 
 
+# 邮件后端基类 — 子类须实现 send_messages
 class BaseEmailBackend:
     """
     Base class for email backend implementations.
@@ -25,6 +27,7 @@ class BaseEmailBackend:
     """
 
     # RemovedInDjango70Warning: fail_silently, _ignore_unknown_kwargs.
+    # 接收 alias 与 kwargs，未知选项在 MAILERS 模式下报错
     def __init__(
         self,
         fail_silently=_NOT_PROVIDED,
@@ -70,6 +73,7 @@ class BaseEmailBackend:
             raise InvalidMailer(f"Unknown options {kwarg_names}.", alias=alias)
 
     # RemovedInDjango70Warning.
+    # 兼容访问已弃用的 fail_silently 属性
     def __getattr__(self, name):
         if name == "fail_silently":
             msg = (
@@ -82,6 +86,7 @@ class BaseEmailBackend:
             f"{type(self).__name__!r} object has no attribute {name!r}"
         )
 
+    # 打开网络连接（SMTP 等后端可覆盖）
     def open(self):
         """
         Open a network connection.
@@ -101,10 +106,12 @@ class BaseEmailBackend:
         """
         pass
 
+    # 关闭网络连接
     def close(self):
         """Close a network connection."""
         pass
 
+    # 上下文管理器入口：open 并返回 self
     def __enter__(self):
         try:
             self.open()
@@ -113,9 +120,11 @@ class BaseEmailBackend:
             raise
         return self
 
+    # 上下文管理器出口：close
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
+    # 发送一封或多封 EmailMessage，返回成功数量
     def send_messages(self, email_messages):
         """
         Send one or more EmailMessage objects and return the number of email
