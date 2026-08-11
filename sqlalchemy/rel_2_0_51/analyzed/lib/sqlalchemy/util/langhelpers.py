@@ -11,6 +11,8 @@ modules, classes, hierarchies, attributes, functions, and methods.
 
 """
 
+# 语言/反射工具：装饰器、memoized、inspect、警告与符号常量
+
 from __future__ import annotations
 
 import collections
@@ -67,6 +69,7 @@ def md5_hex(x: Any) -> str:
     return cast(str, m.hexdigest())
 
 
+# 上下文管理器：handler 后按原异常信息重新抛出
 class safe_reraise:
     """Reraise an exception after invoking some
     handler code.
@@ -219,6 +222,7 @@ _Fn = TypeVar("_Fn", bound="Callable[..., Any]")
 # this seems to be in flux in recent mypy versions
 
 
+# 签名匹配装饰器工厂：保留被装饰函数参数规格
 def decorator(target: Callable[..., Any]) -> Callable[[_Fn], _Fn]:
     """A signature-matching decorator factory."""
 
@@ -316,6 +320,7 @@ _PF = TypeVar("_PF")
 _TE = TypeVar("_TE")
 
 
+# entry_points 插件加载器：按组名延迟加载实现
 class PluginLoader:
     def __init__(
         self, group: str, auto_fn: Optional[Callable[..., Any]] = None
@@ -518,6 +523,7 @@ def get_callable_argspec(
         raise TypeError("Can't inspect callable: %s" % fn)
 
 
+# 扩展 formatargspec：返回 args/fullarg/spec 等 inspect 信息
 def format_argspec_plus(
     fn: Union[Callable[..., Any], compat.FullArgSpec], grouped: bool = True
 ) -> Dict[str, Optional[str]]:
@@ -668,6 +674,7 @@ def format_argspec_init(method, grouped=True):
     )
 
 
+# 批量为 proxy 类生成转发方法（Connection/Result 等）
 def create_proxy_methods(
     target_cls: Type[Any],
     target_cls_sphinx_name: str,
@@ -803,6 +810,7 @@ def generic_repr(
     return "%s(%s)" % (obj.__class__.__name__, ", ".join(output))
 
 
+# 可序列化 instancemethod：(target, name) 对
 class portable_instancemethod:
     """Turn an instancemethod into a (parent, name) pair
     to produce a serializable callable.
@@ -962,6 +970,7 @@ def methods_equivalent(meth1, meth2):
     )
 
 
+# 校验对象/字典是否实现指定接口方法集
 def as_interface(obj, cls=None, methods=None, required=None):
     """Ensure basic interface compliance for an instance or dict of callables.
 
@@ -1051,6 +1060,7 @@ def as_interface(obj, cls=None, methods=None, required=None):
 _GFD = TypeVar("_GFD", bound="generic_fn_descriptor[Any]")
 
 
+# 函数描述符基类：proxy fget，支持 memoized 变体
 class generic_fn_descriptor(Generic[_T_co]):
     """Descriptor which proxies a function when the attribute is not
     present in dict
@@ -1094,6 +1104,7 @@ class generic_fn_descriptor(Generic[_T_co]):
         raise NotImplementedError()
 
 
+# 非 memoized 属性描述符：与 memoized_property mypy 兼容
 class _non_memoized_property(generic_fn_descriptor[_T_co]):
     """a plain descriptor that proxies a function.
 
@@ -1111,6 +1122,7 @@ class _non_memoized_property(generic_fn_descriptor[_T_co]):
             return self.fget(obj)
 
 
+# 只读 memoized @property：首次访问后缓存于 __dict__
 class _memoized_property(generic_fn_descriptor[_T_co]):
     """A read-only @property that is only evaluated once."""
 
@@ -1158,6 +1170,7 @@ else:
     non_memoized_property = ro_non_memoized_property = _non_memoized_property
 
 
+# 无参 instancemethod memoize：首次调用后替换为常量返回
 def memoized_instancemethod(fn: _F) -> _F:
     """Decorate a method memoize its return value.
 
@@ -1181,6 +1194,7 @@ def memoized_instancemethod(fn: _F) -> _F:
     return update_wrapper(oneshot, fn)  # type: ignore
 
 
+# memoized 键追踪 mixin：批量 _reset_memoizations
 class HasMemoized:
     """A mixin class that maintains the names of memoized elements in a
     collection for easy cache clearing, generative, etc.
@@ -1264,6 +1278,7 @@ else:
     HasMemoized_ro_memoized_attribute = HasMemoized.memoized_attribute
 
 
+# __slots__ 对象的 memoized __getattr__ 方案
 class MemoizedSlots:
     """Apply memoized items to an object using a __getattr__ scheme.
 
@@ -1490,6 +1505,7 @@ def dictlike_iteritems(dictlike):
         raise TypeError("Object '%r' is not dict-like" % dictlike)
 
 
+# 类级 @property：fget 接收 cls 而非 instance
 class classproperty(property):
     """A decorator that behaves like @property except that operates
     on classes rather than instances.
@@ -1511,6 +1527,7 @@ class classproperty(property):
         return self.fget(cls)
 
 
+# 实例/类双模式只读属性描述符
 class hybridproperty(Generic[_T]):
     def __init__(self, func: Callable[..., _T]):
         self.func = func
@@ -1528,6 +1545,7 @@ class hybridproperty(Generic[_T]):
         return self
 
 
+# 实例/类双模式可读写 hybrid 属性
 class rw_hybridproperty(Generic[_T]):
     def __init__(self, func: Callable[..., _T]):
         self.func = func
@@ -1554,6 +1572,7 @@ class rw_hybridproperty(Generic[_T]):
         return self
 
 
+# 实例或类方法双模式描述符
 class hybridmethod(Generic[_T]):
     """Decorate a function as cls- or instance- level."""
 
@@ -1576,6 +1595,7 @@ class hybridmethod(Generic[_T]):
         return self
 
 
+# 命名整型常量符号：单例、可 pickle、repr 友好
 class symbol(int):
     """A constant symbol.
 
@@ -1636,6 +1656,7 @@ class symbol(int):
         return f"symbol({self.name!r})"
 
 
+# IntFlag 兼容元类：类属性自动注册为 symbol
 class _IntFlagMeta(type):
     def __init__(
         cls,
@@ -1670,6 +1691,7 @@ class _IntFlagMeta(type):
         )
 
 
+# 快速 IntFlag 替代：位运算不拖慢 enum
 class _FastIntFlag(metaclass=_IntFlagMeta):
     """An 'IntFlag' copycat that isn't slow when performing bitwise
     operations.
@@ -1762,6 +1784,7 @@ def ellipses_string(value, len_=25):
         return value
 
 
+# 限哈希次数的 str 子类：参数化警告去重
 class _hash_limit_string(str):
     """A string subclass that can only be hashed on a maximum amount
     of unique values.
@@ -1951,6 +1974,7 @@ def attrsetter(attrname):
 _dunders = re.compile("^__.+__$")
 
 
+# typing-only mixin：运行时禁止任何非 dunder 属性
 class TypingOnly:
     """A mixin class that marks a class as 'typing only', meaning it has
     absolutely no methods, attributes, or runtime functionality whatsoever.
@@ -1972,6 +1996,7 @@ class TypingOnly:
         super().__init_subclass__()
 
 
+# 子类扫描：visit 等方法自动补 **kw 参数
 class EnsureKWArg:
     r"""Apply translation of functions to accept \**kw arguments if they
     don't already.
@@ -2106,6 +2131,7 @@ def _dedent_docstring(text: str) -> str:
         return textwrap.dedent(text)
 
 
+# 向 docstring 指定位置注入 reST 文本块
 def inject_docstring_text(
     given_doctext: Optional[str], injecttext: str, pos: int
 ) -> str:
@@ -2129,6 +2155,7 @@ def inject_docstring_text(
 _param_reg = re.compile(r"(\s+):param (.+?):")
 
 
+# 向 :param: 段落注入附加说明文本
 def inject_param_text(doctext: str, inject_params: Dict[str, str]) -> str:
     doclines = collections.deque(doctext.splitlines())
     lines = []
@@ -2198,6 +2225,7 @@ def has_compiled_ext(raise_=False):
         return False
 
 
+# Missing 哨兵枚举：Optional 之外的“未提供”标记
 class _Missing(enum.Enum):
     Missing = enum.auto()
 

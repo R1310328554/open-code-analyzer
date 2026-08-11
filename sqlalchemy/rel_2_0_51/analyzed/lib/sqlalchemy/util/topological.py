@@ -7,6 +7,8 @@
 
 """Topological sorting algorithms."""
 
+# 拓扑排序：依赖图分层排序与环检测
+
 from __future__ import annotations
 
 from typing import Any
@@ -27,6 +29,7 @@ _T = TypeVar("_T", bound=Any)
 __all__ = ["sort", "sort_as_subsets", "find_cycles"]
 
 
+# 按依赖边将节点分成可并行处理的子集（每层无内部依赖）
 def sort_as_subsets(
     tuples: Collection[Tuple[_T, _T]], allitems: Collection[_T]
 ) -> Iterator[Sequence[_T]]:
@@ -55,6 +58,7 @@ def sort_as_subsets(
         yield output
 
 
+# 拓扑排序：yield 满足 partial order 的节点序列
 def sort(
     tuples: Collection[Tuple[_T, _T]],
     allitems: Collection[_T],
@@ -74,6 +78,7 @@ def sort(
         yield from set_
 
 
+# 检测有向图中的环：返回参与环的节点集合
 def find_cycles(
     tuples: Iterable[Tuple[_T, _T]], allitems: Iterable[_T]
 ) -> Set[_T]:

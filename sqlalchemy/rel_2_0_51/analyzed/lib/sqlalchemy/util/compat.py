@@ -8,6 +8,8 @@
 
 """Handle Python version/platform incompatibilities."""
 
+# Python 版本/平台兼容层：注解、inspect、hashlib 等 vendored 工具
+
 from __future__ import annotations
 
 import base64
@@ -127,7 +129,8 @@ if py314:
 
         return dict(ann)
 
-    def get_annotations(obj: Any) -> Mapping[str, Any]:
+    # 跨版本获取 __annotations__：py314 annotationlib / py310 inspect / 旧版回退
+def get_annotations(obj: Any) -> Mapping[str, Any]:
         # FORWARDREF has the effect of giving us ForwardRefs and not
         # actually trying to evaluate the annotations.  We need this so
         # that the annotations act as much like
@@ -161,6 +164,7 @@ else:
             return cast("Mapping[str, Any]", ann)
 
 
+# 函数完整参数规格 NamedTuple：args/defaults/annotations 等
 class FullArgSpec(typing.NamedTuple):
     args: List[str]
     varargs: Optional[str]
@@ -171,6 +175,7 @@ class FullArgSpec(typing.NamedTuple):
     annotations: Mapping[str, Any]
 
 
+# vendored getfullargspec：跨 Python 版本解析函数签名
 def inspect_getfullargspec(func: Callable[..., Any]) -> FullArgSpec:
     """Fully vendored version of getfullargspec from Python 3.3."""
 
@@ -305,6 +310,7 @@ def _formatannotation(annotation, base_module=None):
     return repr(annotation).replace("~", "")
 
 
+# vendored formatargspec：decorator 工厂生成包装函数签名
 def inspect_formatargspec(
     args: List[str],
     varargs: Optional[str] = None,
@@ -377,6 +383,7 @@ def inspect_formatargspec(
     return result
 
 
+# 返回已处理 dataclass 的全部 Field 对象
 def dataclass_fields(cls: Type[Any]) -> Iterable[dataclasses.Field[Any]]:
     """Return a sequence of all dataclasses.Field objects associated
     with a class as an already processed dataclass.
@@ -391,6 +398,7 @@ def dataclass_fields(cls: Type[Any]) -> Iterable[dataclasses.Field[Any]]:
         return []
 
 
+# 返回 dataclass 本地 Field（不含父类继承字段）
 def local_dataclass_fields(cls: Type[Any]) -> Iterable[dataclasses.Field[Any]]:
     """Return a sequence of all dataclasses.Field objects associated with
     an already processed dataclass, excluding those that originate from a

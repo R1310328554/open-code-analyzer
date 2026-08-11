@@ -8,6 +8,8 @@
 
 """asyncio-related concurrency functions."""
 
+# asyncio 并发辅助：greenlet 可用时桥接 sync/async
+
 from __future__ import annotations
 
 import asyncio  # noqa
@@ -37,6 +39,7 @@ else:
 _T = TypeVar("_T")
 
 
+# 测试/工具用 asyncio 运行器：run 协程或在 greenlet 中跑 sync
 class _AsyncUtil:
     """Asyncio util for test suite/ util only"""
 
@@ -97,7 +100,8 @@ if not typing.TYPE_CHECKING and not have_greenlet:
     def in_greenlet():  # type: ignore  # noqa: F811
         _not_implemented()
 
-    def greenlet_spawn(fn, *args, **kw):  # type: ignore  # noqa: F811
+    # 在 greenlet 中运行 sync 函数并 await 子协程（无 greenlet 时 stub）
+def greenlet_spawn(fn, *args, **kw):  # type: ignore  # noqa: F811
         _not_implemented()
 
     def AsyncAdaptedLock(*args, **kw):  # type: ignore  # noqa: F811

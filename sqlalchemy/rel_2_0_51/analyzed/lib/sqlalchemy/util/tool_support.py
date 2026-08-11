@@ -12,6 +12,8 @@ needed for normal library use.
 
 """
 
+# tools/ 脚本支持：code_writer 基类、black/zimports 进程内调用
+
 from __future__ import annotations
 
 from argparse import ArgumentParser
@@ -33,6 +35,7 @@ from typing import Union
 from . import compat
 
 
+# 代码生成 CLI 基类：--check/--stdout、diff 与格式化流水线
 class code_writer_cmd:
     parser: ArgumentParser
     args: Namespace

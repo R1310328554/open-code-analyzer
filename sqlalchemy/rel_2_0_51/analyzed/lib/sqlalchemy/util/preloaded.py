@@ -11,6 +11,8 @@ runtime.
 
 """
 
+# 预加载模块注册表：打破循环 import，init 后批量 import_prefix
+
 from __future__ import annotations
 
 import sys
@@ -92,6 +94,7 @@ if TYPE_CHECKING:
     sql_util = _sql_util
 
 
+# 延迟加载模块注册表：preload_module 注册、import_prefix 解析
 class _ModuleRegistry:
     """Registry of modules to load in a package init file.
 

@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# typing 扩展工具：注解去字符串化、Union/Optional 分析与描述符引用
+
 from __future__ import annotations
 
 import builtins
@@ -83,6 +85,7 @@ _AnnotationScanType = Union[
 ]
 
 
+# 带 __args__ 的类型 Protocol（typing 无公开接口）
 class ArgsTypeProtocol(Protocol):
     """protocol for types that have ``__args__``
 
@@ -93,6 +96,7 @@ class ArgsTypeProtocol(Protocol):
     __args__: Tuple[_AnnotationScanType, ...]
 
 
+# 泛型类型 Protocol：__args__/__origin__
 class GenericProtocol(Protocol[_T]):
     """protocol for generic types.
 
@@ -113,6 +117,7 @@ class GenericProtocol(Protocol[_T]):
 
 # copied from TypeShed, required in order to implement
 # MutableMapping.update()
+# keys()+__getitem__ 协议：MutableMapping.update 用
 class SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
     def keys(self) -> Iterable[_KT]: ...
 
@@ -123,6 +128,7 @@ class SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
 _LiteralStar = Literal["*"]
 
 
+# 将字符串/ForwardRef 注解解析为真实类型对象
 def de_stringify_annotation(
     cls: Type[Any],
     annotation: _AnnotationScanType,
@@ -246,6 +252,7 @@ def _copy_generic_annotation_with(
         return annotation.__origin__[elements]  # type: ignore
 
 
+# 在模块/类命名空间中 eval 注解表达式字符串
 def eval_expression(
     expression: str,
     module_name: str,
@@ -347,6 +354,7 @@ def is_newtype(type_: Optional[_AnnotationScanType]) -> TypeGuard[NewType]:
     # isinstance(type, type_instances.NewType)
 
 
+# 是否为带 __args__/__origin__ 的泛型类型
 def is_generic(type_: _AnnotationScanType) -> TypeGuard[GenericProtocol[Any]]:
     return hasattr(type_, "__args__") and hasattr(type_, "__origin__")
 
@@ -426,6 +434,7 @@ def is_fwd_ref(
 
 
 @overload
+# 从 Union/Optional 中剔除 NoneType 成分
 def de_optionalize_union_types(type_: str) -> str: ...
 
 
@@ -551,6 +560,7 @@ def make_union_type(*types: _AnnotationScanType) -> Type[Any]:
     return Union[types]  # type: ignore
 
 
+# 判断类型注解是否允许 None（Union/Annotated/PEP695 等）
 def includes_none(type_: Any) -> bool:
     """Returns if the type annotation ``type_`` allows ``None``.
 
@@ -635,6 +645,7 @@ def _get_type_name(type_: Type[Any]) -> str:
         return typ_name  # type: ignore
 
 
+# 描述符 Protocol：__get__/__set__/__delete__
 class DescriptorProto(Protocol):
     def __get__(self, instance: object, owner: Any) -> Any: ...
 
@@ -646,6 +657,7 @@ class DescriptorProto(Protocol):
 _DESC = TypeVar("_DESC", bound=DescriptorProto)
 
 
+# 指向描述符的描述符：PropComparator.prop 等
 class DescriptorReference(Generic[_DESC]):
     """a descriptor that refers to a descriptor.
 
@@ -669,6 +681,7 @@ class DescriptorReference(Generic[_DESC]):
 _DESC_co = TypeVar("_DESC_co", bound=DescriptorProto, covariant=True)
 
 
+# 只读 DescriptorReference：子类可窄化返回类型
 class RODescriptorReference(Generic[_DESC_co]):
     """a descriptor that refers to a descriptor.
 
@@ -689,6 +702,7 @@ class RODescriptorReference(Generic[_DESC_co]):
 _FN = TypeVar("_FN", bound=Optional[Callable[..., Any]])
 
 
+# 指向 callable 的描述符：绕过 mypy 实例变量 callable 限制
 class CallableReference(Generic[_FN]):
     """a descriptor that refers to a callable.
 
@@ -707,6 +721,7 @@ class CallableReference(Generic[_FN]):
         def __delete__(self, instance: Any) -> None: ...
 
 
+# typing/typing_extensions 同名类型元组懒加载
 class _TypingInstances:
     def __getattr__(self, key: str) -> tuple[type, ...]:
         types = tuple(

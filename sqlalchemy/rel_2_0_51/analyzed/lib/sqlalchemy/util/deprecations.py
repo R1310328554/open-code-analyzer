@@ -9,6 +9,8 @@
 """Helpers related to deprecation of functions, methods, classes, other
 functionality."""
 
+# 弃用警告装饰器：函数/类/参数 deprecated 与 2.0 迁移提示
+
 from __future__ import annotations
 
 import re
@@ -52,6 +54,7 @@ def _warn_with_version(
     _warnings_warn(warn, stacklevel=stacklevel + 1)
 
 
+# 发出带版本号的 SADeprecationWarning
 def warn_deprecated(
     msg: str, version: str, stacklevel: int = 3, code: Optional[str] = None
 ) -> None:
@@ -78,6 +81,7 @@ def warn_deprecated_limited(
     )
 
 
+# 装饰类：构造时 warn 并可注入类 docstring
 def deprecated_cls(
     version: str, message: str, constructor: Optional[str] = "__init__"
 ) -> Callable[[Type[_T]], Type[_T]]:
@@ -96,6 +100,7 @@ def deprecated_cls(
     return decorate
 
 
+# 装饰函数/方法：调用时 warn 并可注入 docstring 弃用说明
 def deprecated(
     version: str,
     message: Optional[str] = None,
@@ -150,6 +155,7 @@ def deprecated(
     return decorate
 
 
+# 2.0 迁移专用：发出 MovedIn20Warning
 def moved_20(
     message: str, **kw: Any
 ) -> Callable[[Callable[..., _T]], Callable[..., _T]]:
@@ -158,6 +164,7 @@ def moved_20(
     )
 
 
+# 标记 1.x legacy API：发出 LegacyAPIWarning
 def became_legacy_20(
     api_name: str, alternative: Optional[str] = None, **kw: Any
 ) -> Callable[[_F], _F]:
@@ -196,6 +203,7 @@ def became_legacy_20(
     return deprecated("2.0", message=message, warning=warning_cls, **kw)
 
 
+# 装饰函数：指定 kwargs 参数使用时发出弃用警告
 def deprecated_params(**specs: Tuple[str, str]) -> Callable[[_F], _F]:
     """Decorates a function to warn on use of certain parameters.
 

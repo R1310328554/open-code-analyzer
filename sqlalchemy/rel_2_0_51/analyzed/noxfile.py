@@ -1,5 +1,8 @@
 """Nox configuration for SQLAlchemy."""
 
+# SQLAlchemy Nox 会话配置：多 Python/数据库/cext/greenlet 矩阵 pytest
+"""Nox configuration for SQLAlchemy."""
+
 from __future__ import annotations
 
 import os
@@ -66,6 +69,7 @@ DB_CLI_NAMES = {
 }
 
 
+# 按数据库方言安装驱动依赖并组装 pytest --db/--dbdriver 参数
 def _setup_for_driver(
     session: nox.Session,
     cmd: List[str],
@@ -136,6 +140,7 @@ nox.options.tags = ["py"]
         BACKENDONLY,
     ],
 )
+# 主测试会话：参数化 python/database/cext/greenlet/backendonly
 def tests(
     session: nox.Session,
     database: str,
@@ -197,6 +202,7 @@ def github_nocext(session: nox.Session) -> None:
     _tests(session, "sqlite", "nocext", greenlet=False)
 
 
+# 测试核心逻辑：安装包、pytest 标记过滤、coverage 与 reap_dbs 清理
 def _tests(
     session: nox.Session,
     database: str,
@@ -329,6 +335,7 @@ def _tests(
 
 
 @nox.session(name="pep484")
+# mypy 静态类型检查 nox 会话
 def test_pep484(session: nox.Session) -> None:
     """Run mypy type checking."""
 
@@ -363,6 +370,7 @@ def test_mypy(session: nox.Session) -> None:
 
 
 @nox.session(name="pep8")
+# lint/format 检查：flake8、black、slotscheck 等
 def test_pep8(session: nox.Session) -> None:
     """Run linting and formatting checks."""
 

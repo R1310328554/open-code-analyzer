@@ -19,6 +19,8 @@ condition.
 
 """
 
+# 可重入 Queue：RLock 互斥，供 QueuePool weakref 回调安全 put
+
 from __future__ import annotations
 
 import asyncio
@@ -41,18 +43,22 @@ _T = TypeVar("_T", bound=Any)
 __all__ = ["Empty", "Full", "Queue"]
 
 
+# Queue 空异常：get(block=0)/get_nowait() 时抛出
 class Empty(Exception):
     "Exception raised by Queue.get(block=0)/get_nowait()."
 
     pass
 
 
+# Queue 满异常：put(block=0)/put_nowait() 时抛出
 class Full(Exception):
     "Exception raised by Queue.put(block=0)/put_nowait()."
 
     pass
 
 
+# Queue 公共接口抽象：put/get/qsize 等签名
+# 线程安全有界队列：FIFO/LIFO，连接池专用
 class QueueCommon(Generic[_T]):
     maxsize: int
     use_lifo: bool
@@ -237,6 +243,7 @@ class Queue(QueueCommon[_T]):
             return self.queue.popleft()
 
 
+# asyncio.Queue 适配：await_only 阻塞 put/get
 class AsyncAdaptedQueue(QueueCommon[_T]):
     if typing.TYPE_CHECKING:
 
@@ -317,6 +324,7 @@ class AsyncAdaptedQueue(QueueCommon[_T]):
             raise Empty() from err
 
 
+# AsyncAdaptedQueue 回退：await_fallback 不阻塞
 class FallbackAsyncAdaptedQueue(AsyncAdaptedQueue[_T]):
     if not typing.TYPE_CHECKING:
         await_ = staticmethod(await_fallback)
