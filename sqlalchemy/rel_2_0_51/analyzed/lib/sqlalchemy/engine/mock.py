@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# Mock 引擎：DDL 回显与无真实 DBAPI 的 schema 操作
+
 from __future__ import annotations
 
 from operator import attrgetter
@@ -31,6 +33,7 @@ if typing.TYPE_CHECKING:
     from ..sql.visitors import Visitable
 
 
+# 模拟连接：execute 委托外部 executor，支持 DDL visitor
 class MockConnection:
     def __init__(self, dialect: Dialect, execute: Callable[..., Any]):
         self._dialect = dialect
@@ -49,6 +52,7 @@ class MockConnection:
     def execution_options(self, **kw: Any) -> MockConnection:
         return self
 
+    # 遍历 DDL 元素并调用 visitorcallable
     def _run_ddl_visitor(
         self,
         visitorcallable: Type[InvokeDDLBase],
@@ -60,6 +64,7 @@ class MockConnection:
             dialect=self.dialect, connection=self, **kwargs
         ).traverse_single(element)
 
+    # 将 Executable 交给 executor 回调
     def execute(
         self,
         obj: Executable,
@@ -69,6 +74,7 @@ class MockConnection:
         return self._execute_impl(obj, parameters)
 
 
+# 按 URL 解析方言并返回 MockConnection
 def create_mock_engine(
     url: Union[str, URL], executor: Any, **kw: Any
 ) -> MockConnection:

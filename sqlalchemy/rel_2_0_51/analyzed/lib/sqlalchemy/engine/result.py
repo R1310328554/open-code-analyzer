@@ -7,6 +7,8 @@
 
 """Define generic result set constructs."""
 
+# 通用结果集：Result/ScalarResult/MappingResult 与元数据
+
 from __future__ import annotations
 
 from enum import Enum
@@ -102,6 +104,8 @@ _UniqueFilterType = Callable[[Any], Any]
 _UniqueFilterStateType = Tuple[Set[Any], Optional[_UniqueFilterType]]
 
 
+# 结果行元数据基类：keys、列索引、处理器
+# 主结果对象：fetchone/mappings/scalars/all
 class ResultMetaData:
     """Base for metadata about result rows."""
 
@@ -222,6 +226,7 @@ class ResultMetaData:
             return self._processors
 
 
+# 结果列名 keys 视图
 class RMKeyView(typing.KeysView[Any]):
     __slots__ = ("_parent", "_keys")
 
@@ -256,6 +261,7 @@ class RMKeyView(typing.KeysView[Any]):
         return list(other) != list(self)
 
 
+# 简单固定列元数据
 class SimpleResultMetaData(ResultMetaData):
     """result metadata for in-memory collections."""
 
@@ -425,6 +431,7 @@ class SimpleResultMetaData(ResultMetaData):
         return new_metadata
 
 
+# 构造具名元组类型的 Result 类型别名
 def result_tuple(
     fields: Sequence[str], extra: Optional[Any] = None
 ) -> Callable[[Iterable[Any]], Row[Any]]:
@@ -437,6 +444,7 @@ def result_tuple(
 # a symbol that indicates to internal Result methods that
 # "no row is returned".  We can't use None for those cases where a scalar
 # filter is applied to rows.
+# 无行哨兵枚举
 class _NoRow(Enum):
     _NO_ROW = 0
 
@@ -444,6 +452,7 @@ class _NoRow(Enum):
 _NO_ROW = _NoRow._NO_ROW
 
 
+# Result 内部实现基类：抓取与 row 构造
 class ResultInternal(InPlaceGenerative, Generic[_R]):
     __slots__ = ()
 
@@ -462,6 +471,7 @@ class ResultInternal(InPlaceGenerative, Generic[_R]):
     def _fetchiter_impl(self) -> Iterator[_InterimRowType[Row[Any]]]:
         raise NotImplementedError()
 
+    # 子类实现：抓取单行
     def _fetchone_impl(
         self, hard_close: bool = False
     ) -> Optional[_InterimRowType[Row[Any]]]:
@@ -472,9 +482,11 @@ class ResultInternal(InPlaceGenerative, Generic[_R]):
     ) -> List[_InterimRowType[Row[Any]]]:
         raise NotImplementedError()
 
+    # 子类实现：抓取全部
     def _fetchall_impl(self) -> List[_InterimRowType[Row[Any]]]:
         raise NotImplementedError()
 
+    # 软关闭内部状态
     def _soft_close(self, hard: bool = False) -> None:
         raise NotImplementedError()
 
@@ -921,6 +933,7 @@ class ResultInternal(InPlaceGenerative, Generic[_R]):
         return uniques, strategy
 
 
+# 提供 keys/列访问 mixin
 class _WithKeys:
     __slots__ = ()
 
@@ -992,6 +1005,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
     def __exit__(self, type_: Any, value: Any, traceback: Any) -> None:
         self.close()
 
+    # 关闭结果集
     def close(self) -> None:
         """Hard close this :class:`_engine.Result`.
 
@@ -1038,6 +1052,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         raise NotImplementedError()
 
     @_generative
+    # 服务端分块 yield
     def yield_per(self, num: int) -> Self:
         """Configure the row-fetching strategy to fetch ``num`` rows at a time.
 
@@ -1090,6 +1105,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         return self
 
     @_generative
+    # 去重策略
     def unique(self, strategy: Optional[_UniqueFilterType] = None) -> Self:
         """Apply unique filtering to the objects returned by this
         :class:`_engine.Result`.
@@ -1130,6 +1146,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         self._unique_filter_state = (set(), strategy)
         return self
 
+    # 按列投影子 Result
     def columns(self, *col_expressions: _KeyIndexType) -> Self:
         r"""Establish the columns that should be returned in each row.
 
@@ -1186,6 +1203,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
     ) -> ScalarResult[_T]: ...
 
     @overload
+    # 返回 ScalarResult
     def scalars(self, index: _KeyIndexType = 0) -> ScalarResult[Any]: ...
 
     def scalars(self, index: _KeyIndexType = 0) -> ScalarResult[Any]:
@@ -1237,6 +1255,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
             )
         return self._metadata._row_as_tuple_getter(keys)
 
+    # 返回 MappingResult
     def mappings(self) -> MappingResult:
         """Apply a mappings filter to returned rows, returning an instance of
         :class:`_engine.MappingResult`.
@@ -1301,6 +1320,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         """
         raise NotImplementedError()
 
+    # 迭代 Row
     def __iter__(self) -> Iterator[Row[_TP]]:
         return self._iter_impl()
 
@@ -1365,11 +1385,13 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
             else:
                 break
 
+    # 抓取全部剩余行
     def fetchall(self) -> Sequence[Row[_TP]]:
         """A synonym for the :meth:`_engine.Result.all` method."""
 
         return self._allrows()
 
+    # 抓取下一行（1.x 兼容）
     def fetchone(self) -> Optional[Row[_TP]]:
         """Fetch one row.
 
@@ -1392,6 +1414,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         else:
             return row
 
+    # 抓取至多 size 行
     def fetchmany(self, size: Optional[int] = None) -> Sequence[Row[_TP]]:
         """Fetch many rows.
 
@@ -1413,6 +1436,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
 
         return self._manyrow_getter(self, size)
 
+    # 取全部行并关闭
     def all(self) -> Sequence[Row[_TP]]:
         """Return all rows in a sequence.
 
@@ -1432,6 +1456,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
 
         return self._allrows()
 
+    # 首行或 None 并关闭
     def first(self) -> Optional[Row[_TP]]:
         """Fetch the first row or ``None`` if no row is present.
 
@@ -1471,6 +1496,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
             raise_for_second_row=False, raise_for_none=False, scalar=False
         )
 
+    # 零或一行
     def one_or_none(self) -> Optional[Row[_TP]]:
         """Return at most one result or raise an exception.
 
@@ -1542,6 +1568,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
             raise_for_second_row=True, raise_for_none=False, scalar=True
         )
 
+    # 恰好一行否则异常
     def one(self) -> Row[_TP]:
         """Return exactly one row or raise an exception.
 
@@ -1579,6 +1606,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
     def scalar(self: Result[Tuple[_T]]) -> Optional[_T]: ...
 
     @overload
+    # 首行首列标量并关闭
     def scalar(self) -> Any: ...
 
     def scalar(self) -> Any:
@@ -1599,6 +1627,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
             raise_for_second_row=False, raise_for_none=False, scalar=True
         )
 
+    # 冻结为可序列化 FrozenResult
     def freeze(self) -> FrozenResult[_TP]:
         """Return a callable object that will produce copies of this
         :class:`_engine.Result` when invoked.
@@ -1622,6 +1651,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
 
         return FrozenResult(self)
 
+    # 合并多个 Result
     def merge(self, *others: Result[Any]) -> MergedResult[_TP]:
         """Merge this :class:`_engine.Result` with other compatible result
         objects.
@@ -1639,6 +1669,7 @@ class Result(_WithKeys, ResultInternal[Row[_TP]]):
         return MergedResult(self._metadata, (self,) + others)
 
 
+# 过滤/映射结果包装基类
 class FilterResult(ResultInternal[_R]):
     """A wrapper for a :class:`_engine.Result` that returns objects other than
     :class:`_engine.Row` objects, such as dictionaries or scalar objects.
@@ -1738,6 +1769,7 @@ class FilterResult(ResultInternal[_R]):
         return self._real_result._fetchmany_impl(size=size)
 
 
+# 标量结果：每行取首列
 class ScalarResult(FilterResult[_R]):
     """A wrapper for a :class:`_engine.Result` that returns scalar values
     rather than :class:`_row.Row` values.
@@ -1782,6 +1814,7 @@ class ScalarResult(FilterResult[_R]):
         self._unique_filter_state = (set(), strategy)
         return self
 
+    # 按块迭代行
     def partitions(self, size: Optional[int] = None) -> Iterator[Sequence[_R]]:
         """Iterate through sub-lists of elements of the size given.
 
@@ -1869,6 +1902,7 @@ class ScalarResult(FilterResult[_R]):
         )
 
 
+# 元组结果类型别名包装
 class TupleResult(FilterResult[_R], util.TypingOnly):
     """A :class:`_engine.Result` that's typed as returning plain
     Python tuples instead of rows.
@@ -2032,6 +2066,7 @@ class TupleResult(FilterResult[_R], util.TypingOnly):
             ...
 
 
+# RowMapping 结果
 class MappingResult(_WithKeys, FilterResult[RowMapping]):
     """A wrapper for a :class:`_engine.Result` that returns dictionary values
     rather than :class:`_engine.Row` values.
@@ -2174,6 +2209,7 @@ class MappingResult(_WithKeys, FilterResult[RowMapping]):
         )
 
 
+# 可 pickle 的冻结结果
 class FrozenResult(Generic[_TP]):
     """Represents a :class:`_engine.Result` object in a "frozen" state suitable
     for caching.
@@ -2254,6 +2290,7 @@ class FrozenResult(Generic[_TP]):
         return result
 
 
+# 预置迭代器驱动的 Result
 class IteratorResult(Result[_TP]):
     """A :class:`_engine.Result` that gets data from a Python iterator of
     :class:`_engine.Row` objects or similar row-like data.
@@ -2347,10 +2384,12 @@ class IteratorResult(Result[_TP]):
         return list(itertools.islice(self.iterator, 0, size))
 
 
+# 空 IteratorResult 工厂
 def null_result() -> IteratorResult[Any]:
     return IteratorResult(SimpleResultMetaData([]), iter([]))
 
 
+# 分块迭代 Result
 class ChunkedIteratorResult(IteratorResult[_TP]):
     """An :class:`_engine.IteratorResult` that works from an
     iterator-producing callable.
@@ -2408,6 +2447,7 @@ class ChunkedIteratorResult(IteratorResult[_TP]):
         return super()._fetchmany_impl(size=size)
 
 
+# 合并多个 Result 的迭代
 class MergedResult(IteratorResult[_TP]):
     """A :class:`_engine.Result` that is merged from any number of
     :class:`_engine.Result` objects.

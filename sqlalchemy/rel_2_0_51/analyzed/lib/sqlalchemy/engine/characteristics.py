@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# 连接级特性：隔离级别、日志令牌等 per-connection 可重置选项
+
 from __future__ import annotations
 
 import abc
@@ -17,6 +19,7 @@ if typing.TYPE_CHECKING:
     from .interfaces import Dialect
 
 
+# 连接特性抽象基类：get/set/reset 方言级 per-DBAPI 属性
 class ConnectionCharacteristic(abc.ABC):
     """An abstract base for an object that can set, get and reset a
     per-connection characteristic, typically one that gets reset when the
@@ -42,6 +45,7 @@ class ConnectionCharacteristic(abc.ABC):
     transactional: ClassVar[bool] = False
 
     @abc.abstractmethod
+    # 将 DBAPI 连接上的特性重置为默认值
     def reset_characteristic(
         self, dialect: Dialect, dbapi_conn: DBAPIConnection
     ) -> None:
@@ -49,6 +53,7 @@ class ConnectionCharacteristic(abc.ABC):
         value."""
 
     @abc.abstractmethod
+    # 在 DBAPI 连接上设置特性值
     def set_characteristic(
         self, dialect: Dialect, dbapi_conn: DBAPIConnection, value: Any
     ) -> None:
@@ -71,6 +76,7 @@ class ConnectionCharacteristic(abc.ABC):
         self.set_characteristic(dialect, dbapi_conn, value)
 
     @abc.abstractmethod
+    # 读取 DBAPI 连接当前特性值
     def get_characteristic(
         self, dialect: Dialect, dbapi_conn: DBAPIConnection
     ) -> Any:
@@ -92,6 +98,7 @@ class ConnectionCharacteristic(abc.ABC):
         return self.get_characteristic(dialect, dbapi_conn)
 
 
+# 事务隔离级别特性：委托 Dialect 读写隔离级别
 class IsolationLevelCharacteristic(ConnectionCharacteristic):
     """Manage the isolation level on a DBAPI connection"""
 
@@ -113,6 +120,7 @@ class IsolationLevelCharacteristic(ConnectionCharacteristic):
         return dialect.get_isolation_level(dbapi_conn)
 
 
+# logging_token 执行选项：格式化连接日志前缀
 class LoggingTokenCharacteristic(ConnectionCharacteristic):
     """Manage the 'logging_token' option of a :class:`_engine.Connection`.
 

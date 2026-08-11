@@ -13,6 +13,8 @@ They all share one common characteristic: None is passed through unchanged.
 
 """
 
+# 绑定/结果处理器通用类型转换（None 透传）；优先 C 扩展
+
 from __future__ import annotations
 
 import typing
@@ -53,6 +55,7 @@ else:
         to_str as to_str,
     )
 
+    # C 扩展 Decimal 处理器工厂（scale 对整数行为与 Python 版略有差异）
     def to_decimal_processor_factory(target_class, scale):
         # Note that the scale argument is not taken into account for integer
         # values in the C implementation while it is in the Python one.

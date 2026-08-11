@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# Engine/Pool 工厂：create_engine、engine_from_config 与插件钩子
+
 from __future__ import annotations
 
 import inspect
@@ -46,6 +48,7 @@ if typing.TYPE_CHECKING:
 
 
 @overload
+# 根据 URL 与关键字参数构造 Engine（方言、连接池、echo、插件）
 def create_engine(
     url: Union[str, URL],
     *,
@@ -799,6 +802,7 @@ def create_engine(url: Union[str, _url.URL], **kwargs: Any) -> Engine:
     return engine
 
 
+# 从配置字典（如 alembic.ini）解析 URL 并 create_engine
 def engine_from_config(
     configuration: Dict[str, Any], prefix: str = "sqlalchemy.", **kwargs: Any
 ) -> Engine:
@@ -845,6 +849,7 @@ def engine_from_config(
 
 
 @overload
+# 仅创建连接池，不绑定 Engine
 def create_pool_from_url(
     url: Union[str, URL],
     *,

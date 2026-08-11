@@ -7,6 +7,8 @@
 
 """Define row constructs including :class:`.Row`."""
 
+# 结果行 Row 与 RowMapping：列访问、序列与映射协议
+
 from __future__ import annotations
 
 from abc import ABC
@@ -47,6 +49,7 @@ _T = TypeVar("_T", bound=Any)
 _TP = TypeVar("_TP", bound=Tuple[Any, ...])
 
 
+# 结果行：按索引/列名访问，支持 _mapping/_t/_fields
 class Row(BaseRow, Sequence[Any], Generic[_TP]):
     """Represent a single result row.
 
@@ -154,6 +157,7 @@ class Row(BaseRow, Sequence[Any], Generic[_TP]):
         return self._t
 
     @property
+    # 返回 RowMapping 映射视图
     def _mapping(self) -> RowMapping:
         """Return a :class:`.RowMapping` for this :class:`.Row`.
 
@@ -284,6 +288,7 @@ BaseRowProxy = BaseRow
 RowProxy = Row
 
 
+# Row 映射视图抽象基类
 class ROMappingView(ABC):
     __slots__ = ()
 
@@ -315,16 +320,19 @@ class ROMappingView(ABC):
         return list(other) != list(self)
 
 
+# Row 映射 keys/values 视图
 class ROMappingKeysValuesView(
     ROMappingView, typing.KeysView["_KeyType"], typing.ValuesView[Any]
 ):
     __slots__ = ("_items",)  # mapping slot is provided by KeysView
 
 
+# Row 映射 items 视图
 class ROMappingItemsView(ROMappingView, typing.ItemsView["_KeyType", Any]):
     __slots__ = ("_items",)  # mapping slot is provided by ItemsView
 
 
+# 行映射：dict 式访问列名到值
 class RowMapping(BaseRow, typing.Mapping["_KeyType", Any]):
     """A ``Mapping`` that maps column names and objects to :class:`.Row`
     values.
@@ -360,6 +368,7 @@ class RowMapping(BaseRow, typing.Mapping["_KeyType", Any]):
     else:
         __getitem__ = BaseRow._get_by_key_impl_mapping
 
+    # 返回行值列表
     def _values_impl(self) -> List[Any]:
         return list(self._data)
 

@@ -25,6 +25,8 @@ methods such as get_table_names, get_columns, etc.
    'name' attribute..
 """
 
+# Schema 反射：Inspector 缓存委托 Dialect 元数据 API
+
 from __future__ import annotations
 
 import contextlib
@@ -78,6 +80,7 @@ _R = TypeVar("_R")
 
 
 @util.decorator
+# 反射方法结果缓存装饰器
 def cache(
     fn: Callable[..., _R],
     self: Dialect,
@@ -109,6 +112,7 @@ def cache(
     return ret
 
 
+# 带 dialect 选项键的灵活缓存
 def flexi_cache(
     *traverse_args: Tuple[str, InternalTraversal]
 ) -> Callable[[Callable[..., _R]], Callable[..., _R]]:
@@ -134,6 +138,7 @@ def flexi_cache(
 
 
 @unique
+# 反射对象种类：TABLE/VIEW/INDEX 等 Flag
 class ObjectKind(Flag):
     """Enumerator that indicates which kind of object to return when calling
     the ``get_multi`` methods.
@@ -166,6 +171,7 @@ class ObjectKind(Flag):
 
 
 @unique
+# 反射范围：DEFAULT/TEMPORARY
 class ObjectScope(Flag):
     """Enumerator that indicates which scope to use when calling
     the ``get_multi`` methods.
@@ -180,6 +186,7 @@ class ObjectScope(Flag):
 
 
 @inspection._self_inspects
+# 元数据检查器：表/列/索引/约束反射入口
 class Inspector(inspection.Inspectable["Inspector"]):
     """Performs database schema inspection.
 
@@ -375,6 +382,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
                 conn, info_cache=self.info_cache, **kw
             )
 
+    # 列出 schema 下表名
     def get_table_names(
         self, schema: Optional[str] = None, **kw: Any
     ) -> List[str]:
@@ -840,6 +848,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
                 conn, view_name, schema, info_cache=self.info_cache, **kw
             )
 
+    # 反射表列定义
     def get_columns(
         self, table_name: str, schema: Optional[str] = None, **kw: Any
     ) -> List[ReflectedColumn]:
@@ -943,6 +952,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
         self._instantiate_types(table_col_defs.values())
         return table_col_defs
 
+    # 主键约束
     def get_pk_constraint(
         self, table_name: str, schema: Optional[str] = None, **kw: Any
     ) -> ReflectedPrimaryKeyConstraint:
@@ -1028,6 +1038,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
                 )
             )
 
+    # 外键
     def get_foreign_keys(
         self, table_name: str, schema: Optional[str] = None, **kw: Any
     ) -> List[ReflectedForeignKeyConstraint]:
@@ -1117,6 +1128,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
                 )
             )
 
+    # 索引
     def get_indexes(
         self, table_name: str, schema: Optional[str] = None, **kw: Any
     ) -> List[ReflectedIndex]:
@@ -1476,6 +1488,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
                 )
             )
 
+    # 填充 Table 对象元数据
     def reflect_table(
         self,
         table: sa_schema.Table,
@@ -2041,6 +2054,7 @@ class Inspector(inspection.Inspectable["Inspector"]):
 
 
 @final
+# 反射缺省参数与方言能力探测
 class ReflectionDefaults:
     """provides blank default values for reflection methods."""
 
@@ -2081,6 +2095,7 @@ class ReflectionDefaults:
 
 
 @dataclass
+# 批量反射中间状态容器
 class _ReflectionInfo:
     columns: Dict[TableKey, List[ReflectedColumn]]
     pk_constraint: Dict[TableKey, Optional[ReflectedPrimaryKeyConstraint]]

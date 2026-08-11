@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 """Defines :class:`_engine.Connection` and :class:`_engine.Engine`."""
 
+# Engine 核心：Connection 执行/事务与 Engine 连接池入口
+
 from __future__ import annotations
 
 import contextlib
@@ -82,6 +84,7 @@ _EMPTY_EXECUTION_OPTS: _ExecuteOptions = util.EMPTY_DICT
 NO_OPTIONS: Mapping[str, Any] = util.EMPTY_DICT
 
 
+# 数据库连接：SQL 执行、事务、DBAPI 异常与事件
 class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
     """Provides high-level functionality for a wrapped DB-API connection.
 
@@ -206,6 +209,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return schema_translate_map
 
+    # 解析对象所属 schema
     def schema_for_object(self, obj: HasSchemaAttr) -> Optional[str]:
         """Return the schema name for the given schema item taking into
         account current schema translate map.
@@ -226,13 +230,16 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         else:
             return name
 
+    # 连接上下文管理器入口
     def __enter__(self) -> Connection:
         return self
 
+    # 退出时 close 连接
     def __exit__(self, type_: Any, value: Any, traceback: Any) -> None:
         self.close()
 
     @overload
+    # 设置连接级执行选项（隔离级别、schema_translate 等）
     def execution_options(
         self,
         *,
@@ -515,6 +522,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         self.dialect.set_connection_execution_options(self, opt)
         return self
 
+    # 读取当前 execution_options
     def get_execution_options(self) -> _ExecuteOptions:
         """Get the non-SQL options which will take effect during execution.
 
@@ -562,6 +570,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         return pool_proxied_connection is None and self.__can_reconnect
 
     @property
+    # 底层 DBAPI 连接代理
     def connection(self) -> PoolProxiedConnection:
         """The underlying DB-API connection managed by this Connection.
 
@@ -587,6 +596,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         else:
             return self._dbapi_connection
 
+    # 读取当前隔离级别
     def get_isolation_level(self) -> IsolationLevel:
         """Return the current **actual** isolation level that's present on
         the database within the scope of this connection.
@@ -690,6 +700,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return self.connection.info
 
+    # 标记连接无效并可选失效池
     def invalidate(self, exception: Optional[BaseException] = None) -> None:
         """Invalidate the underlying DBAPI connection associated with
         this :class:`_engine.Connection`.
@@ -749,6 +760,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         self._dbapi_connection = None
 
+    # 从池分离，由调用方管理生命周期
     def detach(self) -> None:
         """Detach the underlying DB-API connection from its connection pool.
 
@@ -785,10 +797,12 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             )
         pool_proxied_connection.detach()
 
+    # autocommit 关闭时自动 begin
     def _autobegin(self) -> None:
         if self._allow_autobegin and not self.__in_begin:
             self.begin()
 
+    # 开启根事务，返回 RootTransaction
     def begin(self) -> RootTransaction:
         """Begin a transaction prior to autobegin occurring.
 
@@ -864,6 +878,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
                 "is called first."
             )
 
+    # 开启 SAVEPOINT 嵌套事务
     def begin_nested(self) -> NestedTransaction:
         """Begin a nested transaction (i.e. SAVEPOINT) and return a transaction
         handle that controls the scope of the SAVEPOINT.
@@ -942,6 +957,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return NestedTransaction(self)
 
+    # 开启两阶段事务
     def begin_twophase(self, xid: Optional[Any] = None) -> TwoPhaseTransaction:
         """Begin a two-phase or XA transaction and return a transaction
         handle.
@@ -972,6 +988,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             xid = self.engine.dialect.create_xid()
         return TwoPhaseTransaction(self, xid)
 
+    # 提交当前根事务
     def commit(self) -> None:
         """Commit the transaction that is currently in progress.
 
@@ -997,6 +1014,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         if self._transaction:
             self._transaction.commit()
 
+    # 回滚当前根事务
     def rollback(self) -> None:
         """Roll back the transaction that is currently in progress.
 
@@ -1032,6 +1050,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
     def commit_prepared(self, xid: Any, recover: bool = False) -> None:
         self.engine.dialect.do_commit_twophase(self, xid, recover=recover)
 
+    # 是否在活跃根事务中
     def in_transaction(self) -> bool:
         """Return True if a transaction is in progress."""
         return self._transaction is not None and self._transaction.is_active
@@ -1218,6 +1237,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         except BaseException as e:
             self._handle_dbapi_exception(e, None, None, None, None)
 
+    # 关闭连接并归还连接池
     def close(self) -> None:
         """Close this :class:`_engine.Connection`.
 
@@ -1267,6 +1287,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         self.__can_reconnect = False
 
     @overload
+    # 执行并返回首行首列标量
     def scalar(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -1314,6 +1335,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             )
 
     @overload
+    # 执行并返回 ScalarResult
     def scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -1357,6 +1379,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         ).scalars()
 
     @overload
+    # 执行 SQL/Executable 并返回 CursorResult
     def execute(
         self,
         statement: TypedReturnsRows[_T],
@@ -1590,6 +1613,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return elem, distilled_params, event_multiparams, event_params
 
+    # 编译并执行 ClauseElement
     def _execute_clauseelement(
         self,
         elem: Executable,
@@ -1663,6 +1687,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             )
         return ret
 
+    # 执行已 Compiled 语句
     def _execute_compiled(
         self,
         compiled: Compiled,
@@ -1713,6 +1738,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             )
         return ret
 
+    # 直接执行驱动原生 SQL 字符串
     def exec_driver_sql(
         self,
         statement: str,
@@ -1790,6 +1816,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return ret
 
+    # 统一执行入口：编译、cursor、结果
     def _execute_context(
         self,
         dialect: Dialect,
@@ -1849,6 +1876,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
                 dialect, context, statement, parameters
             )
 
+    # 单条语句执行核心
     def _exec_single_context(
         self,
         dialect: Dialect,
@@ -1991,6 +2019,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return result
 
+    # insertmanyvalues 批量插入
     def _exec_insertmany_context(
         self,
         dialect: Dialect,
@@ -2170,6 +2199,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
 
         return result
 
+    # 带事件与日志的 cursor 执行
     def _cursor_execute(
         self,
         cursor: DBAPICursor,
@@ -2232,6 +2262,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
     _reentrant_error = False
     _is_disconnect = False
 
+    # DBAPI 异常转 SQLAlchemy 异常并触发事件
     def _handle_dbapi_exception(
         self,
         e: BaseException,
@@ -2452,6 +2483,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
             assert exc_info[1] is not None
             raise exc_info[1].with_traceback(exc_info[2])
 
+    # 运行 DDL visitor（create_all 等）
     def _run_ddl_visitor(
         self,
         visitorcallable: Type[InvokeDDLBase],
@@ -2469,6 +2501,7 @@ class Connection(ConnectionEventsTarget, inspection.Inspectable["Inspector"]):
         ).traverse_single(element)
 
 
+# handle_error 事件用的异常上下文实现
 class ExceptionContextImpl(ExceptionContext):
     """Implement the :class:`.ExceptionContext` interface."""
 
@@ -2516,6 +2549,7 @@ class ExceptionContextImpl(ExceptionContext):
         self.is_pre_ping = is_pre_ping
 
 
+# 事务抽象：commit/rollback/close 与上下文协议
 class Transaction(TransactionalContext):
     """Represent a database transaction in progress.
 
@@ -2660,6 +2694,7 @@ class Transaction(TransactionalContext):
         return True
 
 
+# 根事务：对应 BEGIN/COMMIT/ROLLBACK
 class RootTransaction(Transaction):
     """Represent the "root" transaction on a :class:`_engine.Connection`.
 
@@ -2768,6 +2803,7 @@ class RootTransaction(Transaction):
         assert self.connection._transaction is not self
 
 
+# 嵌套事务：SAVEPOINT 语义
 class NestedTransaction(Transaction):
     """Represent a 'nested', or SAVEPOINT transaction.
 
@@ -2882,6 +2918,7 @@ class NestedTransaction(Transaction):
                 )
 
 
+# 两阶段提交事务
 class TwoPhaseTransaction(RootTransaction):
     """Represent a two-phase transaction.
 
@@ -2902,6 +2939,7 @@ class TwoPhaseTransaction(RootTransaction):
         self.xid = xid
         super().__init__(connection)
 
+    # 两阶段事务 prepare 阶段
     def prepare(self) -> None:
         """Prepare this :class:`.TwoPhaseTransaction`.
 
@@ -2923,6 +2961,7 @@ class TwoPhaseTransaction(RootTransaction):
         self.connection._commit_twophase_impl(self.xid, self._is_prepared)
 
 
+# 连接池 + 方言：connect、compiled cache、execution_options
 class Engine(
     ConnectionEventsTarget, log.Identified, inspection.Inspectable["Inspector"]
 ):
@@ -3007,6 +3046,7 @@ class Engine(
         """
         return self
 
+    # 清空语句编译 LRU 缓存
     def clear_compiled_cache(self) -> None:
         """Clear the compiled cache associated with the dialect.
 
@@ -3021,6 +3061,7 @@ class Engine(
         if self._compiled_cache:
             self._compiled_cache.clear()
 
+    # Engine 级 execution_options
     def update_execution_options(self, **opt: Any) -> None:
         r"""Update the default execution_options dictionary
         of this :class:`_engine.Engine`.
@@ -3171,6 +3212,7 @@ class Engine(
     def __repr__(self) -> str:
         return "Engine(%r)" % (self.url,)
 
+    # 释放连接池资源
     def dispose(self, close: bool = True) -> None:
         """Dispose of the connection pool used by this
         :class:`_engine.Engine`.
@@ -3232,6 +3274,7 @@ class Engine(
             yield connection
 
     @contextlib.contextmanager
+    # Engine 上下文：with engine.begin()
     def begin(self) -> Iterator[Connection]:
         """Return a context manager delivering a :class:`_engine.Connection`
         with a :class:`.Transaction` established.
@@ -3269,6 +3312,7 @@ class Engine(
         with self.begin() as conn:
             conn._run_ddl_visitor(visitorcallable, element, **kwargs)
 
+    # 从池获取 Connection
     def connect(self) -> Connection:
         """Return a new :class:`_engine.Connection` object.
 
@@ -3294,6 +3338,7 @@ class Engine(
 
         return self._connection_cls(self)
 
+    # 直接获取池代理连接
     def raw_connection(self) -> PoolProxiedConnection:
         """Return a "raw" DBAPI connection from the connection pool.
 
@@ -3319,6 +3364,8 @@ class Engine(
         return self.pool.connect()
 
 
+# 带 execution_options 的 Engine 混入
+# 不可变 execution_options 的 Engine 子类
 class OptionEngineMixin(log.Identified):
     _sa_propagate_class_events = False
 

@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 
+# Engine/Connection/Dialect 事件钩子定义
+
 from __future__ import annotations
 
 import typing
@@ -41,6 +43,7 @@ if typing.TYPE_CHECKING:
     from ..sql.elements import BindParameter
 
 
+# 连接与引擎事件：before/after execute、pool、transaction 等
 class ConnectionEvents(event.Events[ConnectionEventsTarget]):
     """Available events for
     :class:`_engine.Connection` and :class:`_engine.Engine`.
@@ -55,7 +58,8 @@ class ConnectionEvents(event.Events[ConnectionEventsTarget]):
         from sqlalchemy import event, create_engine
 
 
-        def before_cursor_execute(
+        # 游标 execute 前：可改写 statement/parameters
+    def before_cursor_execute(
             conn, cursor, statement, parameters, context, executemany
         ):
             log.info("Received statement: %s", statement)
@@ -350,6 +354,7 @@ class ConnectionEvents(event.Events[ConnectionEventsTarget]):
 
         """
 
+    # 游标 execute 后
     def after_cursor_execute(
         self,
         conn: Connection,
@@ -379,6 +384,7 @@ class ConnectionEvents(event.Events[ConnectionEventsTarget]):
     @event._legacy_signature(
         "2.0", ["conn", "branch"], converter=lambda conn: (conn, False)
     )
+    # 从池取出连接时
     def engine_connect(self, conn: Connection) -> None:
         """Intercept the creation of a new :class:`_engine.Connection`.
 
@@ -617,6 +623,7 @@ class ConnectionEvents(event.Events[ConnectionEventsTarget]):
         """
 
 
+# 方言级事件：do_execute、handle_error 等
 class DialectEvents(event.Events[Dialect]):
     """event interface for execution-replacement functions.
 
@@ -687,6 +694,7 @@ class DialectEvents(event.Events[Dialect]):
         else:
             return None
 
+    # DBAPI 异常处理：可标记 disconnect
     def handle_error(
         self, exception_context: ExceptionContext
     ) -> Optional[BaseException]:
@@ -894,6 +902,7 @@ class DialectEvents(event.Events[Dialect]):
 
         """
 
+    # 方言执行 SQL 的可监听点
     def do_execute(
         self,
         cursor: DBAPICursor,

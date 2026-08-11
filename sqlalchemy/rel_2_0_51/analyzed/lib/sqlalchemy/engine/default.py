@@ -14,6 +14,8 @@ as the base class for their own corresponding classes.
 
 """
 
+# 默认 Dialect 与 ExecutionContext 实现
+
 from __future__ import annotations
 
 import functools
@@ -117,6 +119,7 @@ SERVER_SIDE_CURSOR_RE = re.compile(r"\s*SELECT", re.I | re.UNICODE)
 ) = list(CacheStats)
 
 
+# Dialect 默认实现：编译器、反射、执行、连接特性
 class DefaultDialect(Dialect):
     """Default implementation of Dialect"""
 
@@ -629,6 +632,7 @@ class DefaultDialect(Dialect):
         # inherits the docstring from interfaces.Dialect.connect
         return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
 
+    # URL 转 connect 位置/关键字参数
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         # inherits the docstring from interfaces.Dialect.create_connect_args
         opts = url.translate_connect_args()
@@ -945,15 +949,18 @@ class DefaultDialect(Dialect):
                 else:
                     result.extend(rows)
 
+    # cursor.executemany 批量
     def do_executemany(self, cursor, statement, parameters, context=None):
         cursor.executemany(statement, parameters)
 
+    # 单条 cursor.execute
     def do_execute(self, cursor, statement, parameters, context=None):
         cursor.execute(statement, parameters)
 
     def do_execute_no_params(self, cursor, statement, context=None):
         cursor.execute(statement)
 
+    # 判断是否连接断开
     def is_disconnect(
         self,
         e: DBAPIModule.Error,
@@ -1180,6 +1187,7 @@ class DefaultDialect(Dialect):
         )
 
 
+# 字符串 SQL 编译方言（无真实 DBAPI）
 class StrCompileDialect(DefaultDialect):
     statement_compiler = compiler.StrSQLCompiler
     ddl_compiler = compiler.DDLCompiler
@@ -1204,6 +1212,7 @@ class StrCompileDialect(DefaultDialect):
     supports_simple_order_by_label = True
 
 
+# 执行上下文：cursor、参数绑定、结果代理设置
 class DefaultExecutionContext(ExecutionContext):
     isinsert = False
     isupdate = False
@@ -1758,6 +1767,7 @@ class DefaultExecutionContext(ExecutionContext):
 
         return use_server_side
 
+    # 创建 DBAPI 游标
     def create_cursor(self) -> DBAPICursor:
         if (
             # inlining initial preference checks for SS cursors
@@ -1785,6 +1795,7 @@ class DefaultExecutionContext(ExecutionContext):
     def create_server_side_cursor(self) -> DBAPICursor:
         raise NotImplementedError()
 
+    # 执行前钩子
     def pre_exec(self):
         pass
 
@@ -1793,6 +1804,7 @@ class DefaultExecutionContext(ExecutionContext):
             "This dialect does not support OUT parameters"
         )
 
+    # 执行后钩子
     def post_exec(self):
         pass
 
@@ -1847,6 +1859,7 @@ class DefaultExecutionContext(ExecutionContext):
     def supports_sane_multi_rowcount(self):
         return self.dialect.supports_sane_multi_rowcount
 
+    # 构造 CursorResult
     def _setup_result_proxy(self):
         exec_opt = self.execution_options
 

@@ -8,6 +8,8 @@
 """Define cursor-specific result set constructs including
 :class:`.CursorResult`."""
 
+# DBAPI 游标结果：元数据、抓取策略与 CursorResult
+
 from __future__ import annotations
 
 import collections
@@ -153,6 +155,8 @@ _MergeColTuple = Tuple[
 ]
 
 
+# 游标结果元数据：列 keymap 与处理器
+# DBAPI 游标驱动的 Result 实现
 class CursorResultMetaData(ResultMetaData):
     """Result metadata for DBAPI cursors."""
 
@@ -949,6 +953,7 @@ class CursorResultMetaData(ResultMetaData):
             self._translated_indexes = self._tuplefilter = None
 
 
+# 结果抓取策略抽象
 class ResultFetchStrategy:
     """Define a fetching strategy for a result object.
 
@@ -1011,6 +1016,7 @@ class ResultFetchStrategy:
         raise err
 
 
+# 无游标抓取（如 RETURNING 已缓冲）
 class NoCursorFetchStrategy(ResultFetchStrategy):
     """Cursor strategy for a result that has no open cursor.
 
@@ -1066,6 +1072,7 @@ class NoCursorFetchStrategy(ResultFetchStrategy):
         raise NotImplementedError()
 
 
+# DQL 无游标策略
 class NoCursorDQLFetchStrategy(NoCursorFetchStrategy):
     """Cursor strategy for a DQL result that has no open cursor.
 
@@ -1096,6 +1103,7 @@ class NoCursorDQLFetchStrategy(NoCursorFetchStrategy):
 _NO_CURSOR_DQL = NoCursorDQLFetchStrategy()
 
 
+# DML 无游标策略
 class NoCursorDMLFetchStrategy(NoCursorFetchStrategy):
     """Cursor strategy for a DML result that has no open cursor.
 
@@ -1120,6 +1128,7 @@ class NoCursorDMLFetchStrategy(NoCursorFetchStrategy):
 _NO_CURSOR_DML = NoCursorDMLFetchStrategy()
 
 
+# 基于 DBAPI cursor 的流式抓取
 class CursorFetchStrategy(ResultFetchStrategy):
     """Call fetch methods from a DBAPI cursor.
 
@@ -1208,6 +1217,7 @@ class CursorFetchStrategy(ResultFetchStrategy):
 _DEFAULT_FETCH = CursorFetchStrategy()
 
 
+# 按行缓冲游标抓取
 class BufferedRowCursorFetchStrategy(CursorFetchStrategy):
     """A cursor fetch strategy with row buffering behavior.
 
@@ -1364,6 +1374,7 @@ class BufferedRowCursorFetchStrategy(CursorFetchStrategy):
             self.handle_exception(result, dbapi_cursor, e)
 
 
+# 全量缓冲后关闭游标
 class FullyBufferedCursorFetchStrategy(CursorFetchStrategy):
     """A cursor strategy that buffers rows fully upon creation.
 
@@ -1441,6 +1452,7 @@ class FullyBufferedCursorFetchStrategy(CursorFetchStrategy):
         return ret
 
 
+# 无列元数据占位
 class _NoResultMetaData(ResultMetaData):
     __slots__ = ()
 
@@ -1645,6 +1657,7 @@ class CursorResult(Result[_T]):
             )
         return metadata
 
+    # 软关闭 CursorResult：释放 DBAPI 游标，fetch 仍返回空
     def _soft_close(self, hard: bool = False) -> None:
         """Soft close this :class:`_engine.CursorResult`.
 

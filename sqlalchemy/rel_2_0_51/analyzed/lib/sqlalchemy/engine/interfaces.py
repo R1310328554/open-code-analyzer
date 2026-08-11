@@ -7,6 +7,8 @@
 
 """Define core interfaces used by the engine system."""
 
+# Engine 接口层：Dialect、DBAPI 协议、反射 TypedDict 与执行上下文
+
 from __future__ import annotations
 
 from enum import Enum
@@ -77,6 +79,7 @@ ConnectArgsType = Tuple[Sequence[str], MutableMapping[str, Any]]
 _T = TypeVar("_T", bound="Any")
 
 
+# 编译缓存统计枚举
 class CacheStats(Enum):
     CACHE_HIT = 0
     CACHE_MISS = 1
@@ -85,6 +88,7 @@ class CacheStats(Enum):
     NO_DIALECT_SUPPORT = 4
 
 
+# DBAPI 执行风格：execute/executemany/insertmanyvalues
 class ExecuteStyle(Enum):
     """indicates the :term:`DBAPI` cursor method that will be used to invoke
     a statement."""
@@ -107,6 +111,7 @@ class ExecuteStyle(Enum):
     """
 
 
+# DBAPI 模块 Protocol（Error 层次）
 class DBAPIModule(Protocol):
     class Error(Exception):
         def __getattr__(self, key: str) -> Any: ...
@@ -123,6 +128,7 @@ class DBAPIModule(Protocol):
     def __getattr__(self, key: str) -> Any: ...
 
 
+# DBAPI 连接 Protocol
 class DBAPIConnection(Protocol):
     """protocol representing a :pep:`249` database connection.
 
@@ -148,6 +154,7 @@ class DBAPIConnection(Protocol):
     def __setattr__(self, key: str, value: Any) -> None: ...
 
 
+# DBAPI 类型对象 Protocol
 class DBAPIType(Protocol):
     """protocol representing a :pep:`249` database type.
 
@@ -161,6 +168,7 @@ class DBAPIType(Protocol):
     """  # noqa: E501
 
 
+# DBAPI 游标 Protocol
 class DBAPICursor(Protocol):
     """protocol representing a :pep:`249` database cursor.
 
@@ -279,6 +287,7 @@ IsolationLevel = Literal[
 ]
 
 
+# 核心已知 execution_options TypedDict
 class _CoreKnownExecutionOptions(TypedDict, total=False):
     compiled_cache: Optional[CompiledCacheType]
     logging_token: str
@@ -298,6 +307,7 @@ CoreExecuteOptionsParameter = Union[
 ]
 
 
+# 反射 IDENTITY 列信息
 class ReflectedIdentity(TypedDict):
     """represent the reflected IDENTITY structure of a column, corresponding
     to the :class:`_schema.Identity` construct.
@@ -344,6 +354,7 @@ class ReflectedIdentity(TypedDict):
     """if true, renders the ORDER keyword."""
 
 
+# 反射计算列信息
 class ReflectedComputed(TypedDict):
     """Represent the reflected elements of a computed column, corresponding
     to the :class:`_schema.Computed` construct.
@@ -362,6 +373,7 @@ class ReflectedComputed(TypedDict):
     """indicates if the value is stored in the table or computed on demand"""
 
 
+# 反射列定义 TypedDict
 class ReflectedColumn(TypedDict):
     """Dictionary representing the reflected elements corresponding to
     a :class:`_schema.Column` object.
@@ -420,6 +432,7 @@ class ReflectedColumn(TypedDict):
     object"""
 
 
+# 反射约束基 TypedDict
 class ReflectedConstraint(TypedDict):
     """Dictionary representing the reflected elements corresponding to
     :class:`.Constraint`
@@ -434,6 +447,7 @@ class ReflectedConstraint(TypedDict):
     """comment for the constraint, if present"""
 
 
+# 反射 CHECK 约束
 class ReflectedCheckConstraint(ReflectedConstraint):
     """Dictionary representing the reflected elements corresponding to
     :class:`.CheckConstraint`.
@@ -453,6 +467,7 @@ class ReflectedCheckConstraint(ReflectedConstraint):
     """
 
 
+# 反射 UNIQUE 约束
 class ReflectedUniqueConstraint(ReflectedConstraint):
     """Dictionary representing the reflected elements corresponding to
     :class:`.UniqueConstraint`.
@@ -473,6 +488,7 @@ class ReflectedUniqueConstraint(ReflectedConstraint):
     constraint"""
 
 
+# 反射主键约束
 class ReflectedPrimaryKeyConstraint(ReflectedConstraint):
     """Dictionary representing the reflected elements corresponding to
     :class:`.PrimaryKeyConstraint`.
@@ -489,6 +505,7 @@ class ReflectedPrimaryKeyConstraint(ReflectedConstraint):
     """Additional dialect-specific options detected for this primary key"""
 
 
+# 反射外键约束
 class ReflectedForeignKeyConstraint(ReflectedConstraint):
     """Dictionary representing the reflected elements corresponding to
     :class:`.ForeignKeyConstraint`.
@@ -514,6 +531,7 @@ class ReflectedForeignKeyConstraint(ReflectedConstraint):
     """Additional options detected for this foreign key constraint"""
 
 
+# 反射索引
 class ReflectedIndex(TypedDict):
     """Dictionary representing the reflected elements corresponding to
     :class:`.Index`.
@@ -566,6 +584,7 @@ class ReflectedIndex(TypedDict):
     """Additional dialect-specific options detected for this index"""
 
 
+# 反射表注释
 class ReflectedTableComment(TypedDict):
     """Dictionary representing the reflected comment corresponding to
     the :attr:`_schema.Table.comment` attribute.
@@ -579,6 +598,7 @@ class ReflectedTableComment(TypedDict):
     """text of the comment"""
 
 
+# 绑定参数类型提示策略
 class BindTyping(Enum):
     """Define different methods of passing typing information for
     bound parameters in a statement to the database driver.
@@ -643,6 +663,7 @@ VersionInfoType = Tuple[Union[int, str], ...]
 TableKey = Tuple[Optional[str], str]
 
 
+# 方言核心：编译、执行、反射、连接与事务 DBAPI 桥接
 class Dialect(EventTarget):
     """Define the behavior of a specific database and DB-API combination.
 
@@ -1239,6 +1260,7 @@ class Dialect(EventTarget):
     def _builtin_onconnect(self) -> Optional[_ListenerFnType]:
         raise NotImplementedError()
 
+    # URL 解析为 DBAPI connect 参数
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         """Build DB-API compatible connection arguments.
 
@@ -1273,6 +1295,7 @@ class Dialect(EventTarget):
         raise NotImplementedError()
 
     @classmethod
+    # 延迟导入 DBAPI 模块
     def import_dbapi(cls) -> DBAPIModule:
         """Import the DBAPI module that is used by this dialect.
 
@@ -1290,6 +1313,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # 方言类型适配
     def type_descriptor(self, typeobj: TypeEngine[_T]) -> TypeEngine[_T]:
         """Transform a generic type to a dialect-specific type.
 
@@ -1304,6 +1328,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 方言首次连接初始化
     def initialize(self, connection: Connection) -> None:
         """Called during strategized creation of the dialect with a
         connection.
@@ -1326,6 +1351,7 @@ class Dialect(EventTarget):
 
         def _overrides_default(self, method_name: str) -> bool: ...
 
+    # 反射列（多表 get_multi_columns）
     def get_columns(
         self,
         connection: Connection,
@@ -1375,6 +1401,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 反射主键约束
     def get_pk_constraint(
         self,
         connection: Connection,
@@ -1423,6 +1450,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # 反射外键
     def get_foreign_keys(
         self,
         connection: Connection,
@@ -1471,6 +1499,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 列出表名
     def get_table_names(
         self, connection: Connection, schema: Optional[str] = None, **kw: Any
     ) -> List[str]:
@@ -1496,6 +1525,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 列出视图名
     def get_view_names(
         self, connection: Connection, schema: Optional[str] = None, **kw: Any
     ) -> List[str]:
@@ -1556,6 +1586,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 列出 schema
     def get_schema_names(self, connection: Connection, **kw: Any) -> List[str]:
         """Return a list of all schema names available in the database.
 
@@ -1583,6 +1614,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 反射索引
     def get_indexes(
         self,
         connection: Connection,
@@ -1631,6 +1663,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 反射唯一约束
     def get_unique_constraints(
         self,
         connection: Connection,
@@ -1678,6 +1711,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 反射 CHECK 约束
     def get_check_constraints(
         self,
         connection: Connection,
@@ -1821,6 +1855,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 标识符规范化
     def normalize_name(self, name: str) -> str:
         """convert the given name to lowercase if it is detected as
         case insensitive.
@@ -1831,6 +1866,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # 标识符反规范化
     def denormalize_name(self, name: str) -> str:
         """convert the given name to a case insensitive identifier
         for the backend if it is an all-lowercase name.
@@ -1841,6 +1877,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # 表是否存在
     def has_table(
         self,
         connection: Connection,
@@ -1974,6 +2011,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # DBAPI begin
     def do_begin(self, dbapi_connection: PoolProxiedConnection) -> None:
         """Provide an implementation of ``connection.begin()``, given a
         DB-API connection.
@@ -1989,6 +2027,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # DBAPI rollback
     def do_rollback(self, dbapi_connection: PoolProxiedConnection) -> None:
         """Provide an implementation of ``connection.rollback()``, given
         a DB-API connection.
@@ -2000,6 +2039,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # DBAPI commit
     def do_commit(self, dbapi_connection: PoolProxiedConnection) -> None:
         """Provide an implementation of ``connection.commit()``, given a
         DB-API connection.
@@ -2044,6 +2084,7 @@ class Dialect(EventTarget):
     def _do_ping_w_event(self, dbapi_connection: DBAPIConnection) -> bool:
         raise NotImplementedError()
 
+    # 连接探活
     def do_ping(self, dbapi_connection: DBAPIConnection) -> bool:
         """ping the DBAPI connection and return True if the connection is
         usable."""
@@ -2087,6 +2128,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 创建 SAVEPOINT
     def do_savepoint(self, connection: Connection, name: str) -> None:
         """Create a savepoint with the given name.
 
@@ -2118,6 +2160,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 两阶段 begin
     def do_begin_twophase(self, connection: Connection, xid: Any) -> None:
         """Begin a two phase transaction on the given connection.
 
@@ -2187,6 +2230,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # insertmanyvalues 分批投递
     def _deliver_insertmanyvalues_batches(
         self,
         connection: Connection,
@@ -2203,6 +2247,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # cursor.executemany
     def do_executemany(
         self,
         cursor: DBAPICursor,
@@ -2215,6 +2260,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # cursor.execute 方言入口
     def do_execute(
         self,
         cursor: DBAPICursor,
@@ -2241,6 +2287,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 异常是否表示断连
     def is_disconnect(
         self,
         e: DBAPIModule.Error,
@@ -2252,6 +2299,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 建立 DBAPI 连接
     def connect(self, *cargs: Any, **cparams: Any) -> DBAPIConnection:
         r"""Establish a connection using this dialect's DBAPI.
 
@@ -2286,6 +2334,7 @@ class Dialect(EventTarget):
         """
         raise NotImplementedError()
 
+    # 连接建立后回调（按 URL）
     def on_connect_url(self, url: URL) -> Optional[Callable[[Any], Any]]:
         """return a callable which sets up a newly created DBAPI connection.
 
@@ -2427,6 +2476,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 设置隔离级别
     def set_isolation_level(
         self, dbapi_connection: DBAPIConnection, level: IsolationLevel
     ) -> None:
@@ -2461,6 +2511,7 @@ class Dialect(EventTarget):
 
         raise NotImplementedError()
 
+    # 读取隔离级别
     def get_isolation_level(
         self, dbapi_connection: DBAPIConnection
     ) -> IsolationLevel:
@@ -2592,6 +2643,7 @@ class Dialect(EventTarget):
         raise NotImplementedError()
 
     @classmethod
+    # 解析 URL 对应 Dialect 类
     def get_dialect_cls(cls, url: URL) -> Type[Dialect]:
         """Given a URL, return the :class:`.Dialect` that will be used.
 
@@ -2606,6 +2658,7 @@ class Dialect(EventTarget):
         return cls
 
     @classmethod
+    # 异步方言类解析
     def get_async_dialect_cls(cls, url: URL) -> Type[Dialect]:
         """Given a URL, return the :class:`.Dialect` that will be used by
         an async engine.
@@ -2654,6 +2707,7 @@ class Dialect(EventTarget):
         """
 
     @classmethod
+    # Engine 创建后回调
     def engine_created(cls, engine: Engine) -> None:
         """A convenience hook called before returning the final
         :class:`_engine.Engine`.
@@ -2722,6 +2776,7 @@ class Dialect(EventTarget):
         """Validates an identifier name, raising an exception if invalid"""
 
 
+# create_engine 插件：URL/池/引擎创建钩子
 class CreateEnginePlugin:
     """A set of hooks intended to augment the construction of an
     :class:`_engine.Engine` object based on entrypoint names in a URL.
@@ -2925,6 +2980,7 @@ class CreateEnginePlugin:
         """
         self.url = url
 
+    # 插件修改 URL
     def update_url(self, url: URL) -> URL:
         """Update the :class:`_engine.URL`.
 
@@ -2962,6 +3018,7 @@ class CreateEnginePlugin:
         """
 
 
+# 单次执行上下文接口：cursor、参数、结果
 class ExecutionContext:
     """A messenger object for a Dialect that corresponds to a single
     execution.
@@ -3118,14 +3175,17 @@ class ExecutionContext:
     def _get_cache_stats(self) -> str:
         raise NotImplementedError()
 
+    # 构造结果对象
     def _setup_result_proxy(self) -> CursorResult[Any]:
         raise NotImplementedError()
 
+    # 触发 Sequence 取 nextval
     def fire_sequence(self, seq: Sequence_SchemaItem, type_: Integer) -> int:
         """given a :class:`.Sequence`, invoke it and return the next int
         value"""
         raise NotImplementedError()
 
+    # 创建游标
     def create_cursor(self) -> DBAPICursor:
         """Return a new cursor generated from this ExecutionContext's
         connection.
@@ -3137,6 +3197,7 @@ class ExecutionContext:
 
         raise NotImplementedError()
 
+    # 执行前准备
     def pre_exec(self) -> None:
         """Called before an execution of a compiled statement.
 
@@ -3183,6 +3244,7 @@ class ExecutionContext:
         """
         raise NotImplementedError()
 
+    # 执行后清理
     def post_exec(self) -> None:
         """Called after the execution of a compiled statement.
 
@@ -3193,6 +3255,7 @@ class ExecutionContext:
 
         raise NotImplementedError()
 
+    # 执行期 DBAPI 异常处理
     def handle_dbapi_exception(self, e: BaseException) -> None:
         """Receive a DBAPI exception which occurred upon execute, result
         fetch, etc."""
@@ -3206,6 +3269,7 @@ class ExecutionContext:
 
         raise NotImplementedError()
 
+    # 获取 rowcount
     def get_rowcount(self) -> Optional[int]:
         """Return the DBAPI ``cursor.rowcount`` value, or in some
         cases an interpreted value.
@@ -3235,6 +3299,7 @@ class ExecutionContext:
         raise NotImplementedError()
 
 
+# 可挂载 ConnectionEvents 的目标
 class ConnectionEventsTarget(EventTarget):
     """An object which can accept events from :class:`.ConnectionEvents`.
 
@@ -3250,6 +3315,7 @@ class ConnectionEventsTarget(EventTarget):
 Connectable = ConnectionEventsTarget
 
 
+# handle_error 事件异常上下文
 class ExceptionContext:
     """Encapsulate information about an error condition in progress.
 
@@ -3416,6 +3482,7 @@ class ExceptionContext:
     """
 
 
+# 异步/适配连接的同步包装
 class AdaptedConnection:
     """Interface of an adapted connection object to support the DBAPI protocol.
 

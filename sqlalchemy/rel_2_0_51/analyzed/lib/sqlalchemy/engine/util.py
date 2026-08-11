@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# Engine 工具：参数蒸馏装饰器与事务上下文管理器
+
 from __future__ import annotations
 
 import typing
@@ -33,6 +35,7 @@ else:
 _C = TypeVar("_C", bound=Callable[[], Any])
 
 
+# 装饰器：在 connection.info 中 memoize 无参方法
 def connection_memoize(key: str) -> Callable[[_C], _C]:
     """Decorator, memoize a function in a connection.info stash.
 
@@ -52,10 +55,12 @@ def connection_memoize(key: str) -> Callable[[_C], _C]:
     return decorated
 
 
+# 事务上下文主体协议：持有 _trans_context_manager
 class _TConsSubject(Protocol):
     _trans_context_manager: Optional[TransactionalContext]
 
 
+# 事务 Python 上下文管理：with 块内 commit/rollback 语义
 class TransactionalContext:
     """Apply Python context manager behavior to transaction objects.
 
@@ -114,6 +119,7 @@ class TransactionalContext:
                     "before emitting further commands."
                 )
 
+    # 进入 with：绑定 _trans_context_manager
     def __enter__(self) -> Self:
         subject = self._get_subject()
 
@@ -126,6 +132,7 @@ class TransactionalContext:
         subject._trans_context_manager = self
         return self
 
+    # 退出 with：无异常则 commit，否则 rollback
     def __exit__(self, type_: Any, value: Any, traceback: Any) -> None:
         subject = getattr(self, "_trans_subject", None)
 

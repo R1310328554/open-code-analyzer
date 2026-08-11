@@ -14,6 +14,8 @@ argument; alternatively, the URL is a public-facing construct which can
 be used directly and is also accepted directly by ``create_engine()``.
 """
 
+# 数据库 URL 解析与不可变 NamedTuple 表示
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -43,6 +45,7 @@ from ..dialects import plugins
 from ..dialects import registry
 
 
+# 连接 URL 组件：drivername/host/port/database/query 等
 class URL(NamedTuple):
     """
     Represent the components of a URL used to connect to a database.
@@ -150,6 +153,7 @@ class URL(NamedTuple):
     """  # noqa: E501
 
     @classmethod
+    #  programmatic 构造 URL
     def create(
         cls,
         drivername: str,
@@ -295,6 +299,7 @@ class URL(NamedTuple):
             }
         )
 
+    # 返回替换字段的新 URL（不可变更新）
     def set(
         self,
         drivername: Optional[str] = None,
@@ -481,6 +486,7 @@ class URL(NamedTuple):
             )
         return self.set(query=new_query)
 
+    # 合并 query 参数并返回新 URL
     def update_query_dict(
         self,
         query_parameters: Mapping[str, Union[str, List[str]]],
@@ -627,6 +633,7 @@ class URL(NamedTuple):
         """
         return self.render_as_string(hide_password=hide_password)
 
+    # 渲染为连接字符串（可隐藏密码）
     def render_as_string(self, hide_password: bool = True) -> str:
         """Render this :class:`_engine.URL` object as a string.
 
@@ -782,6 +789,7 @@ class URL(NamedTuple):
         else:
             return cast("Type[Dialect]", cls)
 
+    # 按 drivername 加载 Dialect 类
     def get_dialect(self, _is_async: bool = False) -> Type[Dialect]:
         """Return the SQLAlchemy :class:`_engine.Dialect` class corresponding
         to this URL's driver name.
@@ -836,6 +844,7 @@ class URL(NamedTuple):
         return translated
 
 
+# 字符串或 URL 转 URL 对象
 def make_url(name_or_url: Union[str, URL]) -> URL:
     """Given a string, produce a new URL instance.
 
@@ -864,6 +873,7 @@ def make_url(name_or_url: Union[str, URL]) -> URL:
         return name_or_url
 
 
+# RFC-1738 风格 URL 字符串解析
 def _parse_url(name: str) -> URL:
     pattern = re.compile(
         r"""
