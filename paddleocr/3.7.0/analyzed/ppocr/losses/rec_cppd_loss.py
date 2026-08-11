@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CPPD 字符-位置解耦识别：图节点字符/位置 CE + 边序列 CE
 import paddle
 from paddle import nn
 import paddle.nn.functional as F
 
 
+    # CPPD 总损失：字符节点 CE + 位置节点 BCE + 边序列 CE 加权
 class CPPDLoss(nn.Layer):
     def __init__(
         self, smoothing=False, ignore_index=100, sideloss_weight=1.0, **kwargs
@@ -29,6 +31,7 @@ class CPPDLoss(nn.Layer):
         self.ignore_index = ignore_index
         self.sideloss_weight = sideloss_weight
 
+    # 边序列 label smoothing CE：忽略 pad 位置后求均值
     def label_smoothing_ce(self, preds, targets):
         non_pad_mask = paddle.not_equal(
             targets,

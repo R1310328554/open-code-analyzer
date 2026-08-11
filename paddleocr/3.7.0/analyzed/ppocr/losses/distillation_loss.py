@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 知识蒸馏损失集合：检测/识别/VQA 多任务 student-teacher 对齐与互学习
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -29,6 +30,7 @@ from .det_basic_loss import BalanceLoss, MaskL1Loss, DiceLoss
 from .vqa_token_layoutlm_loss import VQASerTokenLayoutLMLoss
 
 
+    # 将子损失字典求和为总 loss 字段（若尚未存在）
 def _sum_loss(loss_dict):
     if "loss" in loss_dict.keys():
         return loss_dict
@@ -42,6 +44,7 @@ def _sum_loss(loss_dict):
         return loss_dict
 
 
+    # 蒸馏 DML：多模型对间 logits 互学习 KL 一致性
 class DistillationDMLLoss(DMLLoss):
     """ """
 
@@ -140,6 +143,7 @@ class DistillationDMLLoss(DMLLoss):
         return loss_dict
 
 
+    # 蒸馏 KL：student 对齐 teacher 概率分布，支持 NRTR 多头与 pad 掩码
 class DistillationKLDivLoss(KLDivLoss):
     """ """
 
@@ -245,6 +249,7 @@ class DistillationKLDivLoss(KLDivLoss):
         return loss_dict
 
 
+    # 蒸馏 DKD：解耦目标类/非目标类 KL，NRTR 序列需 tgt 与 non_pad_mask
 class DistillationDKDLoss(DKDLoss):
     """ """
 
@@ -356,6 +361,7 @@ class DistillationDKDLoss(DKDLoss):
         return loss_dict
 
 
+    # NRTR 专用 DML：多头 gtc 分支按有效 token 掩码计算互学习
 class DistillationNRTRDMLLoss(DistillationDMLLoss):
     """ """
 
@@ -610,6 +616,7 @@ class DistillationDKDLoss(DKDLoss):
         return loss_dict
 
 
+    # 蒸馏 CTC：对 model_name_list 中各子模型分别计算 CTC 损失
 class DistillationCTCLoss(CTCLoss):
     def __init__(self, model_name_list=[], key=None, multi_head=False, name="loss_ctc"):
         super().__init__()
@@ -637,6 +644,7 @@ class DistillationCTCLoss(CTCLoss):
         return loss_dict
 
 
+    # 蒸馏 SAR：自回归识别分支 CE 蒸馏，支持 sar 多头 key
 class DistillationSARLoss(SARLoss):
     def __init__(
         self, model_name_list=[], key=None, multi_head=False, name="loss_sar", **kwargs
@@ -667,6 +675,7 @@ class DistillationSARLoss(SARLoss):
         return loss_dict
 
 
+    # 蒸馏 NRTR：Transformer 识别 CE/label smoothing 蒸馏
 class DistillationNRTRLoss(CELoss):
     def __init__(
         self,
@@ -702,6 +711,7 @@ class DistillationNRTRLoss(CELoss):
         return loss_dict
 
 
+    # 蒸馏 DB 检测：多学生模型 shrink/threshold/binary 分支监督
 class DistillationDBLoss(DBLoss):
     def __init__(
         self,
@@ -741,6 +751,7 @@ class DistillationDBLoss(DBLoss):
         return loss_dict
 
 
+    # 膨胀 DB 蒸馏：教师 shrink 图膨胀后与学生的 shrink/binary 对齐
 class DistillationDilaDBLoss(DBLoss):
     def __init__(
         self,
@@ -771,6 +782,7 @@ class DistillationDilaDBLoss(DBLoss):
             stu_shrink_maps = stu_preds[:, 0, :, :]
             stu_binary_maps = stu_preds[:, 2, :, :]
 
+            # 对教师 shrink 图做形态学膨胀，放宽边界对齐容忍度
             # dilation to teacher prediction
             dilation_w = np.array([[1, 1], [1, 1]])
             th_shrink_maps = tch_preds[:, 0, :, :]
@@ -807,6 +819,7 @@ class DistillationDilaDBLoss(DBLoss):
         return loss_dict
 
 
+    # 特征距离蒸馏：L1/L2 约束 student 与 teacher 中间层输出
 class DistillationDistanceLoss(DistanceLoss):
     """ """
 
@@ -836,6 +849,7 @@ class DistillationDistanceLoss(DistanceLoss):
         return loss_dict
 
 
+    # VQA SER LayoutLM 蒸馏：序列标注 token 级 CE 多模型
 class DistillationVQASerTokenLayoutLMLoss(VQASerTokenLayoutLMLoss):
     def __init__(self, num_classes, model_name_list=[], key=None, name="loss_ser"):
         super().__init__(num_classes=num_classes)
@@ -854,6 +868,7 @@ class DistillationVQASerTokenLayoutLMLoss(VQASerTokenLayoutLMLoss):
         return loss_dict
 
 
+    # 从输出 dict 按 dist_key 提取已有 loss 字段做蒸馏汇总
 class DistillationLossFromOutput(LossFromOutput):
     def __init__(
         self,
@@ -879,6 +894,7 @@ class DistillationLossFromOutput(LossFromOutput):
         return loss_dict
 
 
+    # SER 实体 DML：attention_mask 过滤有效 token 后互学习
 class DistillationSERDMLLoss(DMLLoss):
     """ """
 
@@ -927,6 +943,7 @@ class DistillationSERDMLLoss(DMLLoss):
         return loss_dict
 
 
+    # VQA 特征距离：按 index 切片 hidden 并在有效 token 上 L2
 class DistillationVQADistanceLoss(DistanceLoss):
     def __init__(
         self,
@@ -983,6 +1000,7 @@ class DistillationVQADistanceLoss(DistanceLoss):
         return loss_dict
 
 
+    # CTC 解耦蒸馏：时间维均值聚合后 TCKD/NCKD 双分支 KL
 class CTCDKDLoss(nn.Layer):
     """
     KLDivLoss
@@ -1053,6 +1071,7 @@ class CTCDKDLoss(nn.Layer):
         return loss
 
 
+    # CTC logits KL 蒸馏：mean/max/sum/ctcdkd 多种聚合模式
 class KLCTCLogits(nn.Layer):
     def __init__(self, weight=1.0, reduction="mean", mode="mean"):
         super().__init__()
@@ -1151,6 +1170,7 @@ class KLCTCLogits(nn.Layer):
         return loss
 
 
+    # 多模型 CTC logits 蒸馏封装：从 predicts 取 ctc 分支对齐
 class DistillCTCLogits(KLCTCLogits):
     def __init__(
         self, model_name_pairs=[], key=None, name="ctc_logits", reduction="mean"

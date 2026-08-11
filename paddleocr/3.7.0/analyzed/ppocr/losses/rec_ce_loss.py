@@ -1,8 +1,10 @@
+# 通用交叉熵识别损失：ABINet 多分支、ViTSTR 全序列与 NRTR label smoothing
 import paddle
 from paddle import nn
 import paddle.nn.functional as F
 
 
+    # CE 损失：dict 多分支/单序列 NRTR，可选 label smoothing 与 ignore_index
 class CELoss(nn.Layer):
     def __init__(self, smoothing=False, with_all=False, ignore_index=-1, **kwargs):
         super(CELoss, self).__init__()

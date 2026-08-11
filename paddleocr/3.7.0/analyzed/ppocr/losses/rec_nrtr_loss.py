@@ -1,8 +1,10 @@
+# NRTR Transformer 识别损失：带 label smoothing 的序列 CE，忽略 pad
 import paddle
 from paddle import nn
 import paddle.nn.functional as F
 
 
+    # NRTR CE：取 batch[1] 有效长度切片，smoothing 时对非 pad 位优化
 class NRTRLoss(nn.Layer):
     def __init__(self, smoothing=True, ignore_index=0, **kwargs):
         super(NRTRLoss, self).__init__()

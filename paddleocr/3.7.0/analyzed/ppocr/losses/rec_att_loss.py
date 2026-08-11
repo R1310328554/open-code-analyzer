@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 注意力解码识别损失：逐步 CrossEntropy 对展平后的 token 序列
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,6 +21,7 @@ import paddle
 from paddle import nn
 
 
+    # Attention 识别 CE：predicts [N,T,C] 与 targets 逐步分类
 class AttentionLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(AttentionLoss, self).__init__()

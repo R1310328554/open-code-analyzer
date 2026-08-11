@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 多分支识别组合损失：CTC + SAR/NRTR 按 weight 加权求和
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -24,6 +25,7 @@ from .rec_sar_loss import SARLoss
 from .rec_nrtr_loss import NRTRLoss
 
 
+    # 多路识别损失：YAML loss_config_list 动态实例化 CTC/SAR/NRTR
 class MultiLoss(nn.Layer):
     def __init__(self, **kwargs):
         super().__init__()

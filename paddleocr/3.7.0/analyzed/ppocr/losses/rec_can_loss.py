@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CAN 计数感知网络损失：符号序列 CE + 多分支符号计数 SmoothL1
 """
 This code is refer from:
 https://github.com/LBH1024/CAN/models/can.py
@@ -21,6 +22,7 @@ import paddle.nn as nn
 import numpy as np
 
 
+    # CAN 总损失：word CE 与 counting_preds 三路计数 SmoothL1 之和
 class CANLoss(nn.Layer):
     """
     CANLoss is consist of two part:
@@ -69,6 +71,7 @@ class CANLoss(nn.Layer):
         return {"loss": loss}
 
 
+    # 由序列标签统计各符号出现频次，生成计数监督向量
 def gen_counting_label(labels, channel, tag):
     b, t = labels.shape
     counting_labels = np.zeros([b, channel])

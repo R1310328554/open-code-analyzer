@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PGNet 端到端检测识别损失：TCL score Dice + 边界/方向回归 + TCL 上 CTC
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +24,7 @@ from .det_basic_loss import DiceLoss
 from ppocr.utils.e2e_utils.extract_batchsize import pre_process
 
 
+    # PGNet 总损失：score + border + direction + 5×CTC 字符序列监督
 class PGLoss(nn.Layer):
     def __init__(
         self, tcl_bs, max_text_length, max_text_nums, pad_num, eps=1e-6, **kwargs
@@ -34,6 +36,7 @@ class PGLoss(nn.Layer):
         self.pad_num = pad_num
         self.dice_loss = DiceLoss(eps=eps)
 
+    # 文本边界四通道 SmoothL1 回归，按 score 与 norm 掩码加权
     def border_loss(self, f_border, l_border, l_score, l_mask):
         l_border_split, l_border_norm = paddle.tensor.split(
             l_border, num_or_sections=[4, 1], axis=1
@@ -59,6 +62,7 @@ class PGLoss(nn.Layer):
         )
         return border_loss
 
+    # 阅读方向两通道 SmoothL1 回归损失
     def direction_loss(self, f_direction, l_direction, l_score, l_mask):
         l_direction_split, l_direction_norm = paddle.tensor.split(
             l_direction, num_or_sections=[2, 1], axis=1
@@ -87,6 +91,7 @@ class PGLoss(nn.Layer):
         ) / (paddle.sum(l_direction_score * l_direction_mask) + 1e-5)
         return direction_loss
 
+    # 在 TCL 采样位置 gather 字符 logits，前景/背景分离后做 CTC
     def ctcloss(self, f_char, tcl_pos, tcl_mask, tcl_label, label_t):
         f_char = paddle.transpose(f_char, [0, 2, 3, 1])
         tcl_pos = paddle.reshape(tcl_pos, [-1, 3])

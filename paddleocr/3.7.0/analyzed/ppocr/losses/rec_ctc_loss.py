@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CTC 序列识别损失：时间维转置后 CTCLoss，可选 Focal 难例加权
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,6 +21,7 @@ import paddle
 from paddle import nn
 
 
+    # CTC 损失：blank=0，preds_lengths 取时间步 N，支持 focal 重加权
 class CTCLoss(nn.Layer):
     def __init__(self, use_focal_loss=False, **kwargs):
         super(CTCLoss, self).__init__()

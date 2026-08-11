@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 增强 CTC 损失：基础 CTC 可选叠加 ACE 聚合 CE 与 Center 类中心约束
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +24,7 @@ from .center_loss import CenterLoss
 from .rec_ctc_loss import CTCLoss
 
 
+    # 增强 CTC：CTC + 可选 center_loss/ace_loss 按权重累加
 class EnhancedCTCLoss(nn.Layer):
     def __init__(
         self,

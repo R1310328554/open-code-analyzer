@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PSENet 渐进式尺度扩展检测损失：文本图 Dice + 多核 shrink 核 Dice，OHEM 难例挖掘
 """
 This code is refer from:
 https://github.com/whai362/PSENet/blob/python3/models/head/psenet_head.py
@@ -23,6 +24,7 @@ import numpy as np
 from ppocr.utils.iou import iou
 
 
+    # PSENet 检测损失：alpha 加权文本/核 Dice，支持 gt/pred 核采样掩码
 class PSELoss(nn.Layer):
     def __init__(
         self,
@@ -42,6 +44,7 @@ class PSELoss(nn.Layer):
         self.reduction = reduction
         self.eps = eps
 
+    # 前向：上采样预测图，文本/核分支 Dice 加权，附带 IoU 监控指标
     def forward(self, outputs, labels):
         predicts = outputs["maps"]
         predicts = F.interpolate(predicts, scale_factor=4)
@@ -87,6 +90,7 @@ class PSELoss(nn.Layer):
             losses = {x: paddle.mean(v) for x, v in losses.items()}
         return losses
 
+    # 掩码内 Dice 损失：sigmoid 后与 GT 计算 1-2|A∩B|/(|A|+|B|)
     def dice_loss(self, input, target, mask):
         input = F.sigmoid(input)
 
@@ -103,6 +107,7 @@ class PSELoss(nn.Layer):
         d = (2 * a) / (b + c)
         return 1 - d
 
+    # 单图 OHEM：保留全部正样本并按得分选取最难负样本
     def ohem_single(self, score, gt_text, training_mask, ohem_ratio=3):
         pos_num = int(paddle.sum((gt_text > 0.5).astype("float32"))) - int(
             paddle.sum(
@@ -142,6 +147,7 @@ class PSELoss(nn.Layer):
         ).astype("float32")
         return selected_mask
 
+    # 批级 OHEM：逐样本生成采样掩码后拼接
     def ohem_batch(self, scores, gt_texts, training_masks, ohem_ratio=3):
         selected_masks = []
         for i in range(scores.shape[0]):

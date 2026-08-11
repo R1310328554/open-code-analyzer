@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SAST 单步任意形状文本检测损失：score Dice + border/tvo/tco SmoothL1 几何回归
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,6 +23,7 @@ from .det_basic_loss import DiceLoss
 import numpy as np
 
 
+    # SAST 多分支检测损失：score Dice + border/tvo/tco 几何 SmoothL1
 class SASTLoss(nn.Layer):
     """ """
 
@@ -43,11 +45,13 @@ class SASTLoss(nn.Layer):
 
         l_score, l_border, l_mask, l_tvo, l_tco = labels[1:]
 
+        # 文本 score 图 Dice：预测与 GT 在有效掩码内计算重叠度
         # score_loss
         intersection = paddle.sum(f_score * l_score * l_mask)
         union = paddle.sum(f_score * l_mask) + paddle.sum(l_score * l_mask)
         score_loss = 1.0 - 2 * intersection / (union + 1e-5)
 
+        # 边界距离回归：Huber 形式 SmoothL1，按 score 与 norm 加权
         # border loss
         l_border_split, l_border_norm = paddle.split(
             l_border, num_or_sections=[4, 1], axis=1
@@ -71,6 +75,7 @@ class SASTLoss(nn.Layer):
             paddle.sum(l_border_score * l_border_mask) + 1e-5
         )
 
+        # 文本顶点偏移 TVO：8 通道几何向量与 GT 的掩码加权 SmoothL1
         # tvo_loss
         l_tvo_split, l_tvo_norm = paddle.split(l_tvo, num_or_sections=[8, 1], axis=1)
         f_tvo_split = f_tvo
@@ -92,6 +97,7 @@ class SASTLoss(nn.Layer):
             paddle.sum(l_tvo_score * l_tvo_mask) + 1e-5
         )
 
+        # 文本中心偏移 TCO：2 通道中心向量回归损失
         # tco_loss
         l_tco_split, l_tco_norm = paddle.split(l_tco, num_or_sections=[2, 1], axis=1)
         f_tco_split = f_tco
@@ -113,6 +119,7 @@ class SASTLoss(nn.Layer):
             paddle.sum(l_tco_score * l_tco_mask) + 1e-5
         )
 
+        # 四项损失按 score/border/tvo/tco 权重加权求和
         # total loss
         tvo_lw, tco_lw = 1.5, 1.5
         score_lw, border_lw = 1.0, 1.0

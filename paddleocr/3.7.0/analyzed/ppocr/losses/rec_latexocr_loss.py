@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# LaTeX-OCR 公式识别损失：自回归 token 序列 CrossEntropy
 """
 This code is refer from:
 https://github.com/lucidrains/x-transformers/blob/main/x_transformers/autoregressive_wrapper.py
@@ -23,6 +24,7 @@ import paddle.nn.functional as F
 import numpy as np
 
 
+    # LaTeX OCR CE：preds 与 labels[:,1:] 对齐，ignore_index=-100
 class LaTeXOCRLoss(nn.Layer):
     """
     LaTeXOCR adopt CrossEntropyLoss for network training.

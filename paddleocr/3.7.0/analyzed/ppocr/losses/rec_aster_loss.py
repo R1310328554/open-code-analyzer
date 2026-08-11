@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ASTER 识别损失：语义嵌入 Cosine 约束 + 序列 CE 字符识别
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,6 +21,7 @@ import paddle
 from paddle import nn
 
 
+    # 余弦嵌入损失：同类拉近、异类推离（margin 间隔）
 class CosineEmbeddingLoss(nn.Layer):
     def __init__(self, margin=0.0):
         super(CosineEmbeddingLoss, self).__init__()
@@ -42,6 +44,7 @@ class CosineEmbeddingLoss(nn.Layer):
         return out
 
 
+    # ASTER 总损失：rec CE + 0.1×语义 Cosine 嵌入对齐
 class AsterLoss(nn.Layer):
     def __init__(
         self,
@@ -77,6 +80,7 @@ class AsterLoss(nn.Layer):
                 self.loss_sem(embedding_vectors, sem_target, label_target)
             )
 
+        # 序列 CE：按 label_lengths 掩码有效步，支持序列/样本级归一化
         # rec loss
         batch_size, def_max_length = targets.shape[0], targets.shape[1]
 

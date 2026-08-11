@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SDMGR 关键信息抽取损失：图节点/边分类 CE 及 top-k 准确率监控
 # reference from : https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/kie/losses/sdmgr_loss.py
 
 from __future__ import absolute_import
@@ -22,6 +23,7 @@ from paddle import nn
 import paddle
 
 
+    # SDMGR KIE 损失：节点实体 CE + 边关系 CE 加权，附带 acc 指标
 class SDMGRLoss(nn.Layer):
     def __init__(self, node_weight=1.0, edge_weight=1.0, ignore=0):
         super().__init__()
@@ -31,6 +33,7 @@ class SDMGRLoss(nn.Layer):
         self.edge_weight = edge_weight
         self.ignore = ignore
 
+    # 按 tag 中有效节点数裁剪邻接矩阵 GT，转为变长张量列表
     def pre_process(self, gts, tag):
         gts, tag = gts.numpy(), tag.numpy().tolist()
         temp_gts = []
@@ -40,6 +43,7 @@ class SDMGRLoss(nn.Layer):
             temp_gts.append(paddle.to_tensor(gts[i, :num, : num + 1], dtype="int64"))
         return temp_gts
 
+    # 计算 top-k 分类准确率（百分比），空预测时返回 0
     def accuracy(self, pred, target, topk=1, thresh=None):
         """Calculate accuracy according to the prediction and target.
 
