@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# DepthAnythingConfig：small 版 checkpoint，默认 DINOv2 384 维骨干
 @auto_docstring(checkpoint="LiheYoung/depth-anything-small-hf")
 @strict
+# DepthAnythingConfig：reassemble/fusion 超参与 depth_estimation_type（relative/metric）
 class DepthAnythingConfig(PreTrainedConfig):
     r"""
     reassemble_hidden_size (`int`, *optional*, defaults to 384):
@@ -73,6 +75,7 @@ class DepthAnythingConfig(PreTrainedConfig):
     depth_estimation_type: str = "relative"
     max_depth: int | None = None
 
+# __post_init__：consolidate_backbone_kwargs 默认 dinov2 518 输入与 max_depth 兜底
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -90,6 +93,7 @@ class DepthAnythingConfig(PreTrainedConfig):
         self.max_depth = self.max_depth if self.max_depth else 1
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 depth_estimation_type 为 relative 或 metric
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.depth_estimation_type not in ["relative", "metric"]:

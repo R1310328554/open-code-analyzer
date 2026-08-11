@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# DetrConfig：facebook/detr-resnet-50 checkpoint，默认 100 queries
 @auto_docstring(checkpoint="facebook/detr-resnet-50")
 @strict
+# DetrConfig：d_model=256、匈牙利匹配损失系数与 auxiliary_loss 开关
 class DetrConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 100):
@@ -89,6 +91,7 @@ class DetrConfig(PreTrainedConfig):
     giou_loss_coefficient: int = 2
     eos_coefficient: float = 0.1
 
+# __post_init__：consolidate_backbone_kwargs 默认 resnet50 timm 骨干
     def __post_init__(self, **kwargs):
         backbone_kwargs = kwargs.get("backbone_kwargs", {})
         timm_default_kwargs = {

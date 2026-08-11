@@ -25,8 +25,10 @@ from ..auto.configuration_auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# DepthProConfig：apple/DepthPro checkpoint，默认 384 patch 与三尺度 ratio
 @auto_docstring(checkpoint="apple/DepthPro")
 @strict
+# DepthProConfig：scaled_images_ratios、intermediate_hook_ids 与 fov 模型开关
 class DepthProConfig(PreTrainedConfig):
     r"""
     fusion_hidden_size (`int`, *optional*, defaults to 256):
@@ -96,6 +98,7 @@ class DepthProConfig(PreTrainedConfig):
     patch_model_config: dict | PreTrainedConfig | None = None
     fov_model_config: dict | PreTrainedConfig | None = None
 
+# __post_init__：初始化 image/patch/fov 子配置并校验 image_size 与 patch_size 一致
     def __post_init__(self, **kwargs):
         for sub_config_key in self.sub_configs:
             sub_config = getattr(self, sub_config_key)
@@ -141,6 +144,7 @@ class DepthProConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验多尺度 ratio 排序与各列表长度一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         # scaled_images_ratios is sorted

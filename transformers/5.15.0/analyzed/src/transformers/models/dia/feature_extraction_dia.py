@@ -23,6 +23,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# DiaFeatureExtractor：16kHz 单声道 input_values，hop_length=512 对齐 padding
 class DiaFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs an Dia feature extractor.
@@ -43,6 +44,7 @@ class DiaFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_values", "n_quantizers"]
 
+# __init__：feature_size/sampling_rate/hop_length 等音频预处理参数
     def __init__(
         self,
         feature_size: int = 1,
@@ -54,6 +56,7 @@ class DiaFeatureExtractor(SequenceFeatureExtractor):
         super().__init__(feature_size=feature_size, sampling_rate=sampling_rate, padding_value=padding_value, **kwargs)
         self.hop_length = hop_length
 
+# __call__：立体声转 mono、pad 至 hop_length 倍数并返回 padding_mask
     def __call__(
         self,
         raw_audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

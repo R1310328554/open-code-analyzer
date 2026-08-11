@@ -28,6 +28,7 @@ logger = logging.get_logger(__name__)
 # General docstring
 
 
+# DepthAnythingReassembleLayer：1×1 投影 + 上/下采样重组单尺度特征
 class DepthAnythingReassembleLayer(nn.Module):
     def __init__(self, config, channels, factor):
         super().__init__()
@@ -43,6 +44,7 @@ class DepthAnythingReassembleLayer(nn.Module):
             self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=int(1 / factor), padding=1)
 
     # Copied from transformers.models.dpt.modeling_dpt.DPTReassembleLayer.forward
+# forward：pixel_values 经骨干/neck/head 输出 predicted_depth
     def forward(self, hidden_state):
         hidden_state = self.projection(hidden_state)
         hidden_state = self.resize(hidden_state)
@@ -50,6 +52,7 @@ class DepthAnythingReassembleLayer(nn.Module):
         return hidden_state
 
 
+# DepthAnythingReassembleStage：多尺度 backbone 隐状态重组为空间特征图
 class DepthAnythingReassembleStage(nn.Module):
     """
     This class reassembles the hidden states of the backbone into image-like feature representations at various
@@ -93,6 +96,7 @@ class DepthAnythingReassembleStage(nn.Module):
         return out
 
 
+# DepthAnythingPreActResidualLayer：Pre-activation 残差卷积单元
 class DepthAnythingPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -135,6 +139,7 @@ class DepthAnythingPreActResidualLayer(nn.Module):
         return hidden_state + residual
 
 
+# DepthAnythingFeatureFusionLayer：自顶向下特征融合 + 2× 双线性上采样
 class DepthAnythingFeatureFusionLayer(nn.Module):
     """Feature fusion layer, merges feature maps from different stages.
 
@@ -174,6 +179,7 @@ class DepthAnythingFeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# DepthAnythingFeatureFusionStage：自粗到细逐层融合多尺度特征
 class DepthAnythingFeatureFusionStage(nn.Module):
     # Copied from transformers.models.dpt.modeling_dpt.DPTFeatureFusionStage.__init__ with DPT->DepthAnything
     def __init__(self, config: DepthAnythingConfig):
@@ -206,6 +212,7 @@ class DepthAnythingFeatureFusionStage(nn.Module):
 # Modified from transformers.models.dpt.modeling_dpt.DPTPreTrainedModel with DPT->DepthAnything,dpt->depth_anything
 # avoiding sdpa and flash_attn_2 support, it's done in the backend
 @auto_docstring
+# DepthAnythingPreTrainedModel：图像输入预训练基类，支持 gradient checkpointing
 class DepthAnythingPreTrainedModel(PreTrainedModel):
     config: DepthAnythingConfig
     base_model_prefix = "depth_anything"
@@ -214,6 +221,7 @@ class DepthAnythingPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
 
+# DepthAnythingNeck：ReassembleStage + 1×1 投影 + FeatureFusionStage
 class DepthAnythingNeck(nn.Module):
     """
     DepthAnythingNeck. A neck is a module that is normally used between the backbone and the head. It takes a list of tensors as
@@ -262,6 +270,7 @@ class DepthAnythingNeck(nn.Module):
         return output
 
 
+# DepthAnythingDepthEstimationHead：3 层卷积深度头，relative 用 ReLU / metric 用 Sigmoid
 class DepthAnythingDepthEstimationHead(nn.Module):
     """
     Output head consisting of 3 convolutional layers. It progressively halves the feature dimension and upsamples
@@ -313,6 +322,7 @@ class DepthAnythingDepthEstimationHead(nn.Module):
     Depth Anything Model with a depth estimation head on top (consisting of 3 convolutional layers) e.g. for KITTI, NYUv2.
     """
 )
+# DepthAnythingForDepthEstimation：backbone → neck → head 完整单目深度估计
 class DepthAnythingForDepthEstimation(DepthAnythingPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

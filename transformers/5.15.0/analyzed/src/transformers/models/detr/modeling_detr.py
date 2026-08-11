@@ -55,6 +55,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# DetrDecoderOutput：解码器输出 + intermediate_hidden_states
 class DetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -73,6 +74,7 @@ class DetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     """
 )
 @dataclass
+# DetrModelOutput：编解码联合输出，含辅助解码层 hidden states
 class DetrModelOutput(Seq2SeqModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, sequence_length, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -89,6 +91,7 @@ class DetrModelOutput(Seq2SeqModelOutput):
     """
 )
 @dataclass
+# DetrObjectDetectionOutput：检测 logits/pred_boxes/辅助输出
 class DetrObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -132,6 +135,7 @@ class DetrObjectDetectionOutput(ModelOutput):
     """
 )
 @dataclass
+# DetrSegmentationOutput：检测 + pred_masks 分割 logits
 class DetrSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -176,6 +180,7 @@ class DetrSegmentationOutput(ModelOutput):
     encoder_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# DetrFrozenBatchNorm2d：冻结 BN（ResNet 骨干），避免非 torchvision 模型 NaN
 class DetrFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -202,6 +207,7 @@ class DetrFrozenBatchNorm2d(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
+# forward：图像特征 → 编解码 → class/bbox(/mask) 预测
     def forward(self, x):
         # move reshapes to the beginning
         # to make it user-friendly
@@ -215,6 +221,7 @@ class DetrFrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# replace_batch_norm：递归将 BatchNorm2d 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `DetrFrozenBatchNorm2d`.
@@ -239,6 +246,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# DetrConvEncoder：timm 骨干 + 1x1 投影至 d_model 的多尺度特征
 class DetrConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -291,6 +299,7 @@ class DetrConvEncoder(nn.Module):
         return out
 
 
+# DetrSinePositionEmbedding：2D 正弦位置编码（默认 sine 类型）
 class DetrSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -368,6 +377,7 @@ class DetrSinePositionEmbedding(nn.Module):
         )
 
 
+# DetrLearnedPositionEmbedding：可学习 2D 位置嵌入
 class DetrLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -399,6 +409,7 @@ class DetrLearnedPositionEmbedding(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -427,6 +438,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DetrSelfAttention：编码器/解码器自注意力（含 position 偏置）
 class DetrSelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -493,6 +505,7 @@ class DetrSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DetrCrossAttention：解码器-编码器交叉注意力
 class DetrCrossAttention(nn.Module):
     """
     Multi-headed cross-attention from 'Attention Is All You Need' paper.
@@ -573,6 +586,7 @@ class DetrCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DetrMLP：FFN 前馈子层（Linear-Act-Linear）
 class DetrMLP(nn.Module):
     def __init__(self, config: DetrConfig, hidden_size: int, intermediate_size: int):
         super().__init__()
@@ -590,6 +604,7 @@ class DetrMLP(nn.Module):
         return hidden_states
 
 
+# DetrEncoderLayer：编码器层（自注意力 + FFN + 残差/LN）
 class DetrEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DetrConfig):
         super().__init__()
@@ -647,6 +662,7 @@ class DetrEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DetrDecoderLayer：解码器层（自注意力 + 交叉注意力 + FFN）
 class DetrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DetrConfig):
         super().__init__()
@@ -739,6 +755,7 @@ class DetrDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DetrConvBlock：分割 mask head 卷积块
 class DetrConvBlock(nn.Module):
     """Basic conv block: Conv3x3 -> GroupNorm -> Activation."""
 
@@ -752,6 +769,7 @@ class DetrConvBlock(nn.Module):
         return self.activation(self.norm(self.conv(x)))
 
 
+# DetrFPNFusionStage：FPN 多尺度特征融合阶段
 class DetrFPNFusionStage(nn.Module):
     """Single FPN fusion stage combining low-resolution features with high-resolution FPN features."""
 
@@ -774,6 +792,7 @@ class DetrFPNFusionStage(nn.Module):
         return self.refine(fpn_features + features)
 
 
+# DetrMaskHeadSmallConv：轻量卷积 mask 预测头
 class DetrMaskHeadSmallConv(nn.Module):
     """
     Segmentation mask head that generates per-query masks using FPN-based progressive upsampling.
@@ -841,6 +860,7 @@ class DetrMaskHeadSmallConv(nn.Module):
         return self.output_conv(hidden_states)
 
 
+# DetrMHAttentionMap：多头注意力图用于 mask 细化
 class DetrMHAttentionMap(nn.Module):
     """This is a 2D attention module, which only returns the attention softmax (no multiplication by value)"""
 
@@ -893,6 +913,7 @@ class DetrMHAttentionMap(nn.Module):
 
 
 @auto_docstring
+# DetrPreTrainedModel：权重初始化与 _no_split_modules 配置
 class DetrPreTrainedModel(PreTrainedModel):
     config: DetrConfig
     base_model_prefix = "model"
@@ -930,6 +951,7 @@ class DetrPreTrainedModel(PreTrainedModel):
             init.uniform_(module.column_embeddings.weight)
 
 
+# DetrEncoder：堆叠 DetrEncoderLayer
 class DetrEncoder(DetrPreTrainedModel):
     """
     Transformer encoder that processes a flattened feature map from a vision backbone, composed of a stack of
@@ -991,6 +1013,7 @@ class DetrEncoder(DetrPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# DetrDecoder：object query 解码器，输出 class/bbox(/mask) 预测
 class DetrDecoder(DetrPreTrainedModel):
     """
     Transformer decoder that refines a set of object queries. It is composed of a stack of [`DetrDecoderLayer`] modules,
@@ -1112,6 +1135,7 @@ class DetrDecoder(DetrPreTrainedModel):
     any specific head on top.
     """
 )
+# DetrModel：骨干 + 编码器 + 解码器 DETR 主干
 class DetrModel(DetrPreTrainedModel):
     def __init__(self, config: DetrConfig):
         super().__init__(config)
@@ -1281,6 +1305,7 @@ class DetrModel(DetrPreTrainedModel):
         )
 
 
+# DetrMLPPredictionHead：3 层 MLP 分类/bbox 预测头
 class DetrMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -1306,6 +1331,7 @@ class DetrMLPPredictionHead(nn.Module):
     such as COCO detection.
     """
 )
+# DetrForObjectDetection：Hungarian 匹配 + focal/L1/GIoU 检测损失
 class DetrForObjectDetection(DetrPreTrainedModel):
     def __init__(self, config: DetrConfig):
         super().__init__(config)
@@ -1443,6 +1469,7 @@ class DetrForObjectDetection(DetrPreTrainedModel):
     such as COCO panoptic.
     """
 )
+# DetrForSegmentation：检测头 + mask head，Dice/mask 分割损失
 class DetrForSegmentation(DetrPreTrainedModel):
     def __init__(self, config: DetrConfig):
         super().__init__(config)

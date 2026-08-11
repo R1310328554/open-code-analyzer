@@ -58,6 +58,7 @@ logger = logging.get_logger(__name__)
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# DetrImageProcessorKwargs：format/do_convert_annotations 等 kwargs
 class DetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -72,6 +73,7 @@ class DetrImageProcessorKwargs(ImagesKwargs, total=False):
     do_convert_annotations: bool
 
 
+# binary_mask_to_rle：二值 mask 转 COCO RLE 游程编码
 def binary_mask_to_rle(mask):
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -96,6 +98,7 @@ def binary_mask_to_rle(mask):
     return list(runs)
 
 
+# convert_segmentation_to_rle：语义分割图各 segment id 转 RLE 列表
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -117,6 +120,7 @@ def convert_segmentation_to_rle(segmentation):
     return run_length_encodings
 
 
+# remove_low_and_no_objects：按阈值与 no-object 类过滤低分 mask/query
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -145,6 +149,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
     return masks[to_keep], scores[to_keep], labels[to_keep]
 
 
+# check_segment_validity：实例分割后处理中校验 mask 重叠与置信度
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -163,6 +168,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
     return mask_exists, mask_k
 
 
+# compute_segments：从 query mask 聚合实例/全景分割结果
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -224,6 +230,7 @@ def compute_segments(
 
 
 # inspired by https://github.com/facebookresearch/detr/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：COCO 多边形标注 rasterize 为 tensor mask
 def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: torch.device) -> torch.Tensor:
     """
     Convert a COCO polygon annotation to a mask.
@@ -259,6 +266,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: to
 
 
 # inspired by https://github.com/facebookresearch/detr/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：检测标注 bbox 转 center 格式并归一化到 [0,1]
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -323,6 +331,7 @@ def prepare_coco_detection_annotation(
     return new_target
 
 
+# masks_to_boxes：从二值 mask 批量计算 axis-aligned 边界框
 def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
     """
     Compute the bounding boxes around the provided panoptic segmentation masks.
@@ -371,6 +380,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# prepare_coco_panoptic_annotation：全景分割标注解析为 mask/box/label
 def prepare_coco_panoptic_annotation(
     image: torch.Tensor,
     target: dict,
@@ -421,6 +431,7 @@ def prepare_coco_panoptic_annotation(
 
 
 @auto_docstring
+# DetrImageProcessor：Torchvision 后端，800/1333 resize + ImageNet 归一化 + pad
 class DetrImageProcessor(TorchvisionBackend):
     valid_kwargs = DetrImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -435,6 +446,7 @@ class DetrImageProcessor(TorchvisionBackend):
     default_to_square = False
     model_input_names = ["pixel_values", "pixel_mask"]
 
+# __init__：解析 size/max_size，兼容 pad_and_return_pixel_mask 旧参数
     def __init__(self, **kwargs: Unpack[DetrImageProcessorKwargs]) -> None:
         kwargs.setdefault("do_pad", kwargs.pop("pad_and_return_pixel_mask", self.do_pad))
 
@@ -452,6 +464,7 @@ class DetrImageProcessor(TorchvisionBackend):
 
         super().__init__(**kwargs)
 
+# prepare_annotation：按 COCO detection/panoptic 格式预处理标注
     def prepare_annotation(
         self,
         image: torch.Tensor,
@@ -484,6 +497,7 @@ class DetrImageProcessor(TorchvisionBackend):
             raise ValueError(f"Format {format} is not supported.")
         return target
 
+# resize：保持宽高比缩放到 shortest_edge/longest_edge 约束
     def resize(
         self,
         image: torch.Tensor,
@@ -802,6 +816,7 @@ class DetrImageProcessor(TorchvisionBackend):
         return encoded_inputs
 
     # Copied from transformers.models.detr.image_processing_detr.DetrImageProcessor.post_process_object_detection
+# post_process_object_detection：sigmoid top-k → 角点格式 → 按 target_sizes 反归一化
     def post_process_object_detection(
         self, outputs, threshold: float = 0.5, target_sizes: TensorType | list[tuple] | None = None
     ):
@@ -855,6 +870,7 @@ class DetrImageProcessor(TorchvisionBackend):
 
         return results
 
+# post_process_semantic_segmentation：query mask 与 class logits einsum 合成语义图
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -926,6 +942,7 @@ class DetrImageProcessor(TorchvisionBackend):
 
         return semantic_segmentation
 
+# post_process_instance_segmentation：过滤/query mask 聚合为实例分割结果
     def post_process_instance_segmentation(
         self,
         outputs,
@@ -1009,6 +1026,7 @@ class DetrImageProcessor(TorchvisionBackend):
             results.append({"segmentation": segmentation, "segments_info": segments})
         return results
 
+# post_process_panoptic_segmentation：全景分割 id 图与 segments_info 生成
     def post_process_panoptic_segmentation(
         self,
         outputs,

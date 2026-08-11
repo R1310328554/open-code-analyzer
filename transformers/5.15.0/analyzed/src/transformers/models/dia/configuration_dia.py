@@ -23,8 +23,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Dia 配置：nari-labs/Dia-1.6B checkpoint 默认超参
 @auto_docstring(checkpoint="nari-labs/Dia-1.6B")
 @strict
+# DiaEncoderConfig：文本/条件编码器，12 层 1024 维 Transformer
 class DiaEncoderConfig(PreTrainedConfig):
     model_type = "dia_encoder"
 
@@ -44,6 +46,7 @@ class DiaEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="nari-labs/Dia-1.6B")
 @strict
+# DiaDecoderConfig：18 层 2048 维解码器，9 通道音频码本与 cross-attention
 class DiaDecoderConfig(PreTrainedConfig):
     r"""
     cross_num_attention_heads (`int`, *optional*, defaults to 16):
@@ -84,6 +87,7 @@ class DiaDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="nari-labs/Dia-1.6B")
 @strict
+# DiaConfig：聚合 encoder/decoder 子配置与 delay_pattern 延迟模式
 class DiaConfig(PreTrainedConfig):
     r"""
     delay_pattern (`list[int]`, *optional*, defaults to `[0, 8, 9, 10, 11, 12, 13, 14, 15]`):
@@ -120,6 +124,7 @@ class DiaConfig(PreTrainedConfig):
     initializer_range: float = 0.02
     use_cache: bool = True
 
+# __post_init__：解析子配置 dict、默认 delay_pattern 并转发 token id 至 decoder
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config = DiaEncoderConfig(**self.encoder_config)
@@ -156,11 +161,13 @@ class DiaConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 num_channels 与 delay_pattern 长度一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.decoder_config.num_channels != len(self.delay_pattern):
             raise ValueError("Number of channels must match delay pattern length.")
 
+# get_text_config：默认返回 decoder_config 作为文本/音频骨干配置
     def get_text_config(self, *args, **kwargs):
         """Defaulting to audio config as it's the decoder in this case which is usually the text backbone"""
         return self.decoder_config

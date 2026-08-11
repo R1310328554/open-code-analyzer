@@ -42,7 +42,9 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# DepthProImageProcessor：ImageNet 标准均值方差归一化
 @auto_docstring(custom_intro="Constructs a DepthPro image processor.")
+# DepthProImageProcessor：Torchvision 后端，默认 1536×1536 输入
 class DepthProImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -52,6 +54,7 @@ class DepthProImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_normalize = True
 
+# _preprocess：先 rescale+normalize 再 resize，支持负值像素
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -82,6 +85,7 @@ class DepthProImageProcessor(TorchvisionBackend):
         processed_images = reorder_images(processed_images_grouped, grouped_images_index)
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+# post_process_depth_estimation：深度插值至原图尺寸，可选 FOV 焦距校正并取倒数
     def post_process_depth_estimation(
         self,
         outputs: "DepthProDepthEstimatorOutput",

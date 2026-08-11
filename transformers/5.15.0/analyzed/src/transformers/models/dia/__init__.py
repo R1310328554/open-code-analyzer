@@ -28,4 +28,5 @@ else:
     import sys
 
     _file = globals()["__file__"]
+# 运行时以 _LazyModule 延迟加载 DiaConfig / DiaModel / DiaFeatureExtractor / DiaProcessor
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

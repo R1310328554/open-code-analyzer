@@ -36,6 +36,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# DepthProOutput：编码器 last_hidden_state 与多尺度 features
 class DepthProOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, n_patches_per_batch, sequence_length, hidden_size)`):
@@ -56,6 +57,7 @@ class DepthProOutput(ModelOutput):
     """
 )
 @dataclass
+# DepthProDepthEstimatorOutput：predicted_depth 与可选 field_of_view
 class DepthProDepthEstimatorOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -71,6 +73,7 @@ class DepthProDepthEstimatorOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# split_to_patches：按 overlap_ratio 将图像 unfold 为重叠 patch
 def split_to_patches(pixel_values: torch.Tensor, patch_size: int, overlap_ratio: float) -> torch.Tensor:
     """Creates Patches from Batch."""
     batch_size, num_channels, height, width = pixel_values.shape
@@ -88,6 +91,7 @@ def split_to_patches(pixel_values: torch.Tensor, patch_size: int, overlap_ratio:
     return patches
 
 
+# reshape_features：丢弃 CLS token 并将 1D 序列 reshape 为 2D 特征图
 def reshape_features(hidden_states: torch.Tensor) -> torch.Tensor:
     """Discard class token and reshape 1D feature map to a 2D grid."""
     n_samples, seq_len, hidden_size = hidden_states.shape
@@ -100,6 +104,7 @@ def reshape_features(hidden_states: torch.Tensor) -> torch.Tensor:
     return hidden_states
 
 
+# merge_patches：将重叠 patch 合并回整图特征图并去除边界 padding
 def merge_patches(patches: torch.Tensor, batch_size: int, padding: int) -> torch.Tensor:
     """Merges smaller patches into image-like feature map."""
     n_patches, hidden_size, out_size, out_size = patches.shape
@@ -178,6 +183,7 @@ def merge_patches(patches: torch.Tensor, batch_size: int, padding: int) -> torch
     return merged
 
 
+# reconstruct_feature_maps：patch 隐状态重建为指定尺寸的 batch 特征图
 def reconstruct_feature_maps(
     hidden_state: torch.Tensor, batch_size: int, padding: int, output_size: tuple[float, float]
 ) -> torch.Tensor:
@@ -217,6 +223,7 @@ def reconstruct_feature_maps(
     return features
 
 
+# DepthProPatchEncoder：多尺度 ratio 下 patch 编码与特征重建
 class DepthProPatchEncoder(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -235,6 +242,7 @@ class DepthProPatchEncoder(nn.Module):
 
         self.model = AutoModel.from_config(config.patch_model_config)
 
+# forward：多尺度编码融合后输出 predicted_depth 与 field_of_view
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -333,6 +341,7 @@ class DepthProPatchEncoder(nn.Module):
         return features
 
 
+# DepthProImageEncoder：全图 DINOv2 编码并 hook 中间层特征
 class DepthProImageEncoder(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -388,6 +397,7 @@ class DepthProImageEncoder(nn.Module):
         )
 
 
+# DepthProEncoder：ImageEncoder + PatchEncoder 双路特征融合
 class DepthProEncoder(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -438,6 +448,7 @@ class DepthProEncoder(nn.Module):
         )
 
 
+# DepthProFeatureUpsampleBlock：转置卷积 2× 上采样 + 可选 skip 连接
 class DepthProFeatureUpsampleBlock(nn.Module):
     def __init__(
         self,
@@ -484,6 +495,7 @@ class DepthProFeatureUpsampleBlock(nn.Module):
         return features
 
 
+# DepthProFeatureUpsample：多路特征逐级上采样对齐分辨率
 class DepthProFeatureUpsample(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -539,6 +551,7 @@ class DepthProFeatureUpsample(nn.Module):
         return features
 
 
+# DepthProFeatureProjection：1×1 卷积将各尺度特征投影至 fusion_hidden_size
 class DepthProFeatureProjection(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -570,6 +583,7 @@ class DepthProFeatureProjection(nn.Module):
         return projected_features
 
 
+# DepthProNeck：FeatureProjection + FeatureUpsample 多尺度 neck
 class DepthProNeck(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -600,6 +614,7 @@ class DepthProNeck(nn.Module):
 
 
 @auto_docstring
+# DepthProPreTrainedModel：Conv2d Kaiming 初始化，忽略 fov_model 意外权重
 class DepthProPreTrainedModel(PreTrainedModel):
     config: DepthProConfig
     base_model_prefix = "depth_pro"
@@ -621,6 +636,7 @@ class DepthProPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DepthProModel：Encoder + Neck 主干，输出 last_hidden_state 与 features
 class DepthProModel(DepthProPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -696,6 +712,7 @@ class DepthProModel(DepthProPreTrainedModel):
 
 
 # Copied from transformers.models.dpt.modeling_dpt.DPTPreActResidualLayer DPT->DepthPro
+# DepthProPreActResidualLayer：Pre-activation 残差卷积单元（可选 BN）
 class DepthProPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -759,6 +776,7 @@ class DepthProPreActResidualLayer(nn.Module):
 
 # Modified from transformers.models.dpt.modeling_dpt.DPTFeatureFusionLayer
 # except it uses deconv and skip_add and needs no interpolation
+# DepthProFeatureFusionLayer：自顶向下特征融合 + 2× 上采样
 class DepthProFeatureFusionLayer(nn.Module):
     def __init__(self, config: DepthProConfig, use_deconv: bool = True):
         super().__init__()
@@ -795,6 +813,7 @@ class DepthProFeatureFusionLayer(nn.Module):
 
 # Modified from transformers.models.dpt.modeling_dpt.DPTFeatureFusionStage with DPT->DepthPro
 # with deconv and reversed layers
+# DepthProFeatureFusionStage：自粗到细逐层融合 encoder 多尺度特征
 class DepthProFeatureFusionStage(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -832,6 +851,7 @@ class DepthProFeatureFusionStage(nn.Module):
         return fused_hidden_states
 
 
+# DepthProFovEncoder：低分辨率图像 FOV 专用 DINOv2 编码器
 class DepthProFovEncoder(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -877,6 +897,7 @@ class DepthProFovEncoder(nn.Module):
         return features
 
 
+# DepthProFovHead：全局池化 + 卷积头预测视场角（度）
 class DepthProFovHead(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -918,6 +939,7 @@ class DepthProFovHead(nn.Module):
         return features
 
 
+# DepthProFovModel：FovEncoder + FovHead 视场角估计子模块
 class DepthProFovModel(nn.Module):
     def __init__(self, config: DepthProConfig):
         super().__init__()
@@ -948,6 +970,7 @@ class DepthProFovModel(nn.Module):
         return fov_output
 
 
+# DepthProDepthEstimationHead：3 层卷积深度头，双线性上采样至 patch 分辨率
 class DepthProDepthEstimationHead(nn.Module):
     """
     The DepthProDepthEstimationHead module serves as the output head for depth estimation tasks.
@@ -992,6 +1015,7 @@ class DepthProDepthEstimationHead(nn.Module):
     DepthPro Model with a depth estimation head on top (consisting of 3 convolutional layers).
     """
 )
+# DepthProForDepthEstimation：DepthProModel + fusion_stage + head + 可选 fov_model
 class DepthProForDepthEstimation(DepthProPreTrainedModel):
     def __init__(self, config, use_fov_model=None):
         r"""
