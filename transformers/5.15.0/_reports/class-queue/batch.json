@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T04:14:23Z",
-  "files": [
-    "utils/check_copies.py",
-    "utils/check_doc_toc.py",
-    "utils/check_docstrings.py",
-    "utils/check_doctest_list.py",
-    "utils/check_dummies.py",
-    "utils/check_import_complexity.py",
-    "utils/check_inits.py",
-    "utils/check_model_tester.py",
-    "utils/check_modeling_rules_doc.py",
-    "utils/check_modeling_structure.py",
-    "utils/check_modular_conversion.py",
-    "utils/check_pipeline_typing.py",
-    "utils/check_repo.py",
-    "utils/check_self_hosted_runner.py",
-    "utils/check_types.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 39,
-  "done": 2625
+  "done": 2640
 }
