@@ -29,6 +29,7 @@ from .loss_rt_detr import RTDetrForObjectDetectionLoss
 from .loss_tdt import ParakeetForTDTLoss
 
 
+# fixed_cross_entropy：支持 num_items_in_batch 归一化的交叉熵封装
 def fixed_cross_entropy(
     source: torch.Tensor,
     target: torch.Tensor,
@@ -46,6 +47,7 @@ def fixed_cross_entropy(
     return loss
 
 
+# ForCausalLMLoss：因果语言建模损失（标签右移 + flatten 后 cross_entropy）
 def ForCausalLMLoss(
     logits,
     labels,
@@ -71,6 +73,7 @@ def ForCausalLMLoss(
     return loss
 
 
+# ForMaskedLMLoss：掩码语言建模损失
 def ForMaskedLMLoss(
     logits: torch.Tensor,
     labels: torch.Tensor,
@@ -91,6 +94,7 @@ def ForMaskedLMLoss(
     return loss
 
 
+# ForSequenceClassificationLoss：序列分类（回归/单标签/多标签）损失
 def ForSequenceClassificationLoss(labels: torch.Tensor, pooled_logits: torch.Tensor, config, **kwargs) -> torch.Tensor:
     num_labels = config.num_labels
     if config.problem_type is None:
@@ -118,6 +122,7 @@ def ForSequenceClassificationLoss(labels: torch.Tensor, pooled_logits: torch.Ten
     raise RuntimeError(f"Invalid problem type: {config.problem_type}")
 
 
+# ForQuestionAnsweringLoss：抽取式 QA 的起止位置 span 损失
 def ForQuestionAnsweringLoss(start_logits, end_logits, start_positions, end_positions, **kwargs):
     total_loss = None
     if start_positions is not None and end_positions is not None:
@@ -137,6 +142,7 @@ def ForQuestionAnsweringLoss(start_logits, end_logits, start_positions, end_posi
     return total_loss
 
 
+# ForTokenClassification：逐 token 分类损失
 def ForTokenClassification(logits: torch.Tensor, labels, config, **kwargs):
     # Upcast to float if we need to compute the loss to avoid potential precision issues
     logits = logits.view(-1, config.num_labels)
@@ -146,6 +152,7 @@ def ForTokenClassification(logits: torch.Tensor, labels, config, **kwargs):
     return fixed_cross_entropy(logits, labels, **kwargs)
 
 
+# ForSemanticSegmentationLoss：语义分割（含辅助头）上采样 + CE 损失
 def ForSemanticSegmentationLoss(
     logits: torch.Tensor,
     labels: torch.Tensor,
@@ -169,6 +176,7 @@ def ForSemanticSegmentationLoss(
     return loss
 
 
+# LOSS_MAPPING：模型 head 名称到对应 loss 函数的映射表
 LOSS_MAPPING = {
     "ForSemanticSegmentation": ForSemanticSegmentationLoss,
     "ForCausalLM": ForCausalLMLoss,

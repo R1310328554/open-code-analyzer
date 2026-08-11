@@ -20,6 +20,7 @@ from ..utils import logging
 logger = logging.get_logger(__name__)
 
 
+# tdt_loss：向量化反对角线动态规划计算 TDT 损失（源自 NeMo TDTLossPytorch）
 def tdt_loss(
     token_logits: torch.Tensor,
     duration_logits: torch.Tensor,
@@ -167,6 +168,7 @@ def tdt_loss(
     return losses
 
 
+# ParakeetForTDTLoss：Parakeet TDT 模型的损失包装，对齐 labels/lengths 设备与 dtype
 def ParakeetForTDTLoss(
     token_logits,
     duration_logits,

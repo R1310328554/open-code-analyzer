@@ -21,6 +21,7 @@ from .utils import ModelOutput
 
 
 @dataclass
+# BaseModelOutput：基础输出（last_hidden_state + 可选 hidden_states/attentions）
 class BaseModelOutput(ModelOutput):
     """
     Base class for model's outputs, with potential hidden states and attentions.
@@ -120,6 +121,7 @@ class BaseModelOutputWithPoolingAndNoAttention(ModelOutput):
 
 
 @dataclass
+# BaseModelOutputWithPast：含 past_key_values 缓存的基础输出
 class BaseModelOutputWithPast(ModelOutput):
     """
     Base class for model's outputs that may also contain a past key/values (to speed up sequential decoding).
@@ -278,6 +280,7 @@ class BaseModelOutputWithPastAndCrossAttentions(ModelOutput):
 
 
 @dataclass
+# MoEModelOutput：MoE 模型输出（含 router_logits）
 class MoEModelOutput(ModelOutput):
     """
     Base class for model's outputs, with potential hidden states and attentions.
@@ -449,6 +452,7 @@ class MoEModelOutputWithPastAndCrossAttentions(ModelOutput):
 
 
 @dataclass
+# Seq2SeqModelOutput：编码器-解码器 seq2seq 输出
 class Seq2SeqModelOutput(ModelOutput):
     """
     Base class for model encoder's outputs that also contains : pre-computed hidden states that can speed up sequential
@@ -578,6 +582,7 @@ class Seq2SeqMoEModelOutput(ModelOutput):
 
 
 @dataclass
+# CausalLMOutput：因果 LM 输出（logits + 可选 hidden_states）
 class CausalLMOutput(ModelOutput):
     """
     Base class for causal language model (or autoregressive) outputs.
@@ -607,6 +612,7 @@ class CausalLMOutput(ModelOutput):
 
 
 @dataclass
+# CausalLMOutputWithPast：含 KV cache 的因果 LM 输出
 class CausalLMOutputWithPast(ModelOutput):
     """
     Base class for causal language model (or autoregressive) outputs.
@@ -719,6 +725,7 @@ class SequenceClassifierOutputWithPast(ModelOutput):
 
 
 @dataclass
+# MaskedLMOutput：掩码语言建模输出
 class MaskedLMOutput(ModelOutput):
     """
     Base class for masked language models outputs.

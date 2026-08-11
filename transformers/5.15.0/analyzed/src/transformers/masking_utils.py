@@ -45,6 +45,7 @@ if _is_torch_greater_or_equal_than_2_6:
 logger = logging.get_logger(__name__)
 
 
+# and_masks：多个 mask 函数的逐元素与（交集）组合
 def and_masks(*mask_functions: Callable) -> Callable:
     """Returns a mask function that is the intersection of provided mask functions"""
     if not all(callable(arg) for arg in mask_functions):
@@ -59,6 +60,7 @@ def and_masks(*mask_functions: Callable) -> Callable:
     return and_mask
 
 
+# or_masks：多个 mask 函数的逐元素或（并集）组合
 def or_masks(*mask_functions: Callable) -> Callable:
     """Returns a mask function that is the union of provided mask functions"""
     if not all(callable(arg) for arg in mask_functions):
@@ -73,6 +75,7 @@ def or_masks(*mask_functions: Callable) -> Callable:
     return or_mask
 
 
+# causal_mask_function：基础下三角因果掩码（kv_idx <= q_idx）
 def causal_mask_function(batch_idx: int, head_idx: int, q_idx: int, kv_idx: int) -> bool:
     """
     This creates a basic lower-diagonal causal mask.
@@ -80,6 +83,7 @@ def causal_mask_function(batch_idx: int, head_idx: int, q_idx: int, kv_idx: int)
     return kv_idx <= q_idx
 
 
+# bidirectional_mask_function：全双向掩码（所有位置可互看）
 def bidirectional_mask_function(batch_idx: int, head_idx: int, q_idx: int, kv_idx: int) -> bool:
     """
     This creates a full bidirectional mask.
@@ -89,6 +93,7 @@ def bidirectional_mask_function(batch_idx: int, head_idx: int, q_idx: int, kv_id
     return q_idx >= 0
 
 
+# sliding_window_overlay：滑动窗口 overlay，叠加在因果掩码上
 def sliding_window_overlay(sliding_window: int) -> Callable:
     """
     This is an overlay depicting a sliding window pattern. Add it on top of a causal mask for a proper sliding
@@ -101,6 +106,7 @@ def sliding_window_overlay(sliding_window: int) -> Callable:
     return inner_mask
 
 
+# chunked_overlay：分块注意力 overlay，同 chunk 内 token 可互看
 def chunked_overlay(chunk_size: int, left_padding: torch.Tensor) -> Callable:
     """
     This is an overlay depicting a chunked attention pattern. Add it on top of a causal mask for a proper chunked
@@ -113,6 +119,7 @@ def chunked_overlay(chunk_size: int, left_padding: torch.Tensor) -> Callable:
     return inner_mask
 
 
+# blockwise_overlay：块级掩码（MLLM 非文本块内双向）
 def blockwise_overlay(block_sequence_ids: torch.Tensor) -> Callable:
     """
     This is an overlay depicting a blockwise masking pattern. Instead of a single
@@ -369,6 +376,7 @@ def _non_vmap_expansion_sdpa(
 
 
 @deprecate_kwarg("allow_torch_fix", version="5.18.0", additional_message="It has no effect anymore.")
+# sdpa_mask：为 SDPA 后端构建 4D 或 mask 函数
 def sdpa_mask(
     batch_size: int,
     q_length: int,
@@ -535,6 +543,7 @@ def sdpa_mask(
     return attention_mask
 
 
+# eager_mask：为 eager 注意力构建显式 4D 掩码张量
 def eager_mask(
     batch_size: int,
     q_length: int,
@@ -604,6 +613,7 @@ def eager_mask(
     return mask
 
 
+# flash_attention_mask：为 Flash Attention 构建 varlen/因果掩码
 def flash_attention_mask(
     batch_size: int,
     q_length: int,
@@ -647,6 +657,7 @@ def flash_attention_mask(
     return attention_mask
 
 
+# flex_attention_mask：为 Flex Attention 构建 BlockMask
 def flex_attention_mask(
     batch_size: int,
     q_length: int,
@@ -708,6 +719,7 @@ def flex_attention_mask(
     return block_mask
 
 
+# AttentionMaskInterface：按 attention 实现注册 mask 生成器的通用接口
 class AttentionMaskInterface(GeneralInterface):
     # Class instance object, so that a call to `register` can be reflected into all other files correctly, even if
     # a new instance is created (in order to locally override a given function)
@@ -861,6 +873,7 @@ def _preprocess_mask_arguments(
     return False, attention_mask, packed_sequence_mask, q_length, kv_length, q_offset, kv_offset
 
 
+# create_causal_mask：高层 API，创建标准因果 4D 掩码
 def create_causal_mask(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -1099,6 +1112,7 @@ def create_bidirectional_mask(
     return attention_mask
 
 
+# create_sliding_window_causal_mask：创建滑动窗口因果掩码
 def create_sliding_window_causal_mask(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -1519,6 +1533,7 @@ LAYER_PATTERN_TO_MASK_FUNCTION_MAPPING = {
 }
 
 
+# create_masks_for_generate：生成阶段批量创建各层所需掩码
 def create_masks_for_generate(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,

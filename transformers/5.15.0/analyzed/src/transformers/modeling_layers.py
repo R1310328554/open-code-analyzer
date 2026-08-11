@@ -48,6 +48,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# GradientCheckpointingLayer：支持 set_gradient_checkpointing 的层基类
 class GradientCheckpointingLayer(nn.Module):
     """Base class for layers with gradient checkpointing.
 
@@ -115,6 +116,7 @@ class GradientCheckpointingLayer(nn.Module):
 
 
 @auto_docstring
+# GenericForSequenceClassification：通用序列分类 head mixin
 class GenericForSequenceClassification:
     base_model_prefix = "model"
 
@@ -190,6 +192,7 @@ class GenericForSequenceClassification:
 
 
 @auto_docstring
+# GenericForQuestionAnswering：通用抽取式 QA head mixin
 class GenericForQuestionAnswering:
     base_model_prefix = "model"
 
@@ -251,6 +254,7 @@ class GenericForQuestionAnswering:
 
 
 @auto_docstring
+# GenericForTokenClassification：通用 token 分类 head mixin
 class GenericForTokenClassification:
     base_model_prefix = "model"
 
@@ -313,6 +317,7 @@ class GenericForTokenClassification:
         )
 
 
+# MtpLayer：Multi-Token Prediction 单层（预测未来多个 token）
 class MtpLayer(nn.Module):
     def __init__(
         self,
@@ -361,6 +366,7 @@ class MtpLayer(nn.Module):
         return hidden_states
 
 
+# MtpModel：MTP 模型包装，管理 MtpCache 与多步预测
 class MtpModel(PreTrainedModel):
     # These act as dummy values, that are properly set on the upstream model (without it, instantiating this model would
     # fail on an existing model's config where the attn is already set to a custom value)

@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from .configuration_utils import PreTrainedConfig
 
 
+# dynamic_rope_update：装饰器，前向中按序列长度动态更新 RoPE 频率
 def dynamic_rope_update(rope_forward):
     """
     Decorator function to update the RoPE parameters in the forward pass, if the model is using a dynamic RoPE
@@ -130,6 +131,7 @@ def dynamic_rope_update(rope_forward):
     return wrapper
 
 
+# _compute_linear_scaling_rope_parameters：线性缩放 RoPE 参数计算
 def _compute_linear_scaling_rope_parameters(
     config: Optional["PreTrainedConfig"] = None,
     device: Optional["torch.device"] = None,
@@ -342,6 +344,7 @@ def _compute_dynamic_ntk_parameters(
     return inv_freq, attention_factor
 
 
+# _compute_yarn_parameters：YaRN 上下文扩展 RoPE 参数
 def _compute_yarn_parameters(
     config: "PreTrainedConfig",
     device: Optional["torch.device"] = None,
@@ -483,6 +486,7 @@ def _compute_yarn_parameters(
     return inv_freq, attention_factor
 
 
+# _compute_longrope_parameters：LongRoPE 长短因子切换参数
 def _compute_longrope_parameters(
     config: "PreTrainedConfig",
     device: Optional["torch.device"] = None,
@@ -675,6 +679,7 @@ ROPE_INIT_FUNCTIONS: dict[str, Callable[..., tuple["torch.Tensor", float]]] = {
 }
 
 
+# RopeParameters：RoPE 配置 TypedDict（rope_type、factor 等）
 class RopeParameters(TypedDict):
     """
     Args:
@@ -731,6 +736,7 @@ class RopeParameters(TypedDict):
     high_freq_factor: float | None
 
 
+# RotaryEmbeddingConfigMixin：模型 config 混入 RoPE 参数校验与初始化
 class RotaryEmbeddingConfigMixin:
     """
     A Mixin containing the functionality to standardize and validate RoPE parameters.
@@ -1066,6 +1072,7 @@ class RotaryEmbeddingConfigMixin:
             logger.warning(f"Unrecognized keys in `rope_parameters` for 'rope_type'='{rope_type}': {unused_keys}")
 
 
+# rope_config_validation：校验 config 中 rope_parameters 字段合法性
 def rope_config_validation(config: RotaryEmbeddingConfigMixin, ignore_keys: set | None = None):
     """
     This is a deprecated function.

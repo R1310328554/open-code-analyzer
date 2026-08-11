@@ -33,6 +33,7 @@ DEPRECATION_MESSAGE = (
 
 
 @dataclass
+# AttentionMaskConverter：旧版 2D→4D 掩码转换器（因果/滑动窗口）
 class AttentionMaskConverter:
     """
     A utility attention mask class that allows one to:

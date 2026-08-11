@@ -40,6 +40,7 @@ logger = logging.get_logger(__name__)
 
 
 # TODO Deprecate when all models have the attention interface
+# flash_attn_supports_top_left_mask：检测 FA 是否支持 top-left 对齐因果掩码
 def flash_attn_supports_top_left_mask():
     if is_flash_attn_2_available() or is_flash_attn_3_available() or is_flash_attn_4_available():
         return False
@@ -50,6 +51,7 @@ def flash_attn_supports_top_left_mask():
 
 
 # TODO Deprecate when all models have the attention interface
+# is_flash_attn_available：检测 FA2/FA3/FA4 或 NPU/XPU 后端是否可用
 def is_flash_attn_available():
     return (
         is_flash_attn_4_available()
@@ -62,6 +64,7 @@ def is_flash_attn_available():
 
 # Mapping from flash attention implementations to their kernel fallback repositories.
 
+# FLASH_ATTN_KERNEL_FALLBACK：各 FA 实现对应的 kernels-community 回退仓库
 FLASH_ATTN_KERNEL_FALLBACK = {
     "flash_attention_2": "kernels-community/flash-attn2",
     "flash_attention_3": (
@@ -245,6 +248,7 @@ def _lazy_define_process_function(flash_function):
     return partial(_process_flash_attention_kwargs, supports_mapping=supports_mapping)
 
 
+# lazy_import_flash_attention：按 implementation 字符串延迟导入 FA kernel
 def lazy_import_flash_attention(
     implementation: str | None, attention_wrapper: Callable | None = None, allow_all_kernels: bool = False
 ):
@@ -296,6 +300,7 @@ def _index_first_axis(tensor, indices):
     return reshaped_tensor[indices]
 
 
+# _unpad_input：按 attention_mask 去除 padding 得到紧凑序列
 def _unpad_input(hidden_states, attention_mask, unused_mask=None):
     """
     unpad_input function for flash attention variants that do not have them within their pkg themselves, e.g. fa3.
@@ -329,6 +334,7 @@ def _unpad_input(hidden_states, attention_mask, unused_mask=None):
     )
 
 
+# _pad_input：将 unpad 后的序列还原为 batch 形状
 def _pad_input(hidden_states, indices, batch, seqlen):
     """
     pad_input function for flash attention variants that do not have them within their pkg themselves, e.g. fa3.
@@ -567,6 +573,7 @@ def fa_peft_integration_check(
     return q, k, v
 
 
+# FlashAttentionKwargs：Flash Attention 前向可选参数字典类型
 class FlashAttentionKwargs(TypedDict, total=False):
     """
     Keyword arguments for Flash Attention with Compile.
@@ -691,6 +698,7 @@ def _process_flash_attention_kwargs(
     return flash_kwargs
 
 
+# _flash_attention_forward：统一 Flash Attention 前向（多版本/多设备分发）
 def _flash_attention_forward(
     query_states: torch.Tensor,
     key_states: torch.Tensor,

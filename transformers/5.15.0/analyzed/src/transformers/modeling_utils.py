@@ -168,6 +168,7 @@ _is_ds_init_called = False
 
 
 @dataclass(frozen=True)
+# LoadStateDictConfig：load_state_dict 参数打包 dataclass
 class LoadStateDictConfig:
     """
     Config for loading weights. This allows bundling arguments that are just
@@ -316,6 +317,7 @@ def _is_on_hf_mount(path: "str | os.PathLike") -> bool:
     return False
 
 
+# load_state_dict：从 checkpoint 路径或 dict 加载权重到模型
 def load_state_dict(
     checkpoint_file: str | os.PathLike,
     map_location: str | torch.device = "cpu",
@@ -435,6 +437,7 @@ def _find_identical(
     return shared_tensors, identical
 
 
+# remove_tied_weights_from_state_dict：去除 tied 重复权重以节省加载
 def remove_tied_weights_from_state_dict(
     state_dict: dict[str, torch.Tensor], model: "PreTrainedModel"
 ) -> dict[str, torch.Tensor]:
@@ -896,6 +899,7 @@ def _get_dtype(
     return config, main_dtype
 
 
+# ModuleUtilsMixin：模块工具 mixin（prune/resize embeddings 等）
 class ModuleUtilsMixin:
     """
     A few utilities for `torch.nn.Modules`, to be used as a mixin.
@@ -1069,6 +1073,7 @@ class ModuleUtilsMixin:
         return total_params
 
 
+# EmbeddingAccessMixin：统一访问 input/output embeddings 的 mixin
 class EmbeddingAccessMixin:
     """
     Base utilities to regroup getters and setters for embeddings.
@@ -1178,6 +1183,7 @@ class EmbeddingAccessMixin:
             self.lm_head = new_embeddings
 
 
+# PreTrainedModel：所有 Transformer 模型的抽象基类（加载/保存/生成/量化）
 class PreTrainedModel(
     nn.Module, EmbeddingAccessMixin, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMixin, DistributedMixin
 ):
@@ -4938,6 +4944,7 @@ if PreTrainedModel.push_to_hub.__doc__ is not None:
 
 
 @overload
+# unwrap_model：剥离 accelerate/DDP 包装返回原始 PreTrainedModel
 def unwrap_model(model: PreTrainedModel, recursive: bool = False) -> PreTrainedModel: ...
 
 
@@ -5014,6 +5021,7 @@ def get_total_byte_count(
     return total_byte_count
 
 
+# caching_allocator_warmup：按 device_map 预热 CUDA caching allocator
 def caching_allocator_warmup(model: PreTrainedModel, expanded_device_map: dict, hf_quantizer: HfQuantizer | None):
     """This function warm-ups the caching allocator based on the size of the model tensors that will reside on each
     device. It allows to have one large call to Malloc, instead of recursively calling it later when loading
@@ -5090,6 +5098,7 @@ def caching_allocator_warmup(model: PreTrainedModel, expanded_device_map: dict, 
         _ = torch.empty(int(byte_count // 2), dtype=torch.float16, device=device, requires_grad=False)
 
 
+# AttentionInterface：按名称注册 sdpa/flash/flex 等 attention 实现
 class AttentionInterface(GeneralInterface):
     """
     Dict-like object keeping track of allowed attention functions. You can easily add a new attention function

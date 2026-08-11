@@ -36,6 +36,7 @@ if is_torch_available():
 logger = get_logger(__name__)
 
 
+# GGUF_TO_TRANSFORMERS_MAPPING：GGUF metadata 键到 HF config/tokenizer 的映射
 GGUF_TO_TRANSFORMERS_MAPPING = {
     "ignore": {
         "GGUF": {
@@ -53,12 +54,14 @@ GGUF_TO_TRANSFORMERS_MAPPING = {
 GGUF_SUPPORTED_ARCHITECTURES = list(GGUF_TO_TRANSFORMERS_MAPPING["config"].keys())
 
 
+# GGUFTensor：GGUF 单张量的权重数组、名称与 metadata
 class GGUFTensor(NamedTuple):
     weights: np.ndarray
     name: str
     metadata: dict
 
 
+# TensorProcessor：GGUF→HF 权重名预处理与 fallback 映射基类
 class TensorProcessor:
     def __init__(self, config=None):
         self.config = config or {}
@@ -85,6 +88,7 @@ class TensorProcessor:
         return GGUFTensor(weights, name, {})
 
 
+# LlamaTensorProcessor：Llama 架构的 GGUF 权重名转换
 class LlamaTensorProcessor(TensorProcessor):
     def __init__(self, config=None):
         super().__init__(config=config)
@@ -479,6 +483,7 @@ def read_field(reader, field):
 
 
 # modified from https://github.com/vllm-project/vllm/blob/v0.6.4.post1/vllm/model_executor/model_loader/loader.py#L1115-L1147
+# get_gguf_hf_weights_map：构建 GGUF 张量名到 HF 参数名的映射表
 def get_gguf_hf_weights_map(
     hf_model,
     processor: TensorProcessor,
@@ -569,6 +574,7 @@ def get_gguf_hf_weights_map(
     return gguf_to_hf_name_map
 
 
+# load_gguf_checkpoint：读取 GGUF 文件并可选转为 PyTorch state_dict
 def load_gguf_checkpoint(gguf_checkpoint_path, return_tensors=False, model_to_load=None, torch_dtype=None):
     """
     Load a GGUF file and return a dictionary of parsed parameters containing tensors, the parsed

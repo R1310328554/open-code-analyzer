@@ -52,6 +52,7 @@ from .utils import (
 )
 
 
+# TASK_MAPPING：Pipeline 任务名到 AutoModel 映射表的对应关系
 TASK_MAPPING = {
     "text-generation": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
     "image-classification": MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING_NAMES,
@@ -170,6 +171,7 @@ def _get_mapping_values(mapping):
 
 
 @dataclass
+# TrainingSummary：从 Trainer 状态汇总训练信息并生成 model card YAML/Markdown
 class TrainingSummary:
     model_name: str
     language: str | list[str] | None = None
@@ -434,6 +436,7 @@ class TrainingSummary:
         )
 
 
+# parse_log_history：解析 Trainer log_history 提取 eval 指标序列
 def parse_log_history(log_history):
     """
     Parse the `log_history` of a Trainer to get the intermediate and final evaluation results.
@@ -510,6 +513,7 @@ def _second_table_line(col_widths):
     return "".join(values) + "|\n"
 
 
+# make_markdown_table：将二维数据格式化为 Markdown 表格
 def make_markdown_table(lines):
     """
     Create a nice Markdown table from the results in `lines`.
@@ -537,6 +541,7 @@ _TRAINING_ARGS_KEYS = [
 ]
 
 
+# extract_hyperparameters_from_trainer：从 Trainer 提取超参写入 model card
 def extract_hyperparameters_from_trainer(trainer):
     hyperparameters = {k: getattr(trainer.args, k) for k in _TRAINING_ARGS_KEYS}
 

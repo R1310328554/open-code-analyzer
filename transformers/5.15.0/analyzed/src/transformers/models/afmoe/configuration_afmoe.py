@@ -28,6 +28,7 @@ from ...utils import auto_docstring
     """,
     checkpoint="arcee-ai/Trinity-Mini",
 )
+# AfmoeConfig：AFMoE 架构超参（专家数、滑动窗口、global_attn 频率等）
 class AfmoeConfig(PreTrainedConfig):
     r"""
     global_attn_every_n_layers (`int`, *optional*, defaults to 4):

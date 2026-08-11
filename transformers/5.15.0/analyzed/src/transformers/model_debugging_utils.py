@@ -37,6 +37,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# _is_rank_zero：分布式环境下仅 rank 0 执行调试 I/O
 def _is_rank_zero():
     """Return True if rank=0 or we aren't running distributed."""
     return _get_torch_distributed_rank() == 0
@@ -45,6 +46,7 @@ def _is_rank_zero():
 MEMORY_ADDRESS_REGEX = re.compile(r"object at 0x[0-9A-Fa-f]+")
 
 
+# _sanitize_repr_for_diff：替换 repr 中的内存地址以稳定 JSON diff
 def _sanitize_repr_for_diff(x_str: str) -> str:
     """
     Replace memory addresses in an object's repr with a stable placeholder
@@ -60,6 +62,7 @@ def _dtensor_repr(x):
     return "DTensor(non-rank0)"
 
 
+# _serialize_tensor_like_io：将 Tensor/DTensor 序列化为 JSON 友好结构
 def _serialize_tensor_like_io(
     value, debug_path: str | None = None, use_repr: bool = True, path_to_value: str | None = None
 ):
@@ -218,6 +221,7 @@ def prune_intermediate_layers(node):
         prune_intermediate_layers(child)
 
 
+# log_model_debug_trace：遍历模型并输出层级 debug trace JSON
 def log_model_debug_trace(debug_path: str | None, model):
     if debug_path:
         try:
@@ -390,6 +394,7 @@ def _attach_debugger_logic(
 
 @requires(backends=("torch",))
 @contextmanager
+# model_addition_debugger_context：为新模型添加前/后向 hook 的上下文管理器
 def model_addition_debugger_context(
     model,
     debug_path: str | None = None,
