@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+# URL 重定向记录：按站点将 old_path 映射到 new_path 或空（410 Gone）
 class Redirect(models.Model):
     site = models.ForeignKey(Site, models.CASCADE, verbose_name=_("site"))
     old_path = models.CharField(
@@ -24,6 +25,7 @@ class Redirect(models.Model):
         ),
     )
 
+    # 表名 django_redirect；站点与旧路径唯一；按 old_path 排序
     class Meta:
         verbose_name = _("redirect")
         verbose_name_plural = _("redirects")
@@ -31,5 +33,6 @@ class Redirect(models.Model):
         unique_together = [["site", "old_path"]]
         ordering = ["old_path"]
 
+    # 返回 “旧路径 ---> 新路径” 的可读字符串
     def __str__(self):
         return "%s ---> %s" % (self.old_path, self.new_path)

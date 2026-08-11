@@ -15,6 +15,7 @@ from django.utils.module_loading import import_string
 VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 
 
+# 内部异常：save(must_create=True) 时无法新建会话时抛出
 class CreateError(Exception):
     """
     Used internally as a consistent exception type to catch from save (see the
@@ -24,6 +25,7 @@ class CreateError(Exception):
     pass
 
 
+# 更新已删除或不存在的会话记录时抛出
 class UpdateError(Exception):
     """
     Occurs if Django tries to update a session that was deleted.
@@ -32,6 +34,7 @@ class UpdateError(Exception):
     pass
 
 
+# 所有 SessionStore 的基类：字典式 API、编解码与过期策略
 class SessionBase:
     """
     Base class for all Session classes.
@@ -42,6 +45,7 @@ class SessionBase:
 
     __not_given = object()
 
+    # 初始化 session_key、访问/修改标记及 SESSION_SERIALIZER
     def __init__(self, session_key=None):
         self._session_key = session_key
         self.accessed = False
@@ -122,6 +126,7 @@ class SessionBase:
     async def adelete_test_cookie(self):
         del (await self._aget_session())[self.TEST_COOKIE_NAME]
 
+    # 用 signing.dumps 压缩序列化会话字典
     def encode(self, session_dict):
         """
         Return the given session dictionary serialized and encoded as a string.
@@ -133,6 +138,7 @@ class SessionBase:
             compress=True,
         )
 
+    # 反序列化会话数据；签名无效或异常时返回空 dict
     def decode(self, session_data):
         try:
             return signing.loads(
@@ -179,6 +185,7 @@ class SessionBase:
     async def aitems(self):
         return (await self._aget_session()).items()
 
+    # 直接置空 _session_cache，避免不必要的存储读取
     def clear(self):
         # To avoid unnecessary persistent storage accesses, we set up the
         # internals directly (loading data wastes time, since we are going to
@@ -187,6 +194,7 @@ class SessionBase:
         self.accessed = True
         self.modified = True
 
+    # 无 session_key 且无缓存数据时返回 True
     def is_empty(self):
         "Return True when there is no session_key and the session is empty."
         try:
@@ -194,6 +202,7 @@ class SessionBase:
         except AttributeError:
             return True
 
+    # 生成 32 位随机键，直至 exists 返回 False
     def _get_new_session_key(self):
         "Return session key that isn't being used."
         while True:
@@ -217,6 +226,7 @@ class SessionBase:
             self._session_key = await self._aget_new_session_key()
         return self._session_key
 
+    # 键非空且长度至少 8 字符才视为有效
     def _validate_session_key(self, key):
         """
         Key must be truthy and at least 8 characters long. 8 characters is an
@@ -239,6 +249,7 @@ class SessionBase:
     session_key = property(_get_session_key)
     _session_key = property(_get_session_key, _set_session_key)
 
+    # 懒加载会话 dict 到 _session_cache；no_load 时仅建空 dict
     def _get_session(self, no_load=False):
         """
         Lazily load session from storage (unless "no_load" is True, when only
@@ -267,9 +278,11 @@ class SessionBase:
 
     _session = property(_get_session)
 
+    # 返回 settings.SESSION_COOKIE_AGE 默认秒数
     def get_session_cookie_age(self):
         return settings.SESSION_COOKIE_AGE
 
+    # 计算距离过期的秒数；可传入 modification/expiry 覆盖
     def get_expiry_age(self, **kwargs):
         """Get the number of seconds until the session expires.
 
@@ -316,6 +329,7 @@ class SessionBase:
         delta = expiry - modification
         return delta.days * 86400 + delta.seconds
 
+    # 返回过期 datetime；支持自定义 modification 与 expiry
     def get_expiry_date(self, **kwargs):
         """Get session the expiry date (as a datetime object).
 
@@ -356,6 +370,7 @@ class SessionBase:
         expiry = expiry or self.get_session_cookie_age()
         return modification + timedelta(seconds=expiry)
 
+    # 设置 per-session 过期：秒数、datetime、timedelta 或 None 恢复全局策略
     def set_expiry(self, value):
         """
         Set a custom expiration for the session. ``value`` can be an integer,
@@ -398,6 +413,7 @@ class SessionBase:
             value = value.isoformat()
         await self.aset("_session_expiry", value)
 
+    # 判断是否浏览器关闭即过期（_session_expiry 为 0 或未设置时用全局配置）
     def get_expire_at_browser_close(self):
         """
         Return ``True`` if the session is set to expire when the browser
@@ -414,6 +430,7 @@ class SessionBase:
             return settings.SESSION_EXPIRE_AT_BROWSER_CLOSE
         return expiry == 0
 
+    # 清空内存、删除存储中的会话并置 session_key 为 None
     def flush(self):
         """
         Remove the current session data from the database and regenerate the
@@ -428,6 +445,7 @@ class SessionBase:
         await self.adelete()
         self._session_key = None
 
+    # 保留当前数据但生成新 session_key 并删除旧键
     def cycle_key(self):
         """
         Create a new session key, while retaining the current session data.
@@ -452,6 +470,7 @@ class SessionBase:
 
     # Methods that child classes must implement.
 
+    # 子类实现：给定键是否已存在于存储
     def exists(self, session_key):
         """
         Return True if the given session_key already exists.
@@ -463,6 +482,7 @@ class SessionBase:
     async def aexists(self, session_key):
         return await sync_to_async(self.exists)(session_key)
 
+    # 子类实现：创建带唯一键的空会话并持久化
     def create(self):
         """
         Create a new session instance. Guaranteed to create a new object with
@@ -476,6 +496,7 @@ class SessionBase:
     async def acreate(self):
         return await sync_to_async(self.create)()
 
+    # 子类实现：持久化 _session；must_create 时仅允许插入
     def save(self, must_create=False):
         """
         Save the session data. If 'must_create' is True, create a new session
@@ -489,6 +510,7 @@ class SessionBase:
     async def asave(self, must_create=False):
         return await sync_to_async(self.save)(must_create)
 
+    # 子类实现：删除指定或当前 session_key 的存储记录
     def delete(self, session_key=None):
         """
         Delete the session data under this key. If the key is None, use the
@@ -501,6 +523,7 @@ class SessionBase:
     async def adelete(self, session_key=None):
         return await sync_to_async(self.delete)(session_key)
 
+    # 子类实现：从存储加载并返回会话字典
     def load(self):
         """
         Load the session data and return a dictionary.
@@ -513,6 +536,7 @@ class SessionBase:
         return await sync_to_async(self.load)()
 
     @classmethod
+    # 子类实现：清理过期会话；无需求时可 no-op
     def clear_expired(cls):
         """
         Remove expired sessions from the session store.

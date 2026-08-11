@@ -15,17 +15,20 @@ from django.contrib.sessions.exceptions import InvalidSessionKey
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 
 
+# 文件系统会话存储：每个 session_key 对应 storage_path 下的一个文件
 class SessionStore(SessionBase):
     """
     Implement a file based session store.
     """
 
+    # 解析 SESSION_FILE_PATH 或系统临时目录作为 storage_path
     def __init__(self, session_key=None):
         self.storage_path = self._get_storage_path()
         self.file_prefix = settings.SESSION_COOKIE_NAME
         super().__init__(session_key)
 
     @classmethod
+    # 类级缓存存储目录，不存在时抛出 ImproperlyConfigured
     def _get_storage_path(cls):
         try:
             return cls._storage_path
@@ -44,6 +47,7 @@ class SessionStore(SessionBase):
             cls._storage_path = storage_path
             return storage_path
 
+    # 将会话键映射为 file_prefix + key 的绝对路径，防目录遍历
     def _key_to_file(self, session_key=None):
         """
         Get the file associated with this session key.
@@ -59,6 +63,7 @@ class SessionStore(SessionBase):
 
         return os.path.join(self.storage_path, self.file_prefix + session_key)
 
+    # 返回会话文件的 mtime 作为 datetime
     def _last_modification(self):
         """
         Return the modification time of the file storing the session's content.
@@ -67,6 +72,7 @@ class SessionStore(SessionBase):
         tz = datetime.UTC if settings.USE_TZ else None
         return datetime.datetime.fromtimestamp(modification, tz=tz)
 
+    # 优先 _session_expiry，否则 mtime + SESSION_COOKIE_AGE
     def _expiry_date(self, session_data):
         """
         Return the expiry time of the file storing the session's content.
@@ -76,6 +82,7 @@ class SessionStore(SessionBase):
             + datetime.timedelta(seconds=self.get_session_cookie_age())
         )
 
+    # 读文件 decode；过期或损坏时 delete/create 并返回空或新数据
     def load(self):
         session_data = {}
         try:
@@ -120,6 +127,7 @@ class SessionStore(SessionBase):
     async def acreate(self):
         return self.create()
 
+    # 先 O_EXCL 占位，再通过临时文件原子 rename 写入编码数据
     def save(self, must_create=False):
         if self.session_key is None:
             return self.create()
@@ -186,12 +194,14 @@ class SessionStore(SessionBase):
     async def asave(self, must_create=False):
         return self.save(must_create=must_create)
 
+    # 检查会话文件是否存在
     def exists(self, session_key):
         return os.path.exists(self._key_to_file(session_key))
 
     async def aexists(self, session_key):
         return self.exists(session_key)
 
+    # unlink 删除会话文件
     def delete(self, session_key=None):
         if session_key is None:
             if self.session_key is None:
@@ -206,6 +216,7 @@ class SessionStore(SessionBase):
         return self.delete(session_key=session_key)
 
     @classmethod
+    # 遍历 storage_path，load 过期文件以触发删除（禁用 create 避免占位文件）
     def clear_expired(cls):
         storage_path = cls._get_storage_path()
         file_prefix = settings.SESSION_COOKIE_NAME

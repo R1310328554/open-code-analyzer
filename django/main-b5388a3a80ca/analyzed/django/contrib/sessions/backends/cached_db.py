@@ -2,6 +2,11 @@
 Cached, database-backed sessions.
 """
 
+# 缓存加数据库混合会话：读优先走缓存，miss 时回源 DB 并回填
+"""
+Cached, database-backed sessions.
+"""
+
 import logging
 
 from django.conf import settings
@@ -13,6 +18,7 @@ KEY_PREFIX = "django.contrib.sessions.cached_db"
 logger = logging.getLogger("django.contrib.sessions")
 
 
+# 缓存+数据库会话：继承 DBStore，读写时同步 SESSION_CACHE_ALIAS
 class SessionStore(DBStore):
     """
     Implement cached, database backed sessions.
@@ -31,6 +37,7 @@ class SessionStore(DBStore):
     async def acache_key(self):
         return self.cache_key_prefix + await self._aget_or_create_session_key()
 
+    # 先读缓存；未命中则从 DB 解码并 aset 回填
     def load(self):
         try:
             data = self._cache.get(self.cache_key)
@@ -71,6 +78,7 @@ class SessionStore(DBStore):
                 data = {}
         return data
 
+    # 缓存或数据库任一存在即视为 exists
     def exists(self, session_key):
         return (
             session_key
@@ -85,6 +93,7 @@ class SessionStore(DBStore):
             or await super().aexists(session_key)
         )
 
+    # 先 super().save 写库，再尝试 set 更新缓存
     def save(self, must_create=False):
         super().save(must_create)
         try:
@@ -103,6 +112,7 @@ class SessionStore(DBStore):
         except Exception:
             logger.exception("Error saving to cache (%s)", self._cache)
 
+    # 删除 DB 记录并尝试清除缓存项
     def delete(self, session_key=None):
         super().delete(session_key)
         if session_key is None:
@@ -125,6 +135,7 @@ class SessionStore(DBStore):
         except Exception:
             logger.exception("Error deleting from cache (%s)", self._cache)
 
+    # 清空内存、delete 当前键并置 session_key 为 None
     def flush(self):
         """
         Remove the current session data from the database and regenerate the

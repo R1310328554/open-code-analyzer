@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 
 
+# 数据库会话存储：持久化到 django.contrib.sessions.models.Session
 class SessionStore(SessionBase):
     """
     Implement database session store.
@@ -18,6 +19,7 @@ class SessionStore(SessionBase):
         super().__init__(session_key)
 
     @classmethod
+    # 延迟导入 Session 模型，避免未安装 sessions 时的循环依赖
     def get_model_class(cls):
         # Avoids a circular import and allows importing SessionStore when
         # django.contrib.sessions is not in INSTALLED_APPS.
@@ -29,6 +31,7 @@ class SessionStore(SessionBase):
     def model(self):
         return self.get_model_class()
 
+    # 按 session_key 加载未过期的 Session 行；异常时置 key 为 None
     def _get_session_from_db(self):
         try:
             return self.model.objects.get(
@@ -51,6 +54,7 @@ class SessionStore(SessionBase):
                 logger.warning(str(e))
             self._session_key = None
 
+    # 从 DB 取 session_data 并 decode
     def load(self):
         s = self._get_session_from_db()
         return self.decode(s.session_data) if s else {}
@@ -65,6 +69,7 @@ class SessionStore(SessionBase):
     async def aexists(self, session_key):
         return await self.model.objects.filter(session_key=session_key).aexists()
 
+    # 循环生成唯一键并 save(must_create=True) 直至成功
     def create(self):
         while True:
             self._session_key = self._get_new_session_key()
@@ -91,6 +96,7 @@ class SessionStore(SessionBase):
             self.modified = True
             return
 
+    # 构造待保存的 Session 模型实例（含 encode 后的 data 与 expire_date）
     def create_model_instance(self, data):
         """
         Return a new instance of the session model object, which represents the
@@ -111,6 +117,7 @@ class SessionStore(SessionBase):
             expire_date=await self.aget_expiry_date(),
         )
 
+    # 原子写入 Session 行；IntegrityError/DatabaseError 映射为 Create/UpdateError
     def save(self, must_create=False):
         """
         Save the current session data to the database. If 'must_create' is
@@ -166,6 +173,7 @@ class SessionStore(SessionBase):
                 raise UpdateError
             raise
 
+    # 删除对应 Session 行，DoesNotExist 时忽略
     def delete(self, session_key=None):
         if session_key is None:
             if self.session_key is None:
@@ -188,6 +196,7 @@ class SessionStore(SessionBase):
             pass
 
     @classmethod
+    # 删除 expire_date 早于当前时间的所有 Session
     def clear_expired(cls):
         cls.get_model_class().objects.filter(expire_date__lt=timezone.now()).delete()
 

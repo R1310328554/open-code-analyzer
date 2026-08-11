@@ -1,6 +1,7 @@
 from django.db import migrations, models
 
 
+# 迁移：更新 new_path 字段帮助文本以支持 https 等 scheme
 class Migration(migrations.Migration):
     dependencies = [
         ("redirects", "0001_initial"),

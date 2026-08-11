@@ -5,6 +5,7 @@ from django.core.cache import caches
 KEY_PREFIX = "django.contrib.sessions.cache"
 
 
+# 纯缓存会话存储：数据保存在 SESSION_CACHE_ALIAS 指向的缓存后端
 class SessionStore(SessionBase):
     """
     A cache-based session store.
@@ -12,6 +13,7 @@ class SessionStore(SessionBase):
 
     cache_key_prefix = KEY_PREFIX
 
+    # 绑定 caches[SESSION_CACHE_ALIAS] 并委托 SessionBase 初始化
     def __init__(self, session_key=None):
         self._cache = caches[settings.SESSION_CACHE_ALIAS]
         super().__init__(session_key)
@@ -23,6 +25,7 @@ class SessionStore(SessionBase):
     async def acache_key(self):
         return self.cache_key_prefix + await self._aget_or_create_session_key()
 
+    # 从 cache_key 读取；无效键或缺失时重置 session_key 并返回 {}
     def load(self):
         try:
             session_data = self._cache.get(self.cache_key)
@@ -45,6 +48,7 @@ class SessionStore(SessionBase):
         self._session_key = None
         return {}
 
+    # 最多重试 10000 次生成唯一键并 save(must_create=True)
     def create(self):
         # Because a cache can fail silently (e.g. memcache), we don't know if
         # we are failing to create a new session because of a key collision or
@@ -78,6 +82,7 @@ class SessionStore(SessionBase):
             "It is likely that the cache is unavailable."
         )
 
+    # add/set 写入缓存，TTL 为 get_expiry_age()
     def save(self, must_create=False):
         if self.session_key is None:
             return self.create()
@@ -112,6 +117,7 @@ class SessionStore(SessionBase):
         if must_create and not result:
             raise CreateError
 
+    # 检查 cache 中是否存在 cache_key_prefix + session_key
     def exists(self, session_key):
         return (
             bool(session_key) and (self.cache_key_prefix + session_key) in self._cache
@@ -122,6 +128,7 @@ class SessionStore(SessionBase):
             self.cache_key_prefix + session_key
         )
 
+    # 从缓存删除对应键
     def delete(self, session_key=None):
         if session_key is None:
             if self.session_key is None:
@@ -137,6 +144,7 @@ class SessionStore(SessionBase):
         await self._cache.adelete(self.cache_key_prefix + session_key)
 
     @classmethod
+    # 缓存后端自带 TTL，此处为 no-op
     def clear_expired(cls):
         pass
 
