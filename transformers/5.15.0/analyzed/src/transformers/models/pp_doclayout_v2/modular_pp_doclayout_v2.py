@@ -15,6 +15,8 @@
 import math
 from dataclasses import dataclass
 
+# PP-DocLayoutV2 modular 源：检测与阅读顺序完整实现
+
 import torch
 from huggingface_hub.dataclasses import strict
 from torch import nn
@@ -60,6 +62,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-DocLayoutV2_safetensors")
 @strict
+# PPDocLayoutV2ReadingOrderConfig：PP-DocLayoutV2 阅读顺序子模块配置
 class PPDocLayoutV2ReadingOrderConfig(PreTrainedConfig):
     r"""
     has_relative_attention_bias (`bool`, *optional*, defaults to `True`):
@@ -136,6 +139,7 @@ class PPDocLayoutV2ReadingOrderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-DocLayoutV2_safetensors")
 @strict
+# PPDocLayoutV2Config：PP-DocLayoutV2 文档版面检测与阅读顺序总配置
 class PPDocLayoutV2Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -264,6 +268,7 @@ class PPDocLayoutV2Config(PreTrainedConfig):
     class_order: list[int] | None = None
     reading_order_config: PreTrainedConfig | dict | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.reading_order_config, dict):
             self.reading_order_config = self.sub_configs["reading_order_config"](**self.reading_order_config)
@@ -295,16 +300,21 @@ class PPDocLayoutV2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PPDocLayoutV2ImageProcessor：PP-DocLayoutV2 图像预处理与检测后处理（800×800）
 class PPDocLayoutV2ImageProcessor(PPDocLayoutV3ImageProcessor):
+    # extract_custom_vertices：提取自定义顶点（V2 不支持）
     def extract_custom_vertices(self):
         raise AttributeError("Not needed for PPDocLayoutV2")
 
+    # _mask2polygon：由掩码提取多边形（V2 不支持）
     def _mask2polygon(self):
         raise AttributeError("Not needed for PPDocLayoutV2")
 
+    # _extract_polygon_points_by_masks：由掩码批量提取多边形点（V2 不支持）
     def _extract_polygon_points_by_masks(self):
         raise AttributeError("Not needed for PPDocLayoutV2")
 
+    # post_process_object_detection：将检测输出解码为框、标签与阅读顺序
     def post_process_object_detection(
         self,
         outputs,
@@ -373,16 +383,20 @@ class PPDocLayoutV2ImageProcessor(PPDocLayoutV3ImageProcessor):
         return results
 
 
+# PPDocLayoutV2GlobalPointer：全局指针头：预测版面元素阅读顺序相对关系
 class PPDocLayoutV2GlobalPointer(PPDocLayoutV3GlobalPointer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, self.head_size * 2)
 
 
+# PPDocLayoutV2PositionRelationEmbedding：边界框相对位置关系嵌入（RoPE 风格）
 class PPDocLayoutV2PositionRelationEmbedding(nn.Module):
     inv_freq: torch.Tensor
 
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, device=None):
         super().__init__()
         self.config = config
@@ -396,6 +410,7 @@ class PPDocLayoutV2PositionRelationEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算 RoPE 逆频率参数
     def compute_default_rope_parameters(
         config: PPDocLayoutV2Config, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -417,6 +432,7 @@ class PPDocLayoutV2PositionRelationEmbedding(nn.Module):
         inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2, dtype=torch.float) / half_dim))
         return inv_freq.to(device), attention_factor
 
+    # box_relative_encoding：计算边界框之间的相对位置编码
     def box_relative_encoding(
         self, source_boxes: torch.Tensor, target_boxes: torch.Tensor = None, epsilon: float = 1e-5
     ):
@@ -432,12 +448,14 @@ class PPDocLayoutV2PositionRelationEmbedding(nn.Module):
 
         return relative_encoding
 
+    # get_position_embedding：由相对编码生成正弦位置嵌入
     def get_position_embedding(self, x: torch.Tensor, scale: float = 100.0):
         embedding = (x * scale).unsqueeze(-1) * self.inv_freq
         embedding = torch.cat((embedding.sin(), embedding.cos()), dim=-1).flatten(start_dim=-2).to(x.dtype)
 
         return embedding
 
+    # forward：模块前向计算
     def forward(self, source_boxes: torch.Tensor, target_boxes: torch.Tensor = None):
         if target_boxes is None:
             target_boxes = source_boxes
@@ -449,7 +467,9 @@ class PPDocLayoutV2PositionRelationEmbedding(nn.Module):
         return out
 
 
+# PPDocLayoutV2ReadingOrderSelfAttention：阅读顺序编码器自注意力（LayoutLMv3 变体）
 class PPDocLayoutV2ReadingOrderSelfAttention(LayoutLMv3SelfAttention):
+    # forward：模块前向计算
     def forward(
         self, hidden_states, attention_mask=None, rel_pos=None, rel_2d_pos=None, **kwargs: Unpack[TransformersKwargs]
     ):
@@ -504,12 +524,15 @@ class PPDocLayoutV2ReadingOrderSelfAttention(LayoutLMv3SelfAttention):
         return context_layer, attention_probs
 
 
+# PPDocLayoutV2ReadingOrderSelfOutput：阅读顺序自注意力输出投影与残差归一化
 class PPDocLayoutV2ReadingOrderSelfOutput(LayoutLMv3SelfOutput):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         del self.LayerNorm
         self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -517,16 +540,20 @@ class PPDocLayoutV2ReadingOrderSelfOutput(LayoutLMv3SelfOutput):
         return hidden_states
 
 
+# PPDocLayoutV2ReadingOrderIntermediate：阅读顺序 FFN 中间层
 class PPDocLayoutV2ReadingOrderIntermediate(LayoutLMv3Intermediate):
     pass
 
 
+# PPDocLayoutV2ReadingOrderOutput：阅读顺序 FFN 输出层与残差归一化
 class PPDocLayoutV2ReadingOrderOutput(LayoutLMv3Output):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         del self.LayerNorm
         self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -534,14 +561,18 @@ class PPDocLayoutV2ReadingOrderOutput(LayoutLMv3Output):
         return hidden_states
 
 
+# PPDocLayoutV2ReadingOrderAttention：阅读顺序完整注意力子层
 class PPDocLayoutV2ReadingOrderAttention(LayoutLMv3Attention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.self = PPDocLayoutV2ReadingOrderSelfAttention(config)
         self.output = PPDocLayoutV2ReadingOrderSelfOutput(config)
 
 
+# PPDocLayoutV2ReadingOrderLayer：阅读顺序 Transformer 编码层
 class PPDocLayoutV2ReadingOrderLayer(LayoutLMv3Layer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.attention = PPDocLayoutV2ReadingOrderAttention(config)
@@ -549,12 +580,15 @@ class PPDocLayoutV2ReadingOrderLayer(LayoutLMv3Layer):
         self.output = PPDocLayoutV2ReadingOrderOutput(config)
 
 
+# PPDocLayoutV2ReadingOrderEncoder：阅读顺序多层编码器与二维位置偏置
 class PPDocLayoutV2ReadingOrderEncoder(LayoutLMv3Encoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.layer = nn.ModuleList([PPDocLayoutV2ReadingOrderLayer(config) for _ in range(config.num_hidden_layers)])
         self.rel_bias_module = PPDocLayoutV2PositionRelationEmbedding(config)
 
+    # _cal_2d_pos_emb：由边界框中心与宽高计算二维位置偏置
     def _cal_2d_pos_emb(self, bbox):
         x_min, y_min, x_max, y_max = (
             bbox[..., 0],
@@ -576,7 +610,9 @@ class PPDocLayoutV2ReadingOrderEncoder(LayoutLMv3Encoder):
         return result
 
 
+# PPDocLayoutV2TextEmbeddings：阅读顺序文本/坐标/标签联合嵌入
 class PPDocLayoutV2TextEmbeddings(LayoutLMv3TextEmbeddings):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -585,6 +621,7 @@ class PPDocLayoutV2TextEmbeddings(LayoutLMv3TextEmbeddings):
         spatial_embed_dim = 4 * config.coordinate_size + 2 * config.shape_size
         self.spatial_proj = nn.Linear(spatial_embed_dim, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids=None,
@@ -627,8 +664,10 @@ class PPDocLayoutV2TextEmbeddings(LayoutLMv3TextEmbeddings):
 
 
 @auto_docstring
+# PPDocLayoutV2PreTrainedModel：PP-DocLayoutV2 预训练基类与权重初始化
 class PPDocLayoutV2PreTrainedModel(RTDetrPreTrainedModel):
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -646,6 +685,7 @@ class PPDocLayoutV2PreTrainedModel(RTDetrPreTrainedModel):
     between elements, which are used to determine the final reading sequence.
     """
 )
+# PPDocLayoutV2ReadingOrder：阅读顺序预测模型（编码器+GlobalPointer）
 class PPDocLayoutV2ReadingOrder(PPDocLayoutV2PreTrainedModel):
     # Attention is based on LayoutLMv3 (no interface)
     _supports_sdpa = False
@@ -653,6 +693,7 @@ class PPDocLayoutV2ReadingOrder(PPDocLayoutV2PreTrainedModel):
     _supports_attention_backend = False
     _supports_flex_attn = False
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.embeddings = PPDocLayoutV2TextEmbeddings(config)
@@ -665,6 +706,7 @@ class PPDocLayoutV2ReadingOrder(PPDocLayoutV2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(self, boxes, labels=None, mask=None, **kwargs: Unpack[TransformersKwargs]):
         r"""
         boxes (`torch.Tensor` of shape `(batch_size, sequence_length, 4)`):
@@ -729,6 +771,7 @@ class PPDocLayoutV2ReadingOrder(PPDocLayoutV2PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PPDocLayoutV2ForObjectDetectionOutput：PP-DocLayoutV2 目标检测模型输出 dataclass
 class PPDocLayoutV2ForObjectDetectionOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_queries, num_classes + 1)`):
@@ -797,10 +840,12 @@ class PPDocLayoutV2ForObjectDetectionOutput(ModelOutput):
     """
 )
 @dataclass
+# PPDocLayoutV2ModelOutput：PP-DocLayoutV2 编码器-解码器中间输出
 class PPDocLayoutV2ModelOutput(RTDetrModelOutput):
     pass
 
 
+# PPDocLayoutV2MLPPredictionHead：检测框与类别 MLP 预测头
 class PPDocLayoutV2MLPPredictionHead(RTDetrMLPPredictionHead):
     pass
 
@@ -810,7 +855,9 @@ class PPDocLayoutV2MLPPredictionHead(RTDetrMLPPredictionHead):
     PP-DocLayoutV2 Model (consisting of a backbone and encoder-decoder) outputting raw hidden states without any head on top.
     """
 )
+# PPDocLayoutV2Model：PP-DocLayoutV2 主干（骨干+编码器+解码器）
 class PPDocLayoutV2Model(RTDetrModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV2Config):
         super().__init__()
         self.denoising_class_embed = nn.Embedding(config.num_labels, config.d_model)
@@ -822,9 +869,11 @@ class PPDocLayoutV2Model(RTDetrModel):
     decoded into scores, classes and their reading order.
     """
 )
+# PPDocLayoutV2ForObjectDetection：PP-DocLayoutV2 版面检测与阅读顺序推理模型
 class PPDocLayoutV2ForObjectDetection(RTDetrForObjectDetection):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked", "rel_pos_y_bias", "rel_pos_x_bias"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV2Config):
         super().__init__(config)
 
@@ -836,6 +885,7 @@ class PPDocLayoutV2ForObjectDetection(RTDetrForObjectDetection):
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,

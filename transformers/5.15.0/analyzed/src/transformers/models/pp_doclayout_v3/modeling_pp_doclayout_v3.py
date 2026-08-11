@@ -23,6 +23,8 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
 
+# PP-DocLayoutV3 建模：掩码增强 RT-DETR 版面检测（自动生成）
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -49,13 +51,16 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_pp_doclayout_v3 import PPDocLayoutV3Config
 
 
+# PPDocLayoutV3GlobalPointer：V3 全局指针头：元素阅读顺序 logits
 class PPDocLayoutV3GlobalPointer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.head_size = config.global_pointer_head_size
         self.dense = nn.Linear(config.d_model, self.head_size * 2)
         self.dropout = nn.Dropout(config.gp_dropout_value)
 
+    # forward：模块前向计算
     def forward(self, inputs):
         batch_size, sequence_length, _ = inputs.shape
         query_key_projection = self.dense(inputs).reshape(batch_size, sequence_length, 2, self.head_size)
@@ -70,7 +75,9 @@ class PPDocLayoutV3GlobalPointer(nn.Module):
 
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
+# MultiScaleDeformableAttention：多尺度可变形注意力核心算子
 class MultiScaleDeformableAttention(nn.Module):
+    # forward：模块前向计算
     def forward(
         self,
         value: Tensor,
@@ -124,11 +131,13 @@ class MultiScaleDeformableAttention(nn.Module):
         return output.transpose(1, 2).contiguous()
 
 
+# PPDocLayoutV3MultiscaleDeformableAttention：V3 多尺度可变形注意力
 class PPDocLayoutV3MultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config, num_heads: int, n_points: int):
         super().__init__()
 
@@ -161,6 +170,7 @@ class PPDocLayoutV3MultiscaleDeformableAttention(nn.Module):
 
         self.disable_custom_kernels = config.disable_custom_kernels
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -232,6 +242,7 @@ class PPDocLayoutV3MultiscaleDeformableAttention(nn.Module):
 
 
 @auto_docstring
+# PPDocLayoutV3PreTrainedModel：PP-DocLayoutV3 预训练基类
 class PPDocLayoutV3PreTrainedModel(PreTrainedModel):
     config: PPDocLayoutV3Config
     base_model_prefix = "pp_doclayout_v3"
@@ -244,6 +255,7 @@ class PPDocLayoutV3PreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -289,6 +301,7 @@ class PPDocLayoutV3PreTrainedModel(PreTrainedModel):
 
 
 @dataclass
+# PPDocLayoutV3DecoderOutput：V3 解码器中间状态输出
 class PPDocLayoutV3DecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -331,6 +344,7 @@ class PPDocLayoutV3DecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# PPDocLayoutV3ModelOutput：V3 模型中间输出 dataclass
 class PPDocLayoutV3ModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -390,6 +404,7 @@ class PPDocLayoutV3ModelOutput(ModelOutput):
     out_masks: torch.FloatTensor | None = None
 
 
+# PPDocLayoutV3MLPPredictionHead：V3 检测 MLP 预测头
 class PPDocLayoutV3MLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -397,19 +412,23 @@ class PPDocLayoutV3MLPPredictionHead(nn.Module):
 
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
 
+    # forward：模块前向计算
     def forward(self, x):
         for i, layer in enumerate(self.layers):
             x = nn.functional.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
 
 
+# PPDocLayoutV3ConvLayer：V3 卷积基础层
 class PPDocLayoutV3ConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -435,6 +454,7 @@ class PPDocLayoutV3ConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -442,7 +462,9 @@ class PPDocLayoutV3ConvLayer(nn.Module):
         return hidden_states
 
 
+# PPDocLayoutV3ScaleHead：V3 多尺度特征缩放头
 class PPDocLayoutV3ScaleHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, feature_channels, fpn_stride, base_stride, align_corners=False):
         super().__init__()
         head_length = max(1, int(np.log2(fpn_stride) - np.log2(base_stride)))
@@ -453,13 +475,16 @@ class PPDocLayoutV3ScaleHead(nn.Module):
             if fpn_stride != base_stride:
                 self.layers.append(nn.Upsample(scale_factor=2, mode="bilinear", align_corners=align_corners))
 
+    # forward：模块前向计算
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)
         return x
 
 
+# PPDocLayoutV3MaskFeatFPN：V3 掩码特征 FPN 增强模块
 class PPDocLayoutV3MaskFeatFPN(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels=[256, 256, 256],
@@ -495,6 +520,7 @@ class PPDocLayoutV3MaskFeatFPN(nn.Module):
             )
         self.output_conv = PPDocLayoutV3ConvLayer(feature_channels, out_channels, 3, 1, activation="silu")
 
+    # forward：模块前向计算
     def forward(self, inputs):
         x = [inputs[i] for i in self.reorder_index]
 
@@ -510,19 +536,24 @@ class PPDocLayoutV3MaskFeatFPN(nn.Module):
         return output
 
 
+# PPDocLayoutV3EncoderMaskOutput：V3 编码器掩码输出容器
 class PPDocLayoutV3EncoderMaskOutput(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, num_prototypes):
         super().__init__()
         self.base_conv = PPDocLayoutV3ConvLayer(in_channels, in_channels, 3, 1, activation="silu")
         self.conv = nn.Conv2d(in_channels, num_prototypes, kernel_size=1)
 
+    # forward：模块前向计算
     def forward(self, x):
         x = self.base_conv(x)
         x = self.conv(x)
         return x
 
 
+# PPDocLayoutV3MLP：模型组件
 class PPDocLayoutV3MLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, config: PPDocLayoutV3Config, hidden_size: int, intermediate_size: int, activation_function: str
     ):
@@ -533,6 +564,7 @@ class PPDocLayoutV3MLP(nn.Module):
         self.activation_dropout = config.activation_dropout
         self.dropout = config.dropout
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.activation_fn(self.fc1(hidden_states))
         hidden_states = nn.functional.dropout(hidden_states, p=self.activation_dropout, training=self.training)
@@ -569,6 +601,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PPDocLayoutV3SelfAttention：V3 混合编码器自注意力
 class PPDocLayoutV3SelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -576,6 +609,7 @@ class PPDocLayoutV3SelfAttention(nn.Module):
     In PP_DOCLAYOUT_V3, position embeddings are added to both queries and keys (but not values) in self-attention.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: PPDocLayoutV3Config,
@@ -596,6 +630,7 @@ class PPDocLayoutV3SelfAttention(nn.Module):
         self.q_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
         self.o_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -635,7 +670,9 @@ class PPDocLayoutV3SelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPDocLayoutV3ConvNormLayer：V3 卷积归一化层
 class PPDocLayoutV3ConvNormLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, in_channels, out_channels, kernel_size, stride, padding=None, activation=None):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -649,6 +686,7 @@ class PPDocLayoutV3ConvNormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels, config.batch_norm_eps)
         self.activation = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         hidden_state = self.conv(hidden_state)
         hidden_state = self.norm(hidden_state)
@@ -656,7 +694,9 @@ class PPDocLayoutV3ConvNormLayer(nn.Module):
         return hidden_state
 
 
+# PPDocLayoutV3EncoderLayer：V3 编码器 Transformer 层
 class PPDocLayoutV3EncoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__()
         self.normalize_before = config.normalize_before
@@ -676,6 +716,7 @@ class PPDocLayoutV3EncoderLayer(nn.Module):
         )
         self.final_layer_norm = nn.LayerNorm(self.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -727,11 +768,13 @@ class PPDocLayoutV3EncoderLayer(nn.Module):
         return hidden_states
 
 
+# PPDocLayoutV3RepVggBlock：V3 RepVGG 卷积块
 class PPDocLayoutV3RepVggBlock(nn.Module):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__()
 
@@ -741,16 +784,19 @@ class PPDocLayoutV3RepVggBlock(nn.Module):
         self.conv2 = PPDocLayoutV3ConvNormLayer(config, hidden_channels, hidden_channels, 1, 1, padding=0)
         self.activation = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：模块前向计算
     def forward(self, x):
         y = self.conv1(x) + self.conv2(x)
         return self.activation(y)
 
 
+# PPDocLayoutV3CSPRepLayer：V3 CSP Rep 层
 class PPDocLayoutV3CSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__()
 
@@ -768,6 +814,7 @@ class PPDocLayoutV3CSPRepLayer(nn.Module):
         else:
             self.conv3 = nn.Identity()
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         hidden_state_1 = self.conv1(hidden_state)
         hidden_state_1 = self.bottlenecks(hidden_state_1)
@@ -823,11 +870,13 @@ def build_2d_sinusoidal_position_embedding(
     return pos_embed.to(dtype)
 
 
+# PPDocLayoutV3SinePositionEmbedding：V3 二维正弦位置编码
 class PPDocLayoutV3SinePositionEmbedding(nn.Module):
     """
     2D sinusoidal position embedding used in RT-DETR hybrid encoder.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, embed_dim: int = 256, temperature: int = 10000):
         super().__init__()
         self.embed_dim = embed_dim
@@ -835,9 +884,11 @@ class PPDocLayoutV3SinePositionEmbedding(nn.Module):
 
     @staticmethod
     @compile_compatible_method_lru_cache(maxsize=32)
+    # _cached_build_2d_sinusoidal_position_embedding：执行该模块的核心逻辑
     def _cached_build_2d_sinusoidal_position_embedding(*args, **kwargs) -> torch.Tensor:
         return build_2d_sinusoidal_position_embedding(*args, **kwargs)
 
+    # forward：模块前向计算
     def forward(
         self,
         width: int,
@@ -861,11 +912,13 @@ class PPDocLayoutV3SinePositionEmbedding(nn.Module):
         ).unsqueeze(0)
 
 
+# PPDocLayoutV3AIFILayer：V3 自适应特征交互层
 class PPDocLayoutV3AIFILayer(nn.Module):
     """
     AIFI (Attention-based Intra-scale Feature Interaction) layer used in RT-DETR hybrid encoder.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__()
         self.config = config
@@ -878,6 +931,7 @@ class PPDocLayoutV3AIFILayer(nn.Module):
         )
         self.layers = nn.ModuleList([PPDocLayoutV3EncoderLayer(config) for _ in range(config.encoder_layers)])
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -918,6 +972,7 @@ class PPDocLayoutV3AIFILayer(nn.Module):
         return hidden_states
 
 
+# PPDocLayoutV3HybridEncoder：V3 混合编码器（掩码增强）
 class PPDocLayoutV3HybridEncoder(PPDocLayoutV3PreTrainedModel):
     """
     Main difference to `RTDetrHybridEncoder`:
@@ -930,6 +985,7 @@ class PPDocLayoutV3HybridEncoder(PPDocLayoutV3PreTrainedModel):
         "attentions": PPDocLayoutV3SelfAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__(config)
         self.config = config
@@ -998,6 +1054,7 @@ class PPDocLayoutV3HybridEncoder(PPDocLayoutV3PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds=None,
@@ -1053,7 +1110,9 @@ class PPDocLayoutV3HybridEncoder(PPDocLayoutV3PreTrainedModel):
         )
 
 
+# PPDocLayoutV3DecoderLayer：V3 解码器 Transformer 层
 class PPDocLayoutV3DecoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__()
         self.hidden_size = config.d_model
@@ -1081,6 +1140,7 @@ class PPDocLayoutV3DecoderLayer(nn.Module):
         )
         self.final_layer_norm = nn.LayerNorm(self.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1161,6 +1221,7 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# PPDocLayoutV3Decoder：V3 多尺度解码器
 class PPDocLayoutV3Decoder(PPDocLayoutV3PreTrainedModel):
     """
     Main difference to `RTDetrDecoder`:
@@ -1173,6 +1234,7 @@ class PPDocLayoutV3Decoder(PPDocLayoutV3PreTrainedModel):
         "cross_attentions": PPDocLayoutV3MultiscaleDeformableAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__(config)
 
@@ -1191,6 +1253,7 @@ class PPDocLayoutV3Decoder(PPDocLayoutV3PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds=None,
@@ -1304,6 +1367,7 @@ class PPDocLayoutV3Decoder(PPDocLayoutV3PreTrainedModel):
         )
 
 
+# PPDocLayoutV3FrozenBatchNorm2d：V3 冻结 BatchNorm2d
 class PPDocLayoutV3FrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -1312,6 +1376,7 @@ class PPDocLayoutV3FrozenBatchNorm2d(nn.Module):
     torchvision.models.resnet[18,34,50,101] produce nans.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, n):
         super().__init__()
         self.weight = nn.Buffer(torch.ones(n))
@@ -1319,6 +1384,7 @@ class PPDocLayoutV3FrozenBatchNorm2d(nn.Module):
         self.running_mean = nn.Buffer(torch.zeros(n))
         self.running_var = nn.Buffer(torch.ones(n))
 
+    # _load_from_state_dict：执行该模块的核心逻辑
     def _load_from_state_dict(
         self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
     ):
@@ -1330,6 +1396,7 @@ class PPDocLayoutV3FrozenBatchNorm2d(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
+    # forward：模块前向计算
     def forward(self, x):
         # move reshapes to the beginning
         # to make it user-friendly
@@ -1367,6 +1434,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# PPDocLayoutV3ConvEncoder：V3 卷积编码器
 class PPDocLayoutV3ConvEncoder(nn.Module):
     """
     Convolutional backbone using the modeling_pp_doclayout_v3_resnet.py.
@@ -1375,6 +1443,7 @@ class PPDocLayoutV3ConvEncoder(nn.Module):
     https://github.com/lyuwenyu/RT-DETR/blob/main/PPDocLayoutV3_pytorch/src/nn/backbone/presnet.py#L142
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -1387,6 +1456,7 @@ class PPDocLayoutV3ConvEncoder(nn.Module):
         self.model = backbone
         self.intermediate_channel_sizes = self.model.channels
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.Tensor, pixel_mask: torch.Tensor):
         # send pixel_values through the model to get list of feature maps
         features = self.model(pixel_values).feature_maps
@@ -1574,12 +1644,14 @@ def mask_to_box_coordinate(mask, dtype):
     PP-DocLayoutV3 Model (consisting of a backbone and encoder-decoder) outputting raw hidden states without any head on top.
     """
 )
+# PPDocLayoutV3Model：V3 完整检测主干网络
 class PPDocLayoutV3Model(PPDocLayoutV3PreTrainedModel):
     _tied_weights_keys = {
         "decoder.class_embed": "enc_score_head",
         "decoder.bbox_embed": "enc_bbox_head",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__(config)
 
@@ -1675,6 +1747,7 @@ class PPDocLayoutV3Model(PPDocLayoutV3PreTrainedModel):
 
     @staticmethod
     @compile_compatible_method_lru_cache(maxsize=32)
+    # _cached_generate_anchors：执行该模块的核心逻辑
     def _cached_generate_anchors(
         spatial_shapes: tuple[tuple[int, int], ...],
         grid_size: float,
@@ -1713,6 +1786,7 @@ class PPDocLayoutV3Model(PPDocLayoutV3PreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1929,6 +2003,7 @@ class PPDocLayoutV3Model(PPDocLayoutV3PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PPDocLayoutV3HybridEncoderOutput：V3 混合编码器输出
 class PPDocLayoutV3HybridEncoderOutput(BaseModelOutput):
     r"""
     mask_feat (`torch.FloatTensor` of shape `(batch_size, config.num_queries, 200, 200)`):
@@ -1940,6 +2015,7 @@ class PPDocLayoutV3HybridEncoderOutput(BaseModelOutput):
 
 @auto_docstring
 @dataclass
+# PPDocLayoutV3ForObjectDetectionOutput：V3 检测模型输出 dataclass
 class PPDocLayoutV3ForObjectDetectionOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_queries, num_classes + 1)`):
@@ -2011,12 +2087,14 @@ class PPDocLayoutV3ForObjectDetectionOutput(ModelOutput):
     which are further decoded into scores and classes.
     """
 )
+# PPDocLayoutV3ForObjectDetection：V3 版面检测+阅读顺序+多边形推理模型
 class PPDocLayoutV3ForObjectDetection(PPDocLayoutV3PreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization
     _no_split_modules = None
     _keys_to_ignore_on_load_missing = ["num_batches_tracked", "rel_pos_y_bias", "rel_pos_x_bias"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPDocLayoutV3Config):
         super().__init__(config)
         self.model = PPDocLayoutV3Model(config)
@@ -2026,11 +2104,13 @@ class PPDocLayoutV3ForObjectDetection(PPDocLayoutV3PreTrainedModel):
         # if two-stage, the last class_embed and bbox_embed is for region proposal generation
         self.post_init()
 
+    # _set_aux_loss：执行该模块的核心逻辑
     def _set_aux_loss(self, outputs_class, outputs_coord):
         return [{"logits": a, "pred_boxes": b} for a, b in zip(outputs_class, outputs_coord)]
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,

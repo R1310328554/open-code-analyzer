@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING
 
+# PP-DocLayoutV3 包：延迟加载配置/图像处理/建模组件
+
 from ...utils import _LazyModule
 from ...utils.import_utils import define_import_structure
 

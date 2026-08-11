@@ -14,6 +14,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-Chart2Table modular 源：图表 OCR 转表格的配置/图像/联合处理器
+
 from ...feature_extraction_utils import BatchFeature
 from ...image_processing_backends import PilBackend, TorchvisionBackend
 from ...image_utils import ImageInput
@@ -28,6 +30,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-Chart2Table_safetensors")
 @strict
+# PPChart2TableConfig：PP-Chart2Table 图表转表格配置（基于 GotOcr2 架构）
 class PPChart2TableConfig(GotOcr2Config):
     model_type = "pp_chart2table"
 
@@ -49,6 +52,7 @@ class PPChart2TableConfig(GotOcr2Config):
 
 
 @auto_docstring
+# PPChart2TableImageProcessor：PP-Chart2Table Torchvision 图像预处理（1024×1024 CLIP 归一化）
 class PPChart2TableImageProcessor(TorchvisionBackend):
     resample = 3
     image_mean = [0.48145466, 0.4578275, 0.40821073]
@@ -60,6 +64,7 @@ class PPChart2TableImageProcessor(TorchvisionBackend):
 
 
 @auto_docstring
+# PPChart2TableImageProcessorPil：PP-Chart2Table PIL 后端图像预处理
 class PPChart2TableImageProcessorPil(PilBackend):
     resample = 3
     image_mean = [0.48145466, 0.4578275, 0.40821073]
@@ -71,10 +76,13 @@ class PPChart2TableImageProcessorPil(PilBackend):
 
 
 @auto_docstring
+# PPChart2TableProcessor：PP-Chart2Table 图像+文本联合处理器
 class PPChart2TableProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput = None,

@@ -21,8 +21,11 @@
 from ...image_processing_backends import TorchvisionBackend
 from ...utils import auto_docstring
 
+# PP-Chart2Table 图像处理：1024×1024 CLIP 风格 resize 与归一化（自动生成）
+
 
 @auto_docstring
+# PPChart2TableImageProcessor：PP-Chart2Table Torchvision 图像预处理（1024×1024 CLIP 归一化）
 class PPChart2TableImageProcessor(TorchvisionBackend):
     resample = 3
     image_mean = [0.48145466, 0.4578275, 0.40821073]

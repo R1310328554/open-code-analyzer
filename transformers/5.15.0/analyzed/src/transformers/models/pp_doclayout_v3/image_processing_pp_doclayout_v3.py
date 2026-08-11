@@ -23,6 +23,8 @@ import numpy as np
 import torch
 from torchvision.transforms.v2 import functional as tvF
 
+# PP-DocLayoutV3 图像处理：检测后处理含多边形顶点（自动生成）
+
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
@@ -36,6 +38,7 @@ if is_cv2_available():
 
 
 @auto_docstring
+# PPDocLayoutV3ImageProcessor：PP-DocLayoutV3 图像预处理与多边形后处理
 class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = [0, 0, 0]
@@ -46,6 +49,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
     do_normalize = True
 
     # We require `self.resize(..., antialias=False)` to approximate the output of `cv2.resize`
+    # _preprocess：按尺寸分组执行 resize/归一化等图像预处理
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -93,6 +97,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # _get_order_seqs：由阅读顺序 logits 计算元素排序序列
     def _get_order_seqs(self, order_logits):
         """
         Computes the order sequences for a batch of inputs based on logits.
@@ -124,6 +129,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
 
         return order_seq
 
+    # extract_custom_vertices：提取自定义顶点（V2 不支持）
     def extract_custom_vertices(self, polygon, sharp_angle_thresh=45):
         poly = np.array(polygon)
         n = len(poly)
@@ -153,6 +159,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
             i += 1
         return res
 
+    # _mask2polygon：由掩码提取多边形（V2 不支持）
     def _mask2polygon(self, mask, epsilon_ratio=0.004):
         """
         Postprocess mask by removing small noise.
@@ -177,6 +184,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
 
         return polygon_points
 
+    # _extract_polygon_points_by_masks：由掩码批量提取多边形点（V2 不支持）
     def _extract_polygon_points_by_masks(self, boxes, masks, scale_ratio):
         scale_width, scale_height = scale_ratio[0] / 4, scale_ratio[1] / 4
         mask_height, mask_width = masks.shape[1:]
@@ -220,6 +228,7 @@ class PPDocLayoutV3ImageProcessor(TorchvisionBackend):
 
         return polygon_points
 
+    # post_process_object_detection：将检测输出解码为框、标签与阅读顺序
     def post_process_object_detection(
         self,
         outputs,

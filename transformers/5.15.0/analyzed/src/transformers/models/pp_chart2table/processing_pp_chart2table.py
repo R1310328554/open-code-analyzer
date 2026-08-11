@@ -25,12 +25,17 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
+# PP-Chart2Table 处理器：图像与文本联合编码（自动生成）
+
 
 @auto_docstring
+# PPChart2TableProcessor：PP-Chart2Table 图像+文本联合处理器
 class PPChart2TableProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput = None,

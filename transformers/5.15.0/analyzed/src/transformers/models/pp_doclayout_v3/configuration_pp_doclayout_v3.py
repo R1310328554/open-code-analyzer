@@ -20,6 +20,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-DocLayoutV3 配置：掩码增强版面检测超参（自动生成）
+
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
@@ -28,6 +30,7 @@ from ..auto import AutoConfig
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-DocLayoutV3_safetensors")
 @strict
+# PPDocLayoutV3Config：PP-DocLayoutV3 文档版面检测配置（含掩码增强）
 class PPDocLayoutV3Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -164,6 +167,7 @@ class PPDocLayoutV3Config(PreTrainedConfig):
     global_pointer_head_size: int = 64
     gp_dropout_value: float | int = 0.1
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

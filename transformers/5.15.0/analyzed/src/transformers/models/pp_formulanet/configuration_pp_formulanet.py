@@ -20,6 +20,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-FormulaNet 配置：视觉 SAM 编码器 + 文本解码器超参（自动生成）
+
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 
@@ -29,6 +31,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetVisionConfig：PP-FormulaNet 视觉编码器（SAM 风格）配置
 class PPFormulaNetVisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -76,6 +79,7 @@ class PPFormulaNetVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetTextConfig：PP-FormulaNet 文本解码器配置
 class PPFormulaNetTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -128,6 +132,7 @@ class PPFormulaNetTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetConfig：PP-FormulaNet 公式识别多模态总配置
 class PPFormulaNetConfig(PreTrainedConfig):
     model_type = "pp_formulanet"
     sub_configs = {"text_config": PPFormulaNetTextConfig, "vision_config": PPFormulaNetVisionConfig}
@@ -136,6 +141,7 @@ class PPFormulaNetConfig(PreTrainedConfig):
     vision_config: dict | PPFormulaNetVisionConfig | None = None
     is_encoder_decoder: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config = PPFormulaNetTextConfig(**self.text_config)

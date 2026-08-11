@@ -20,6 +20,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-DocLayoutV2 配置：RT-DETR 检测 + 阅读顺序子模块超参（自动生成）
+
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
@@ -28,6 +30,7 @@ from ..auto import AutoConfig
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-DocLayoutV2_safetensors")
 @strict
+# PPDocLayoutV2ReadingOrderConfig：PP-DocLayoutV2 阅读顺序子模块配置
 class PPDocLayoutV2ReadingOrderConfig(PreTrainedConfig):
     r"""
     has_relative_attention_bias (`bool`, *optional*, defaults to `True`):
@@ -104,6 +107,7 @@ class PPDocLayoutV2ReadingOrderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-DocLayoutV2_safetensors")
 @strict
+# PPDocLayoutV2Config：PP-DocLayoutV2 文档版面检测与阅读顺序总配置
 class PPDocLayoutV2Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -232,6 +236,7 @@ class PPDocLayoutV2Config(PreTrainedConfig):
     class_order: list[int] | None = None
     reading_order_config: PreTrainedConfig | dict | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.reading_order_config, dict):
             self.reading_order_config = self.sub_configs["reading_order_config"](**self.reading_order_config)

@@ -14,6 +14,8 @@
 
 from typing import TYPE_CHECKING
 
+# PP-FormulaNet 包：延迟加载公式识别配置与建模组件
+
 from ...utils import _LazyModule
 from ...utils.import_utils import define_import_structure
 
