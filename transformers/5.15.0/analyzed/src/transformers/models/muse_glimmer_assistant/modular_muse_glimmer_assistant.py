@@ -36,10 +36,14 @@ from ..exaone4.modeling_exaone4 import (
 from .configuration_muse_glimmer_assistant import MuseGlimmerAssistantConfig
 
 
+# Muse-Glimmer Assistant modular 源：基于 Exaone4 组件构建 DFlash 辅助模型
+
+# MuseGlimmerAssistantRMSNorm：Assistant 模型 RMS 层归一化
 class MuseGlimmerAssistantRMSNorm(Exaone4RMSNorm):
     pass
 
 
+# apply_rotary_pos_emb：对 Q/K 应用 RoPE（K 含主模型拼接上下文）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """
     Applies Rotary Position Embedding to the query and key tensors where keys have concatenated context
@@ -70,6 +74,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MuseGlimmerAssistantAttention：双向/滑动窗口注意力（拼接主模型上下文 K/V）
 class MuseGlimmerAssistantAttention(Exaone4Attention):
     def __init__(self, **super_kwargs):
         super().__init__(**super_kwargs)
@@ -134,6 +139,7 @@ class MuseGlimmerAssistantAttention(Exaone4Attention):
         return attn_output, attn_weights
 
 
+# MuseGlimmerAssistantDecoderLayer：Assistant 解码器单层（注意力 + MLP）
 class MuseGlimmerAssistantDecoderLayer(Exaone4DecoderLayer):
     def __init__(self, config: MuseGlimmerAssistantConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -168,10 +174,12 @@ class MuseGlimmerAssistantDecoderLayer(Exaone4DecoderLayer):
         return hidden_states
 
 
+# MuseGlimmerAssistantPreTrainedModel：Assistant 预训练基类
 class MuseGlimmerAssistantPreTrainedModel(Exaone4PreTrainedModel):
     main_input_name = "noise_embeds"
 
 
+# MuseGlimmerAssistantContextProjection：主模型多层 hidden state 拼接投影
 class MuseGlimmerAssistantContextProjection(nn.Module):
     def __init__(self, config: MuseGlimmerAssistantConfig):
         super().__init__()
@@ -191,6 +199,7 @@ class MuseGlimmerAssistantContextProjection(nn.Module):
         return context_hidden_states
 
 
+# MuseGlimmerAssistantModel：DFlash 扩散去噪辅助 Transformer（noise_embeds 输入）
 class MuseGlimmerAssistantModel(Exaone4Model):
     def __init__(self, config: MuseGlimmerAssistantConfig):
         super().__init__(config)

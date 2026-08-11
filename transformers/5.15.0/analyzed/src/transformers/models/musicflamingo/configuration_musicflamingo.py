@@ -26,8 +26,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# MusicFlamingo 配置：Whisper 音频编码 + Qwen2 文本 LLM 多模态超参
+
+# MusicFlamingoConfig：nvidia/music-flamingo-2601-hf 音乐理解多模态超参
 @auto_docstring(checkpoint="nvidia/music-flamingo-2601-hf")
 @strict
+# MusicFlamingoConfig：nvidia/music-flamingo-2601-hf 音乐理解多模态超参
 class MusicFlamingoConfig(PreTrainedConfig):
     r"""
     audio_bos_token_id (`int`, *optional*, defaults to 151670):
@@ -71,6 +75,7 @@ class MusicFlamingoConfig(PreTrainedConfig):
     audio_frame_step: float = 0.01
     rope_parameters: dict | None = None
 
+    # __post_init__：初始化后补全 layer_types、target_layer_ids 或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if self.rope_parameters is None:
             self.rope_parameters = {

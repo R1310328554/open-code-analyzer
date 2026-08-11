@@ -13,6 +13,8 @@
 # limitations under the License.
 """MusicGen model configuration"""
 
+# MusicGen 配置：T5 文本编码 + EnCodec 音频编解码 + 多码本解码器超参
+
 from typing import ClassVar
 
 from huggingface_hub.dataclasses import strict
@@ -22,8 +24,10 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# MusicgenDecoderConfig：MusicGen 音频 token 多码本解码器超参
 @auto_docstring(checkpoint="facebook/musicgen-small")
 @strict
+# MusicgenDecoderConfig：MusicGen 音频 token 多码本解码器超参
 class MusicgenDecoderConfig(PreTrainedConfig):
     model_type = "musicgen_decoder"
     base_config_key = "decoder_config"
@@ -53,14 +57,17 @@ class MusicgenDecoderConfig(PreTrainedConfig):
     add_cross_attention: bool = False
     cross_attention_hidden_size: int | None = None
 
+    # validate_architecture：@strict 校验 mono/stereo 音频通道数约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.audio_channels not in [1, 2]:
             raise ValueError(f"Expected 1 (mono) or 2 (stereo) audio channels, got {self.audio_channels} channels.")
 
 
+# MusicgenConfig：facebook/musicgen-small 文本条件音乐生成联合超参
 @auto_docstring(checkpoint="facebook/musicgen-small")
 @strict
+# MusicgenConfig：facebook/musicgen-small 文本条件音乐生成联合超参
 class MusicgenConfig(PreTrainedConfig):
     r"""
     text_encoder (`Union[dict, `PretrainedConfig`]`):
@@ -122,6 +129,7 @@ class MusicgenConfig(PreTrainedConfig):
     decoder: dict | PreTrainedConfig = None
     initializer_factor: float = 0.02
 
+    # __post_init__：初始化后补全 layer_types、target_layer_ids 或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if isinstance(self.text_encoder, dict):
             text_encoder_model_type = self.text_encoder.pop("model_type")
@@ -149,6 +157,7 @@ class MusicgenConfig(PreTrainedConfig):
 
     @property
     # This is a property because you might want to change the codec model on the fly
+    # sampling_rate：EnCodec 音频编解码器采样率（只读属性）
     def sampling_rate(self):
         return self.audio_encoder.sampling_rate
 

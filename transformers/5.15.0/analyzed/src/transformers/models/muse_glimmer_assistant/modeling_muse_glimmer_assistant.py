@@ -40,7 +40,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_muse_glimmer_assistant import MuseGlimmerAssistantConfig
 
 
+# Muse-Glimmer Assistant 建模：主模型上下文 + 噪声块双向去噪辅助网络
+
 @use_kernel_forward_from_hub("RMSNorm")
+# MuseGlimmerAssistantRMSNorm：Assistant 模型 RMS 层归一化
 class MuseGlimmerAssistantRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -61,6 +64,7 @@ class MuseGlimmerAssistantRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -68,6 +72,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -80,6 +85,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -105,6 +111,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：对 Q/K 应用 RoPE（K 含主模型拼接上下文）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """
     Applies Rotary Position Embedding to the query and key tensors where keys have concatenated context
@@ -135,6 +142,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MuseGlimmerAssistantAttention：双向/滑动窗口注意力（拼接主模型上下文 K/V）
 class MuseGlimmerAssistantAttention(nn.Module):
     def __init__(self, config: MuseGlimmerAssistantConfig, layer_idx: int):
         super().__init__()
@@ -218,6 +226,7 @@ class MuseGlimmerAssistantAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MuseGlimmerAssistantMLP：Assistant SwiGLU 前馈 MLP
 class MuseGlimmerAssistantMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -234,6 +243,7 @@ class MuseGlimmerAssistantMLP(nn.Module):
         return down_proj
 
 
+# MuseGlimmerAssistantDecoderLayer：Assistant 解码器单层（注意力 + MLP）
 class MuseGlimmerAssistantDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MuseGlimmerAssistantConfig, layer_idx: int):
         super().__init__()
@@ -273,6 +283,7 @@ class MuseGlimmerAssistantDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MuseGlimmerAssistantPreTrainedModel：Assistant 预训练基类
 class MuseGlimmerAssistantPreTrainedModel(PreTrainedModel):
     config: MuseGlimmerAssistantConfig
     base_model_prefix = "model"
@@ -293,6 +304,7 @@ class MuseGlimmerAssistantPreTrainedModel(PreTrainedModel):
     main_input_name = "noise_embeds"
 
 
+# MuseGlimmerAssistantContextProjection：主模型多层 hidden state 拼接投影
 class MuseGlimmerAssistantContextProjection(nn.Module):
     def __init__(self, config: MuseGlimmerAssistantConfig):
         super().__init__()
@@ -312,6 +324,7 @@ class MuseGlimmerAssistantContextProjection(nn.Module):
         return context_hidden_states
 
 
+# MuseGlimmerAssistantRotaryEmbedding：Assistant RoPE 旋转位置编码
 class MuseGlimmerAssistantRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MuseGlimmerAssistantConfig, device=None):
@@ -332,6 +345,7 @@ class MuseGlimmerAssistantRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率
     def compute_default_rope_parameters(
         config: MuseGlimmerAssistantConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -369,6 +383,7 @@ class MuseGlimmerAssistantRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# MuseGlimmerAssistantModel：DFlash 扩散去噪辅助 Transformer（noise_embeds 输入）
 class MuseGlimmerAssistantModel(MuseGlimmerAssistantPreTrainedModel):
     def __init__(self, config: MuseGlimmerAssistantConfig):
         super().__init__(config)

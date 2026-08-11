@@ -22,8 +22,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Muse-Glimmer Assistant 配置：DFlash 扩散去噪辅助 Transformer 超参
+
+# MuseGlimmerAssistantConfig：meta-models/Muse-Glimmer-30B-assistant 扩散辅助模型超参
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B-assistant")
 @strict
+# MuseGlimmerAssistantConfig：meta-models/Muse-Glimmer-30B-assistant 扩散辅助模型超参
 class MuseGlimmerAssistantConfig(PreTrainedConfig):
     r"""
     block_size (`int`, *optional*):
@@ -72,6 +76,7 @@ class MuseGlimmerAssistantConfig(PreTrainedConfig):
     mask_token_id: int = 201818
     target_layer_ids: list[int] | None = None
 
+    # __post_init__：初始化后补全 layer_types、target_layer_ids 或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if self.layer_types is None:
             self.layer_types = ["sliding_attention"] * self.num_hidden_layers

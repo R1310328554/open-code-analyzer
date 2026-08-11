@@ -18,7 +18,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Muse-Glimmer 处理器：图像/视频预处理与 tokenizer 联合封装（patch 占位符替换）
+
 @auto_docstring
+# MuseGlimmerProcessor：Muse-Glimmer 图文/视频多模态联合处理器
 class MuseGlimmerProcessor(ProcessorMixin):
     def __init__(
         self,
@@ -48,6 +51,7 @@ class MuseGlimmerProcessor(ProcessorMixin):
             **kwargs,
         )
 
+    # _get_num_multimodal_tokens：计算多模态占位 token 数（供 vLLM 等推理框架）
     def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -67,11 +71,13 @@ class MuseGlimmerProcessor(ProcessorMixin):
             vision_data.update(num_image_tokens=num_image_tokens, num_image_patches=num_image_patches)
         return MultiModalData(**vision_data)
 
+    # replace_image_token：将图像占位符替换为 patch token 序列
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length
         return self.image_start_token + self.image_token * num_image_tokens + self.image_end_token
 
+    # replace_video_token：将视频占位符替换为带时间戳的帧 token 序列
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         grid_thw = video_inputs["video_grid_thw"][video_idx]

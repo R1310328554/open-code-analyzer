@@ -36,6 +36,9 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# MusicFlamingo 处理器：mel 特征分窗提取与 chat 模板音频占位符替换
+
+# MusicFlamingoProcessorKwargs：MusicFlamingo 处理器默认参数
 class MusicFlamingoProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -55,6 +58,7 @@ class MusicFlamingoProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# MusicFlamingoProcessor：音乐 mel 特征与文本 tokenizer 联合处理器
 class MusicFlamingoProcessor(ProcessorMixin):
     valid_processor_kwargs = MusicFlamingoProcessorKwargs
 
@@ -130,11 +134,13 @@ class MusicFlamingoProcessor(ProcessorMixin):
         if text is not None and audio is not None and len(text) != len(audio):
             raise ValueError(f"Got {len(text)} text but {len(audio)} audios; they must match 1:1.")
 
+    # _get_audio_token_length：按卷积/池化推算 mel 序列对应的 audio token 数
     def _get_audio_token_length(self, audio_lengths):
         conv_output_lengths = (audio_lengths - 1) // 2 + 1  # After conv2 downsampling
         audio_tokens_lengths = (conv_output_lengths - 2) // 2 + 1  # After avg pooling
         return audio_tokens_lengths
 
+    # _process_audio：分窗切块 mel 特征并生成 chat 模板音频占位文本
     def _process_audio(self, audio: AudioInput, **kwargs):
         # Determine number of chunks per sample, and flatten
         window_size = int(kwargs["sampling_rate"] * self.feature_extractor.chunk_length)
@@ -177,6 +183,7 @@ class MusicFlamingoProcessor(ProcessorMixin):
 
         return audio_inputs, audio_replacements
 
+    # replace_audio_token：将音频占位符替换为 sound token 序列
     def replace_audio_token(self, audio_inputs: dict, audio_idx: int, **kwargs) -> str:
         num_audio_tokens = audio_inputs["num_audio_tokens"][audio_idx]
         return self.audio_bos_token + self.audio_token * num_audio_tokens + self.audio_eos_token

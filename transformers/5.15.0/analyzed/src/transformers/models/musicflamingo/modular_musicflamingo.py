@@ -50,12 +50,16 @@ from ..moonshine.modeling_moonshine import MoonshineRotaryEmbedding
 logger = logging.get_logger(__name__)
 
 
+# MusicFlamingo modular 源：AudioFlamingo3 + Moonshine RoPE 组合实现
+
 if is_torch_available():
     import torch
 
 
+# MusicFlamingoConfig：nvidia/music-flamingo-2601-hf 音乐理解多模态超参
 @auto_docstring(checkpoint="nvidia/music-flamingo-2601-hf")
 @strict
+# MusicFlamingoConfig：nvidia/music-flamingo-2601-hf 音乐理解多模态超参
 class MusicFlamingoConfig(AudioFlamingo3Config):
     r"""
     audio_bos_token_id (`int`, *optional*, defaults to 151670):
@@ -91,6 +95,7 @@ class MusicFlamingoConfig(AudioFlamingo3Config):
     audio_frame_step: float = 0.01
     rope_parameters: dict | None = None
 
+    # __post_init__：初始化后补全 layer_types、target_layer_ids 或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if self.rope_parameters is None:
             self.rope_parameters = {
@@ -119,6 +124,7 @@ class MusicFlamingoConfig(AudioFlamingo3Config):
 
 @requires(backends=("torch",))
 @auto_docstring
+# MusicFlamingoProcessor：音乐 mel 特征与文本 tokenizer 联合处理器
 class MusicFlamingoProcessor(AudioFlamingo3Processor):
     def __init__(
         self,
@@ -153,6 +159,7 @@ class MusicFlamingoProcessor(AudioFlamingo3Processor):
         self.audio_bos_token_id = tokenizer.convert_tokens_to_ids(audio_bos_token)
         self.audio_eos_token_id = tokenizer.convert_tokens_to_ids(audio_eos_token)
 
+    # replace_audio_token：将音频占位符替换为 sound token 序列
     def replace_audio_token(self, audio_inputs: dict, audio_idx: int, **kwargs) -> str:
         num_audio_tokens = audio_inputs["num_audio_tokens"][audio_idx]
         return self.audio_bos_token + self.audio_token * num_audio_tokens + self.audio_eos_token
@@ -181,6 +188,7 @@ class MusicFlamingoProcessor(AudioFlamingo3Processor):
         raise NotImplementedError("This method is not supported for MusicFlamingo.")
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     x = x.reshape(*x.shape[:-1], -1, 2)
     x1, x2 = x.unbind(dim=-1)
@@ -188,6 +196,7 @@ def rotate_half(x):
     return x.flatten(-2)
 
 
+# apply_rotary_time_emb：将旋转时间嵌入应用到 hidden states
 def apply_rotary_time_emb(hidden_states, cos, sin):
     original_dtype = hidden_states.dtype
     hidden_states = hidden_states.to(torch.float64)
@@ -201,6 +210,7 @@ def apply_rotary_time_emb(hidden_states, cos, sin):
     return torch.cat((rotated, passthrough), dim=-1).to(original_dtype)
 
 
+# MusicFlamingoRotaryEmbedding：音乐轴向旋转时间嵌入（RoTE 风格）
 class MusicFlamingoRotaryEmbedding(MoonshineRotaryEmbedding):
     """Rotary time embedding module used by MusicFlamingo checkpoints.
 
@@ -243,6 +253,7 @@ class MusicFlamingoRotaryEmbedding(MoonshineRotaryEmbedding):
         return freqs.cos(), freqs.sin()
 
 
+# MusicFlamingoPreTrainedModel：MusicFlamingo 预训练基类
 class MusicFlamingoPreTrainedModel(AudioFlamingo3PreTrainedModel):
     _no_split_modules = None
 
@@ -255,15 +266,18 @@ class MusicFlamingoPreTrainedModel(AudioFlamingo3PreTrainedModel):
 
 
 @dataclass
+# MusicFlamingoModelOutputWithPast：多模态模型输出（含 audio_hidden_states）
 class MusicFlamingoModelOutputWithPast(AudioFlamingo3ModelOutputWithPast):
     pass
 
 
+# MusicFlamingoModel：Whisper 编码器 + 旋转时间嵌入 + Qwen2 LLM 主干
 class MusicFlamingoModel(AudioFlamingo3Model):
     def __init__(self, config: MusicFlamingoConfig):
         super().__init__(config)
         self.pos_emb = MusicFlamingoRotaryEmbedding(config)
 
+    # _build_audio_timestamps：由 input_ids 重建音频窗口/帧时间戳
     def _build_audio_timestamps(
         self,
         input_ids: torch.LongTensor,
@@ -309,6 +323,7 @@ class MusicFlamingoModel(AudioFlamingo3Model):
     @auto_docstring(
         custom_intro="This method is used to get the audio embeddings from input features (a log mel spectrogram), meaning inferring the audio encoder and the multi-modal projector."
     )
+    # get_audio_features：从 mel 特征提取音频嵌入（编码器 + RoTE + 投影）
     def get_audio_features(
         self,
         input_features: torch.FloatTensor,
@@ -399,12 +414,14 @@ class MusicFlamingoModel(AudioFlamingo3Model):
     The MusicFlamingo model which consists of a fine-tuned Whisper encoder, rotary time embedding, a multi-modal projector, and a Qwen2 language model.
     """
 )
+# MusicFlamingoForConditionalGeneration：音乐理解与描述条件生成
 class MusicFlamingoForConditionalGeneration(AudioFlamingo3ForConditionalGeneration):
     def __init__(self, config: MusicFlamingoConfig):
         super().__init__(config)
         self.model = MusicFlamingoModel(config)
         self.post_init()
 
+    # get_audio_features：从 mel 特征提取音频嵌入（编码器 + RoTE + 投影）
     def get_audio_features(self, input_features, input_features_mask, input_ids, **kwargs):
         return self.model.get_audio_features(input_features, input_features_mask, input_ids, **kwargs)
 

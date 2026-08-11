@@ -40,10 +40,13 @@ from ..auto import AutoModel
 from .configuration_musicflamingo import MusicFlamingoConfig
 
 
+# MusicFlamingo 建模：音乐理解多模态（RoTE 时间嵌入 + 投影 + Qwen2）
+
 if is_torch_available():
     import torch
 
 
+# MusicFlamingoRotaryEmbedding：音乐轴向旋转时间嵌入（RoTE 风格）
 class MusicFlamingoRotaryEmbedding(nn.Module):
     """Rotary time embedding module used by MusicFlamingo checkpoints.
 
@@ -74,6 +77,7 @@ class MusicFlamingoRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率
     def compute_default_rope_parameters(
         config: MusicFlamingoConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -125,6 +129,7 @@ class MusicFlamingoRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# MusicFlamingoPreTrainedModel：MusicFlamingo 预训练基类
 class MusicFlamingoPreTrainedModel(PreTrainedModel):
     config: MusicFlamingoConfig
     base_model_prefix = "model"
@@ -145,6 +150,7 @@ class MusicFlamingoPreTrainedModel(PreTrainedModel):
 
 
 @dataclass
+# MusicFlamingoModelOutputWithPast：多模态模型输出（含 audio_hidden_states）
 class MusicFlamingoModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -154,6 +160,7 @@ class MusicFlamingoModelOutputWithPast(BaseModelOutputWithPast):
     audio_hidden_states: torch.FloatTensor | None = None
 
 
+# MusicFlamingoMultiModalProjector：音频特征到 LLM 嵌入空间的 MLP 投影
 class MusicFlamingoMultiModalProjector(nn.Module):
     """
     Audio adaptor (small MLP) that projects MusicFlamingoEncoder features
@@ -177,6 +184,7 @@ class MusicFlamingoMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     x = x.reshape(*x.shape[:-1], -1, 2)
     x1, x2 = x.unbind(dim=-1)
@@ -184,6 +192,7 @@ def rotate_half(x):
     return x.flatten(-2)
 
 
+# apply_rotary_time_emb：将旋转时间嵌入应用到 hidden states
 def apply_rotary_time_emb(hidden_states, cos, sin):
     original_dtype = hidden_states.dtype
     hidden_states = hidden_states.to(torch.float64)
@@ -203,6 +212,7 @@ def apply_rotary_time_emb(hidden_states, cos, sin):
     without a language modeling head.
     """
 )
+# MusicFlamingoModel：Whisper 编码器 + 旋转时间嵌入 + Qwen2 LLM 主干
 class MusicFlamingoModel(MusicFlamingoPreTrainedModel):
     _tp_plan = None
     _pp_plan = None
@@ -220,6 +230,7 @@ class MusicFlamingoModel(MusicFlamingoPreTrainedModel):
     @auto_docstring(
         custom_intro="This method is used to get the audio embeddings from input features (a log mel spectrogram), meaning inferring the audio encoder and the multi-modal projector."
     )
+    # get_audio_features：从 mel 特征提取音频嵌入（编码器 + RoTE + 投影）
     def get_audio_features(
         self,
         input_features: torch.FloatTensor,
@@ -252,6 +263,7 @@ class MusicFlamingoModel(MusicFlamingoPreTrainedModel):
 
         return audio_output
 
+    # get_placeholder_mask：校验并生成音频占位符掩码
     def get_placeholder_mask(
         self, input_ids: torch.LongTensor, inputs_embeds: torch.FloatTensor, audio_features: torch.FloatTensor
     ):
@@ -328,6 +340,7 @@ class MusicFlamingoModel(MusicFlamingoPreTrainedModel):
             audio_hidden_states=audio_embeds,
         )
 
+    # _build_audio_timestamps：由 input_ids 重建音频窗口/帧时间戳
     def _build_audio_timestamps(
         self,
         input_ids: torch.LongTensor,
@@ -376,6 +389,7 @@ class MusicFlamingoModel(MusicFlamingoPreTrainedModel):
     """
 )
 @dataclass
+# MusicFlamingoCausalLMOutputWithPast：MusicFlamingo 条件生成输出
 class MusicFlamingoCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -401,6 +415,7 @@ class MusicFlamingoCausalLMOutputWithPast(ModelOutput):
     The MusicFlamingo model which consists of a fine-tuned Whisper encoder, rotary time embedding, a multi-modal projector, and a Qwen2 language model.
     """
 )
+# MusicFlamingoForConditionalGeneration：音乐理解与描述条件生成
 class MusicFlamingoForConditionalGeneration(MusicFlamingoPreTrainedModel, GenerationMixin):
     _tied_weights_keys = None
 
@@ -410,6 +425,7 @@ class MusicFlamingoForConditionalGeneration(MusicFlamingoPreTrainedModel, Genera
         self.lm_head = nn.Linear(config.text_config.hidden_size, config.text_config.vocab_size, bias=False)
         self.post_init()
 
+    # get_audio_features：从 mel 特征提取音频嵌入（编码器 + RoTE + 投影）
     def get_audio_features(self, input_features, input_features_mask, input_ids, **kwargs):
         return self.model.get_audio_features(input_features, input_features_mask, input_ids, **kwargs)
 

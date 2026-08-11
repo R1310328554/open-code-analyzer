@@ -15,6 +15,8 @@
 Text/audio processor class for MusicGen
 """
 
+# MusicGen 处理器：文本 tokenizer 与 EnCodec 音频编解码联合封装
+
 from typing import Any
 
 import numpy as np
@@ -24,10 +26,12 @@ from ...utils import auto_docstring, to_numpy
 
 
 @auto_docstring
+# MusicgenProcessor：文本 tokenizer + EnCodec 特征提取联合处理器
 class MusicgenProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
+    # get_decoder_prompt_ids：获取 MusicGen 解码器提示 token id
     def get_decoder_prompt_ids(self, task=None, language=None, no_timestamps=True):
         return self.tokenizer.get_decoder_prompt_ids(task=task, language=language, no_timestamps=no_timestamps)
 
@@ -55,6 +59,7 @@ class MusicgenProcessor(ProcessorMixin):
         else:
             return self.tokenizer.batch_decode(*args, **kwargs)
 
+    # _decode_audio：去除填充后解码音频张量为 numpy 数组列表
     def _decode_audio(self, audio_values, padding_mask: Any = None) -> list[np.ndarray]:
         """
         This method strips any padding from the audio values to return a list of numpy audio arrays.

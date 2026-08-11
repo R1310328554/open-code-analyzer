@@ -36,6 +36,9 @@ from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 logger = logging.get_logger(__name__)
 
 
+# Muse-Glimmer 视频预处理：动态分辨率缩放、帧采样与时空 patch 化
+
+# MuseGlimmerVideoProcessorInitKwargs：Muse-Glimmer 视频处理器可选参数字典类型
 class MuseGlimmerVideoProcessorInitKwargs(VideosKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -54,6 +57,7 @@ class MuseGlimmerVideoProcessorInitKwargs(VideosKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：Muse-Glimmer 按 token 上限智能缩放视频 patch 网格
 def smart_resize(
     height: int,
     width: int,
@@ -90,6 +94,7 @@ def smart_resize(
 
 
 @auto_docstring
+# MuseGlimmerVideoProcessor：Muse-Glimmer 视频帧采样与 patch 化预处理
 class MuseGlimmerVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN
@@ -120,6 +125,7 @@ class MuseGlimmerVideoProcessor(BaseVideoProcessor):
         kwargs["do_resize"] = False
         super()._validate_preprocess_kwargs(**kwargs)
 
+    # resize：按宽高比动态缩放视频帧（受 max_tokens 约束）
     def resize(
         self,
         videos: torch.Tensor,
@@ -145,6 +151,7 @@ class MuseGlimmerVideoProcessor(BaseVideoProcessor):
             antialias=True,
         )
 
+    # patchify：将视频张量切分为 (seq_len, patch_dim) 扁平 patch 布局
     def patchify(
         self,
         videos: torch.Tensor,
@@ -183,6 +190,7 @@ class MuseGlimmerVideoProcessor(BaseVideoProcessor):
 
         return flatten_patches, grid_t, grid_h, grid_w
 
+    # sample_frames：按 fps/num_frames 均匀采样视频帧索引
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -224,6 +232,7 @@ class MuseGlimmerVideoProcessor(BaseVideoProcessor):
         indices = torch.linspace(0, total_num_frames - 1, num_frames).long()
         return indices
 
+    # _preprocess：视频预处理流水线（缩放、归一化、patch 化与拼接）
     def _preprocess(
         self,
         videos: list[torch.Tensor],
