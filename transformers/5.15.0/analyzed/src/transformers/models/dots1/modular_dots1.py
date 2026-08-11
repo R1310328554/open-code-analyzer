@@ -38,8 +38,10 @@ from ..qwen3.modeling_qwen3 import (
 logger = logging.get_logger(__name__)
 
 
+# Dots1Config：modular 源中的 MoE LLM 配置定义
 @auto_docstring(checkpoint="rednote-hilab/dots.llm1.base")
 @strict
+# Dots1Config：n_group/first_k_dense_replace 与 TP/PP/EP 并行计划
 class Dots1Config(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -126,6 +128,7 @@ class Dots1Config(PreTrainedConfig):
     bos_token_id: int | None = None
     eos_token_id: int | list[int] | None = None
 
+# __post_init__：默认 KV 头数与 sliding/full attention layer_types
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -141,42 +144,52 @@ class Dots1Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Dots1RMSNorm：直接继承 Qwen3 RMSNorm
 class Dots1RMSNorm(Qwen3RMSNorm):
     pass
 
 
+# Dots1RotaryEmbedding：继承 Qwen3 RoPE 实现
 class Dots1RotaryEmbedding(Qwen3RotaryEmbedding):
     pass
 
 
+# Dots1Attention：继承 Qwen3 多头自注意力
 class Dots1Attention(Qwen3Attention):
     pass
 
 
+# Dots1MLP：继承 DeepSeekV3 稠密 MLP
 class Dots1MLP(DeepseekV3MLP):
     pass
 
 
+# Dots1TopkRouter：继承 DeepSeekV3 TopK 路由门
 class Dots1TopkRouter(DeepseekV3TopkRouter):
     pass
 
 
+# Dots1MoE：继承 DeepSeekV3 MoE 层
 class Dots1MoE(DeepseekV3MoE):
     pass
 
 
+# Dots1DecoderLayer：继承 DeepSeekV3 解码层
 class Dots1DecoderLayer(DeepseekV3DecoderLayer):
     pass
 
 
+# Dots1PreTrainedModel：继承 DeepSeekV3 预训练基类
 class Dots1PreTrainedModel(DeepseekV3PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = None
 
 
+# Dots1Model：继承 Qwen3 主干，替换为 Dots1 解码层
 class Dots1Model(Qwen3Model):
     pass
 
 
+# Dots1ForCausalLM：继承 Qwen3 因果 LM，forward 透传 super
 class Dots1ForCausalLM(Qwen3ForCausalLM):
     def forward(
         self,

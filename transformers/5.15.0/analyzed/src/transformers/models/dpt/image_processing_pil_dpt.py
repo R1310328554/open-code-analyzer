@@ -46,6 +46,7 @@ logger = logging.get_logger(__name__)
 
 
 # Adapted from transformers.models.dpt.image_processing_dpt.DPTImageProcessorKwargs
+# DPTImageProcessorKwargs：PIL 后端共享的 resize/pad/normalize 参数
 class DPTImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ensure_multiple_of (`int`, *optional*, defaults to 1):
@@ -67,6 +68,7 @@ class DPTImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.dpt.image_processing_dpt.get_resize_output_image_size
+# get_resize_output_image_size：计算满足倍数约束的输出尺寸
 def get_resize_output_image_size(
     input_image: np.ndarray,
     output_size: int | Iterable[int],
@@ -107,6 +109,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# DPTImageProcessorPil：无 torch 依赖的 PIL 图像处理器
 class DPTImageProcessorPil(PilBackend):
     """PIL backend for DPT with custom resize and pad."""
 
@@ -129,6 +132,7 @@ class DPTImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：PIL 图像批预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -229,6 +233,7 @@ class DPTImageProcessorPil(PilBackend):
             input_data_format=ChannelDimension.FIRST,
         )
 
+# _preprocess：NumPy 数组 rescale/resize/normalize/pad
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -266,6 +271,7 @@ class DPTImageProcessorPil(PilBackend):
         return processed_images
 
     @requires(backends=("torch",))
+# post_process_semantic_segmentation：分割 logits 上采样后处理
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -329,6 +335,7 @@ class DPTImageProcessorPil(PilBackend):
         return semantic_segmentation
 
     @requires(backends=("torch",))
+# post_process_depth_estimation：深度预测结果后处理
     def post_process_depth_estimation(
         self, outputs: "DepthEstimatorOutput", target_sizes: TensorType | list[tuple[int, int]] | None = None
     ) -> list[dict[str, TensorType]]:

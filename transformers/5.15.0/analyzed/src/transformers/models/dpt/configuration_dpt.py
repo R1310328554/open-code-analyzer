@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# DPTConfig：Intel/dpt-large checkpoint，384 输入 hybrid/ViT 选项
 @auto_docstring(checkpoint="Intel/dpt-large")
 @strict
+# DPTConfig：readout_type、reassemble_factors、fusion_hidden_size 等密集预测超参
 class DPTConfig(PreTrainedConfig):
     r"""
     is_hybrid (`bool`, *optional*, defaults to `False`):
@@ -120,6 +122,7 @@ class DPTConfig(PreTrainedConfig):
     pooler_output_size: int | None = None
     pooler_act: str = "tanh"
 
+# __post_init__：consolidate backbone kwargs 与 hybrid 默认索引
     def __post_init__(self, **kwargs):
         if self.readout_type not in ["ignore", "add", "project"]:
             raise ValueError("Readout_type must be one of ['ignore', 'add', 'project']")

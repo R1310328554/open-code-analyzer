@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from ...modeling_outputs import DepthEstimatorOutput
 
 
+# DPTImageProcessorKwargs：ensure_multiple_of/keep_aspect_ratio 等预处理参数
 class DPTImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ensure_multiple_of (`int`, *optional*, defaults to 1):
@@ -67,6 +68,7 @@ class DPTImageProcessorKwargs(ImagesKwargs, total=False):
     do_reduce_labels: bool
 
 
+# get_resize_output_image_size：按目标尺寸与倍数约束计算输出宽高
 def get_resize_output_image_size(
     input_image: "torch.Tensor",
     output_size: int | Iterable[int],
@@ -107,6 +109,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# DPTImageProcessor：ImageNet 标准化，支持深度估计与语义分割 post_process
 class DPTImageProcessor(TorchvisionBackend):
     """PIL backend for DPT with reduce_label support."""
 
@@ -133,6 +136,7 @@ class DPTImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：resize/normalize/pad 批处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -199,6 +203,7 @@ class DPTImageProcessor(TorchvisionBackend):
             labels[idx] = label
         return labels
 
+# _preprocess：单图 rescale→resize→normalize→pad 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -258,6 +263,7 @@ class DPTImageProcessor(TorchvisionBackend):
 
         return processed_images
 
+# post_process_semantic_segmentation：上采样 logits 至原图尺寸
     def post_process_semantic_segmentation(
         self, outputs, target_sizes: list[tuple] | None = None, return_segmentation_scores: bool = False
     ) -> "list[torch.Tensor] | list[SemanticSegmentationPostProcessorOutput]":
@@ -392,6 +398,7 @@ class DPTImageProcessor(TorchvisionBackend):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+# post_process_depth_estimation：深度图后处理与可选双线性上采样
     def post_process_depth_estimation(
         self,
         outputs: "DepthEstimatorOutput",

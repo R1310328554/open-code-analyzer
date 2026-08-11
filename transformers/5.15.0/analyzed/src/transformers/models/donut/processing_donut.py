@@ -23,6 +23,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring, logging
 
 
+# DonutProcessorKwargs：文本侧默认不返回 mm_token_type_ids 与 replacement offsets
 class DonutProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -36,13 +37,16 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# DonutProcessor：组合 image_processor 与 tokenizer，图文同时输入时自动生成 labels
 class DonutProcessor(ProcessorMixin):
     valid_processor_kwargs = DonutProcessorKwargs
 
+# __init__：绑定 Donut 图像处理器与 BART/SentencePiece 分词器
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+# __call__：图文联合预处理；双模态时关闭 add_special_tokens 并将 input_ids 复制为 labels
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -58,9 +62,11 @@ class DonutProcessor(ProcessorMixin):
         return model_inputs
 
     @property
+# model_input_names：在基类字段基础上追加 labels 供训练使用
     def model_input_names(self):
         return super().model_input_names + ["labels"]
 
+# token2json：将 <s_key>...</s_key> 生成序列递归解析为有序 JSON 字典
     def token2json(self, tokens, is_inner_value=False, added_vocab=None):
         """
         Convert a (generated) token sequence into an ordered JSON format.

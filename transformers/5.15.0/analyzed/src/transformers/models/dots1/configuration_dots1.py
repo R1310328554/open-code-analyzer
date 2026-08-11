@@ -24,8 +24,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Dots1Config：rednote-hilab/dots.llm1.base checkpoint，62 层 4608 维
 @auto_docstring(checkpoint="rednote-hilab/dots.llm1.base")
 @strict
+# Dots1Config：n_routed_experts/topk/sliding_window 与 rope_parameters 等 MoE 超参
 class Dots1Config(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -112,6 +114,7 @@ class Dots1Config(PreTrainedConfig):
     bos_token_id: int | None = None
     eos_token_id: int | list[int] | None = None
 
+# __post_init__：补全 num_key_value_heads 与 layer_types（全注意力/滑动窗口）
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

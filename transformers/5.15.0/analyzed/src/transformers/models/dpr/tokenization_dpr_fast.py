@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# DPRContextEncoderTokenizerFast：Rust 后端 passage 编码器
 class DPRContextEncoderTokenizerFast(BertTokenizer):
     r"""
     Construct a "fast" DPRContextEncoder tokenizer (backed by HuggingFace's *tokenizers* library).
@@ -40,6 +41,7 @@ class DPRContextEncoderTokenizerFast(BertTokenizer):
     slow_tokenizer_class = DPRContextEncoderTokenizer
 
 
+# DPRQuestionEncoderTokenizerFast：Rust 后端问题编码器
 class DPRQuestionEncoderTokenizerFast(BertTokenizer):
     r"""
     Constructs a "fast" DPRQuestionEncoder tokenizer (backed by HuggingFace's *tokenizers* library).
@@ -128,7 +130,9 @@ CUSTOM_DPR_READER_DOCSTRING = r"""
 
 
 @add_start_docstrings(CUSTOM_DPR_READER_DOCSTRING)
+# CustomDPRReaderTokenizerMixin：Reader 批编码与 decode_best_spans 逻辑
 class CustomDPRReaderTokenizerMixin:
+# __call__：快速 tokenizers 批处理 question+passage 序列
     def __call__(
         self,
         questions,
@@ -187,6 +191,7 @@ class CustomDPRReaderTokenizerMixin:
             encoded_inputs["attention_mask"] = attention_mask
         return self.pad(encoded_inputs, padding=padding, max_length=max_length, return_tensors=return_tensors)
 
+# decode_best_spans：从 Reader logits 提取最佳答案跨度
     def decode_best_spans(
         self,
         reader_input: BatchEncoding,
@@ -298,6 +303,7 @@ class CustomDPRReaderTokenizerMixin:
 
 
 @add_end_docstrings(CUSTOM_DPR_READER_DOCSTRING)
+# DPRReaderTokenizerFast：Reader 快速分词器，slow_tokenizer_class 指向慢速版
 class DPRReaderTokenizerFast(CustomDPRReaderTokenizerMixin, BertTokenizer):
     r"""
     Constructs a "fast" DPRReader tokenizer (backed by HuggingFace's *tokenizers* library).

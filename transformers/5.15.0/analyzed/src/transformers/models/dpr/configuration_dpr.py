@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DPRConfig：facebook/dpr-ctx_encoder-single-nq-base，768 维 12 层 BERT
 @auto_docstring(checkpoint="facebook/dpr-ctx_encoder-single-nq-base")
 @strict
+# DPRConfig：vocab/hidden/intermediate 与 projection_dim 检索向量维度
 class DPRConfig(PreTrainedConfig):
     r"""
     Example:

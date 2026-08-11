@@ -43,6 +43,7 @@ from .configuration_dots1 import Dots1Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Dots1RMSNorm：Root Mean Square LayerNorm，等价于 T5LayerNorm
 class Dots1RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -52,6 +53,7 @@ class Dots1RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+# forward：input_ids 经 MoE 解码器输出 logits 与 KV cache
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -63,6 +65,7 @@ class Dots1RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Dots1RotaryEmbedding：可配置 rope_type 的 RoPE 位置编码
 class Dots1RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Dots1Config, device=None):
@@ -117,6 +120,7 @@ class Dots1RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 旋转操作中交换并取反张量半部
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -125,6 +129,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 施加到 query/key 上
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -150,6 +155,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 场景下重复 KV 头以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -162,6 +168,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -188,6 +195,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Dots1Attention：多头自注意力，支持 q/k RMSNorm 与多种 attention 后端
 class Dots1Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -260,6 +268,7 @@ class Dots1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Dots1MLP：SwiGLU 风格门控前馈（gate/up/down 投影）
 class Dots1MLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -276,6 +285,7 @@ class Dots1MLP(nn.Module):
         return down_proj
 
 
+# Dots1TopkRouter：MoE 路由门，按 top-k 选择专家并归一化权重
 class Dots1TopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -318,6 +328,7 @@ class Dots1TopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# Dots1Experts：多专家并行 MLP，grouped GEMM 加速
 class Dots1Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -357,6 +368,7 @@ class Dots1Experts(nn.Module):
         return final_hidden_states
 
 
+# Dots1MoE：TopK 路由 + 专家 MLP + 可选 shared experts 残差
 class Dots1MoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -381,6 +393,7 @@ class Dots1MoE(nn.Module):
         return hidden_states
 
 
+# Dots1DecoderLayer：Pre-LN 自注意力 + MoE/MLP 前馈残差块
 class Dots1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Dots1Config, layer_idx: int):
         super().__init__()
@@ -429,6 +442,7 @@ class Dots1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Dots1PreTrainedModel：权重初始化与 gradient checkpointing 基类
 class Dots1PreTrainedModel(PreTrainedModel):
     config: Dots1Config
     base_model_prefix = "model"
@@ -460,6 +474,7 @@ class Dots1PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Dots1Model：token 嵌入 + 堆叠 DecoderLayer + 最终 RMSNorm
 class Dots1Model(Dots1PreTrainedModel):
     def __init__(self, config: Dots1Config):
         super().__init__(config)
@@ -545,6 +560,7 @@ class Dots1Model(Dots1PreTrainedModel):
 
 
 @auto_docstring
+# Dots1ForCausalLM：因果 LM 头，支持 generate 与 past_key_values 缓存
 class Dots1ForCausalLM(Dots1PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

@@ -49,6 +49,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# BaseModelOutputWithIntermediateActivations：含中间层激活的 ViT 输出
 class BaseModelOutputWithIntermediateActivations(ModelOutput):
     r"""
     last_hidden_states (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -68,6 +69,7 @@ class BaseModelOutputWithIntermediateActivations(ModelOutput):
     """
 )
 @dataclass
+# BaseModelOutputWithPoolingAndIntermediateActivations：池化 + 中间激活输出
 class BaseModelOutputWithPoolingAndIntermediateActivations(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -86,6 +88,7 @@ class BaseModelOutputWithPoolingAndIntermediateActivations(ModelOutput):
     intermediate_activations: tuple[torch.FloatTensor, ...] | None = None
 
 
+# DPTViTHybridEmbeddings：ResNet+ViT 混合骨干的 patch 嵌入
 class DPTViTHybridEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -141,6 +144,7 @@ class DPTViTHybridEmbeddings(nn.Module):
 
         return posemb
 
+# forward：pixel_values 经 ViT+Neck 输出 depth logits 或 segmentation
     def forward(
         self, pixel_values: torch.Tensor, interpolate_pos_encoding: bool = False
     ) -> BaseModelOutputWithIntermediateActivations:
@@ -182,6 +186,7 @@ class DPTViTHybridEmbeddings(nn.Module):
         )
 
 
+# DPTViTEmbeddings：CLS + patch 嵌入与位置编码
 class DPTViTEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings.
@@ -237,6 +242,7 @@ class DPTViTEmbeddings(nn.Module):
         return BaseModelOutputWithIntermediateActivations(last_hidden_states=embeddings)
 
 
+# DPTViTPatchEmbeddings：Conv2d patch 投影至 hidden_size
 class DPTViTPatchEmbeddings(nn.Module):
     """
     Image to Patch Embedding.
@@ -269,6 +275,7 @@ class DPTViTPatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准 ViT 缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -298,6 +305,7 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->DPT
+# DPTSelfAttention：ViT 多头自注意力
 class DPTSelfAttention(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -354,6 +362,7 @@ class DPTSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViTConfig->DPTConfig, ViTSelfOutput->DPTViTSelfOutput
+# DPTViTSelfOutput：注意力输出线性投影
 class DPTViTSelfOutput(nn.Module):
     """
     The residual connection is defined in ViTLayer instead of here (as is the case with other models), due to the
@@ -372,6 +381,7 @@ class DPTViTSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViTConfig->DPTConfig, ViTSelfAttention->DPTSelfAttention, ViTSelfOutput->DPTViTSelfOutput
+# DPTViTAttention：SelfAttention + SelfOutput 封装
 class DPTViTAttention(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -389,6 +399,7 @@ class DPTViTAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViTConfig->DPTConfig, ViTIntermediate->DPTViTIntermediate
+# DPTViTIntermediate：MLP 中间扩展层
 class DPTViTIntermediate(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -405,6 +416,7 @@ class DPTViTIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViTConfig->DPTConfig, ViTOutput->DPTViTOutput
+# DPTViTOutput：MLP 输出投影与 dropout
 class DPTViTOutput(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -419,6 +431,7 @@ class DPTViTOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTLayer with ViTConfig->DPTConfig, ViTAttention->DPTViTAttention, ViTIntermediate->DPTViTIntermediate, ViTOutput->DPTViTOutput, ViTLayer->DPTViTLayer
+# DPTViTLayer：Pre-LN 自注意力 + MLP 残差块
 class DPTViTLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -453,6 +466,7 @@ class DPTViTLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# DPTReassembleStage：多尺度 readout 投影与上/下采样 reassemble
 class DPTReassembleStage(nn.Module):
     """
     This class reassembles the hidden states of the backbone into image-like feature representations at various
@@ -564,6 +578,7 @@ def _get_backbone_hidden_size(config):
         return config.hidden_size
 
 
+# DPTReassembleLayer：单 stage 的 readout 处理与 Conv 投影
 class DPTReassembleLayer(nn.Module):
     def __init__(self, config: DPTConfig, channels: int, factor: int):
         super().__init__()
@@ -586,6 +601,7 @@ class DPTReassembleLayer(nn.Module):
         return hidden_state
 
 
+# DPTFeatureFusionStage：自顶向下特征融合 stage
 class DPTFeatureFusionStage(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -610,6 +626,7 @@ class DPTFeatureFusionStage(nn.Module):
         return fused_hidden_states
 
 
+# DPTPreActResidualLayer：Pre-activation 残差卷积单元
 class DPTPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -671,6 +688,7 @@ class DPTPreActResidualLayer(nn.Module):
         return hidden_state + residual
 
 
+# DPTFeatureFusionLayer：双路特征拼接 + 残差融合
 class DPTFeatureFusionLayer(nn.Module):
     """Feature fusion layer, merges feature maps from different stages.
 
@@ -709,6 +727,7 @@ class DPTFeatureFusionLayer(nn.Module):
 
 
 @auto_docstring
+# DPTPreTrainedModel：DPT 权重初始化与 backbone 加载基类
 class DPTPreTrainedModel(PreTrainedModel):
     config: DPTConfig
     base_model_prefix = "dpt"
@@ -733,6 +752,7 @@ class DPTPreTrainedModel(PreTrainedModel):
             init.zeros_(module.position_embeddings)
 
 
+# DPTViTEncoder：堆叠 DPTViTLayer 或加载外部 backbone
 class DPTViTEncoder(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -749,6 +769,7 @@ class DPTViTEncoder(nn.Module):
 
 
 @auto_docstring
+# DPTModel：Embeddings + Encoder + Neck，输出多尺度融合特征
 class DPTModel(DPTPreTrainedModel):
     def __init__(self, config: DPTConfig, add_pooling_layer: bool = True):
         r"""
@@ -802,6 +823,7 @@ class DPTModel(DPTPreTrainedModel):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTPooler with ViTConfig->DPTConfig, ViTPooler->DPTViTPooler
+# DPTViTPooler：CLS token 线性池化（可选）
 class DPTViTPooler(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -817,6 +839,7 @@ class DPTViTPooler(nn.Module):
         return pooled_output
 
 
+# DPTNeck：Reassemble + FeatureFusion 颈部网络
 class DPTNeck(nn.Module):
     """
     DPTNeck. A neck is a module that is normally used between the backbone and the head. It takes a list of tensors as
@@ -875,6 +898,7 @@ class DPTNeck(nn.Module):
         return output
 
 
+# DPTDepthEstimationHead：卷积深度回归头，输出 per-pixel depth
 class DPTDepthEstimationHead(nn.Module):
     """
     Output head consisting of 3 convolutional layers. It progressively halves the feature dimension and upsamples
@@ -920,6 +944,7 @@ class DPTDepthEstimationHead(nn.Module):
     DPT Model with a depth estimation head on top (consisting of 3 convolutional layers) e.g. for KITTI, NYUv2.
     """
 )
+# DPTForDepthEstimation：单目深度估计，含 auxiliary head 训练选项
 class DPTForDepthEstimation(DPTPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1035,6 +1060,7 @@ class DPTForDepthEstimation(DPTPreTrainedModel):
         )
 
 
+# DPTSemanticSegmentationHead：语义分割分类头
 class DPTSemanticSegmentationHead(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -1057,6 +1083,7 @@ class DPTSemanticSegmentationHead(nn.Module):
         return logits
 
 
+# DPTAuxiliaryHead：训练期辅助分割头与 cross-entropy loss
 class DPTAuxiliaryHead(nn.Module):
     def __init__(self, config: DPTConfig):
         super().__init__()
@@ -1076,6 +1103,7 @@ class DPTAuxiliaryHead(nn.Module):
 
 
 @auto_docstring
+# DPTForSemanticSegmentation：ADE20K 等语义分割任务
 class DPTForSemanticSegmentation(DPTPreTrainedModel):
     def __init__(self, config: DPTConfig):
         super().__init__(config)

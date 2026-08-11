@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# DPRContextEncoderTokenizer： passage 编码，继承 BertTokenizer
 class DPRContextEncoderTokenizer(BertTokenizer):
     r"""
     Construct a DPRContextEncoder tokenizer.
@@ -42,6 +43,7 @@ class DPRContextEncoderTokenizer(BertTokenizer):
         self.do_lower_case = do_lower_case
 
 
+# DPRQuestionEncoderTokenizer：问题编码，继承 BertTokenizer
 class DPRQuestionEncoderTokenizer(BertTokenizer):
     r"""
     Constructs a DPRQuestionEncoder tokenizer.
@@ -135,7 +137,9 @@ CUSTOM_DPR_READER_DOCSTRING = r"""
 
 
 @add_start_docstrings(CUSTOM_DPR_READER_DOCSTRING)
+# CustomDPRReaderTokenizerMixin：Reader 专用 [CLS]Q[SEP]Title[SEP]Text 拼接与 span 解码
 class CustomDPRReaderTokenizerMixin:
+# __call__：将 question/titles/texts 批编码为 Reader 输入矩阵
     def __call__(
         self,
         questions,
@@ -195,6 +199,7 @@ class CustomDPRReaderTokenizerMixin:
             encoded_inputs["attention_mask"] = attention_mask
         return self.pad(encoded_inputs, padding=padding, max_length=max_length, return_tensors=return_tensors)
 
+# decode_best_spans：根据 logits 解码 top-k 答案跨度与相关性分数
     def decode_best_spans(
         self,
         reader_input: BatchEncoding,
@@ -271,6 +276,7 @@ class CustomDPRReaderTokenizerMixin:
                 break
         return nbest_spans_predictions[:num_spans]
 
+# _get_best_spans：枚举合法 start/end 组合并计算 span_score
     def _get_best_spans(
         self,
         start_logits: list[int],
@@ -308,6 +314,7 @@ class CustomDPRReaderTokenizerMixin:
 
 
 @add_end_docstrings(CUSTOM_DPR_READER_DOCSTRING)
+# DPRReaderTokenizer：Reader 慢速分词器，组合 mixin 与 BertTokenizer
 class DPRReaderTokenizer(CustomDPRReaderTokenizerMixin, BertTokenizer):
     r"""
     Construct a DPRReader tokenizer.

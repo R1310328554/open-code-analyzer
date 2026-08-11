@@ -43,6 +43,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# DPRContextEncoderOutput：上下文编码器 pooler_output 检索向量
 class DPRContextEncoderOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, embeddings_size)`):
@@ -62,6 +63,7 @@ class DPRContextEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# DPRQuestionEncoderOutput：问题编码器 pooler_output 检索向量
 class DPRQuestionEncoderOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, embeddings_size)`):
@@ -81,6 +83,7 @@ class DPRQuestionEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# DPRReaderOutput：Reader 的 start/end/relevance logits 与 hidden states
 class DPRReaderOutput(ModelOutput):
     r"""
     start_logits (`torch.FloatTensor` of shape `(n_passages, sequence_length)`):
@@ -100,10 +103,12 @@ class DPRReaderOutput(ModelOutput):
 
 
 @auto_docstring
+# DPRPreTrainedModel：共享 BERT 骨干的预训练基类
 class DPRPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
 
+# DPREncoder：BERT + 线性投影，输出 passage/question 嵌入
 class DPREncoder(DPRPreTrainedModel):
     base_model_prefix = "bert_model"
 
@@ -161,6 +166,7 @@ class DPREncoder(DPRPreTrainedModel):
         return self.bert_model.config.hidden_size
 
 
+# DPRSpanPredictor：Reader 跨度起止与相关性打分头
 class DPRSpanPredictor(DPRPreTrainedModel):
     base_model_prefix = "encoder"
 
@@ -224,6 +230,7 @@ class DPRSpanPredictor(DPRPreTrainedModel):
 ##################
 
 
+# DPRPretrainedContextEncoder：上下文编码器抽象基类
 class DPRPretrainedContextEncoder(DPRPreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -234,6 +241,7 @@ class DPRPretrainedContextEncoder(DPRPreTrainedModel):
     base_model_prefix = "ctx_encoder"
 
 
+# DPRPretrainedQuestionEncoder：问题编码器抽象基类
 class DPRPretrainedQuestionEncoder(DPRPreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -244,6 +252,7 @@ class DPRPretrainedQuestionEncoder(DPRPreTrainedModel):
     base_model_prefix = "question_encoder"
 
 
+# DPRPretrainedReader：Reader 抽象基类
 class DPRPretrainedReader(DPRPreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -264,6 +273,7 @@ class DPRPretrainedReader(DPRPreTrainedModel):
     The bare DPRContextEncoder transformer outputting pooler outputs as context representations.
     """
 )
+# DPRContextEncoder：编码 passage 为 dense 向量供 FAISS 检索
 class DPRContextEncoder(DPRPretrainedContextEncoder):
     def __init__(self, config: DPRConfig):
         super().__init__(config)
@@ -370,6 +380,7 @@ class DPRContextEncoder(DPRPretrainedContextEncoder):
     The bare DPRQuestionEncoder transformer outputting pooler outputs as question representations.
     """
 )
+# DPRQuestionEncoder：编码 query 为 dense 向量与 passage 做内积检索
 class DPRQuestionEncoder(DPRPretrainedQuestionEncoder):
     def __init__(self, config: DPRConfig):
         super().__init__(config)
@@ -477,6 +488,7 @@ class DPRQuestionEncoder(DPRPretrainedQuestionEncoder):
     The bare DPRReader transformer outputting span predictions.
     """
 )
+# DPRReader：对 top-k passage 预测答案跨度与相关性
 class DPRReader(DPRPretrainedReader):
     def __init__(self, config: DPRConfig):
         super().__init__(config)
