@@ -27,8 +27,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Phi4MultimodalVisionConfig：Phi-4 多模态 SigLIP 视觉塔超参
 @auto_docstring(checkpoint="microsoft/Phi-4-multimodal-instruct")
 @strict
+# Phi4MultimodalVisionConfig：Phi-4 多模态 SigLIP 视觉塔超参
 class Phi4MultimodalVisionConfig(PreTrainedConfig):
     r"""
     crop_size (`int`, *optional*, defaults to 448):
@@ -63,8 +65,10 @@ class Phi4MultimodalVisionConfig(PreTrainedConfig):
     feature_layer: int = -2
 
 
+# Phi4MultimodalAudioConfig：Phi-4 多模态 Conformer 音频编码器超参
 @auto_docstring(checkpoint="microsoft/Phi-4-multimodal-instruct")
 @strict
+# Phi4MultimodalAudioConfig：Phi-4 多模态 Conformer 音频编码器超参
 class Phi4MultimodalAudioConfig(PreTrainedConfig):
     r"""
     num_blocks (`int`, *optional*, defaults to 24):
@@ -155,8 +159,10 @@ class Phi4MultimodalAudioConfig(PreTrainedConfig):
             raise ValueError("`time_reduction` should be a multiple of 2!")
 
 
+# Phi4MultimodalConfig：Phi-4 多模态联合超参（视觉+音频+LLM）
 @auto_docstring(checkpoint="microsoft/Phi-4-multimodal-instruct")
 @strict
+# Phi4MultimodalConfig：Phi-4 多模态联合超参（视觉+音频+LLM）
 class Phi4MultimodalConfig(PreTrainedConfig):
     r"""
     original_max_position_embeddings (`int`, *optional*, defaults to 4096):

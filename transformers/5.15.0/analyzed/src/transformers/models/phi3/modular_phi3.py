@@ -14,6 +14,8 @@
 
 """PyTorch Phi-3 model."""
 
+# Phi-3 modular 源：继承 Phi/Mistral 组件实现 Phi-3 解码器
+
 from collections.abc import Callable
 
 import torch
@@ -45,7 +47,9 @@ _CHECKPOINT_FOR_DOC = "microsoft/Phi-3-mini-4k-instruct"
 _CONFIG_FOR_DOC = "Phi3Config"
 
 
+# Phi3MLP：Phi-3 SwiGLU 前馈 MLP
 class Phi3MLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -54,6 +58,7 @@ class Phi3MLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
         self.activation_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         up_states = self.gate_up_proj(hidden_states)
 
@@ -63,10 +68,12 @@ class Phi3MLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# Phi3RotaryEmbedding：Phi-3 长上下文 RoPE 旋转位置编码
 class Phi3RotaryEmbedding(PhiRotaryEmbedding):
     pass
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -97,9 +104,11 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Phi3Attention：Phi-3 多头自注意力（可选滑动窗口）
 class Phi3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi3Config, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -115,6 +124,7 @@ class Phi3Attention(nn.Module):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
         self.qkv_proj = nn.Linear(config.hidden_size, op_size, bias=False)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -163,7 +173,9 @@ class Phi3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Phi3DecoderLayer：Phi-3 解码器单层（Attn + MLP + 残差）
 class Phi3DecoderLayer(MistralDecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi3Config, layer_idx: int):
         super().__init__(config, layer_idx)
         self.config = config
@@ -172,6 +184,7 @@ class Phi3DecoderLayer(MistralDecoderLayer):
         self.resid_attn_dropout = nn.Dropout(config.resid_pdrop)
         self.resid_mlp_dropout = nn.Dropout(config.resid_pdrop)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -203,10 +216,12 @@ class Phi3DecoderLayer(MistralDecoderLayer):
         return hidden_states
 
 
+# Phi3PreTrainedModel：Phi-3 预训练基类与权重初始化
 class Phi3PreTrainedModel(MistralPreTrainedModel):
     _version = "0.0.5"
 
 
+# Phi3ForCausalLM：Phi-3 因果语言建模
 class Phi3ForCausalLM(MistralForCausalLM):
     def prepare_inputs_for_generation(
         self,
@@ -247,10 +262,12 @@ class Phi3ForCausalLM(MistralForCausalLM):
         return model_inputs
 
 
+# Phi3ForSequenceClassification：Phi-3 序列分类
 class Phi3ForSequenceClassification(MistralForSequenceClassification):
     pass
 
 
+# Phi3ForTokenClassification：Phi-3 token 分类
 class Phi3ForTokenClassification(MistralForTokenClassification):
     pass
 

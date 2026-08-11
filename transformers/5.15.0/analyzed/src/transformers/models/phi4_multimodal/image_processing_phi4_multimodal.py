@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Phi4Multimodal."""
 
+# Phi-4 多模态图像处理：动态 HD 多裁剪与 aspect-ratio 自适应
+
 import math
 
 import torch
@@ -28,6 +30,7 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Phi4MultimodalImageProcessorKwargs：Phi-4 图像预处理 kwargs 类型
 class Phi4MultimodalImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*):
@@ -41,6 +44,7 @@ class Phi4MultimodalImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Phi4MultimodalImageProcessor：Phi-4 动态 HD 多裁剪图像预处理
 class Phi4MultimodalImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     size = {"height": 448, "width": 448}
@@ -54,13 +58,16 @@ class Phi4MultimodalImageProcessor(TorchvisionBackend):
     valid_kwargs = Phi4MultimodalImageProcessorKwargs
     model_input_names = ["image_pixel_values", "image_sizes", "image_attention_mask"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[Phi4MultimodalImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像预处理入口（动态 HD 多裁剪策略）
     def preprocess(self, images: ImageInput, **kwargs: Unpack[Phi4MultimodalImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # find_closest_aspect_ratio：选取最接近目标宽高比的 tile 布局
     def find_closest_aspect_ratio(self, aspect_ratio, target_ratios, width, height, image_size):
         best_ratio_diff = float("inf")
         best_ratio = (1, 1)
@@ -76,6 +83,7 @@ class Phi4MultimodalImageProcessor(TorchvisionBackend):
                     best_ratio = ratio
         return best_ratio
 
+    # dynamic_preprocess：动态 HD 多裁剪图像预处理流水线
     def dynamic_preprocess(self, image, image_size, patch_size, mask_size, max_num=36, min_num=1):
         orig_height, orig_width = image.shape[-2:]
 
@@ -136,6 +144,7 @@ class Phi4MultimodalImageProcessor(TorchvisionBackend):
 
         return resized_img, attention_mask
 
+    # pad_to_max_num_crops：将图像裁剪 batch padding 到固定 crop 数
     def pad_to_max_num_crops(self, images, max_crops=5):
         """
         images: B x 3 x H x W, B<=max_crops
@@ -146,6 +155,7 @@ class Phi4MultimodalImageProcessor(TorchvisionBackend):
             images = torch.cat([images, pad], dim=0)
         return images
 
+    # pad_mask_to_max_num_crops：将 mask batch padding 到固定 crop 数
     def pad_mask_to_max_num_crops(self, masks, max_crops=5):
         B, H, W = masks.shape
         if max_crops > B:
@@ -153,6 +163,7 @@ class Phi4MultimodalImageProcessor(TorchvisionBackend):
             masks = torch.cat([masks, pad], dim=0)
         return masks
 
+    # _preprocess：图像/音频预处理流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

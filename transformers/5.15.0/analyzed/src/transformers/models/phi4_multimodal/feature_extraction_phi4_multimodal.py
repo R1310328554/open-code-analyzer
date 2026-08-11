@@ -16,6 +16,8 @@
 Processor class for Phi4Multimodal
 """
 
+# Phi-4 多模态音频特征：log-Mel 滤波器组提取与嵌入尺寸计算
+
 import numpy as np
 
 from ...audio_utils import AudioInput, mel_filter_bank
@@ -31,9 +33,11 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Phi4MultimodalFeatureExtractor：Phi-4 音频 Mel 滤波器组特征提取
 class Phi4MultimodalFeatureExtractor(SequenceFeatureExtractor):
     model_input_names = ["audio_input_features", "audio_embed_sizes", "audio_attention_mask"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         feature_size: int = 80,
@@ -71,6 +75,7 @@ class Phi4MultimodalFeatureExtractor(SequenceFeatureExtractor):
             mel_scale="kaldi",
         )
 
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         raw_speech: AudioInput,
@@ -200,6 +205,7 @@ class Phi4MultimodalFeatureExtractor(SequenceFeatureExtractor):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
     # TODO; @eustlb, move this to audio_utils in a general spectogram_batch function that handles torch and numpy
+    # _torch_extract_fbank_features：PyTorch 提取 log-Mel 滤波器组特征
     def _torch_extract_fbank_features(
         self, waveform: "torch.FloatTensor", audio_lengths: "torch.Tensor", device: str = "cpu"
     ) -> "torch.FloatTensor":
@@ -266,6 +272,7 @@ class Phi4MultimodalFeatureExtractor(SequenceFeatureExtractor):
 
         return log_spec
 
+    # _compute_audio_embed_size：计算音频嵌入序列长度
     def _compute_audio_embed_size(self, audio_frames):
         integer = audio_frames // self.audio_compression_rate
         remainder = audio_frames % self.audio_compression_rate

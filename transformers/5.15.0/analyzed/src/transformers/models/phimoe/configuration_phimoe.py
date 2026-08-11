@@ -14,6 +14,8 @@
 
 """PyTorch Phi-MoE model."""
 
+# Phi-MoE 配置：Microsoft Phi-3.5-MoE 稀疏混合专家因果 LM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,8 +23,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# PhimoeConfig：Microsoft Phi-3.5-MoE 稀疏混合专家因果 LM 超参
 @auto_docstring(checkpoint="microsoft/Phi-3.5-MoE-instruct")
 @strict
+# PhimoeConfig：Microsoft Phi-3.5-MoE 稀疏混合专家因果 LM 超参
 class PhimoeConfig(PreTrainedConfig):
     r"""
     num_local_experts (`int`, *optional*, defaults to 16):

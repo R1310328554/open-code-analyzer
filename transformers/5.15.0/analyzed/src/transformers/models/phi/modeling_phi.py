@@ -30,8 +30,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_phi import PhiConfig
 
 
+# Phi 建模：Microsoft Phi-1/1.5 小型高效因果 LM（自动生成）
+
+# PhiRotaryEmbedding：Phi 部分 RoPE 旋转位置编码
 class PhiRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -50,6 +54,7 @@ class PhiRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(config: PhiConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -72,6 +77,7 @@ class PhiRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -89,6 +95,7 @@ class PhiRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -97,6 +104,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -122,6 +130,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -134,6 +143,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -160,9 +170,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# PhiAttention：Phi 融合 QKV 多头自注意力（可选 QK LayerNorm）
 class PhiAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -186,6 +198,7 @@ class PhiAttention(nn.Module):
                 config.hidden_size // config.num_attention_heads, eps=config.layer_norm_eps, elementwise_affine=True
             )
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -245,7 +258,9 @@ class PhiAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PhiMLP：Phi CLIP 风格 GELU 前馈 MLP
 class PhiMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -253,6 +268,7 @@ class PhiMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -260,7 +276,9 @@ class PhiMLP(nn.Module):
         return hidden_states
 
 
+# PhiDecoderLayer：Phi 解码器单层（Attn + MLP + 残差）
 class PhiDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig, layer_idx: int):
         super().__init__()
         self.self_attn = PhiAttention(config, layer_idx=layer_idx)
@@ -268,6 +286,7 @@ class PhiDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -300,6 +319,7 @@ class PhiDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PhiPreTrainedModel：Phi 预训练基类与权重初始化
 class PhiPreTrainedModel(PreTrainedModel):
     config: PhiConfig
     base_model_prefix = "model"
@@ -319,7 +339,9 @@ class PhiPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PhiModel：Phi Transformer 解码器堆叠主干
 class PhiModel(PhiPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -340,6 +362,7 @@ class PhiModel(PhiPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -396,12 +419,14 @@ class PhiModel(PhiPreTrainedModel):
 
 
 @auto_docstring
+# PhiForCausalLM：Phi 因果语言建模
 class PhiForCausalLM(PhiPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = PhiModel(config)
@@ -413,6 +438,7 @@ class PhiForCausalLM(PhiPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -470,10 +496,12 @@ class PhiForCausalLM(PhiPreTrainedModel, GenerationMixin):
         )
 
 
+# PhiForSequenceClassification：Phi 序列分类
 class PhiForSequenceClassification(GenericForSequenceClassification, PhiPreTrainedModel):
     pass
 
 
+# PhiForTokenClassification：Phi token 分类
 class PhiForTokenClassification(GenericForTokenClassification, PhiPreTrainedModel):
     pass
 

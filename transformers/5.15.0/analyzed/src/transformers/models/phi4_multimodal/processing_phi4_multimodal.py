@@ -16,6 +16,8 @@
 Processor class for Phi4Multimodal
 """
 
+# Phi-4 多模态处理器：图像/音频/文本三模态联合预处理
+
 import re
 
 from ...audio_utils import AudioInput
@@ -29,6 +31,7 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Phi4MultimodalProcessorKwargs：Phi-4 联合处理器 kwargs 类型
 class Phi4MultimodalProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -38,7 +41,9 @@ class Phi4MultimodalProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Phi4MultimodalProcessor：Phi-4 图像/音频/文本联合处理器
 class Phi4MultimodalProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         image_processor,
@@ -53,6 +58,7 @@ class Phi4MultimodalProcessor(ProcessorMixin):
         super().__init__(image_processor, audio_processor, tokenizer, **kwargs)
 
     @auto_docstring
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         text: TextInput | list[TextInput],

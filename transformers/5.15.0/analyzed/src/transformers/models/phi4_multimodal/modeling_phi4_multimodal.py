@@ -50,7 +50,11 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_phi4_multimodal import Phi4MultimodalAudioConfig, Phi4MultimodalConfig, Phi4MultimodalVisionConfig
 
 
+# Phi-4 多模态建模：SigLIP 视觉塔 + Conformer 音频塔 + Phi-3 LLM（自动生成）
+
+# Phi4MultimodalVisionMLP：Phi-4 视觉塔 SigLIP 风格前馈 MLP
 class Phi4MultimodalVisionMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -58,6 +62,7 @@ class Phi4MultimodalVisionMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -65,6 +70,7 @@ class Phi4MultimodalVisionMLP(nn.Module):
         return hidden_states
 
 
+# simple_eager_attention_forward：视觉塔 eager 缩放点积注意力前向
 def simple_eager_attention_forward(
     module: nn.Module,
     query_states: torch.Tensor,
@@ -87,7 +93,9 @@ def simple_eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Phi4MultimodalVisionAttention：Phi-4 视觉塔多头自注意力
 class Phi4MultimodalVisionAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__()
         self.config = config
@@ -103,6 +111,7 @@ class Phi4MultimodalVisionAttention(nn.Module):
         self.q_proj = nn.Linear(config.hidden_size, config.hidden_size)
         self.out_proj = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -137,7 +146,9 @@ class Phi4MultimodalVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Phi4MultimodalVisionEncoderLayer：Phi-4 视觉塔 Transformer 编码层
 class Phi4MultimodalVisionEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -147,6 +158,7 @@ class Phi4MultimodalVisionEncoderLayer(GradientCheckpointingLayer):
         self.mlp = Phi4MultimodalVisionMLP(config)
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -171,6 +183,7 @@ class Phi4MultimodalVisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Phi4MultimodalVisionEncoder：Phi-4 视觉塔 Transformer 编码器堆叠
 class Phi4MultimodalVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -180,6 +193,7 @@ class Phi4MultimodalVisionEncoder(nn.Module):
         config: Phi4MultimodalVisionConfig
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__()
         self.config = config
@@ -190,6 +204,7 @@ class Phi4MultimodalVisionEncoder(nn.Module):
 
     # Ignore copy
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds,
@@ -208,6 +223,7 @@ class Phi4MultimodalVisionEncoder(nn.Module):
 
 
 @auto_docstring
+# Phi4MultimodalVisionPreTrainedModel：Phi-4 视觉塔预训练基类
 class Phi4MultimodalVisionPreTrainedModel(PreTrainedModel):
     config: Phi4MultimodalVisionConfig
     base_model_prefix = "phi4_vision"
@@ -226,6 +242,7 @@ class Phi4MultimodalVisionPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -262,7 +279,9 @@ class Phi4MultimodalVisionPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.bias)
 
 
+# Phi4MultimodalVisionEmbeddings：Phi-4 视觉 patch 嵌入与位置编码
 class Phi4MultimodalVisionEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__()
         self.config = config
@@ -316,6 +335,7 @@ class Phi4MultimodalVisionEmbeddings(nn.Module):
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return patch_pos_embed
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.FloatTensor, patch_attention_mask: torch.BoolTensor) -> torch.Tensor:
         batch_size, _, max_im_h, max_im_w = pixel_values.shape
 
@@ -362,9 +382,11 @@ class Phi4MultimodalVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# Phi4MultimodalVisionMultiheadAttentionPoolingHead：Phi-4 视觉全局池化注意力头
 class Phi4MultimodalVisionMultiheadAttentionPoolingHead(nn.Module):
     """Multihead Attention Pooling."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__()
 
@@ -373,6 +395,7 @@ class Phi4MultimodalVisionMultiheadAttentionPoolingHead(nn.Module):
         self.layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.mlp = Phi4MultimodalVisionMLP(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_state, attention_mask):
         batch_size = hidden_state.shape[0]
         probe = self.probe.repeat(batch_size, 1, 1)
@@ -388,10 +411,12 @@ class Phi4MultimodalVisionMultiheadAttentionPoolingHead(nn.Module):
         return hidden_state[:, 0]
 
 
+# Phi4MultimodalVisionModel：Phi-4 SigLIP 视觉编码器完整模型
 class Phi4MultimodalVisionModel(Phi4MultimodalVisionPreTrainedModel):
     config: Phi4MultimodalVisionConfig
     main_input_name = "pixel_values"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalVisionConfig):
         super().__init__(config)
         self.config = config
@@ -404,11 +429,13 @@ class Phi4MultimodalVisionModel(Phi4MultimodalVisionPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self) -> nn.Module:
         return self.embeddings.patch_embedding
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values,
@@ -456,9 +483,11 @@ class Phi4MultimodalVisionModel(Phi4MultimodalVisionPreTrainedModel):
         )
 
 
+# Phi4MultimodalImageEmbedding：Phi-4 动态 HD 图像→token 嵌入投影
 class Phi4MultimodalImageEmbedding(nn.Module):
     """Image embedding."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig):
         super().__init__()
         self.config = config
@@ -500,6 +529,7 @@ class Phi4MultimodalImageEmbedding(nn.Module):
         patch_feature = patch_feature.view(-1, patch_feature.size(1) * patch_feature.size(2), patch_feature.size(-1))
         return patch_feature
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor,
@@ -592,7 +622,9 @@ class Phi4MultimodalImageEmbedding(nn.Module):
 ########################################################## AUDIO #############################################
 
 
+# Phi4MultimodalAudioMLP：Phi-4 音频 Conformer 前馈 MLP
 class Phi4MultimodalAudioMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.layer_norm = nn.LayerNorm(config.hidden_size)
@@ -601,6 +633,7 @@ class Phi4MultimodalAudioMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_states = self.layer_norm(hidden_states)
         up_states = self.gate_up_proj(hidden_states)
@@ -613,7 +646,9 @@ class Phi4MultimodalAudioMLP(nn.Module):
         return out
 
 
+# Phi4MultimodalAudioAttention：Phi-4 音频相对位置自注意力
 class Phi4MultimodalAudioAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.config = config
@@ -627,6 +662,7 @@ class Phi4MultimodalAudioAttention(nn.Module):
         self.v_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=True)
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=True)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -660,7 +696,9 @@ class Phi4MultimodalAudioAttention(nn.Module):
         return attn_output
 
 
+# Phi4MultimodalAudioDepthWiseSeparableConv1d：Phi-4 音频深度可分离 1D 卷积
 class Phi4MultimodalAudioDepthWiseSeparableConv1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig, padding: int = 0):
         super().__init__()
         self.dw_conv = nn.Conv1d(
@@ -675,11 +713,14 @@ class Phi4MultimodalAudioDepthWiseSeparableConv1d(nn.Module):
             config.hidden_size * config.depthwise_multiplier, config.depthwise_separable_out_channel, 1, 1, 0
         )
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         return self.pw_conv(self.dw_conv(hidden_states))
 
 
+# Phi4MultimodalAudioGluPointWiseConv：Phi-4 音频 GLU 逐点卷积
 class Phi4MultimodalAudioGluPointWiseConv(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.config = config
@@ -690,6 +731,7 @@ class Phi4MultimodalAudioGluPointWiseConv(nn.Module):
         self.b1 = nn.Parameter(torch.zeros(1, config.ext_pw_out_channel, 1))
         self.b2 = nn.Parameter(torch.zeros(1, config.ext_pw_out_channel, 1))
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         # we assume the input always has the #channel (#dim) in the last dimension of the
         # tensor, so need to switch the dimension first for 1D-Conv case
@@ -700,7 +742,9 @@ class Phi4MultimodalAudioGluPointWiseConv(nn.Module):
         return out.permute([0, 2, 1])
 
 
+# Phi4MultimodalAudioConvModule：Phi-4 音频 Conformer 卷积模块
 class Phi4MultimodalAudioConvModule(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.config = config
@@ -713,6 +757,7 @@ class Phi4MultimodalAudioConvModule(nn.Module):
         self.ext_pw_conv_1d = nn.Conv1d(config.hidden_size, config.ext_pw_out_channel, kernel_size=1, stride=1)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor):
         hidden_states = self.glu(self.layer_norm(hidden_states))
         hidden_states = self.dw_sep_conv_1d(hidden_states.permute([0, 2, 1]))
@@ -726,7 +771,9 @@ class Phi4MultimodalAudioConvModule(nn.Module):
         return out
 
 
+# Phi4MultimodalAudioConformerEncoderLayer：Phi-4 音频 Conformer 编码层
 class Phi4MultimodalAudioConformerEncoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
 
@@ -737,6 +784,7 @@ class Phi4MultimodalAudioConformerEncoderLayer(nn.Module):
         self.layer_norm_att = nn.LayerNorm(config.hidden_size)
         self.layer_norm = nn.LayerNorm(config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -754,7 +802,9 @@ class Phi4MultimodalAudioConformerEncoderLayer(nn.Module):
         return out
 
 
+# Phi4MultimodalAudioNemoConvSubsampling：Phi-4 音频 NeMo 风格卷积下采样
 class Phi4MultimodalAudioNemoConvSubsampling(torch.nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.subsampling_factor = config.time_reduction
@@ -779,6 +829,7 @@ class Phi4MultimodalAudioNemoConvSubsampling(torch.nn.Module):
         self.conv = torch.nn.Sequential(*layers)
         self.out = torch.nn.Linear(conv_channels * config.nemo_final_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, mask: torch.Tensor | None):
         # Unsqueeze Channel Axis
         hidden_states = hidden_states.unsqueeze(1)
@@ -799,7 +850,9 @@ class Phi4MultimodalAudioNemoConvSubsampling(torch.nn.Module):
         return hidden_states, pad_mask.unsqueeze(1)
 
 
+# Phi4MultimodalAudioRelativeAttentionBias：Phi-4 音频相对位置注意力偏置
 class Phi4MultimodalAudioRelativeAttentionBias(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
 
@@ -810,6 +863,7 @@ class Phi4MultimodalAudioRelativeAttentionBias(nn.Module):
             self.num_buckets *= 2
         self.bias_values = nn.Embedding(self.num_buckets, config.num_attention_heads)
 
+    # forward：模块前向计算
     def forward(self, x):
         # instantiate bias compatible with shape of x
         max_pos = x.size(1)
@@ -832,17 +886,21 @@ class Phi4MultimodalAudioRelativeAttentionBias(nn.Module):
         return att_bias
 
 
+# Phi4MultimodalAudioMeanVarianceNormLayer：Phi-4 音频均值-方差归一化层
 class Phi4MultimodalAudioMeanVarianceNormLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__()
         self.global_mean = nn.Buffer(torch.zeros(config.input_size))
         self.global_invstd = nn.Buffer(torch.ones(config.input_size))
 
+    # forward：模块前向计算
     def forward(self, x):
         return (x - self.global_mean) * self.global_invstd
 
 
 @auto_docstring
+# Phi4MultimodalAudioPreTrainedModel：Phi-4 音频塔预训练基类
 class Phi4MultimodalAudioPreTrainedModel(PreTrainedModel):
     config: Phi4MultimodalAudioConfig
     input_modalities = "audio"
@@ -853,6 +911,7 @@ class Phi4MultimodalAudioPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Phi4MultimodalAudioGluPointWiseConv):
@@ -863,6 +922,7 @@ class Phi4MultimodalAudioPreTrainedModel(PreTrainedModel):
             init.ones_(module.global_invstd)
 
 
+# unfold_tensor：将长音频序列按 max_seq_len 分块展开
 def unfold_tensor(tensor, max_seq_len):
     """
     For a given tensor with shape of (N, T, D), if sequence length T is longer than max_seq_len,
@@ -882,6 +942,7 @@ def unfold_tensor(tensor, max_seq_len):
     return tensor
 
 
+# adaptive_enc_mask：构造音频分块编码的自适应 attention mask
 def adaptive_enc_mask(x_len, chunk_start_idx, left_window=0, right_window=0):
     """
     The function is very important for Transformer Transducer Streaming mode
@@ -914,7 +975,9 @@ def adaptive_enc_mask(x_len, chunk_start_idx, left_window=0, right_window=0):
     return mask_left & mask_right
 
 
+# Phi4MultimodalAudioModel：Phi-4 Conformer 音频编码器完整模型
 class Phi4MultimodalAudioModel(Phi4MultimodalAudioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalAudioConfig):
         super().__init__(config)
         self.config = config
@@ -994,6 +1057,7 @@ class Phi4MultimodalAudioModel(Phi4MultimodalAudioPreTrainedModel):
         pad_mask = pad_mask & enc_streaming_mask
         return pad_mask
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, mask: torch.Tensor | None, **kwargs):
         hidden_states = self.encoder_embedding(hidden_states)
         hidden_states, hs_mask, mask = self.forward_embeddings(hidden_states, mask)
@@ -1046,7 +1110,9 @@ class Phi4MultimodalAudioModel(Phi4MultimodalAudioPreTrainedModel):
         return hidden_states
 
 
+# Phi4MultimodalAudioEmbedding：Phi-4 音频特征→token 嵌入投影
 class Phi4MultimodalAudioEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig):
         super().__init__()
         self.config = config
@@ -1063,6 +1129,7 @@ class Phi4MultimodalAudioEmbedding(nn.Module):
         )
         self.down_proj_for_vision_speech = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor,
@@ -1107,7 +1174,9 @@ class Phi4MultimodalAudioEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Phi4MultimodalRMSNorm：Phi-4 多模态 LLM RMS 层归一化
 class Phi4MultimodalRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Phi4MultimodalRMSNorm is equivalent to T5LayerNorm
@@ -1116,6 +1185,7 @@ class Phi4MultimodalRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -1127,7 +1197,9 @@ class Phi4MultimodalRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Phi4MultimodalMLP：Phi-4 多模态 LLM SwiGLU 前馈 MLP
 class Phi4MultimodalMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -1136,6 +1208,7 @@ class Phi4MultimodalMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
         self.activation_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         up_states = self.gate_up_proj(hidden_states)
 
@@ -1145,6 +1218,7 @@ class Phi4MultimodalMLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -1152,6 +1226,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -1164,6 +1239,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -1189,6 +1265,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -1219,9 +1296,11 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Phi4MultimodalAttention：Phi-4 多模态 LLM 多头自注意力
 class Phi4MultimodalAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -1237,6 +1316,7 @@ class Phi4MultimodalAttention(nn.Module):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
         self.qkv_proj = nn.Linear(config.hidden_size, op_size, bias=False)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1285,7 +1365,9 @@ class Phi4MultimodalAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Phi4MultimodalDecoderLayer：Phi-4 多模态 LLM 解码器单层
 class Phi4MultimodalDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -1297,6 +1379,7 @@ class Phi4MultimodalDecoderLayer(GradientCheckpointingLayer):
         self.resid_attn_dropout = nn.Dropout(config.resid_pdrop)
         self.resid_mlp_dropout = nn.Dropout(config.resid_pdrop)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1328,9 +1411,11 @@ class Phi4MultimodalDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Phi4MultimodalFeatureEmbedding：Phi-4 多模态特征嵌入融合层
 class Phi4MultimodalFeatureEmbedding(nn.Module):
     """Image-audio embedding."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig) -> None:
         super().__init__()
         self.config = config
@@ -1339,6 +1424,7 @@ class Phi4MultimodalFeatureEmbedding(nn.Module):
         self.image_embed = Phi4MultimodalImageEmbedding(config)
         self.audio_embed = Phi4MultimodalAudioEmbedding(config)
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor,
@@ -1387,6 +1473,7 @@ class Phi4MultimodalFeatureEmbedding(nn.Module):
 
 
 @auto_docstring
+# Phi4MultimodalPreTrainedModel：Phi-4 多模态预训练基类
 class Phi4MultimodalPreTrainedModel(PreTrainedModel):
     config: Phi4MultimodalConfig
     base_model_prefix = "model"
@@ -1407,6 +1494,7 @@ class Phi4MultimodalPreTrainedModel(PreTrainedModel):
     input_modalities = ("image", "audio", "text")
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Phi4MultimodalImageEmbedding):
@@ -1414,8 +1502,10 @@ class Phi4MultimodalPreTrainedModel(PreTrainedModel):
             init.zeros_(module.sub_img_feature_extensor)
 
 
+# Phi4MultimodalRotaryEmbedding：Phi-4 多模态 LLM RoPE 旋转位置编码
 class Phi4MultimodalRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -1434,6 +1524,7 @@ class Phi4MultimodalRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(
         config: Phi4MultimodalConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -1458,6 +1549,7 @@ class Phi4MultimodalRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -1476,7 +1568,9 @@ class Phi4MultimodalRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Phi4MultimodalModel：Phi-4 视觉+音频+LLM 多模态主干
 class Phi4MultimodalModel(Phi4MultimodalPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Phi4MultimodalConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -1500,6 +1594,7 @@ class Phi4MultimodalModel(Phi4MultimodalPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1586,12 +1681,14 @@ class Phi4MultimodalModel(Phi4MultimodalPreTrainedModel):
 
 
 @auto_docstring
+# Phi4MultimodalForCausalLM：Phi-4 多模态条件文本生成
 class Phi4MultimodalForCausalLM(Phi4MultimodalPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Phi4MultimodalModel(config)
@@ -1603,6 +1700,7 @@ class Phi4MultimodalForCausalLM(Phi4MultimodalPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

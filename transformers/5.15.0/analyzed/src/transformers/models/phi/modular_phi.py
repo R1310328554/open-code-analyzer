@@ -29,13 +29,17 @@ from ..llama.modeling_llama import (
 from .configuration_phi import PhiConfig
 
 
+# Phi modular 源：继承 Llama/CLIP 组件实现 Phi 解码器堆叠
+
 logger = logging.get_logger(__name__)
 
 _CHECKPOINT_FOR_DOC = "microsoft/phi-1"
 _CONFIG_FOR_DOC = "PhiConfig"
 
 
+# PhiRotaryEmbedding：Phi 部分 RoPE 旋转位置编码
 class PhiRotaryEmbedding(LlamaRotaryEmbedding):
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(config: PhiConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -57,7 +61,9 @@ class PhiRotaryEmbedding(LlamaRotaryEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# PhiAttention：Phi 融合 QKV 多头自注意力（可选 QK LayerNorm）
 class PhiAttention(LlamaAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.q_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=True)
@@ -75,6 +81,7 @@ class PhiAttention(LlamaAttention):
                 config.hidden_size // config.num_attention_heads, eps=config.layer_norm_eps, elementwise_affine=True
             )
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -134,11 +141,14 @@ class PhiAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# PhiMLP：Phi CLIP 风格 GELU 前馈 MLP
 class PhiMLP(CLIPMLP):
     pass
 
 
+# PhiDecoderLayer：Phi 解码器单层（Attn + MLP + 残差）
 class PhiDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig, layer_idx: int):
         super().__init__()
         self.self_attn = PhiAttention(config, layer_idx=layer_idx)
@@ -146,6 +156,7 @@ class PhiDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -177,6 +188,7 @@ class PhiDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PhiPreTrainedModel：Phi 预训练基类与权重初始化
 class PhiPreTrainedModel(LlamaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": PhiDecoderLayer,
@@ -184,7 +196,9 @@ class PhiPreTrainedModel(LlamaPreTrainedModel):
     }
 
 
+# PhiModel：Phi Transformer 解码器堆叠主干
 class PhiModel(LlamaModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhiConfig):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -197,6 +211,7 @@ class PhiModel(LlamaModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -252,16 +267,20 @@ class PhiModel(LlamaModel):
         )
 
 
+# PhiForCausalLM：Phi 因果语言建模
 class PhiForCausalLM(LlamaForCausalLM):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=True)
 
 
+# PhiForSequenceClassification：Phi 序列分类
 class PhiForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# PhiForTokenClassification：Phi token 分类
 class PhiForTokenClassification(LlamaForTokenClassification):
     pass
 

@@ -14,6 +14,8 @@
 
 """Phi-3 model configuration"""
 
+# Phi-3 配置：Microsoft Phi-3-mini 长上下文因果 LM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,8 +23,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Phi3Config：Microsoft Phi-3-mini 小型高效因果 LM 超参
 @auto_docstring(checkpoint="microsoft/Phi-3-mini-4k-instruct")
 @strict
+# Phi3Config：Microsoft Phi-3-mini 小型高效因果 LM 超参
 class Phi3Config(PreTrainedConfig):
     r"""
     original_max_position_embeddings (`int`, *optional*, defaults to 4096):
