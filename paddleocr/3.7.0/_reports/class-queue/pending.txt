@@ -1,2 +1,0 @@
-tools/resolve_doc_github_refs.py
-tools/train.py

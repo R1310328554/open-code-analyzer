@@ -1,6 +1,9 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 2,
+  "claimed_at": "2026-08-11T07:38:04Z",
+  "files": [
+    "tools/resolve_doc_github_refs.py",
+    "tools/train.py"
+  ],
+  "remaining_pending": 0,
   "done": 600
 }
