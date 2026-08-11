@@ -24,6 +24,7 @@ sys.path.append(__dir__)
 sys.path.append(os.path.join(__dir__, "..", "..", ".."))
 sys.path.append(os.path.join(__dir__, "..", "..", "..", "tools"))
 
+# 剪枝灵敏度分析与微调训练：可选自动灵敏度扫描或固定 10% 剪枝比例
 import paddle
 import paddle.distributed as dist
 from ppocr.data import build_dataloader, set_signal_handlers
@@ -38,6 +39,7 @@ import tools.program as program
 dist.get_world_size()
 
 
+    # 筛选可剪枝的 4D 卷积参数名，排除 depthwise/transpose 与特定层
 def get_pruned_params(parameters):
     params = []
 
@@ -53,6 +55,7 @@ def get_pruned_params(parameters):
     return params
 
 
+    # 初始化分布式环境，构建 train/eval 数据流、模型、损失与优化器
 def main(config, device, logger, vdl_writer):
     # init dist environment
     if config["Global"]["distributed"]:
@@ -65,6 +68,7 @@ def main(config, device, logger, vdl_writer):
     train_dataloader = build_dataloader(config, "Train", device, logger)
     if config["Eval"]:
         valid_dataloader = build_dataloader(config, "Eval", device, logger)
+        # 固定模式：非 transpose/linear 参数一律 0.1 剪枝比例
     else:
         valid_dataloader = None
 
@@ -85,10 +89,12 @@ def main(config, device, logger, vdl_writer):
 
     logger.info("FLOPs before pruning: {}".format(flops))
 
+    # FPGM 剪枝器：基于几何中位数的滤波器重要性评估
     from paddleslim.dygraph import FPGMFilterPruner
 
     model.train()
 
+    # 绑定当前 OCR 模型与 representative input shape
     pruner = FPGMFilterPruner(model, input_shape)
 
     # build loss
@@ -121,6 +127,7 @@ def main(config, device, logger, vdl_writer):
         )
     )
 
+        # 灵敏度或剪枝后评估函数，返回 det hmean 或 rec acc
     def eval_fn():
         metric = program.eval(
             model, valid_dataloader, post_process_class, eval_class, False
@@ -133,6 +140,7 @@ def main(config, device, logger, vdl_writer):
         logger.info("metric[{}]: {}".format(main_indicator, metric[main_indicator]))
         return metric[main_indicator]
 
+    # 开关：True 自动计算各层剪枝灵敏度；False 统一设为 10% 剪枝率
     run_sensitive_analysis = False
     """
     run_sensitive_analysis=True:
@@ -147,6 +155,7 @@ def main(config, device, logger, vdl_writer):
 
     """
 
+        # 自动模式：sensitive 扫描并据 2% 精度损失选取各层比例
     if run_sensitive_analysis:
         params_sensitive = pruner.sensitive(
             eval_func=eval_fn,
@@ -171,6 +180,7 @@ def main(config, device, logger, vdl_writer):
                 # set prune ratio as 10%. The larger the value, the more convolution weights will be cropped
                 params_sensitive[param.name] = 0.1
 
+    # 执行剪枝计划后在剪枝模型上继续 program.train 微调
     plan = pruner.prune_vars(params_sensitive, [0])
 
     flops = paddle.flops(model, input_shape)
@@ -178,6 +188,7 @@ def main(config, device, logger, vdl_writer):
 
     # start train
 
+    # 标准 PPOCR 训练循环：loss、lr、metric 与 checkpoint 保存
     program.train(
         config,
         train_dataloader,
@@ -195,6 +206,7 @@ def main(config, device, logger, vdl_writer):
     )
 
 
+# CLI 入口：preprocess 解析 config 后调用 main 完成剪枝+微调
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess(is_train=True)
     main(config, device, logger, vdl_writer)

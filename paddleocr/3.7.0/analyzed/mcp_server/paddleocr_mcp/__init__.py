@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# paddleocr_mcp 包版本号：Model Context Protocol 服务端，向 AI 助手暴露 OCR 工具
 __version__ = "0.1.0"

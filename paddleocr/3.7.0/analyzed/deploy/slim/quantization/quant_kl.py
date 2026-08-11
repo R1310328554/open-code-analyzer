@@ -24,6 +24,7 @@ sys.path.append(__dir__)
 sys.path.append(os.path.abspath(os.path.join(__dir__, "..", "..", "..")))
 sys.path.append(os.path.abspath(os.path.join(__dir__, "..", "..", "..", "tools")))
 
+# 训练后静态量化（PTQ）：基于 KL 散度的激活校准，无需重新训练
 import yaml
 import paddle
 import paddle.distributed as dist
@@ -45,6 +46,7 @@ import numpy as np
 dist.get_world_size()
 
 
+    # 与 quant.py 相同的 PACT 层定义（本脚本 PTQ 流程未直接使用）
 class PACT(paddle.nn.Layer):
     def __init__(self):
         super(PACT, self).__init__()
@@ -88,6 +90,7 @@ quant_config = {
 }
 
 
+    # 标准 OCR 输入：从 DataLoader 取 batch[0] 图像 numpy 供校准采样
 def sample_generator(loader):
     def __reader__():
         for _, data in enumerate(loader):
@@ -97,6 +100,7 @@ def sample_generator(loader):
     return __reader__
 
 
+    # LayoutXLM SER 多模态输入：input_ids/bbox/mask/token_type/images 五元组
 def sample_generator_layoutxlm_ser(loader):
     def __reader__():
         for _, data in enumerate(loader):
@@ -110,6 +114,7 @@ def sample_generator_layoutxlm_ser(loader):
     return __reader__
 
 
+    # 静态图 Executor + quant_post_static：用样本流估计激活 scale 并导出 int8 模型
 def main(config, device, logger, vdl_writer):
     # init dist environment
     if config["Global"]["distributed"]:
@@ -120,6 +125,7 @@ def main(config, device, logger, vdl_writer):
     # build dataloader
     set_signal_handlers()
     config["Train"]["loader"]["num_workers"] = 0
+    # KIE LayoutXLM 序列标注模型需专用 sample generator
     is_layoutxlm_ser = (
         config["Architecture"]["model_type"] == "kie"
         and config["Architecture"]["Backbone"]["name"] == "LayoutXLMForSer"
@@ -133,6 +139,7 @@ def main(config, device, logger, vdl_writer):
     else:
         valid_dataloader = None
 
+    # 后量化仅在静态图模式下执行
     paddle.enable_static()
     exe = paddle.static.Executor(device)
 
@@ -153,6 +160,7 @@ def main(config, device, logger, vdl_writer):
     else:
         generator = sample_generator(train_dataloader)
 
+    # 读取 FP32 inference.pdmodel，KL 校准后写出量化 inference 目录
     paddleslim.quant.quant_post_static(
         executor=exe,
         model_dir=inference_model_dir,
@@ -167,6 +175,7 @@ def main(config, device, logger, vdl_writer):
     )
 
 
+# 入口：要求 Global.inference_model 或 pretrained_model 含 inference 文件
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess(is_train=True)
     main(config, device, logger, vdl_writer)

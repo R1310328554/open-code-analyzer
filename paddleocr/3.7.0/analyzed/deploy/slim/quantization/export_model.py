@@ -20,6 +20,7 @@ sys.path.append(__dir__)
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "..", "..", "..")))
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "..", "..", "..", "tools")))
 
+# QAT 量化模型评估与导出：加载量化权重后 eval 并 export_single_model
 import argparse
 
 import paddle
@@ -37,10 +38,12 @@ from ppocr.data import build_dataloader, set_signal_handlers
 from ppocr.utils.export_model import export_single_model
 
 
+    # 配置 8bit 通道/滑动平均量化策略，构建 QAT 模型并导出 inference
 def main():
     ############################################################################################################
     # 1. quantization configs
     ############################################################################################################
+    # PaddleSlim QAT 超参：Conv2D/Linear 权值与激活 int8 量化
     quant_config = {
         # weight preprocess type, default is None and no preprocessing is performed.
         "weight_preprocess_type": None,
@@ -127,7 +130,9 @@ def main():
     model = build_model(config["Architecture"])
 
     # get QAT model
+    # 在 build_model 后对网络插入 fake quant 节点
     quanter = QAT(config=quant_config)
+    # 将 quanter 传入 export_single_model 以保存量化推理图
     quanter.quantize(model)
 
     load_model(config, model)
@@ -142,6 +147,7 @@ def main():
     use_srn = config["Architecture"]["algorithm"] == "SRN"
     model_type = config["Architecture"].get("model_type", None)
     # start eval
+    # 量化模型在验证集上评估 det/rec/kie 等指标
     metric = program.eval(
         model, valid_dataloader, post_process_class, eval_class, model_type, use_srn
     )
@@ -165,12 +171,14 @@ def main():
     else:
         input_shape = None
 
+        # 蒸馏多子模型：分别导出各 student 的 inference 子目录
     if arch_config["algorithm"] in [
         "Distillation",
     ]:  # distillation model
         archs = list(arch_config["Models"].values())
         for idx, name in enumerate(model.model_name_list):
             sub_model_save_path = os.path.join(save_path, name, "inference")
+            # 单子模型或蒸馏子模型静态导出，支持 SVTR 固定 input_shape
             export_single_model(
                 model.model_list[idx],
                 archs[idx],
@@ -184,6 +192,7 @@ def main():
         export_single_model(model, arch_config, save_path, logger, input_shape, quanter)
 
 
+# 非训练模式 preprocess，仅加载 config 与 device 后执行导出
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess()
     main()

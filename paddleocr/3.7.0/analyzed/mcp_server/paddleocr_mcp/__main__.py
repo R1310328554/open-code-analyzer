@@ -21,6 +21,7 @@ import asyncio
 import os
 import sys
 
+# PaddleOCR MCP 服务入口：解析 CLI、创建推理后端并注册 FastMCP 工具
 from fastmcp import FastMCP
 
 from .inference import create_inference
@@ -29,6 +30,7 @@ from .providers import InferenceProvider, provider_choices
 from .tasks import create_task
 
 
+    # 解析模型名、推理 provider（local/aistudio/qianfan/self_hosted）与 HTTP/stdio 传输
 def _parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="PaddleOCR MCP server.")
@@ -141,6 +143,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+    # 校验各 provider 必需凭证：AI Studio token、千帆 API key 或自建 URL
 def _validate_args(args: argparse.Namespace) -> None:
     """Validate command line arguments."""
     if not args.http and (args.host != "127.0.0.1" or args.port != 8000):
@@ -181,6 +184,7 @@ def _validate_args(args: argparse.Namespace) -> None:
             sys.exit(2)
 
 
+    # 按 provider 分支调用 create_inference 工厂，注入 device/token/超时等参数
 def _create_inference_from_args(args: argparse.Namespace, model: str):
     provider = args.ppocr_source
 
@@ -219,6 +223,7 @@ def _create_inference_from_args(args: argparse.Namespace, model: str):
         raise ValueError(f"Unknown provider: {provider}")
 
 
+    # 异步主流程：resolve_model → inference.start → create_task → FastMCP.run
 async def async_main() -> None:
     """Asynchronous main entry point."""
     args = _parse_args()
@@ -238,15 +243,18 @@ async def async_main() -> None:
         task = create_task(model, inference)
 
         server_name = f"PaddleOCR {model} MCP server"
+        # 创建 MCP 服务器实例，mask_error_details 隐藏内部堆栈
         mcp = FastMCP(
             name=server_name,
             mask_error_details=True,
         )
 
+        # 按模型类型（OCR/Structure/VL）注册对应 MCP tool 处理器
         task.register_tools(mcp)
 
         log_level = "INFO" if args.verbose else "WARNING"
 
+            # Streamable HTTP 模式：绑定 host:port；默认 stdio 供 Cursor/Claude 集成
         if args.http:
             await mcp.run_async(
                 transport="streamable-http",
@@ -269,6 +277,7 @@ async def async_main() -> None:
         await inference.stop()
 
 
+    # 同步包装：asyncio.run(async_main)
 def main() -> None:
     """Main entry point."""
     asyncio.run(async_main())

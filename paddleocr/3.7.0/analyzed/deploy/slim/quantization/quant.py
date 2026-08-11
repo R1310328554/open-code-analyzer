@@ -24,6 +24,7 @@ sys.path.append(__dir__)
 sys.path.append(os.path.abspath(os.path.join(__dir__, "..", "..", "..")))
 sys.path.append(os.path.abspath(os.path.join(__dir__, "..", "..", "..", "tools")))
 
+# 动态图 QAT 量化训练：PACT 激活截断 + PaddleSlim QAT 伪量化微调
 import yaml
 import paddle
 import paddle.distributed as dist
@@ -43,7 +44,9 @@ from paddleslim.dygraph.quant import QAT
 dist.get_world_size()
 
 
+    # PACT（Parameterized Clipping Activation）可学习截断层，约束激活动态范围
 class PACT(paddle.nn.Layer):
+        # 初始化可训练标量 alpha，配合 L2 正则与独立学习率
     def __init__(self):
         super(PACT, self).__init__()
         alpha_attr = paddle.ParamAttr(
@@ -55,6 +58,7 @@ class PACT(paddle.nn.Layer):
 
         self.alpha = self.create_parameter(shape=[1], attr=alpha_attr, dtype="float32")
 
+        # 对称截断：x 超出 [-alpha, alpha] 的部分被 ReLU 门控削平
     def forward(self, x):
         out_left = paddle.nn.functional.relu(x - self.alpha)
         out_right = paddle.nn.functional.relu(-self.alpha - x)
@@ -62,6 +66,7 @@ class PACT(paddle.nn.Layer):
         return x
 
 
+# 全局 QAT 配置：8bit 通道权重量化 + 滑动平均激活量化
 quant_config = {
     # weight preprocess type, default is None and no preprocessing is performed.
     "weight_preprocess_type": None,
@@ -86,6 +91,7 @@ quant_config = {
 }
 
 
+    # 加载 FP32 预训练 → QAT quantize → 可选 DataParallel → 量化感知训练
 def main(config, device, logger, vdl_writer):
     # init dist environment
     if config["Global"]["distributed"]:
@@ -161,6 +167,7 @@ def main(config, device, logger, vdl_writer):
 
     pre_best_model_dict = dict()
     # load fp32 model to begin quantization
+    # 先加载 FP32 权重作为量化起点，再插入 QAT 算子
     pre_best_model_dict = load_model(
         config, model, None, config["Architecture"]["model_type"]
     )
@@ -171,7 +178,9 @@ def main(config, device, logger, vdl_writer):
             freeze_params = freeze_params or config["Architecture"]["Models"][key].get(
                 "freeze_params", False
             )
+    # 蒸馏冻结子网时可关闭 PACT 预处理
     act = None if freeze_params else PACT
+    # act_preprocess=PACT 时激活经可学习截断再进入 quantizer
     quanter = QAT(config=quant_config, act_preprocess=act)
     quanter.quantize(model)
 
@@ -204,6 +213,7 @@ def main(config, device, logger, vdl_writer):
     )
 
     # start train
+    # 量化微调训练：optimizer 同时更新权重与 PACT alpha
     program.train(
         config,
         train_dataloader,
@@ -221,6 +231,7 @@ def main(config, device, logger, vdl_writer):
     )
 
 
+# 训练模式 preprocess 后进入 QAT main
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess(is_train=True)
     main(config, device, logger, vdl_writer)

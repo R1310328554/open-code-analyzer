@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CI 辅助脚本：逐文件 SourceFileLoader 加载，捕获 import 语法/依赖错误
 import sys
 import traceback
 from importlib.machinery import SourceFileLoader
 
+# 用法：python check_imports.py file1.py file2.py；任一失败 exit 1
 if __name__ == "__main__":
     files = sys.argv[1:]
     has_failure = False
+    # 对每个待检文件尝试 load_module，失败则打印路径与 traceback
     for file in files:
         try:
             SourceFileLoader("x", file).load_module()

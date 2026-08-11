@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleSlim 自动压缩入口：对 OCR 检测/识别模型执行蒸馏、剪枝与量化联合压缩
 import logging
 from tqdm import tqdm
 import numpy as np
@@ -32,6 +33,7 @@ from ppocr.metrics import build_metric
 logger = get_logger(__name__, level=logging.INFO)
 
 
+    # 解析压缩策略 YAML 路径、输出目录与 GPU/CPU 设备
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -53,10 +55,12 @@ def argsparser():
     return parser
 
 
+    # 将 PPOCR DataLoader 批次包装为 AutoCompression 所需的 feed 字典生成器
 def reader_wrapper(reader, input_name):
     if isinstance(input_name, list) and len(input_name) == 1:
         input_name = input_name[0]
 
+        # 逐 batch 产出 {input_name: numpy_array} 供静态图执行器喂入
     def gen():  # 形成一个字典输入
         for i, batch in enumerate(reader()):
             yield {input_name: batch[0]}
@@ -64,6 +68,7 @@ def reader_wrapper(reader, input_name):
     return gen
 
 
+    # 压缩过程中的评估回调：按 det/rec 类型跑验证集并返回 hmean 或 acc
 def eval_function(exe, compiled_test_program, test_feed_names, test_fetch_list):
     post_process_class = build_post_process(all_config["PostProcess"], global_config)
     eval_class = build_metric(all_config["Metric"])
@@ -94,10 +99,12 @@ def eval_function(exe, compiled_test_program, test_feed_names, test_fetch_list):
             for item in batch:
                 batch_numpy.append(np.array(item))
 
+                # 检测模型：后处理 maps 并累计 hmean 指标
             if model_type == "det":
                 preds_map = {"maps": preds}
                 post_result = post_process_class(preds_map, batch_numpy[1])
                 eval_class(post_result, batch_numpy)
+                # 识别模型：CTC 解码后累计字符准确率
             elif model_type == "rec":
                 post_result = post_process_class(preds, batch_numpy[1])
                 eval_class(post_result, batch_numpy)
@@ -114,6 +121,7 @@ def eval_function(exe, compiled_test_program, test_feed_names, test_fetch_list):
     return metric
 
 
+    # 主流程：加载 slim 配置、构建 train/eval loader、实例化 AutoCompression 并 compress
 def main():
     rank_id = paddle.distributed.get_rank()
     if args.devices == "gpu":
@@ -151,6 +159,7 @@ def main():
         global_config["params_filename"],
     )
 
+    # 绑定模型目录、压缩策略、训练/评估数据流与 eval 回调
     ac = AutoCompression(
         model_dir=global_config["model_dir"],
         model_filename=global_config["model_filename"],
@@ -164,6 +173,7 @@ def main():
     ac.compress()
 
 
+# 启用静态图模式后解析 CLI 并启动压缩流水线
 if __name__ == "__main__":
     paddle.enable_static()
     parser = argsparser()

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# langchain-paddleocr 包入口：导出 PaddleOCR-VL 文档加载器供 LangChain 链路与 RAG 使用
 from .document_loaders import PaddleOCRVLLoader
 
 __all__ = ["PaddleOCRVLLoader"]

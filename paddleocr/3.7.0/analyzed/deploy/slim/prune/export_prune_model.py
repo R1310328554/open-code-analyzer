@@ -24,6 +24,7 @@ sys.path.append(__dir__)
 sys.path.append(os.path.join(__dir__, "..", "..", ".."))
 sys.path.append(os.path.join(__dir__, "..", "..", "..", "tools"))
 
+# FPGM 结构化剪枝后导出推理模型：灵敏度分析 → 剪枝 → 静态图保存
 import paddle
 from ppocr.data import build_dataloader, set_signal_handlers
 from ppocr.modeling.architectures import build_model
@@ -34,6 +35,7 @@ from ppocr.utils.save_load import load_model
 import tools.program as program
 
 
+    # 构建验证集、后处理与模型，执行 FPGM 剪枝并导出 inference 目录
 def main(config, device, logger, vdl_writer):
     global_config = config["Global"]
 
@@ -59,14 +61,17 @@ def main(config, device, logger, vdl_writer):
     flops = paddle.flops(model, input_shape)
     logger.info("FLOPs before pruning: {}".format(flops))
 
+    # 使用 FPGM（Filter Pruning via Geometric Median）滤波器剪枝器
     from paddleslim.dygraph import FPGMFilterPruner
 
     model.train()
+    # 按 det/rec 固定输入尺寸实例化剪枝器
     pruner = FPGMFilterPruner(model, input_shape)
 
     # build metric
     eval_class = build_metric(config["Metric"])
 
+        # 剪枝灵敏度评估：在验证集上计算 hmean 或 acc 作为剪枝损失参考
     def eval_fn():
         metric = program.eval(model, valid_dataloader, post_process_class, eval_class)
         if config["Architecture"]["model_type"] == "det":
@@ -76,6 +81,7 @@ def main(config, device, logger, vdl_writer):
         logger.info("metric[{}]: {}".format(main_indicator, metric[main_indicator]))
         return metric[main_indicator]
 
+    # 逐层扫描剪枝比例对精度的影响，结果写入 sen.pickle
     params_sensitive = pruner.sensitive(
         eval_func=eval_fn,
         sen_file="./sen.pickle",
@@ -86,10 +92,12 @@ def main(config, device, logger, vdl_writer):
         "The sensitivity analysis results of model parameters saved in sen.pickle"
     )
     # calculate pruned params's ratio
+    # 在允许 2% 精度损失约束下为各层选取最优剪枝比例
     params_sensitive = pruner._get_ratios_by_loss(params_sensitive, loss=0.02)
     for key in params_sensitive.keys():
         logger.info("{}, {}".format(key, params_sensitive[key]))
 
+    # 按灵敏度计划实际裁剪卷积权重并更新模型结构
     plan = pruner.prune_vars(params_sensitive, [0])
 
     flops = paddle.flops(model, input_shape)
@@ -105,6 +113,7 @@ def main(config, device, logger, vdl_writer):
     logger.info("metric['']: {}".format(main_indicator, metric[main_indicator]))
 
     # start export model
+    # 剪枝后加载预训练权重、再 eval 一次，最后 to_static 导出
     from paddle.jit import to_static
 
     infer_shape = [3, -1, -1]
@@ -120,6 +129,7 @@ def main(config, device, logger, vdl_writer):
                 "When there is tps in the network, variable length input is not supported, and the input size needs to be the same as during training"
             )
             infer_shape[-1] = 100
+    # 将动态图模型转为静态图，支持可变宽高（rec 固定 H=32）
     model = to_static(
         model,
         input_spec=[
@@ -132,6 +142,7 @@ def main(config, device, logger, vdl_writer):
     logger.info("inference model is saved to {}".format(save_path))
 
 
+# 通过 tools.program.preprocess 加载训练配置并进入剪枝导出主流程
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess(is_train=True)
     main(config, device, logger, vdl_writer)

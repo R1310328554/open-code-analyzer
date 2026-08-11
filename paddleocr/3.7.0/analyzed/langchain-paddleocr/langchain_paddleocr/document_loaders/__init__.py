@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# document_loaders 子包：统一 re-export PaddleOCRVLLoader 文档解析加载器
 from .paddleocr_vl import PaddleOCRVLLoader
 
 __all__ = ["PaddleOCRVLLoader"]

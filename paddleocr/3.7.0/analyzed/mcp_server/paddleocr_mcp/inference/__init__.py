@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# inference 子包公共导出：抽象 Inference 基类、工厂 InferenceFactory 与 create_inference
 from .base import Inference
 from .factory import InferenceFactory, create_inference
 

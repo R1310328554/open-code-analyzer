@@ -20,6 +20,7 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
+# LangChain Document Loader：通过 PaddleOCR SDK 调用 VL 文档解析 API
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
 from paddleocr import Model, PaddleOCRClient, PaddleOCRVLOptions
@@ -27,11 +28,13 @@ from pydantic import SecretStr
 
 logger = logging.getLogger(__name__)
 
+# 默认 AI Studio 官方 API 基址
 _DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com"
 
 _PAGES_DELIMITER = "\n\f"
 
 
+    # 将字符串模型名解析为 SDK Model 枚举，非法名称抛 ValueError
 def _resolve_vl_model(model: str | Model) -> Model:
     if isinstance(model, Model):
         resolved = model
@@ -45,9 +48,11 @@ def _resolve_vl_model(model: str | Model) -> Model:
     return resolved
 
 
+    """通过 PaddleOCR-VL 文档解析 SDK 加载 PDF/图片为 LangChain Document。"""
 class PaddleOCRVLLoader(BaseLoader):
     """Load documents using the PaddleOCR-VL document parsing API via SDK."""
 
+        # 配置本地路径或 URL 列表、鉴权 token、VL 推理选项与轮询超时
     def __init__(
         self,
         file_path: str | Iterable[str],
@@ -191,12 +196,15 @@ class PaddleOCRVLLoader(BaseLoader):
 
         self._options = PaddleOCRVLOptions(**options_kwargs) if options_kwargs else None
 
+        # 判断输入是 http(s) URL 还是本地文件路径
     def _is_url(self, path: str) -> bool:
         """Check if the path is a URL."""
         return path.startswith(("http://", "https://"))
 
+        # 单文件解析：PaddleOCRClient.parse_document → 拼接 Markdown 与原始响应
     def _process_file(self, file_path: str) -> tuple[str, dict[str, Any]]:
         """Process a single file through the SDK and return text + raw result."""
+        # 上下文管理客户端：platform=langchain，自动轮询异步任务
         with PaddleOCRClient(
             token=self._token,
             base_url=self._base_url,
@@ -218,6 +226,7 @@ class PaddleOCRVLLoader(BaseLoader):
                     **parse_kwargs,
                 )
 
+        # 多页 Markdown 以换页符 \f 连接作为 page_content
         text_parts = [page.markdown_text for page in result.pages if page.markdown_text]
         text = _PAGES_DELIMITER.join(text_parts)
 
@@ -241,6 +250,7 @@ class PaddleOCRVLLoader(BaseLoader):
 
         return text, raw_response
 
+        # 惰性迭代：每个输入文件 yield 一个 Document，metadata 含 source 与原始 JSON
     def lazy_load(self) -> Iterator[Document]:
         """Lazily load documents from the configured file paths."""
         for file_path in self._file_paths:
