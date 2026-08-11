@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:48:37Z",
-  "files": [
-    "src/transformers/models/layoutlmv2/processing_layoutlmv2.py",
-    "src/transformers/models/layoutlmv2/tokenization_layoutlmv2.py",
-    "src/transformers/models/layoutlmv3/__init__.py",
-    "src/transformers/models/layoutlmv3/configuration_layoutlmv3.py",
-    "src/transformers/models/layoutlmv3/image_processing_layoutlmv3.py",
-    "src/transformers/models/layoutlmv3/image_processing_pil_layoutlmv3.py",
-    "src/transformers/models/layoutlmv3/modeling_layoutlmv3.py",
-    "src/transformers/models/layoutlmv3/processing_layoutlmv3.py",
-    "src/transformers/models/layoutlmv3/tokenization_layoutlmv3.py",
-    "src/transformers/models/layoutxlm/__init__.py",
-    "src/transformers/models/layoutxlm/configuration_layoutxlm.py",
-    "src/transformers/models/layoutxlm/modular_layoutxlm.py",
-    "src/transformers/models/layoutxlm/processing_layoutxlm.py",
-    "src/transformers/models/layoutxlm/tokenization_layoutxlm.py",
-    "src/transformers/models/led/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1449,
-  "done": 1215
+  "done": 1230
 }
