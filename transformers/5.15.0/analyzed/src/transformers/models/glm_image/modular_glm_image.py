@@ -64,8 +64,11 @@ from ..siglip.modeling_siglip import SiglipMLP
 logger = logging.get_logger(__name__)
 
 
+# GLM-Image modular 源：基于 GLM4V/Chameleon/Qwen2-VL 组合 VQ 图文多模态
+
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageVQVAEConfig：GLM-Image VQ-VAE 向量量化自编码器超参
 class GlmImageVQVAEConfig(PreTrainedConfig):
     model_type = "glm_image_vqmodel"
     base_config_key = "vq_config"
@@ -79,6 +82,7 @@ class GlmImageVQVAEConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageVisionConfig：GLM-Image 视觉 ViT 编码器超参（高分辨率 patch）
 class GlmImageVisionConfig(Glm4vVisionConfig):
     r"""
     Example:
@@ -116,6 +120,7 @@ class GlmImageVisionConfig(Glm4vVisionConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageTextConfig：GLM-Image 文本解码器超参（含 vision_vocab_size）
 class GlmImageTextConfig(Glm4vTextConfig):
     r"""
     vision_vocab_size (`int`, *optional*, defaults to 16512):
@@ -147,6 +152,7 @@ class GlmImageTextConfig(Glm4vTextConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageConfig：GLM-Image 视觉+文本+VQ 多模态联合配置
 class GlmImageConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 16384):
@@ -202,10 +208,12 @@ class GlmImageConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# GlmImageVisionMLP：GLM-Image 视觉编码器前馈 MLP（GELU 激活）
 class GlmImageVisionMLP(SiglipMLP):
     pass
 
 
+# GlmImageVisionAttention：GLM-Image 视觉多头自注意力
 class GlmImageVisionAttention(Glm4vVisionAttention):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__(config)
@@ -277,6 +285,7 @@ class GlmImageVisionAttention(Glm4vVisionAttention):
         return attn_output
 
 
+# GlmImageVisionPatchEmbed：GLM-Image 视觉 patch 嵌入层
 class GlmImageVisionPatchEmbed(Glm4vVisionPatchEmbed):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__(config)
@@ -292,12 +301,14 @@ class GlmImageVisionPatchEmbed(Glm4vVisionPatchEmbed):
         return hidden_states
 
 
+# GlmImageVisionEmbeddings：GLM-Image 视觉 patch 嵌入 + 位置编码
 class GlmImageVisionEmbeddings(Glm4vVisionEmbeddings):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__(config)
         self.interpolated_method = "bilinear"
 
 
+# GlmImageVisionBlock：GLM-Image 视觉 Transformer 单层
 class GlmImageVisionBlock(Glm4vVisionBlock):
     def __init__(self, config: GlmImageVisionConfig):
         super().__init__(config)
@@ -334,10 +345,12 @@ class GlmImageVisionBlock(Glm4vVisionBlock):
         return hidden_states
 
 
+# GlmImageTextAttention：GLM-Image 文本多头自注意力（GQA + mRoPE）
 class GlmImageTextAttention(Glm4vMoeTextAttention):
     pass
 
 
+# GlmImagePreTrainedModel：GLM-Image 预训练基类与权重初始化
 class GlmImagePreTrainedModel(Glm4vPreTrainedModel):
     config: GlmImageConfig
     input_modalities = ("image", "text")
@@ -346,10 +359,12 @@ class GlmImagePreTrainedModel(Glm4vPreTrainedModel):
         raise AttributeError("Normal super call")
 
 
+# GlmImageModelOutputWithPast：GLM-Image 多模态主干输出 dataclass
 class GlmImageModelOutputWithPast(Glm4vModelOutputWithPast):
     pass
 
 
+# GlmImageVQVAEVectorQuantizer：GLM-Image VQ 向量量化器（码本查找）
 class GlmImageVQVAEVectorQuantizer(ChameleonVQVAEVectorQuantizer):
     def __init__(self, config: GlmImageVQVAEConfig):
         super().__init__(config)
@@ -392,10 +407,12 @@ class GlmImageVQVAEVectorQuantizer(ChameleonVQVAEVectorQuantizer):
         return hidden_state_quant, loss, min_encoding_indices
 
 
+# GlmImageVQVAEModelOutput：GLM-Image VQ-VAE 编码输出 dataclass
 class GlmImageVQVAEModelOutput(ChameleonVQVAEModelOutput):
     pass
 
 
+# GlmImageVQVAE：GLM-Image VQ-VAE 图像离散化编码器
 class GlmImageVQVAE(ChameleonVQVAE):
     _no_split_modules = [
         "GlmImageVQVAEVectorQuantizer",
@@ -417,6 +434,7 @@ class GlmImageVQVAE(ChameleonVQVAE):
         )
 
 
+# GlmImageVisionModel：GLM-Image 视觉 ViT 编码器主干
 class GlmImageVisionModel(Glm4vVisionModel):
     config: GlmImageVisionConfig
     main_input_name = "pixel_values"
@@ -481,10 +499,12 @@ class GlmImageVisionModel(Glm4vVisionModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states, pooler_output=hidden_states)
 
 
+# GlmImageTextModel：GLM-Image 纯文本解码器主干
 class GlmImageTextModel(Glm4vTextModel):
     pass
 
 
+# GlmImageModel：GLM-Image 视觉+文本+VQ 联合多模态主干
 class GlmImageModel(Glm4vModel):
     def __init__(self, config):
         super().__init__(config)
@@ -869,10 +889,12 @@ class GlmImageModel(Glm4vModel):
         )
 
 
+# GlmImageCausalLMOutputWithPast：GLM-Image 多模态因果 LM 输出 dataclass
 class GlmImageCausalLMOutputWithPast(Glm4vCausalLMOutputWithPast):
     pass
 
 
+# GlmImageForConditionalGeneration：GLM-Image 图文条件生成与图像理解
 class GlmImageForConditionalGeneration(GlmImagePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {}
     # Reference: fix gemma3 grad acc #37208
@@ -1111,6 +1133,7 @@ class GlmImageForConditionalGeneration(GlmImagePreTrainedModel, GenerationMixin)
         return input_ids, model_kwargs
 
 
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -1152,14 +1175,17 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# GlmImageImageProcessor：Torchvision 后端 GLM-Image 图像 patch 预处理
 class GlmImageImageProcessor(Qwen2VLImageProcessor):
     model_input_names = ["pixel_values", "image_grid_thw", "images_per_sample"]
 
 
+# GlmImageImageProcessorPil：PIL 后端 GLM-Image 图像 patch 预处理
 class GlmImageImageProcessorPil(Qwen2VLImageProcessorPil):
     model_input_names = ["pixel_values", "image_grid_thw", "images_per_sample"]
 
 
+# GlmImageImagesKwargs：GLM-Image 图像输入可选参数字典（含 target_h/w）
 class GlmImageImagesKwargs(ImagesKwargs, total=False):
     """
     target_h (`int`):
@@ -1172,6 +1198,7 @@ class GlmImageImagesKwargs(ImagesKwargs, total=False):
     target_w: int
 
 
+# GlmImageProcessorKwargs：GLM-Image 多模态 Processor 可选参数字典类型
 class GlmImageProcessorKwargs(Qwen2VLProcessorKwargs):
     images_kwargs: GlmImageImagesKwargs
 
@@ -1188,6 +1215,7 @@ class GlmImageProcessorKwargs(Qwen2VLProcessorKwargs):
 
 
 @requires(backends=("torch",))
+# GlmImageProcessor：GLM-Image 图像预处理与分词器联合输入管线
 class GlmImageProcessor(ProcessorMixin):
     r"""
     Constructs a GLM-Image processor which wraps a GLM-Image image processor and a GLM-Image tokenizer into a single processor.
@@ -1350,6 +1378,7 @@ class GlmImageProcessor(ProcessorMixin):
         kwargs.pop("target_w", None)
         return super()._process_images(images, **kwargs)
 
+    # replace_image_token：按图像 patch 数将占位符替换为 image token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length

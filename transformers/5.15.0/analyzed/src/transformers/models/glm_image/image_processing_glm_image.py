@@ -32,6 +32,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# GLM-Image 图像处理：Torchvision 后端 smart_resize + patch 切分
+
+# GlmImageImageProcessorKwargs：GLM-Image 图像处理器可选参数字典
 class GlmImageImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -53,6 +56,7 @@ class GlmImageImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -95,6 +99,7 @@ def smart_resize(
 
 
 @auto_docstring
+# GlmImageImageProcessor：Torchvision 后端 GLM-Image 图像 patch 预处理
 class GlmImageImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -168,6 +173,7 @@ class GlmImageImageProcessor(TorchvisionBackend):
             resample=resample,
         )
 
+    # patchify：将视频张量切分为时空 patch 并展平为序列
     def patchify(
         self,
         images: "torch.Tensor",
@@ -203,6 +209,7 @@ class GlmImageImageProcessor(TorchvisionBackend):
         )
         return flatten_patches, grid_h, grid_w
 
+    # _preprocess：视频 resize/归一化/patch 化完整预处理流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

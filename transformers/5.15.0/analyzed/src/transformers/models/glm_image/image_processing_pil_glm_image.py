@@ -30,6 +30,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# GLM-Image PIL 图像处理：NumPy/PIL 后端 patch 化预处理
+
+# GlmImageImageProcessorKwargs：GLM-Image 图像处理器可选参数字典
 class GlmImageImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -51,6 +54,7 @@ class GlmImageImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -93,6 +97,7 @@ def smart_resize(
 
 
 @auto_docstring
+# GlmImageImageProcessorPil：PIL 后端 GLM-Image 图像 patch 预处理
 class GlmImageImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -158,6 +163,7 @@ class GlmImageImageProcessorPil(PilBackend):
             resample=resample,
         )
 
+    # patchify：将视频张量切分为时空 patch 并展平为序列
     def patchify(
         self,
         image: np.ndarray,
@@ -203,6 +209,7 @@ class GlmImageImageProcessorPil(PilBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _preprocess：视频 resize/归一化/patch 化完整预处理流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

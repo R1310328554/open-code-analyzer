@@ -49,9 +49,13 @@ from ...utils.generic import (
 )
 from ...utils.output_capturing import capture_outputs
 from ...vision_utils import get_vision_attention_seqlens, get_vision_position_ids
+# modeling_glm_image 由 modular_glm_image.py 自动生成
 from .configuration_glm_image import GlmImageConfig, GlmImageTextConfig, GlmImageVisionConfig, GlmImageVQVAEConfig
 
 
+# GLM-Image 建模：视觉 ViT + VQ-VAE 离散化 + 文本解码器联合图文多模态
+
+# GlmImageVisionMLP：GLM-Image 视觉编码器前馈 MLP（GELU 激活）
 class GlmImageVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -67,6 +71,7 @@ class GlmImageVisionMLP(nn.Module):
         return hidden_states
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -79,6 +84,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -104,6 +110,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# GlmImageVisionAttention：GLM-Image 视觉多头自注意力
 class GlmImageVisionAttention(nn.Module):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__()
@@ -183,6 +190,7 @@ class GlmImageVisionAttention(nn.Module):
         return attn_output
 
 
+# GlmImageVisionPatchEmbed：GLM-Image 视觉 patch 嵌入层
 class GlmImageVisionPatchEmbed(nn.Module):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__()
@@ -199,6 +207,7 @@ class GlmImageVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# GlmImageVisionEmbeddings：GLM-Image 视觉 patch 嵌入 + 位置编码
 class GlmImageVisionEmbeddings(nn.Module):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__()
@@ -273,6 +282,7 @@ class GlmImageVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# GlmImageVisionBlock：GLM-Image 视觉 Transformer 单层
 class GlmImageVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config: GlmImageVisionConfig) -> None:
         super().__init__()
@@ -310,6 +320,7 @@ class GlmImageVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -317,6 +328,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -353,6 +365,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# GlmImageTextAttention：GLM-Image 文本多头自注意力（GQA + mRoPE）
 class GlmImageTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -424,6 +437,7 @@ class GlmImageTextAttention(nn.Module):
 
 
 @auto_docstring
+# GlmImagePreTrainedModel：GLM-Image 预训练基类与权重初始化
 class GlmImagePreTrainedModel(PreTrainedModel):
     config: GlmImageConfig
     base_model_prefix = "model"
@@ -440,6 +454,7 @@ class GlmImagePreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# GlmImageModelOutputWithPast：GLM-Image 多模态主干输出 dataclass
 class GlmImageModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -450,6 +465,7 @@ class GlmImageModelOutputWithPast(BaseModelOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# GlmImageVQVAEVectorQuantizer：GLM-Image VQ 向量量化器（码本查找）
 class GlmImageVQVAEVectorQuantizer(nn.Module):
     """
     A module for vector quantization using learned embedding vectors.
@@ -504,6 +520,7 @@ class GlmImageVQVAEVectorQuantizer(nn.Module):
 
 @auto_docstring
 @dataclass
+# GlmImageVQVAEModelOutput：GLM-Image VQ-VAE 编码输出 dataclass
 class GlmImageVQVAEModelOutput(BaseModelOutputWithPooling):
     r"""
     quantized_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, image_size, image_size)`):
@@ -527,6 +544,7 @@ class GlmImageVQVAEModelOutput(BaseModelOutputWithPooling):
     Taigman](https://huggingface.co/papers/2203.13131).
     """
 )
+# GlmImageVQVAE：GLM-Image VQ-VAE 图像离散化编码器
 class GlmImageVQVAE(GlmImagePreTrainedModel):
     config: GlmImageVQVAEConfig
     _no_split_modules = [
@@ -555,6 +573,7 @@ class GlmImageVQVAE(GlmImagePreTrainedModel):
         )
 
 
+# GlmImageVisionModel：GLM-Image 视觉 ViT 编码器主干
 class GlmImageVisionModel(GlmImagePreTrainedModel):
     config: GlmImageVisionConfig
     input_modalities = ("image",)
@@ -629,6 +648,7 @@ class GlmImageVisionModel(GlmImagePreTrainedModel):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# GlmImageRMSNorm：GLM-Image RMS LayerNorm
 class GlmImageRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -649,6 +669,7 @@ class GlmImageRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GlmImageTextRotaryEmbedding：GLM-Image 文本 mRoPE 旋转位置编码
 class GlmImageTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GlmImageTextConfig, device=None):
@@ -717,6 +738,7 @@ class GlmImageTextRotaryEmbedding(nn.Module):
         return result
 
 
+# GlmImageTextMLP：GLM-Image 文本前馈 MLP
 class GlmImageTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -735,6 +757,7 @@ class GlmImageTextMLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# GlmImageTextDecoderLayer：GLM-Image 文本解码器单层
 class GlmImageTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GlmImageTextConfig, layer_idx: int):
         super().__init__()
@@ -786,6 +809,7 @@ class GlmImageTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GlmImageTextModel：GLM-Image 纯文本解码器主干
 class GlmImageTextModel(GlmImagePreTrainedModel):
     config: GlmImageTextConfig
     input_modalities = ("text",)
@@ -891,6 +915,7 @@ class GlmImageTextModel(GlmImagePreTrainedModel):
 
 
 @auto_docstring
+# GlmImageModel：GLM-Image 视觉+文本+VQ 联合多模态主干
 class GlmImageModel(GlmImagePreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1350,6 +1375,7 @@ class GlmImageModel(GlmImagePreTrainedModel):
 
 @auto_docstring
 @dataclass
+# GlmImageCausalLMOutputWithPast：GLM-Image 多模态因果 LM 输出 dataclass
 class GlmImageCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1360,6 +1386,7 @@ class GlmImageCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# GlmImageForConditionalGeneration：GLM-Image 图文条件生成与图像理解
 class GlmImageForConditionalGeneration(GlmImagePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {}
     # Reference: fix gemma3 grad acc #37208

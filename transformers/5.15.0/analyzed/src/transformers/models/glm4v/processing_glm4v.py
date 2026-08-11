@@ -27,6 +27,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# GLM-4.1V Processor：图像/视频预处理与分词器联合的多模态 prompt 组装
+
+# Glm4vProcessorKwargs：GLM-4.1V 多模态 Processor 可选参数字典类型
 class Glm4vProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,6 +42,7 @@ class Glm4vProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Glm4vProcessor：封装图像/视频 token 替换与 mm_token_type_ids 生成
 class Glm4vProcessor(ProcessorMixin):
     valid_processor_kwargs = Glm4vProcessorKwargs
 
@@ -59,11 +63,13 @@ class Glm4vProcessor(ProcessorMixin):
         self.video_start_id = tokenizer.convert_tokens_to_ids("<|begin_of_video|>")
         self.video_end_id = tokenizer.convert_tokens_to_ids("<|end_of_video|>")
 
+    # replace_image_token：按图像 patch 数将占位符替换为 image token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length
         return self.image_token * num_image_tokens
 
+    # replace_video_token：按帧时间戳与 patch 数构造带秒级标记的视频 token 结构
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         num_frames = video_inputs["video_grid_thw"][video_idx][0]
@@ -164,6 +170,7 @@ class Glm4vProcessor(ProcessorMixin):
     def model_input_names(self):
         return super().model_input_names + ["mm_token_type_ids"]
 
+    # create_mm_token_type_ids：区分图像(1)与视频(2)模态的多模态 token 类型 ID
     def create_mm_token_type_ids(self, input_ids: list) -> list[list[int]]:
         # We have to iterate for each list separately because inputs
         # might be non-padded lists and we can't cast numpy on that!
@@ -185,6 +192,7 @@ class Glm4vProcessor(ProcessorMixin):
             mm_token_type_ids.append(mm_token_types.tolist())
         return mm_token_type_ids
 
+    # replace_frame_token_id：单帧图像 token 块与时间戳后缀拼接
     def replace_frame_token_id(self, timestamp_sec, num_image_tokens: int = 1):
         return f"<|begin_of_image|>{self.image_token * num_image_tokens}<|end_of_image|>{int(timestamp_sec)}"
 

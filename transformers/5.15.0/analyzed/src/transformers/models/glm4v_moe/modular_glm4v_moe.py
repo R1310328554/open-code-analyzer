@@ -56,8 +56,11 @@ from ..qwen3_vl_moe.modeling_qwen3_vl_moe import (
 logger = logging.get_logger(__name__)
 
 
+# GLM-4.5V MoE modular 源：基于 GLM4V + GLM4 MoE 复用稀疏专家多模态实现
+
 @auto_docstring(checkpoint="zai-org/GLM-4.5V")
 @strict
+# Glm4vMoeTextConfig：GLM-4.5V MoE 文本解码器超参（128 路由专家 + 共享专家）
 class Glm4vMoeTextConfig(Glm4MoeConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -114,6 +117,7 @@ class Glm4vMoeTextConfig(Glm4MoeConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-4.5V")
 @strict
+# Glm4vMoeConfig：GLM-4.5V MoE 视觉+文本多模态联合配置
 class Glm4vMoeConfig(Glm4vConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):
@@ -142,6 +146,7 @@ class Glm4vMoeConfig(Glm4vConfig):
     video_token_id: int = 151364
 
 
+# Glm4vMoeTextAttention：GLM-4.5V MoE 文本多头自注意力（GQA + RoPE）
 class Glm4vMoeTextAttention(Glm4Attention):
     def __init__(self, config: Glm4vMoeTextConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -192,15 +197,18 @@ class Glm4vMoeTextAttention(Glm4Attention):
         return attn_output, attn_weights
 
 
+# Glm4vMoeTextTopkRouter：MoE 路由门控，按 top-k 选择专家
 class Glm4vMoeTextTopkRouter(Glm4MoeTopkRouter, nn.Module):
     def __init__(self, config: Glm4vMoeTextConfig):
         super().__init__(config)
 
 
+# Glm4vMoeTextExperts：MoE 专家 FFN 参数组（grouped GEMM 布局）
 class Glm4vMoeTextExperts(DeepseekV3Experts):
     pass
 
 
+# Glm4vMoeTextMoE：稀疏 MoE 层（路由 + 共享专家 + 路由专家）
 class Glm4vMoeTextMoE(Glm4MoeMoE):
     def __init__(self, config: Glm4vMoeTextConfig):
         super().__init__(config)
@@ -212,15 +220,18 @@ class Glm4vMoeTextMoE(Glm4MoeMoE):
         )
 
 
+# Glm4vMoeTextMLP：GLM-4.5V MoE 稠密前馈 MLP（SwiGLU 结构）
 class Glm4vMoeTextMLP(Glm4MoeMLP):
     pass
 
 
+# Glm4vMoeTextDecoderLayer：GLM-4.5V MoE 文本解码器单层
 class Glm4vMoeTextDecoderLayer(Glm4MoeDecoderLayer):
     def __init__(self, config: Glm4vMoeTextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
 
 
+# Glm4vMoePreTrainedModel：GLM-4.5V MoE 预训练基类与权重初始化
 class Glm4vMoePreTrainedModel(Glm4MoePreTrainedModel):
     config: Glm4vMoeConfig
     base_model_prefix = "model"
@@ -236,20 +247,24 @@ class Glm4vMoePreTrainedModel(Glm4MoePreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Glm4vMoeCausalLMOutputWithPast：GLM-4.5V MoE 多模态因果 LM 输出 dataclass
 class Glm4vMoeCausalLMOutputWithPast(Qwen3VLMoeCausalLMOutputWithPast):
     pass
 
 
+# Glm4vMoeVisionRotaryEmbedding：GLM-4.5V MoE 视觉多维 RoPE
 class Glm4vMoeVisionRotaryEmbedding(Glm4vVisionRotaryEmbedding):
     pass
 
 
 @auto_docstring
+# Glm4vMoeVisionModel：GLM-4.5V MoE 视觉 ViT 编码器主干
 class Glm4vMoeVisionModel(Glm4vVisionModel):
     pass
 
 
 @auto_docstring
+# Glm4vMoeTextModel：GLM-4.5V MoE 纯文本解码器主干
 class Glm4vMoeTextModel(Glm4vTextModel):
     _can_record_outputs = {
         "hidden_states": Glm4vMoeTextDecoderLayer,
@@ -336,10 +351,12 @@ class Glm4vMoeTextModel(Glm4vTextModel):
         )
 
 
+# Glm4vMoeModelOutputWithPast：GLM-4.5V MoE 多模态主干输出 dataclass
 class Glm4vMoeModelOutputWithPast(Qwen3VLMoeModelOutputWithPast):
     pass
 
 
+# Glm4vMoeForConditionalGeneration：GLM-4.5V MoE 视觉-语言条件生成
 class Glm4vMoeForConditionalGeneration(Glm4vForConditionalGeneration):
     def __init__(self, config):
         super().__init__(config)

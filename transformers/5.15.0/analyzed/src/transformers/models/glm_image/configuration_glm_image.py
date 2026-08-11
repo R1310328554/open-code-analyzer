@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-Image 配置：视觉 ViT + 文本解码器 + VQ-VAE 多模态联合超参
+
+# GlmImageVQVAEConfig：zai-org/GLM-Image VQ-VAE 向量量化默认超参
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageVQVAEConfig：GLM-Image VQ-VAE 向量量化自编码器超参
 class GlmImageVQVAEConfig(PreTrainedConfig):
     model_type = "glm_image_vqmodel"
     base_config_key = "vq_config"
@@ -38,8 +42,10 @@ class GlmImageVQVAEConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# GlmImageVisionConfig：zai-org/GLM-Image 视觉 ViT 编码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageVisionConfig：GLM-Image 视觉 ViT 编码器超参（高分辨率 patch）
 class GlmImageVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -75,8 +81,10 @@ class GlmImageVisionConfig(PreTrainedConfig):
     layer_norm_eps: float = 1e-06
 
 
+# GlmImageTextConfig：zai-org/GLM-Image 文本解码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageTextConfig：GLM-Image 文本解码器超参（含 vision_vocab_size）
 class GlmImageTextConfig(PreTrainedConfig):
     r"""
     vision_vocab_size (`int`, *optional*, defaults to 16512):
@@ -142,8 +150,10 @@ class GlmImageTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# GlmImageConfig：zai-org/GLM-Image 视觉+文本+VQ 多模态联合默认超参
 @auto_docstring(checkpoint="zai-org/GLM-Image")
 @strict
+# GlmImageConfig：GLM-Image 视觉+文本+VQ 多模态联合配置
 class GlmImageConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 16384):

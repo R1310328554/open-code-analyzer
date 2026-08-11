@@ -29,6 +29,9 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils.import_utils import requires
 
 
+# GLM-Image Processor：图像预处理与分词器联合的图文 prompt 组装
+
+# GlmImageImagesKwargs：GLM-Image 图像输入可选参数字典（含 target_h/w）
 class GlmImageImagesKwargs(ImagesKwargs, total=False):
     """
     target_h (`int`):
@@ -41,6 +44,7 @@ class GlmImageImagesKwargs(ImagesKwargs, total=False):
     target_w: int
 
 
+# GlmImageProcessorKwargs：GLM-Image 多模态 Processor 可选参数字典类型
 class GlmImageProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -56,6 +60,7 @@ class GlmImageProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @requires(backends=("torch",))
+# GlmImageProcessor：封装图像 token 替换与目标分辨率 prompt 组装
 class GlmImageProcessor(ProcessorMixin):
     r"""
     Constructs a GLM-Image processor which wraps a GLM-Image image processor and a GLM-Image tokenizer into a single processor.
@@ -218,6 +223,7 @@ class GlmImageProcessor(ProcessorMixin):
         kwargs.pop("target_w", None)
         return super()._process_images(images, **kwargs)
 
+    # replace_image_token：按图像 patch 数将占位符替换为 image token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length

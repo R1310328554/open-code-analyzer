@@ -31,11 +31,14 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 
 
+# GLM-4.1V 视频处理：动态 FPS 帧采样 + smart_resize + 时空 patch 化
+
 if is_torchvision_available():
     from torchvision.transforms.v2 import functional as tvF
 
 
 # Copied from transformers.models.glm4v.image_processing_glm4v.smart_resize
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     num_frames: int,
     height: int,
@@ -72,6 +75,7 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# Glm4vVideoProcessorInitKwargs：GLM-4.1V 视频处理器初始化参数字典
 class Glm4vVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -94,6 +98,7 @@ class Glm4vVideoProcessorInitKwargs(VideosKwargs, total=False):
 
 
 @auto_docstring
+# Glm4vVideoProcessor：GLM-4.1V 视频帧采样、resize、patch 化预处理
 class Glm4vVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 112 * 112, "longest_edge": 28 * 28 * 2 * 30000}
@@ -118,6 +123,7 @@ class Glm4vVideoProcessor(BaseVideoProcessor):
     def __init__(self, **kwargs: Unpack[Glm4vVideoProcessorInitKwargs]):
         super().__init__(**kwargs)
 
+    # sample_frames：按视频时长动态 FPS 策略抽取帧索引
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -197,6 +203,7 @@ class Glm4vVideoProcessor(BaseVideoProcessor):
             resample=resample,
         )
 
+    # patchify：将视频张量切分为时空 patch 并展平为序列
     def patchify(
         self,
         videos: "torch.Tensor",
@@ -237,6 +244,7 @@ class Glm4vVideoProcessor(BaseVideoProcessor):
 
         return flatten_patches, grid_t, grid_h, grid_w
 
+    # _preprocess：视频 resize/归一化/patch 化完整预处理流水线
     def _preprocess(
         self,
         videos: list[torch.Tensor],

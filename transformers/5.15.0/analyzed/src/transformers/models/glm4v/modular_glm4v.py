@@ -70,8 +70,11 @@ from ..qwen2_vl.processing_qwen2_vl import (
 logger = logging.get_logger(__name__)
 
 
+# GLM-4.1V modular 源：基于 Qwen2.5-VL/GLM4 组合视觉-语言多模态 VLM
+
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vVisionConfig：GLM-4.1V 视觉 ViT patch 编码器超参
 class Glm4vVisionConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 4096):
@@ -114,6 +117,7 @@ class Glm4vVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vTextConfig：GLM-4.1V 文本解码器超参（GQA + mRoPE）
 class Glm4vTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -174,6 +178,7 @@ class Glm4vTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vConfig：GLM-4.1V 视觉+文本多模态联合配置
 class Glm4vConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):
@@ -227,16 +232,19 @@ class Glm4vConfig(PreTrainedConfig):
 
 
 # Will be used for both Text and Vision modalities
+# Glm4vRMSNorm：GLM-4.1V RMS LayerNorm
 class Glm4vRMSNorm(Glm4RMSNorm):
     pass
 
 
+# Glm4VisionMlp：GLM-4.1V 视觉编码器前馈 MLP
 class Glm4VisionMlp(Qwen2_5_VLMLP):
     def __init__(self, config, bias: bool = False):
         super().__init__(config, bias)
         self.intermediate_size = config.out_hidden_size
 
 
+# Glm4vVisionPatchEmbed：视觉 patch 嵌入与 3D 位置编码
 class Glm4vVisionPatchEmbed(Qwen2_5_VisionPatchEmbed):
     def __init__(self, config: Glm4vVisionConfig) -> None:
         nn.Module.__init__(self)
@@ -249,10 +257,12 @@ class Glm4vVisionPatchEmbed(Qwen2_5_VisionPatchEmbed):
         self.proj = nn.Conv3d(self.in_channels, self.embed_dim, kernel_size=kernel_size, stride=kernel_size)
 
 
+# Glm4vVisionRotaryEmbedding：视觉多维 RoPE 旋转位置编码
 class Glm4vVisionRotaryEmbedding(Qwen2_5_VisionRotaryEmbedding):
     pass
 
 
+# Glm4vVisionPatchMerger：视觉 patch 空间合并投影到 LLM 维度
 class Glm4vVisionPatchMerger(nn.Module):
     def __init__(self, dim: int, context_dim: int, hidden_act: str, bias: bool = False) -> None:
         super().__init__()
@@ -270,6 +280,7 @@ class Glm4vVisionPatchMerger(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Glm4vVisionEmbeddings：视觉 patch 嵌入 + 合并 + 位置编码组合层
 class Glm4vVisionEmbeddings(nn.Module):
     def __init__(self, config: Glm4vVisionConfig):
         super().__init__()
@@ -344,6 +355,7 @@ class Glm4vVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# Glm4vVisionAttention：GLM-4.1V 视觉多头自注意力
 class Glm4vVisionAttention(Qwen2_5_VLVisionAttention):
     def __init__(self, config: Glm4vVisionConfig) -> None:
         super().__init__(config)
@@ -352,6 +364,7 @@ class Glm4vVisionAttention(Qwen2_5_VLVisionAttention):
         self.proj = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
 
 
+# Glm4vVisionBlock：GLM-4.1V 视觉 Transformer 单层
 class Glm4vVisionBlock(Qwen2_5_VLVisionBlock):
     def __init__(self, config) -> None:
         super().__init__(config)
@@ -361,6 +374,7 @@ class Glm4vVisionBlock(Qwen2_5_VLVisionBlock):
         self.mlp = Glm4VisionMlp(config, bias=False)
 
 
+# Glm4vTextRotaryEmbedding：GLM-4.1V 文本 mRoPE 旋转位置编码
 class Glm4vTextRotaryEmbedding(Glm4RotaryEmbedding):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4vTextConfig, device=None):
@@ -390,6 +404,7 @@ class Glm4vTextRotaryEmbedding(Glm4RotaryEmbedding):
         return result
 
 
+# rotate_half_llm：文本 RoPE 中将向量后半部分旋转取负
 def rotate_half_llm(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -397,6 +412,7 @@ def rotate_half_llm(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -437,6 +453,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Glm4vTextAttention：GLM-4.1V 文本多头自注意力（GQA + mRoPE）
 class Glm4vTextAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -507,10 +524,12 @@ class Glm4vTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4vTextMLP：GLM-4.1V 文本前馈 MLP
 class Glm4vTextMLP(Glm4MLP):
     pass
 
 
+# Glm4vTextDecoderLayer：GLM-4.1V 文本解码器单层
 class Glm4vTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4vTextConfig, layer_idx: int):
         super().__init__()
@@ -561,10 +580,12 @@ class Glm4vTextDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Glm4vModelOutputWithPast：GLM-4.1V 多模态主干输出 dataclass
 class Glm4vModelOutputWithPast(Qwen2_5_VLModelOutputWithPast):
     pass
 
 
+# Glm4vPreTrainedModel：GLM-4.1V 预训练基类与权重初始化
 class Glm4vPreTrainedModel(Qwen2_5_VLPreTrainedModel):
     _no_split_modules = ["Glm4vTextDecoderLayer", "Glm4vVisionBlock"]
 
@@ -575,6 +596,7 @@ class Glm4vPreTrainedModel(Qwen2_5_VLPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Glm4vVisionModel：GLM-4.1V 视觉 ViT 编码器主干
 class Glm4vVisionModel(Glm4vPreTrainedModel):
     config: Glm4vVisionConfig
     input_modalities = ("image", "video")
@@ -680,6 +702,7 @@ class Glm4vVisionModel(Glm4vPreTrainedModel):
         )
 
 
+# Glm4vTextModel：GLM-4.1V 纯文本解码器主干
 class Glm4vTextModel(Qwen2_5_VLTextModel):
     _can_record_outputs = {
         "hidden_states": Glm4vTextDecoderLayer,
@@ -776,6 +799,7 @@ class Glm4vTextModel(Qwen2_5_VLTextModel):
         )
 
 
+# Glm4vModel：GLM-4.1V 视觉+文本联合多模态主干
 class Glm4vModel(Qwen2VLModel):
     _no_split_modules = ["Glm4vTextDecoderLayer", "Glm4vVisionBlock"]
 
@@ -952,10 +976,12 @@ class Glm4vModel(Qwen2VLModel):
         )
 
 
+# Glm4vCausalLMOutputWithPast：GLM-4.1V 多模态因果 LM 输出 dataclass
 class Glm4vCausalLMOutputWithPast(Qwen2_5_VLCausalLMOutputWithPast):
     pass
 
 
+# Glm4vForConditionalGeneration：GLM-4.1V 视觉-语言条件生成
 class Glm4vForConditionalGeneration(Qwen2_5_VLForConditionalGeneration):
     def forward(
         self,
@@ -1096,6 +1122,7 @@ class Glm4vForConditionalGeneration(Qwen2_5_VLForConditionalGeneration):
         return image_counts, video_counts
 
 
+# Glm4vProcessorKwargs：GLM-4.1V 多模态 Processor 可选参数字典类型
 class Glm4vProcessorKwargs(Qwen2VLProcessorKwargs):
     _defaults = {
         "text_kwargs": {
@@ -1107,6 +1134,7 @@ class Glm4vProcessorKwargs(Qwen2VLProcessorKwargs):
     }
 
 
+# Glm4vProcessor：GLM-4.1V 图像/视频预处理与分词器联合输入管线
 class Glm4vProcessor(Qwen2VLProcessor):
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
@@ -1115,6 +1143,7 @@ class Glm4vProcessor(Qwen2VLProcessor):
         self.video_start_id = tokenizer.convert_tokens_to_ids("<|begin_of_video|>")
         self.video_end_id = tokenizer.convert_tokens_to_ids("<|end_of_video|>")
 
+    # replace_video_token：按帧时间戳与 patch 数构造带秒级标记的视频 token 结构
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         num_frames = video_inputs["video_grid_thw"][video_idx][0]
@@ -1146,6 +1175,7 @@ class Glm4vProcessor(Qwen2VLProcessor):
 
         return video_structure
 
+    # create_mm_token_type_ids：区分图像(1)与视频(2)模态的多模态 token 类型 ID
     def create_mm_token_type_ids(self, input_ids: list) -> list[list[int]]:
         # We have to iterate for each list separately because inputs
         # might be non-padded lists and we can't cast numpy on that!
@@ -1167,6 +1197,7 @@ class Glm4vProcessor(Qwen2VLProcessor):
             mm_token_type_ids.append(mm_token_types.tolist())
         return mm_token_type_ids
 
+    # replace_frame_token_id：单帧图像 token 块与时间戳后缀拼接
     def replace_frame_token_id(self, timestamp_sec, num_image_tokens: int = 1):
         return f"<|begin_of_image|>{self.image_token * num_image_tokens}<|end_of_image|>{int(timestamp_sec)}"
 

@@ -57,9 +57,13 @@ from ...utils.generic import (
 )
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from ...vision_utils import get_vision_attention_seqlens, get_vision_position_ids
+# modeling_glm4v_moe 由 modular_glm4v_moe.py 自动生成
 from .configuration_glm4v_moe import Glm4vMoeConfig, Glm4vMoeTextConfig, Glm4vMoeVisionConfig
 
 
+# GLM-4.5V MoE 建模：稀疏 MoE 解码器 + 视觉 ViT 联合视觉-语言多模态 VLM
+
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -72,6 +76,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -97,6 +102,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -104,6 +110,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -140,6 +147,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Glm4vMoeTextAttention：GLM-4.5V MoE 文本多头自注意力（GQA + RoPE）
 class Glm4vMoeTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -210,6 +218,7 @@ class Glm4vMoeTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4vMoeTextTopkRouter：MoE 路由门控，按 top-k 选择专家
 class Glm4vMoeTextTopkRouter(nn.Module):
     def __init__(self, config: Glm4vMoeTextConfig):
         super().__init__()
@@ -252,6 +261,7 @@ class Glm4vMoeTextTopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# Glm4vMoeTextExperts：MoE 专家 FFN 参数组（grouped GEMM 布局）
 class Glm4vMoeTextExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -291,6 +301,7 @@ class Glm4vMoeTextExperts(nn.Module):
         return final_hidden_states
 
 
+# Glm4vMoeTextMoE：稀疏 MoE 层（路由 + 共享专家 + 路由专家）
 class Glm4vMoeTextMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -315,6 +326,7 @@ class Glm4vMoeTextMoE(nn.Module):
         return hidden_states
 
 
+# Glm4vMoeTextMLP：GLM-4.5V MoE 稠密前馈 MLP（SwiGLU 结构）
 class Glm4vMoeTextMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -332,6 +344,7 @@ class Glm4vMoeTextMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4vMoeTextRMSNorm：GLM-4.5V MoE 文本 RMS LayerNorm
 class Glm4vMoeTextRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -352,6 +365,7 @@ class Glm4vMoeTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Glm4vMoeTextDecoderLayer：GLM-4.5V MoE 文本解码器单层
 class Glm4vMoeTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4vMoeTextConfig, layer_idx: int):
         super().__init__()
@@ -400,6 +414,7 @@ class Glm4vMoeTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Glm4vMoePreTrainedModel：GLM-4.5V MoE 预训练基类与权重初始化
 class Glm4vMoePreTrainedModel(PreTrainedModel):
     config: Glm4vMoeConfig
     base_model_prefix = "model"
@@ -433,6 +448,7 @@ class Glm4vMoePreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Glm4vMoeCausalLMOutputWithPast：GLM-4.5V MoE 多模态因果 LM 输出 dataclass
 class Glm4vMoeCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -445,6 +461,7 @@ class Glm4vMoeCausalLMOutputWithPast(CausalLMOutputWithPast):
     aux_loss: torch.FloatTensor | None = None
 
 
+# Glm4vMoeVisionRotaryEmbedding：GLM-4.5V MoE 视觉多维 RoPE
 class Glm4vMoeVisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -458,6 +475,7 @@ class Glm4vMoeVisionRotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4vMoeRMSNorm：GLM-4.5V MoE 视觉 RMS LayerNorm
 class Glm4vMoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -478,6 +496,7 @@ class Glm4vMoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Glm4vMoeisionMlp：GLM-4.5V MoE 视觉编码器前馈 MLP
 class Glm4vMoeisionMlp(nn.Module):
     def __init__(self, config, bias: bool = False):
         super().__init__()
@@ -492,6 +511,7 @@ class Glm4vMoeisionMlp(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Glm4vMoeVisionPatchEmbed：MoE 视觉 patch 嵌入与 3D 位置编码
 class Glm4vMoeVisionPatchEmbed(nn.Module):
     def __init__(self, config: Glm4vMoeVisionConfig) -> None:
         super().__init__()
@@ -512,6 +532,7 @@ class Glm4vMoeVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Glm4vMoeVisionPatchMerger：MoE 视觉 patch 空间合并投影
 class Glm4vMoeVisionPatchMerger(nn.Module):
     def __init__(self, dim: int, context_dim: int, hidden_act: str, bias: bool = False) -> None:
         super().__init__()
@@ -529,6 +550,7 @@ class Glm4vMoeVisionPatchMerger(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Glm4vMoeVisionEmbeddings：MoE 视觉 patch 嵌入 + 合并 + 位置编码
 class Glm4vMoeVisionEmbeddings(nn.Module):
     def __init__(self, config: Glm4vMoeVisionConfig):
         super().__init__()
@@ -603,6 +625,7 @@ class Glm4vMoeVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# apply_rotary_pos_emb_vision：将多维 RoPE 应用到 MoE 视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -617,6 +640,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# Glm4vMoeVisionAttention：GLM-4.5V MoE 视觉多头自注意力
 class Glm4vMoeVisionAttention(nn.Module):
     def __init__(self, config: Glm4vMoeVisionConfig) -> None:
         super().__init__()
@@ -700,6 +724,7 @@ class Glm4vMoeVisionAttention(nn.Module):
         return attn_output
 
 
+# Glm4vMoeVisionBlock：GLM-4.5V MoE 视觉 Transformer 单层
 class Glm4vMoeVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -731,6 +756,7 @@ class Glm4vMoeVisionBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Glm4vMoeVisionModel：GLM-4.5V MoE 视觉 ViT 编码器主干
 class Glm4vMoeVisionModel(Glm4vMoePreTrainedModel):
     config: Glm4vMoeVisionConfig
     input_modalities = ("image", "video")
@@ -836,6 +862,7 @@ class Glm4vMoeVisionModel(Glm4vMoePreTrainedModel):
         )
 
 
+# Glm4vMoeTextRotaryEmbedding：GLM-4.5V MoE 文本 mRoPE 旋转位置编码
 class Glm4vMoeTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4vMoeTextConfig, device=None):
@@ -905,6 +932,7 @@ class Glm4vMoeTextRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Glm4vMoeTextModel：GLM-4.5V MoE 纯文本解码器主干
 class Glm4vMoeTextModel(Glm4vMoePreTrainedModel):
     config: Glm4vMoeTextConfig
     input_modalities = ("text",)
@@ -1014,6 +1042,7 @@ class Glm4vMoeTextModel(Glm4vMoePreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Glm4vMoeModelOutputWithPast：GLM-4.5V MoE 多模态主干输出 dataclass
 class Glm4vMoeModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1026,6 +1055,7 @@ class Glm4vMoeModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# Glm4vMoeModel：GLM-4.5V MoE 视觉+文本联合多模态主干
 class Glm4vMoeModel(Glm4vMoePreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1384,6 +1414,7 @@ class Glm4vMoeModel(Glm4vMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 路由负载均衡辅助损失计算
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1466,6 +1497,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# Glm4vMoeForConditionalGeneration：GLM-4.5V MoE 视觉-语言条件生成
 class Glm4vMoeForConditionalGeneration(Glm4vMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
