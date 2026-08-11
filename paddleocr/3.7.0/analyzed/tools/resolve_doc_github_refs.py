@@ -1,11 +1,16 @@
+# 文档构建前占位符替换：将 docs 目录中文本文件里的 GitHub source-ref 占位符
+# 批量替换为实际 commit/tag，避免文档链接指向不稳定分支
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
 
 
+# 参与占位符扫描与替换的文本类扩展名集合
 TEXT_SUFFIXES = {".md", ".yml", ".yaml"}
 
 
+# 递归遍历 root 下 md/yml/yaml 文件，将 placeholder 替换为 source_ref
+# source_ref 须为非空且无空白字符的 Git ref；返回被修改的文件路径列表
 def resolve_placeholders(root, placeholder, source_ref):
     if (
         not source_ref
@@ -27,6 +32,7 @@ def resolve_placeholders(root, placeholder, source_ref):
     return changed
 
 
+# CLI 入口：--root 指定文档根目录，--placeholder 与 --source-ref 必填
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Resolve docs GitHub source-ref placeholders before building docs."

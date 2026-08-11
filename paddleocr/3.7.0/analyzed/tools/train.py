@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+# PaddleOCR 训练主入口：按 YAML 配置组装数据、模型、损失、优化器并启动 epoch 循环
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -43,13 +44,18 @@ import tools.naive_sync_bn as naive_sync_bn
 dist.get_world_size()
 
 
+# 训练主流程：初始化分布式环境，构建 dataloader/model/loss/optimizer/metric
+# 处理识别类算法的字符数与多 Head 通道配置，可选 SyncBN/AMP/EMA，调用 program.train
 def main(config, device, logger, vdl_writer):
+    # 若 Global.distributed 为真则初始化 Paddle 并行训练环境
     # init dist environment
     if config["Global"]["distributed"]:
         dist.init_parallel_env()
 
     global_config = config["Global"]
 
+    # 构建训练集 DataLoader；Eval 配置存在时再建验证集
+    # 注意：首次 build_dataloader 不传 seed，epoch 循环内由 reset_data_lines 更新
     # build dataloader
     # NOTE: Do NOT pass seed here. The seed parameter in build_dataloader is used
     # as epoch number by set_epoch_as_seed (for adaptive shrink_ratio), not as
@@ -72,9 +78,12 @@ def main(config, device, logger, vdl_writer):
         valid_dataloader = None
     step_pre_epoch = len(train_dataloader)
 
+    # 根据 PostProcess 配置实例化标签解码/后处理类
     # build post process
     post_process_class = build_post_process(config["PostProcess"], global_config)
 
+    # 识别算法：按 character 字典长度设置 Head out_channels；
+    # 蒸馏/MultiHead/SAR/NRTR 等分支分别调整通道与 Loss ignore_index
     # build model
     # for rec algorithm
     if hasattr(post_process_class, "character"):
@@ -155,9 +164,11 @@ def main(config, device, logger, vdl_writer):
 
     model = apply_to_static(model, config, logger)
 
+    # 按 Loss 配置构建复合损失函数
     # build loss
     loss_class = build_loss(config["Loss"])
 
+    # 构建优化器、学习率调度器与权重衰减调度器
     # build optim
     optimizer, lr_scheduler, wd_scheduler = build_optimizer(
         config["Optimizer"],
@@ -166,6 +177,7 @@ def main(config, device, logger, vdl_writer):
         model=model,
     )
 
+    # 构建验证阶段使用的评估指标
     # build metric
     eval_class = build_metric(config["Metric"])
 
@@ -216,6 +228,7 @@ def main(config, device, logger, vdl_writer):
     else:
         scaler = None
 
+    # 可选指数滑动平均：在 AMP decorate 之后、load_model 之前包装模型
     # build EMA (after AMP decorate, before load_model)
     ema = None
     if config["Global"].get("use_ema", False):
@@ -237,6 +250,7 @@ def main(config, device, logger, vdl_writer):
             )
         )
 
+    # 加载预训练或断点权重，返回历史 best 指标字典
     # load pretrain model
     pre_best_model_dict = load_model(
         config, model, optimizer, config["Architecture"]["model_type"], ema=ema
@@ -247,6 +261,7 @@ def main(config, device, logger, vdl_writer):
         model = paddle.DataParallel(
             model, find_unused_parameters=find_unused_parameters
         )
+    # 委托 program.train 执行完整 epoch 训练、验证、保存与日志
     # start train
     program.train(
         config,
@@ -273,6 +288,7 @@ def main(config, device, logger, vdl_writer):
     )
 
 
+# 调试辅助：仅迭代训练 DataLoader 并打印 batch 尺寸与耗时，不跑前向
 def test_reader(config, device, logger):
     loader = build_dataloader(config, "Train", device, logger)
     import time
@@ -293,6 +309,7 @@ def test_reader(config, device, logger):
     logger.info("finish reader: {}, Success!".format(count))
 
 
+# 脚本入口：program.preprocess 解析配置与设备，set_seed 后调用 main
 if __name__ == "__main__":
     config, device, logger, vdl_writer = program.preprocess(is_train=True)
     seed = config["Global"]["seed"] if "seed" in config["Global"] else 1024
