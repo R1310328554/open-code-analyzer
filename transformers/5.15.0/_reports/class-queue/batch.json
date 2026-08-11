@@ -15,23 +15,8 @@
     "src/transformers/models/moshi/modeling_moshi.py",
     "src/transformers/models/mpnet/__init__.py",
     "src/transformers/models/mpnet/configuration_mpnet.py",
-    "src/transformers/models/mpnet/modeling_mpnet.py",
-    "src/transformers/models/mpnet/tokenization_mpnet.py",
-    "src/transformers/models/mpt/__init__.py",
-    "src/transformers/models/mpt/configuration_mpt.py",
-    "src/transformers/models/mpt/modeling_mpt.py",
-    "src/transformers/models/mra/__init__.py",
-    "src/transformers/models/mra/configuration_mra.py",
-    "src/transformers/models/mra/modeling_mra.py",
-    "src/transformers/models/mt5/__init__.py",
-    "src/transformers/models/mt5/configuration_mt5.py",
-    "src/transformers/models/mt5/modeling_mt5.py",
-    "src/transformers/models/muse_glimmer/__init__.py",
-    "src/transformers/models/muse_glimmer/configuration_muse_glimmer.py",
-    "src/transformers/models/muse_glimmer/image_processing_muse_glimmer.py",
-    "src/transformers/models/muse_glimmer/modeling_muse_glimmer.py",
-    "src/transformers/models/muse_glimmer/modular_muse_glimmer.py"
+    "src/transformers/models/mpnet/modeling_mpnet.py"
   ],
   "remaining_pending": 1179,
-  "done": 1470
+  "done": 1485
 }
