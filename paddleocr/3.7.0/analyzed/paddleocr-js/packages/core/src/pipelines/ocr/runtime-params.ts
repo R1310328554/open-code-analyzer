@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR 运行时参数合并：将 snake/camel 别名与 pipeline 默认值解析为 det/pipeline 覆盖
 import type { DetModelConfig, DetRuntimeOverrides, LimitType } from "../../models/det";
 import type { RecModelConfig } from "../../models/rec";
 
@@ -18,6 +19,7 @@ export interface ResolvedOcrParams {
   pipeline: { scoreThresh: number };
 }
 
+  // predict 入参：检测 limit/thresh/unclip 与识别 score 阈值（双命名兼容）
 export interface OcrRuntimeParamsInput {
   text_det_limit_side_len?: number;
   textDetLimitSideLen?: number;
@@ -50,6 +52,7 @@ function toNumberOrUndefined(value: unknown): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
+  // 优先级：params > defaults > 已加载 model config；输出 ResolvedOcrParams
 export function getOcrRuntimeParams(
   config: OcrModelConfig,
   defaults: Partial<OcrRuntimeParamsInput> = {},

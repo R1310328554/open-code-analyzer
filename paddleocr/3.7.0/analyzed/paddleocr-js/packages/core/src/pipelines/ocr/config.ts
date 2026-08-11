@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR pipeline 配置解析：将 YAML/对象输入规范化为检测+识别子模块、资产与运行时默认值
 import yaml from "js-yaml";
 
 import type { ModelAsset } from "../../resources/model-asset";
 import { normalizeModelAsset } from "../../resources/model-asset";
 import type { LimitType } from "./runtime-params";
 
+// 当前 PaddleOCR.js 唯一支持的 pipeline_name
 const SUPPORTED_PIPELINE_NAME = "OCR";
 
+  // 规范化后的 pipeline 配置：原始 dict、告警、模型选择、资产与 batch 尺寸
 export interface NormalizedPipelineConfig {
   pipelineName: string;
   raw: Record<string, unknown>;
@@ -45,6 +48,7 @@ function isPlainObject(value: unknown): value is YamlObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+  // 将 YAML 数值字段转为有限 number，空值/非法值返回 undefined
 export function toFiniteNumber(value: unknown): number | undefined {
   if (value === null || value === undefined || value === "") {
     return undefined;
@@ -58,6 +62,7 @@ function batchSizeOrOne(value: unknown): number {
   return n !== undefined && n >= 1 ? n : 1;
 }
 
+  // text_type=general 时补全检测/识别默认阈值与 limit 参数
 function applyGeneralPipelineRuntimeDefaults(
   textType: string,
   runtimeDefaults: PipelineRuntimeDefaults
@@ -126,10 +131,12 @@ function getModuleAsset(
   );
 }
 
+  // 将 pipeline YAML 文本解析为对象（入口别名）
 export function parseOcrPipelineConfigText(text: string): YamlObject {
   return parsePipelineConfigInput(text);
 }
 
+  // 校验 SubModules、解析 det/rec 资产、合并 batch_size 与运行时默认值
 export function normalizeOcrPipelineConfig(input: unknown): NormalizedPipelineConfig {
   const config = parsePipelineConfigInput(input);
   const pipelineName = (config.pipeline_name as string | undefined) ?? SUPPORTED_PIPELINE_NAME;
@@ -163,6 +170,7 @@ export function normalizeOcrPipelineConfig(input: unknown): NormalizedPipelineCo
     ? subModules.TextLineOrientation
     : null;
 
+    // 文档预处理子 pipeline 暂未实现，仅记录 warning
   if (useDocPreprocessor || docPreprocessor) {
     addFeatureWarning(warnings, "DocPreprocessor", "config will be ignored for now");
   }

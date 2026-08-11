@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR 选项解析共享层：lang/ocrVersion 模型映射、ORT 归一化与 pipeline 合并
 import type { ModelAsset } from "../../resources/model-asset";
 import { DEFAULT_MODEL_ASSETS } from "../../resources/model-asset";
 import { DEFAULT_DET_MODEL_CONFIG } from "../../models/det";
@@ -20,6 +21,7 @@ import { DEFAULT_OCR_PIPELINE_CONFIG_TEXT } from "./default-config";
 import type { OcrModelConfig } from "./runtime-params";
 import type { OrtOptions } from "../../runtime/ort";
 
+  // resolvePaddleOCROptions 输出：规范化 pipelineConfig + ortOptions
 export interface ResolvedOcrOptions {
   pipelineConfig: NormalizedPipelineConfig;
   ortOptions: NormalizedOrtOptions;
@@ -40,6 +42,7 @@ export interface WorkerResolvedOptions {
   createWorker: (() => Worker) | null;
 }
 
+  // 占位默认 det/rec 配置，initialize 后由真实模型 config 替换
 export const DEFAULT_OCR_CONFIG: OcrModelConfig = {
   det: DEFAULT_DET_MODEL_CONFIG,
   rec: DEFAULT_REC_MODEL_CONFIG
@@ -129,6 +132,7 @@ const _PPOCRV6_LANGS = new Set([
   ...[..._LATIN_LANGS].filter((lang) => !_PPOCRV6_UNSUPPORTED_LATIN_LANGS.has(lang))
 ]);
 
+  // 判断 lang 是否支持 PP-OCRv6 小模型族
 function isPpOcrV6Lang(lang: string): boolean {
   return _PPOCRV6_LANGS.has(lang);
 }
@@ -390,6 +394,7 @@ function createResolvedModelSelection(
   ) as unknown as PipelineModelSelection;
 }
 
+  // 校验 inference.yml 中 model_name 与用户选择一致
 export function validateLoadedModelName(
   modelRole: string,
   expectedModelName: string | null | undefined,
@@ -598,6 +603,7 @@ export function normalizeOrtOptions(ortOptions: OrtOptions = {}): NormalizedOrtO
   };
 }
 
+  // 解析 worker: true | { createWorker } 为 enabled + 工厂函数
 export function resolveWorkerOptions(workerOption: unknown): WorkerResolvedOptions {
   if (!workerOption) {
     return {
@@ -625,6 +631,7 @@ export function resolveWorkerOptions(workerOption: unknown): WorkerResolvedOptio
   throw new Error("worker must be a boolean or an options object.");
 }
 
+  // 主入口：合并显式选项、用户 pipelineConfig 与 lang 默认模型选择
 export function resolvePaddleOCROptions(options: Record<string, unknown> = {}): ResolvedOcrOptions {
   return {
     pipelineConfig: resolveConstructionOptions(options),
@@ -632,6 +639,7 @@ export function resolvePaddleOCROptions(options: Record<string, unknown> = {}): 
   };
 }
 
+  // 深拷贝默认模型配置供 runner 可变 state 使用
 export function cloneDefaultOcrConfig(): OcrModelConfig {
   return deepClone(DEFAULT_OCR_CONFIG);
 }

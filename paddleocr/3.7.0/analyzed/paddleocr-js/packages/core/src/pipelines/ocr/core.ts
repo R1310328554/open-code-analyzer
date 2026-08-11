@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR pipeline 核心执行器：加载模型、批处理 det→crop→rec 并汇总 metrics
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 import type { ModelAsset, ModelLoadSummary } from "../../resources/model-asset";
 import { loadModelAsset } from "../../resources/index";
@@ -22,6 +23,7 @@ import { cloneDefaultOcrConfig, validateLoadedModelName } from "./shared";
 import type { NormalizedOrtOptions } from "./shared";
 import type { SourceMatResult } from "../../platform/browser";
 
+  // 单条识别结果：四边形 poly、文本与置信度 score
 export interface OcrResultItem {
   poly: Point2D[];
   text: string;
@@ -43,6 +45,7 @@ export interface OcrResultRuntime {
   webgpuAvailable: boolean;
 }
 
+  // 单图 OCR 输出：items、耗时 metrics 与 ORT provider 运行时信息
 export interface OcrResult {
   image: { width: number; height: number };
   items: OcrResultItem[];
@@ -90,6 +93,7 @@ function getResolvedAssets(assets: Partial<Record<string, ModelAsset>> | undefin
   return { det, rec };
 }
 
+  // 主线程 OCR 流水线：initialize 加载 ORT/OpenCV 与 det/rec 模型
 export class OcrPipelineRunner {
   protected options: OcrPipelineRunnerOptions;
   protected modelConfig: OcrModelConfig;
@@ -119,6 +123,7 @@ export class OcrPipelineRunner {
     this.sourceToMat = options.sourceToMat;
   }
 
+    // 并行 fetch 模型 tar、校验 model_name、创建 det/rec session
   async initialize(): Promise<InitializationSummary> {
     this.ensureServedFromHttp();
     const start = nowMs();
@@ -194,6 +199,7 @@ export class OcrPipelineRunner {
     return this.modelConfig;
   }
 
+    // 按 pipelineBatchSize 分批：sourceToMat → det → cropByPoly → rec → 过滤 score
   async predict(input: unknown, params: OcrRuntimeParamsInput = {}): Promise<OcrResult[]> {
     if (!this.sourceToMat) {
       throw new Error("PaddleOCR source adapter is not configured.");
@@ -232,6 +238,7 @@ export class OcrPipelineRunner {
       );
       try {
         const detStart = nowMs();
+        // 检测阶段：传入 Mat 批次与 resolved.det 运行时覆盖
         const detResults = await detModel.predict(
           cv,
           sourceImages.map((s) => s.mat),
@@ -246,6 +253,7 @@ export class OcrPipelineRunner {
           const detBoxes = detResults[imgIdx]?.boxes ?? [];
           const cropMats: Mat[] = [];
           for (let boxIdx = 0; boxIdx < detBoxes.length; boxIdx += 1) {
+            // 对每个检测框透视裁剪为识别输入条带
             cropMats.push(cropByPoly(cv, sourceImages[imgIdx].mat, detBoxes[boxIdx].poly));
           }
 
@@ -324,9 +332,11 @@ export class OcrPipelineRunner {
     this.recModel = null;
   }
 
+    // 释放 det/rec ORT session 资源
   async dispose(): Promise<void> {
     await this.disposeModelsOnly();
   }
 }
 
+// 内部别名：供 worker 与测试直接引用核心 runner
 export { OcrPipelineRunner as PaddleOCRCore };

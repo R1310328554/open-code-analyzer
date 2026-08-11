@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Worker 代理 PaddleOCR：主线程通过 transport 转发 init/predict/dispose
 import { sourceToWorkerPayload } from "../../platform/browser";
 import { createWorkerTransportClient } from "../../worker/client";
 import type { WorkerTransportClient, WorkerOptions } from "../../worker/client";
@@ -12,6 +13,7 @@ import { cloneDefaultOcrConfig } from "./shared";
 
 declare const __ORT_WASM_CDN_PREFIX__: string | undefined;
 
+  // 默认创建 module worker，入口为同目录 worker-entry.ts
 function createDefaultWorker(): Worker {
   if (typeof Worker !== "function") {
     throw new Error("worker mode requires Web Worker support in this environment.");
@@ -21,6 +23,7 @@ function createDefaultWorker(): Worker {
   });
 }
 
+  // 与 PaddleOCR 同 API 的 worker 包装：ImageBitmap 零拷贝传给 worker
 export class WorkerBackedPaddleOCR {
   private options: OcrPipelineRunnerOptions;
   private lastInitializationSummary: InitializationSummary | null;
@@ -44,6 +47,7 @@ export class WorkerBackedPaddleOCR {
     }
   }
 
+    // 向 worker 发送 init，合并 wasmPaths CDN 回退并禁用 wasm proxy
   async initialize(): Promise<InitializationSummary> {
     this.ensureActive();
     if (this.lastInitializationSummary) {
@@ -101,6 +105,7 @@ export class WorkerBackedPaddleOCR {
     return this.modelConfig;
   }
 
+    // sourceToWorkerPayload 序列化输入，transferables 传递 ImageBitmap
   async predict(input: unknown, params: OcrRuntimeParamsInput = {}): Promise<OcrResult[]> {
     this.ensureActive();
     await this.initialize();
@@ -136,6 +141,7 @@ export class WorkerBackedPaddleOCR {
   }
 }
 
+  // 工厂：绑定 createWorkerTransportClient 与 runner 选项
 export function createWorkerBackedPaddleOCR(
   options: OcrPipelineRunnerOptions,
   workerOptions: WorkerOptions = {}

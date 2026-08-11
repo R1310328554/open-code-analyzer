@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR pipeline 公共入口：PaddleOCR 工厂类、配置解析与 worker 模式分支
 import { normalizeOcrPipelineConfig, parseOcrPipelineConfigText } from "./config";
 import { ensureServedFromHttp, sourceToMat } from "../../platform/browser";
 import type { OcrPipelineRunnerOptions } from "./core";
@@ -14,6 +15,7 @@ import type { OrtOptions } from "../../runtime/ort";
 import type { ModelAsset } from "../../resources/model-asset";
 import type { LimitType } from "./runtime-params";
 
+  // create() 选项：lang/ocrVersion、模型资产、batch、运行时阈值与 worker 开关
 export interface PaddleOCRCreateOptions {
   worker?: boolean | { createWorker?: () => Worker };
   fetch?: typeof fetch;
@@ -63,6 +65,7 @@ export interface PaddleOCRCreateOptions {
   [key: string]: unknown;
 }
 
+  // 浏览器默认实现：注入 ensureServedFromHttp 与 sourceToMat 适配器
 export class PaddleOCR extends OcrPipelineRunner {
   constructor(options: OcrPipelineRunnerOptions) {
     super({
@@ -72,9 +75,11 @@ export class PaddleOCR extends OcrPipelineRunner {
     });
   }
 
+    // 解析选项 → worker 或主线程实例，默认自动 initialize
   static async create(
     options: PaddleOCRCreateOptions = {}
   ): Promise<PaddleOCR | WorkerBackedPaddleOCR> {
+    // worker 模式禁止自定义 fetch（模型下载在 worker 内完成）
     const workerOptions = resolveWorkerOptions(options.worker);
     if (workerOptions.enabled && options.fetch) {
       throw new Error("worker mode does not support a custom fetch implementation.");

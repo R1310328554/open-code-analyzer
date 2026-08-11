@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 内置默认 OCR pipeline YAML：PP-OCRv5 mobile det/rec 与 general 运行时参数
 export const DEFAULT_OCR_PIPELINE_CONFIG_TEXT = `
 pipeline_name: OCR
 

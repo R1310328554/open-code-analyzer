@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 浏览器主线程平台层：DOM 图像源 → OpenCV Mat 与 Worker 可转移载荷
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 
 export type ImageSource = ImageBitmap | Blob | HTMLCanvasElement | ImageData | HTMLImageElement;
 
+  // sourceToMat 输出：宽高、Mat 与 dispose 释放回调
 export interface SourceMatResult {
   width: number;
   height: number;
@@ -24,6 +26,7 @@ export interface WorkerPayloadResult {
   transferables: Transferable[];
 }
 
+  // file:// 协议无法 fetch 模型，强制要求 HTTP(S) 部署
 export function ensureServedFromHttp(): void {
   if (globalThis.location.protocol === "file:") {
     throw new Error("PaddleOCR.js requires an HTTP(S) origin so model assets can be fetched.");
@@ -34,6 +37,7 @@ function hasDomConstructor(name: string): boolean {
   return typeof (globalThis as Record<string, unknown>)[name] !== "undefined";
 }
 
+  // 统一 Blob/Canvas/ImageData/img 为 ImageBitmap
 export async function sourceToImageBitmap(source: ImageSource): Promise<ImageBitmap> {
   if (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap) return source;
   if (source instanceof Blob) return createImageBitmap(source);
@@ -62,6 +66,7 @@ async function sourceToClonedImageBitmap(source: ImageSource): Promise<ImageBitm
   return sourceToImageBitmap(source);
 }
 
+  // Canvas 绘制 ImageBitmap 后 cv.imread 得到 BGR Mat
 export function bitmapToSourceMat(
   cv: OpenCv,
   imageBitmap: ImageBitmap
@@ -78,6 +83,7 @@ export function bitmapToSourceMat(
   };
 }
 
+  // 主线程 OCR 输入适配：Mat 直接 clone，否则经 ImageBitmap→Mat
 export async function sourceToMat(cv: OpenCv, source: unknown): Promise<SourceMatResult> {
   if (typeof cv.Mat === "function" && source instanceof cv.Mat) {
     const cloned = source.clone();
@@ -104,6 +110,7 @@ export async function sourceToMat(cv: OpenCv, source: unknown): Promise<SourceMa
   };
 }
 
+  // Worker 模式：克隆 ImageBitmap 并列入 transferables
 export async function sourceToWorkerPayload(source: ImageSource): Promise<WorkerPayloadResult> {
   if (typeof ImageBitmap === "undefined" || typeof createImageBitmap !== "function") {
     throw new Error("Worker mode requires ImageBitmap support in this browser.");

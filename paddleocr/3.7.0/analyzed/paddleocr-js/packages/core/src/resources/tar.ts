@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 轻量 USTAR tar 解析：无第三方依赖，供浏览器端模型包解压
 function readString(bytes: Uint8Array, start: number, length: number): string {
   let output = "";
   for (let index = start; index < start + length; index += 1) {
@@ -37,6 +38,7 @@ function isMetadataEntry(name: string): boolean {
   );
 }
 
+  // 顺序扫描 512 字节块，跳过目录/PaxHeader/__MACOSX 元数据条目
 export function extractTarEntries(buffer: ArrayBuffer | Uint8Array): Map<string, Uint8Array> {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   const entries = new Map<string, Uint8Array>();
@@ -63,6 +65,7 @@ export function extractTarEntries(buffer: ArrayBuffer | Uint8Array): Map<string,
   return entries;
 }
 
+  // 按精确名或 */targetName 后缀查找 tar 成员，缺失则抛错
 export function pickTarEntry(entries: Map<string, Uint8Array>, targetName: string): Uint8Array {
   const normalizedTarget = normalizeEntryName(targetName);
   const entry = entries.get(normalizedTarget);

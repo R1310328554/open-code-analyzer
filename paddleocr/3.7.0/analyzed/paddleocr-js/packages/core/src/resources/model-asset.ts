@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 模型资产描述符：指向 ONNX 推理 tar 包的 HTTP(S) URL
 export interface ModelAsset {
   url: string;
 }
 
 export type ModelAssetsMap = Record<string, ModelAsset>;
 
+  // 内置 PP-OCRv5/v6 det/rec 官方 ONNX tar 下载地址
 export const DEFAULT_MODEL_ASSETS: ModelAssetsMap = {
   "PP-OCRv5_mobile_det": {
     url: "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar"
@@ -30,6 +32,7 @@ export const DEFAULT_MODEL_ASSETS: ModelAssetsMap = {
   }
 };
 
+  // tar 内必需条目：inference.onnx 与 inference.yml
 export const MODEL_ENTRY_PATHS: Readonly<Record<string, string>> = Object.freeze({
   model: "inference.onnx",
   config: "inference.yml"
@@ -56,6 +59,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+  // 将字符串别名或 { url } 对象规范化为 ModelAsset
 export function normalizeModelAsset(assetName: string, asset: unknown): ModelAsset {
   if (isNonEmptyString(asset)) {
     const resolvedAsset = DEFAULT_MODEL_ASSETS[asset];
@@ -126,6 +130,7 @@ export function assertModelResources(kind: string, resources: Record<string, unk
 
 import { extractTarEntries, pickTarEntry } from "./tar";
 
+  // fetch tar → extractTarEntries → 取出 onnx 字节与 yml 配置文本
 export async function loadModelAsset(
   asset: ModelAsset,
   fetchImpl: typeof fetch = fetch

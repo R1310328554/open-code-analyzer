@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Worker 线程平台层：ImageBitmap 载荷 → OpenCV Mat（OffscreenCanvas 路径）
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 import type { SourceMatResult } from "./browser";
 import { ensureServedFromHttp } from "./browser";
@@ -12,6 +13,7 @@ export interface WorkerSourcePayload {
   imageBitmap: ImageBitmap;
 }
 
+  // OffscreenCanvas 绘制后 getImageData，worker 无 document
 function imageBitmapToImageData(imageBitmap: ImageBitmap): ImageData {
   if (typeof OffscreenCanvas !== "function") {
     throw new Error("Worker mode requires OffscreenCanvas support in this browser.");
@@ -39,6 +41,7 @@ function isWorkerSourcePayload(source: unknown): source is WorkerSourcePayload {
   );
 }
 
+  // worker predict 输入适配：Mat clone 或 imageBitmap kind 解码
 export function sourcePayloadToMat(cv: OpenCv, source: unknown): SourceMatResult {
   if (typeof cv.Mat === "function" && source instanceof cv.Mat) {
     const cloned = source.clone();
