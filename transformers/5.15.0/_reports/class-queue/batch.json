@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:14:16Z",
   "files": [
-    "src/transformers/models/seamless_m4t_v2/configuration_seamless_m4t_v2.py",
-    "src/transformers/models/seamless_m4t_v2/modeling_seamless_m4t_v2.py",
-    "src/transformers/models/seed_oss/__init__.py",
-    "src/transformers/models/seed_oss/configuration_seed_oss.py",
-    "src/transformers/models/seed_oss/modeling_seed_oss.py",
-    "src/transformers/models/seed_oss/modular_seed_oss.py",
-    "src/transformers/models/segformer/__init__.py",
-    "src/transformers/models/segformer/configuration_segformer.py",
-    "src/transformers/models/segformer/image_processing_pil_segformer.py",
-    "src/transformers/models/segformer/image_processing_segformer.py",
-    "src/transformers/models/segformer/modeling_segformer.py",
-    "src/transformers/models/segformer/modular_segformer.py",
-    "src/transformers/models/seggpt/__init__.py",
-    "src/transformers/models/seggpt/configuration_seggpt.py",
-    "src/transformers/models/seggpt/image_processing_pil_seggpt.py",
     "src/transformers/models/seggpt/image_processing_seggpt.py",
     "src/transformers/models/seggpt/modeling_seggpt.py",
     "src/transformers/models/sew/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/siglip/configuration_siglip.py"
   ],
   "remaining_pending": 609,
-  "done": 2040
+  "done": 2055
 }
