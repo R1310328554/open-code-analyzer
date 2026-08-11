@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# EfficientNetConfig：google/efficientnet-b7 checkpoint，width=2.0 depth=3.1
 @auto_docstring(checkpoint="google/efficientnet-b7")
 @strict
+# EfficientNetConfig：num_block_repeats/expand_ratios/drop_connect_rate 等
 class EfficientNetConfig(PreTrainedConfig):
     r"""
     width_coefficient (`float`, *optional*, defaults to 2.0):
@@ -87,9 +89,12 @@ class EfficientNetConfig(PreTrainedConfig):
     dropout_rate: float | int = 0.5
     drop_connect_rate: float | int = 0.2
 
+# __post_init__：num_hidden_layers = sum(num_block_repeats) * 4
     def __post_init__(self, **kwargs):
         super().__post_init__(**kwargs)
         self.num_hidden_layers = sum(self.num_block_repeats) * 4
 
 
 __all__ = ["EfficientNetConfig"]
+# 模块 src/transformers/models/efficientnet/configuration_efficientnet.py：Transformers 5.15.0 wave23b 中文文档注释。
+

@@ -21,8 +21,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Emu3 系列配置：Emu3-Chat-hf checkpoint 默认超参
 @auto_docstring(checkpoint="Emu3-community/Emu3-Chat-hf")
 @strict
+# Emu3VQVAEConfig：codebook_size/embed_dim/temporal_downsample 等 VQ 超参
 class Emu3VQVAEConfig(PreTrainedConfig):
     r"""
     embed_dim (`int`, *optional*, defaults to 4):
@@ -75,6 +77,7 @@ class Emu3VQVAEConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Emu3-community/Emu3-Chat-hf")
 @strict
+# Emu3TextConfig：4096 维 32 层 GQA LLM，RoPE 与 184622 词表
 class Emu3TextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -120,6 +123,7 @@ class Emu3TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Emu3-community/Emu3-Chat-hf")
 @strict
+# Emu3Config：sub_configs 聚合 vq_config + text_config + vocabulary_map
 class Emu3Config(PreTrainedConfig):
     r"""
     vocabulary_map (`dict`, *optional*):
@@ -135,6 +139,7 @@ class Emu3Config(PreTrainedConfig):
     vocabulary_map: dict[str, int] | None = None
     tie_word_embeddings: bool = False
 
+# __post_init__：实例化子配置并从 vocabulary_map 解析 image_token_id
     def __post_init__(self, **kwargs):
         if self.vq_config is None:
             self.vq_config = Emu3VQVAEConfig()

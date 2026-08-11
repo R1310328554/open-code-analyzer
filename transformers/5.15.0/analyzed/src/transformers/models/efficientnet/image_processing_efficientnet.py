@@ -32,6 +32,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# EfficientNetImageProcessorKwargs：rescale_offset 与 include_top 预处理选项
 class EfficientNetImageProcessorKwargs(ImagesKwargs, total=False):
     """
     rescale_offset (`bool`, *optional*, defaults to `self.rescale_offset`):
@@ -45,6 +46,7 @@ class EfficientNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# EfficientNetImageProcessor：346→289 尺寸，ImageNet 均值方差，融合 rescale/normalize
 class EfficientNetImageProcessor(TorchvisionBackend):
     """Torchvision backend for EfficientNet with rescale offset and include_top."""
 
@@ -63,9 +65,11 @@ class EfficientNetImageProcessor(TorchvisionBackend):
     do_normalize = True
     include_top = True
 
+# __init__：继承 TorchvisionBackend 并绑定 valid_kwargs
     def __init__(self, **kwargs: Unpack[EfficientNetImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+# rescale：按 scale 缩放；offset=True 时映射到 [-1, 1]
     def rescale(
         self,
         image: "torch.Tensor",
@@ -80,6 +84,7 @@ class EfficientNetImageProcessor(TorchvisionBackend):
         return rescaled
 
     @lru_cache(maxsize=10)
+# _fuse_mean_std_and_rescale_factor：无 offset 时融合 mean/std 与 rescale 因子
     def _fuse_mean_std_and_rescale_factor(
         self,
         do_normalize: bool | None = None,
@@ -96,6 +101,7 @@ class EfficientNetImageProcessor(TorchvisionBackend):
             do_rescale = False
         return image_mean, image_std, do_rescale
 
+# rescale_and_normalize_efficientnet：EfficientNet 专用 rescale+normalize 流水线
     def rescale_and_normalize_efficientnet(
         self,
         images: "torch.Tensor",
@@ -122,6 +128,7 @@ class EfficientNetImageProcessor(TorchvisionBackend):
             images = self.normalize(images.to(dtype=torch.float32), image_mean, image_std)
         return images
 
+# _preprocess：按形状分组 resize，再 rescale/normalize 与 include_top 二次归一化
     def _preprocess(
         self,
         images: list["torch.Tensor"],

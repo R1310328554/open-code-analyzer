@@ -50,6 +50,7 @@ logger = logging.get_logger(__name__)
 # for now so there's one model to test BC.
 
 
+# Emu3ImageProcessorKwargs：ratio 宽高比与 image_area 目标面积
 class Emu3ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     ratio (`str`, *optional*, defaults to `"1:1"`):
@@ -62,6 +63,7 @@ class Emu3ImageProcessorKwargs(ImagesKwargs, total=False):
     image_area: int
 
 
+# smart_resize：按 factor 对齐尺寸，约束像素数并保持宽高比
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -91,6 +93,7 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# Emu3ImageProcessor：CLIP 均值方差，spatial_factor=28 动态 resize
 class Emu3ImageProcessor(BaseImageProcessor):
     r"""
     Constructs a Emu3 image processor that dynamically resizes images based on the original images.
@@ -126,6 +129,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
     model_input_names = ["pixel_values", "image_sizes"]
     valid_kwargs = Emu3ImageProcessorKwargs
 
+# __init__：设置 min/max_pixels、spatial_factor 与归一化参数
     def __init__(
         self,
         do_resize: bool = True,
@@ -156,6 +160,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
         self.size = {"min_pixels": min_pixels, "max_pixels": max_pixels}
         self.do_convert_rgb = do_convert_rgb
 
+# _preprocess：smart_resize → normalize → pad 批处理
     def _preprocess(
         self,
         images: ImageInput,
@@ -250,6 +255,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
 
         return processed_images
 
+# _pad_for_batching：按 batch 最大尺寸零填充
     def _pad_for_batching(
         self,
         pixel_values: list[np.ndarray],
@@ -295,6 +301,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
         ]
         return pixel_values
 
+# preprocess：公开入口，校验参数并调用 _preprocess
     def preprocess(
         self,
         images: ImageInput,
@@ -415,6 +422,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
             data={"pixel_values": pixel_values, "image_sizes": image_sizes}, tensor_type=return_tensors
         )
 
+# postprocess：反归一化并转 PIL/ndarray 输出
     def postprocess(
         self,
         images: ImageInput,
@@ -491,6 +499,7 @@ class Emu3ImageProcessor(BaseImageProcessor):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+# unnormalize：CLIP 均值方差反变换
     def unnormalize(
         self,
         image: np.ndarray,

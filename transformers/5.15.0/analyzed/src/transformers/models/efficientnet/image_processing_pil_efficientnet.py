@@ -28,6 +28,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.efficientnet.image_processing_efficientnet.EfficientNetImageProcessorKwargs
+# EfficientNetImageProcessorKwargs：rescale_offset 与 include_top 选项
 class EfficientNetImageProcessorKwargs(ImagesKwargs, total=False):
     """
     rescale_offset (`bool`, *optional*, defaults to `self.rescale_offset`):
@@ -41,6 +42,7 @@ class EfficientNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# EfficientNetImageProcessorPil：逐图 resize/crop/rescale/normalize 流水线
 class EfficientNetImageProcessorPil(PilBackend):
     """PIL backend for EfficientNet with rescale offset and include_top."""
 
@@ -62,6 +64,7 @@ class EfficientNetImageProcessorPil(PilBackend):
     def __init__(self, **kwargs: Unpack[EfficientNetImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+# rescale：numpy 图像缩放，offset 时减 1
     def rescale(
         self,
         image: np.ndarray,
@@ -74,6 +77,7 @@ class EfficientNetImageProcessorPil(PilBackend):
             rescaled -= 1
         return rescaled
 
+# _preprocess：逐图预处理，include_top 时对 std 二次 normalize
     def _preprocess(
         self,
         images: list[np.ndarray],

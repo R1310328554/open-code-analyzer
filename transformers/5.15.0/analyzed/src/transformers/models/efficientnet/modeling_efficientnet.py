@@ -33,6 +33,7 @@ from .configuration_efficientnet import EfficientNetConfig
 logger = logging.get_logger(__name__)
 
 
+# round_filters：按 width_coefficient 与 depth_divisor 对齐通道数
 def round_filters(config: EfficientNetConfig, num_channels: int):
     r"""
     Round number of filters based on depth multiplier.
@@ -48,6 +49,7 @@ def round_filters(config: EfficientNetConfig, num_channels: int):
     return int(new_dim)
 
 
+# correct_pad：深度卷积 padding 元组，adjust 控制非对称填充
 def correct_pad(kernel_size: int | tuple, adjust: bool = True):
     r"""
     Utility function to get the tuple padding value for the depthwise convolution.
@@ -68,6 +70,7 @@ def correct_pad(kernel_size: int | tuple, adjust: bool = True):
         return (correct[1], correct[1], correct[0], correct[0])
 
 
+# EfficientNetEmbeddings：stem 3×3 stride=2 卷积 + BN + Swish
 class EfficientNetEmbeddings(nn.Module):
     r"""
     A module that corresponds to the stem module of the original work.
@@ -84,6 +87,7 @@ class EfficientNetEmbeddings(nn.Module):
         self.batchnorm = nn.BatchNorm2d(self.out_dim, eps=config.batch_norm_eps, momentum=config.batch_norm_momentum)
         self.activation = ACT2FN[config.hidden_act]
 
+# forward：pixel_values 经 MBConv 编码输出 logits 与 loss
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         features = self.padding(pixel_values)
         features = self.convolution(features)
@@ -93,6 +97,7 @@ class EfficientNetEmbeddings(nn.Module):
         return features
 
 
+# EfficientNetDepthwiseConv2d：groups=in_channels 的深度可分离卷积
 class EfficientNetDepthwiseConv2d(nn.Conv2d):
     def __init__(
         self,
@@ -119,6 +124,7 @@ class EfficientNetDepthwiseConv2d(nn.Conv2d):
         )
 
 
+# EfficientNetExpansionLayer：1×1 扩展卷积 + BN + 激活（expand_ratio）
 class EfficientNetExpansionLayer(nn.Module):
     r"""
     This corresponds to the expansion phase of each block in the original implementation.
@@ -145,6 +151,7 @@ class EfficientNetExpansionLayer(nn.Module):
         return hidden_states
 
 
+# EfficientNetDepthwiseLayer：深度卷积 + BN + 激活，可选 stride 下采样
 class EfficientNetDepthwiseLayer(nn.Module):
     r"""
     This corresponds to the depthwise convolution phase of each block in the original implementation.
@@ -184,6 +191,7 @@ class EfficientNetDepthwiseLayer(nn.Module):
         return hidden_states
 
 
+# EfficientNetSqueezeExciteLayer：全局池化 + 两层 FC 的 SE 通道注意力
 class EfficientNetSqueezeExciteLayer(nn.Module):
     r"""
     This corresponds to the Squeeze and Excitement phase of each block in the original implementation.
@@ -223,6 +231,7 @@ class EfficientNetSqueezeExciteLayer(nn.Module):
         return hidden_states
 
 
+# EfficientNetFinalBlockLayer：1×1 投影卷积将 expand 通道压回 out_channels
 class EfficientNetFinalBlockLayer(nn.Module):
     r"""
     This corresponds to the final phase of each block in the original implementation.
@@ -256,6 +265,7 @@ class EfficientNetFinalBlockLayer(nn.Module):
         return hidden_states
 
 
+# EfficientNetBlock：MBConv 块（expand→depthwise→SE→project）+ DropConnect
 class EfficientNetBlock(nn.Module):
     r"""
     This corresponds to the expansion and depthwise convolution phase of each block in the original implementation.
@@ -337,6 +347,7 @@ class EfficientNetBlock(nn.Module):
         return hidden_states
 
 
+# EfficientNetEncoder：堆叠 num_block_repeats 个 MBConv 块，线性 drop_connect
 class EfficientNetEncoder(nn.Module):
     r"""
     Forward propagates the embeddings through each EfficientNet block.
@@ -428,6 +439,7 @@ class EfficientNetEncoder(nn.Module):
 
 
 @auto_docstring
+# EfficientNetPreTrainedModel：Conv/BN 权重初始化基类
 class EfficientNetPreTrainedModel(PreTrainedModel):
     config: EfficientNetConfig
     base_model_prefix = "efficientnet"
@@ -450,6 +462,7 @@ class EfficientNetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# EfficientNetModel：Embeddings + Encoder + mean/max 全局池化
 class EfficientNetModel(EfficientNetPreTrainedModel):
     def __init__(self, config: EfficientNetConfig):
         super().__init__(config)
@@ -513,6 +526,7 @@ class EfficientNetModel(EfficientNetPreTrainedModel):
     for ImageNet.
     """
 )
+# EfficientNetForImageClassification：Dropout + 线性分类头
 class EfficientNetForImageClassification(EfficientNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

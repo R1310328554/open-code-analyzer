@@ -53,6 +53,7 @@ from .configuration_electra import ElectraConfig
 logger = logging.get_logger(__name__)
 
 
+# ElectraEmbeddings：word/position/token_type 嵌入 + LayerNorm + Dropout
 class ElectraEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -70,6 +71,7 @@ class ElectraEmbeddings(nn.Module):
         self.token_type_ids = nn.Buffer(torch.zeros(self.position_ids.size(), dtype=torch.long), persistent=False)
 
     # Copied from transformers.models.bert.modeling_bert.BertEmbeddings.forward
+# forward：input_ids 经 ELECTRA 编码器输出 logits 与 hidden states
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -114,6 +116,7 @@ class ElectraEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -143,6 +146,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfAttention with Bert->Electra
+# ElectraSelfAttention：多头自注意力，支持多种 attention 后端
 class ElectraSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -211,6 +215,7 @@ class ElectraSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertCrossAttention with Bert->Electra
+# ElectraCrossAttention：交叉注意力（decoder 模式 encoder_hidden_states）
 class ElectraCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -288,6 +293,7 @@ class ElectraCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# ElectraSelfOutput：注意力输出线性投影 + dropout
 class ElectraSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -303,6 +309,7 @@ class ElectraSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertAttention with Bert->Electra,BERT->ELECTRA
+# ElectraAttention：SelfAttention + SelfOutput 封装
 class ElectraAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -333,6 +340,7 @@ class ElectraAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# ElectraIntermediate：intermediate_size 扩展 + GELU 激活
 class ElectraIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -349,6 +357,7 @@ class ElectraIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# ElectraOutput：down 投影 + LayerNorm 残差
 class ElectraOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -364,6 +373,7 @@ class ElectraOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLayer with Bert->Electra
+# ElectraLayer：自注意力 + 可选交叉注意力 + FFN 残差块
 class ElectraLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -430,6 +440,7 @@ class ElectraLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertEncoder with Bert->Electra
+# ElectraEncoder：堆叠 num_hidden_layers 个 ElectraLayer
 class ElectraEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -462,6 +473,7 @@ class ElectraEncoder(nn.Module):
         )
 
 
+# ElectraDiscriminatorPredictions：判别器头，预测 token 是否被替换
 class ElectraDiscriminatorPredictions(nn.Module):
     """Prediction module for the discriminator, made up of two dense layers."""
 
@@ -481,6 +493,7 @@ class ElectraDiscriminatorPredictions(nn.Module):
         return logits
 
 
+# ElectraGeneratorPredictions：生成器头，MLM 式 token 预测
 class ElectraGeneratorPredictions(nn.Module):
     """Prediction module for the generator, made up of two dense layers."""
 
@@ -500,6 +513,7 @@ class ElectraGeneratorPredictions(nn.Module):
 
 
 @auto_docstring
+# ElectraPreTrainedModel：权重初始化与 gradient checkpointing 基类
 class ElectraPreTrainedModel(PreTrainedModel):
     config_class = ElectraConfig
     base_model_prefix = "electra"
@@ -527,6 +541,7 @@ class ElectraPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# ElectraForPreTrainingOutput：判别 loss + 可选 MLM loss
 class ElectraForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -542,6 +557,7 @@ class ElectraForPreTrainingOutput(ModelOutput):
 
 
 @auto_docstring
+# ElectraModel：Embeddings + Encoder，输出 last_hidden_state
 class ElectraModel(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -663,6 +679,7 @@ class ElectraModel(ElectraPreTrainedModel):
         return attention_mask, encoder_attention_mask
 
 
+# ElectraClassificationHead：dense + tanh + dropout + 线性分类
 class ElectraClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -687,6 +704,7 @@ class ElectraClassificationHead(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->Electra
+# ElectraSequenceSummary：first/last/mean/cls_index 序列池化 + 投影
 class ElectraSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -792,6 +810,7 @@ class ElectraSequenceSummary(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# ElectraForSequenceClassification：SequenceSummary + 分类头
 class ElectraForSequenceClassification(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -872,6 +891,7 @@ class ElectraForSequenceClassification(ElectraPreTrainedModel):
     It is recommended to load the discriminator checkpoint into that model.
     """
 )
+# ElectraForPreTraining：ElectraModel + 判别器/生成器联合预训练
 class ElectraForPreTraining(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -964,6 +984,7 @@ class ElectraForPreTraining(ElectraPreTrainedModel):
     the two to have been trained for the masked language modeling task.
     """
 )
+# ElectraForMaskedLM：生成器 MLM 头（embedding 维投影）
 class ElectraForMaskedLM(ElectraPreTrainedModel):
     _tied_weights_keys = {"generator_lm_head.weight": "electra.embeddings.word_embeddings.weight"}
 
@@ -1036,6 +1057,7 @@ class ElectraForMaskedLM(ElectraPreTrainedModel):
     Both the discriminator and generator may be loaded into this model.
     """
 )
+# ElectraForTokenClassification：逐 token 线性分类（NER 等）
 class ElectraForTokenClassification(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1094,6 +1116,7 @@ class ElectraForTokenClassification(ElectraPreTrainedModel):
 
 
 @auto_docstring
+# ElectraForQuestionAnswering：span 起止位置预测头
 class ElectraForQuestionAnswering(ElectraPreTrainedModel):
     config_class = ElectraConfig
     base_model_prefix = "electra"
@@ -1165,6 +1188,7 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
 
 
 @auto_docstring
+# ElectraForMultipleChoice：多选 flatten 后 SequenceSummary 打分
 class ElectraForMultipleChoice(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1264,6 +1288,7 @@ class ElectraForMultipleChoice(ElectraPreTrainedModel):
     ELECTRA Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# ElectraForCausalLM：因果 LM 头，支持 generate 与 KV cache
 class ElectraForCausalLM(ElectraPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"generator_lm_head.weight": "electra.embeddings.word_embeddings.weight"}
 

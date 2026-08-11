@@ -44,6 +44,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# Emu3VQVAEModelOutput：modular 源中的 VQ-VAE 输出 dataclass
 class Emu3VQVAEModelOutput(BaseModelOutputWithPooling):
     r"""
     image_tokens (`torch.LongTensor` of shape `(batch_size, config.vocab_size`):
@@ -53,11 +54,13 @@ class Emu3VQVAEModelOutput(BaseModelOutputWithPooling):
     image_tokens: torch.LongTensor | None = None
 
 
+# Emu3Attention：直接继承 LlamaAttention
 class Emu3Attention(LlamaAttention):
     pass
 
 
 # Has extra dropout which no other model in the library has
+# Emu3DecoderLayer：继承 LlamaDecoderLayer
 class Emu3DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: Emu3Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -94,6 +97,7 @@ class Emu3DecoderLayer(LlamaDecoderLayer):
         return hidden_states
 
 
+# Emu3VQVAEVectorQuantizer：码本向量量化
 class Emu3VQVAEVectorQuantizer(nn.Module):
     """
     A module for vector quantization using learned embedding vectors.
@@ -128,6 +132,7 @@ class Emu3VQVAEVectorQuantizer(nn.Module):
         return min_encoding_indices
 
 
+# Emu3VQVAEEncoderConvDownsample：继承 Chameleon 下采样
 class Emu3VQVAEEncoderConvDownsample(ChameleonVQVAEEncoderConvDownsample):
     pass
 
@@ -362,6 +367,7 @@ class Emu3VQVAEResnetBlock(nn.Module):
         return residual + hidden_states
 
 
+# Emu3VQVAEAttentionBlock：继承 SigLIP 自注意力
 class Emu3VQVAEAttentionBlock(SiglipAttention):
     def __init__(self, config: Emu3VQVAEConfig):
         super().__init__(config)
@@ -860,6 +866,7 @@ class Emu3ImageVocabularyMapping:
         return img_tokens.to(device)
 
 
+# Emu3PreTrainedModel：继承 Chameleon 预训练基类
 class Emu3PreTrainedModel(ChameleonPreTrainedModel):
     _no_split_modules = [
         "Emu3DecoderLayer",
@@ -872,6 +879,7 @@ class Emu3PreTrainedModel(ChameleonPreTrainedModel):
     }
 
 
+# Emu3TextModel：LlamaModel + Emu3PreTrainedModel 多重继承
 class Emu3TextModel(LlamaModel, Emu3PreTrainedModel):
     config: Emu3TextConfig
 
@@ -882,6 +890,7 @@ class Emu3TextModel(LlamaModel, Emu3PreTrainedModel):
         )
 
 
+# Emu3ForCausalLM：Llama 因果 LM 头 + Emu3 初始化
 class Emu3ForCausalLM(LlamaForCausalLM, Emu3PreTrainedModel, GenerationMixin):
     config: Emu3TextConfig
 
@@ -911,6 +920,7 @@ class Emu3ForCausalLM(LlamaForCausalLM, Emu3PreTrainedModel, GenerationMixin):
         super().forward()
 
 
+# Emu3Model：modular 源中 VQ-VAE 与文本 LLM 联合模型
 class Emu3Model(Emu3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1066,6 +1076,7 @@ class Emu3Model(Emu3PreTrainedModel):
         return outputs
 
 
+# Emu3ForConditionalGeneration：多模态条件生成入口
 class Emu3ForConditionalGeneration(Emu3PreTrainedModel, GenerationMixin):
     output_modalities = ("image", "text")
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}

@@ -25,6 +25,7 @@ if is_vision_available():
     from .image_processing_emu3 import Emu3ImageProcessorKwargs, smart_resize
 
 
+# Emu3TextKwargs：return_for_image_generation 切换文生图/图生文路径
 class Emu3TextKwargs(TextKwargs, total=False):
     """
     return_for_image_generation (`bool`, *optional*, defaults to `False`):
@@ -37,6 +38,7 @@ class Emu3TextKwargs(TextKwargs, total=False):
     return_for_image_generation: bool
 
 
+# Emu3ProcessorKwargs：text/images 侧默认 ratio=1:1、image_area=518400
 class Emu3ProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: Emu3TextKwargs
     images_kwargs: Emu3ImageProcessorKwargs
@@ -54,9 +56,11 @@ class Emu3ProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("vision",))
+# Emu3Processor：组合 image_processor 与 tokenizer，管理 image token 模板
 class Emu3Processor(ProcessorMixin):
     valid_processor_kwargs = Emu3ProcessorKwargs
 
+# __init__：绑定 image_start/end/wrapper token 与 downsample_ratio=8
     def __init__(
         self,
         image_processor,
@@ -75,6 +79,7 @@ class Emu3Processor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+# __call__：文生图时追加尺寸 prompt；图生文时联合预处理图文
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -105,6 +110,7 @@ class Emu3Processor(ProcessorMixin):
             model_inputs["image_sizes"] = [[height, width]] * len(text)
         return model_inputs
 
+# prepare_inputs_layout：图文同时输入时为文本前缀 BOS
     def prepare_inputs_layout(self, images=None, text=None, **kwargs):
         images, text, *_ = super().prepare_inputs_layout(images=images, text=text, **kwargs)
         if images is not None and text is not None:
@@ -112,6 +118,7 @@ class Emu3Processor(ProcessorMixin):
             text = [f"{self.bos_token}{sample}" for sample in text]
         return images, text, None, None
 
+# replace_image_token：将 <image> 占位符展开为 VQ token 序列
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         height, width = image_inputs["image_sizes"][image_idx]
         height = height // self.downsample_ratio
@@ -124,6 +131,7 @@ class Emu3Processor(ProcessorMixin):
             f"{self.eof_token}{self.image_end_token}"
         )
 
+# _get_num_multimodal_tokens：计算多模态占位 token 数量
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -158,6 +166,7 @@ class Emu3Processor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
+# calculate_generate_size：按 ratio 与 image_area 计算生成尺寸
     def calculate_generate_size(self, ratio, image_area, spatial_factor):
         width, height = map(int, ratio.split(":"))
         current_area = width * height
@@ -167,9 +176,11 @@ class Emu3Processor(ProcessorMixin):
         token_width = int(round(width * target_ratio / spatial_factor))
         return token_height, token_width
 
+# postprocess：委托 image_processor 后处理
     def postprocess(self, images: ImageInput, **kwargs):
         return self.image_processor.postprocess(images, **kwargs)
 
+# post_process_multimodal_output：按 generation_mode 解码文本或图像
     def post_process_multimodal_output(
         self, generated_outputs, skip_special_tokens=True, generation_mode=None, **kwargs
     ):

@@ -48,6 +48,7 @@ from .configuration_emu3 import Emu3Config, Emu3TextConfig, Emu3VQVAEConfig
 
 @auto_docstring
 @dataclass
+# Emu3VQVAEModelOutput：VQ-VAE 输出含 image_tokens 量化索引
 class Emu3VQVAEModelOutput(BaseModelOutputWithPooling):
     r"""
     image_tokens (`torch.LongTensor` of shape `(batch_size, config.vocab_size`):
@@ -57,6 +58,7 @@ class Emu3VQVAEModelOutput(BaseModelOutputWithPooling):
     image_tokens: torch.LongTensor | None = None
 
 
+# rotate_half：RoPE 旋转操作中交换并取反张量半部
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -65,6 +67,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 施加到 query/key
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -90,6 +93,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 场景下重复 KV 头以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -102,6 +106,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -128,6 +133,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Emu3Attention：多头自注意力 + RoPE，支持 GQA 与多种后端
 class Emu3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -154,6 +160,7 @@ class Emu3Attention(nn.Module):
             config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
         )
 
+# forward：input_ids/pixel_values 经 VQ-VAE+LLM 输出 logits
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -196,6 +203,7 @@ class Emu3Attention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Emu3RMSNorm：Root Mean Square LayerNorm
 class Emu3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -216,6 +224,7 @@ class Emu3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Emu3MLP：SwiGLU 风格 gate/up/down 前馈
 class Emu3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -232,6 +241,7 @@ class Emu3MLP(nn.Module):
         return down_proj
 
 
+# Emu3DecoderLayer：Pre-LN 自注意力 + MLP 残差块
 class Emu3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Emu3Config, layer_idx: int):
         super().__init__()
@@ -275,6 +285,7 @@ class Emu3DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Emu3VQVAEVectorQuantizer：最近邻码本量化 + straight-through 梯度
 class Emu3VQVAEVectorQuantizer(nn.Module):
     """
     A module for vector quantization using learned embedding vectors.
@@ -309,6 +320,7 @@ class Emu3VQVAEVectorQuantizer(nn.Module):
         return min_encoding_indices
 
 
+# Emu3VQVAEEncoderConvDownsample：stride=2 卷积空间下采样
 class Emu3VQVAEEncoderConvDownsample(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -321,6 +333,7 @@ class Emu3VQVAEEncoderConvDownsample(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEEncoderConvUpsample：最近邻上采样 + 3×3 卷积
 class Emu3VQVAEEncoderConvUpsample(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -332,6 +345,7 @@ class Emu3VQVAEEncoderConvUpsample(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEConv3d：3D 卷积封装，支持 causal 时间维 padding
 class Emu3VQVAEConv3d(nn.Module):
     def __init__(
         self,
@@ -361,6 +375,7 @@ class Emu3VQVAEConv3d(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAESpatialNorm：以量化特征为条件的 GroupNorm
 class Emu3VQVAESpatialNorm(nn.Module):
     def __init__(
         self,
@@ -397,6 +412,7 @@ class Emu3VQVAESpatialNorm(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAETemporalUpsample：时间维 repeat 上采样
 class Emu3VQVAETemporalUpsample(nn.Module):
     def __init__(
         self,
@@ -420,6 +436,7 @@ class Emu3VQVAETemporalUpsample(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAETemporalDownsample：时间维 stride 下采样
 class Emu3VQVAETemporalDownsample(nn.Module):
     def __init__(
         self,
@@ -439,6 +456,7 @@ class Emu3VQVAETemporalDownsample(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAETemporalResnetBlock：含 3D 卷积的时序 ResNet 块
 class Emu3VQVAETemporalResnetBlock(nn.Module):
     def __init__(
         self,
@@ -488,6 +506,7 @@ class Emu3VQVAETemporalResnetBlock(nn.Module):
         return residual + hidden_states
 
 
+# Emu3VQVAEResnetBlock：2D ResNet 块 + SpatialNorm + 可选注意力
 class Emu3VQVAEResnetBlock(nn.Module):
     def __init__(
         self,
@@ -551,6 +570,7 @@ class Emu3VQVAEResnetBlock(nn.Module):
         return residual + hidden_states
 
 
+# Emu3VQVAEAttentionBlock：VQ-VAE 中间层的自注意力
 class Emu3VQVAEAttentionBlock(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -613,6 +633,7 @@ class Emu3VQVAEAttentionBlock(nn.Module):
         return attn_output, attn_weights
 
 
+# Emu3VQVAEGroupNorm：channels_last 格式的 GroupNorm
 class Emu3VQVAEGroupNorm(nn.GroupNorm):
     """
     Same as the torch GroupNorm with the only difference that this ones accepts
@@ -627,6 +648,7 @@ class Emu3VQVAEGroupNorm(nn.GroupNorm):
         return F.group_norm(input, self.num_groups, self.weight, self.bias, self.eps)
 
 
+# Emu3VQVAEMiddleBlock：ResNet + Attention 中间瓶颈
 class Emu3VQVAEMiddleBlock(nn.Module):
     def __init__(self, config, in_channels, quant_channels=None):
         super().__init__()
@@ -661,6 +683,7 @@ class Emu3VQVAEMiddleBlock(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEDownBlock：下采样 + 多个 ResNet 块
 class Emu3VQVAEDownBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -720,6 +743,7 @@ class Emu3VQVAEDownBlock(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEUpBlock：上采样 + 多个 ResNet 块
 class Emu3VQVAEUpBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -778,6 +802,7 @@ class Emu3VQVAEUpBlock(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEEncoder：多 stage 下采样编码器 → 量化 latent
 class Emu3VQVAEEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -848,6 +873,7 @@ class Emu3VQVAEEncoder(nn.Module):
         return hidden_states
 
 
+# Emu3VQVAEDecoder：从量化 latent 重建像素/帧
 class Emu3VQVAEDecoder(nn.Module):
     def __init__(self, config: Emu3VQVAEConfig):
         super().__init__()
@@ -926,6 +952,7 @@ class Emu3VQVAEDecoder(nn.Module):
     Taigman](https://huggingface.co/papers/2203.13131).
     """
 )
+# Emu3VQVAE：Encoder + VectorQuantizer + Decoder 完整 VQ-VAE
 class Emu3VQVAE(PreTrainedModel):
     config: Emu3VQVAEConfig
     base_model_prefix = "emuvideovq"
@@ -1049,6 +1076,7 @@ class Emu3VQVAE(PreTrainedModel):
         return video[:, 0] if is_image else video
 
 
+# Emu3ImageVocabularyMapping：图像 token 与 BPE 词表的双向映射
 class Emu3ImageVocabularyMapping:
     """
     A class for mapping discrete image tokens from VQGAN to BPE tokens.
@@ -1104,6 +1132,7 @@ class Emu3ImageVocabularyMapping:
 
 
 @auto_docstring
+# Emu3PreTrainedModel：权重初始化与 gradient checkpointing 基类
 class Emu3PreTrainedModel(PreTrainedModel):
     config: Emu3Config
     base_model_prefix = "model"
@@ -1125,6 +1154,7 @@ class Emu3PreTrainedModel(PreTrainedModel):
     }
 
 
+# Emu3RotaryEmbedding：可配置 rope_type 的 RoPE 位置编码
 class Emu3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Emu3Config, device=None):
@@ -1183,6 +1213,7 @@ class Emu3RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Emu3TextModel：token 嵌入 + 堆叠 DecoderLayer + RMSNorm
 class Emu3TextModel(Emu3PreTrainedModel):
     config: Emu3TextConfig
 
@@ -1259,6 +1290,7 @@ class Emu3TextModel(Emu3PreTrainedModel):
 
 
 @auto_docstring
+# Emu3ForCausalLM：纯文本因果 LM 头，支持 generate
 class Emu3ForCausalLM(Emu3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -1335,6 +1367,7 @@ class Emu3ForCausalLM(Emu3PreTrainedModel, GenerationMixin):
         )
 
 
+# Emu3Model：VQ-VAE 编码图像 token 与文本 LLM 联合前向
 class Emu3Model(Emu3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1490,6 +1523,7 @@ class Emu3Model(Emu3PreTrainedModel):
         return outputs
 
 
+# Emu3ForConditionalGeneration：多模态条件生成（文本/图像输出）
 class Emu3ForConditionalGeneration(Emu3PreTrainedModel, GenerationMixin):
     output_modalities = ("image", "text")
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}

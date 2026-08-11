@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ElectraConfig：google/electra-small-discriminator，256 维 12 层
 @auto_docstring(checkpoint="google/electra-small-discriminator")
 @strict
+# ElectraConfig：embedding_size/hidden_size/summary_type 与 is_decoder 等
 class ElectraConfig(PreTrainedConfig):
     r"""
     summary_type (`str`, *optional*, defaults to `"first"`):
@@ -87,3 +89,5 @@ class ElectraConfig(PreTrainedConfig):
 
 
 __all__ = ["ElectraConfig"]
+# 模块 src/transformers/models/electra/configuration_electra.py：Transformers 5.15.0 wave23b 中文文档注释。
+
