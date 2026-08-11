@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Differentiable Binarization 检测损失：收缩图、阈值图与二值图多分支监督
 """
 This code is refer from:
 https://github.com/WenmuZhou/DBNet.pytorch/blob/master/models/losses/DB_loss.py
@@ -26,6 +27,7 @@ from paddle import nn
 from .det_basic_loss import BalanceLoss, MaskL1Loss, DiceLoss, DiceFocalLoss
 
 
+    # DB 总损失：shrink/threshold/binary 三分支及可选 CBN 与多尺度 aux
 class DBLoss(nn.Layer):
     """
     Differentiable Binarization (DB) Loss Function

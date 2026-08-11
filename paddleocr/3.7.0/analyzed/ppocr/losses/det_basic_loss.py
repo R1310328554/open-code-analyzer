@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 检测基础损失组件：DB/EAST 等共用的平衡采样与 Dice/Focal 实现
 """
 This code is refer from:
 https://github.com/WenmuZhou/DBNet.pytorch/blob/master/models/losses/basic_loss.py
@@ -26,6 +27,7 @@ from paddle import nn
 import paddle.nn.functional as F
 
 
+    # DB 正负样本平衡：OHEM 采样负例 + Dice/BCE/MaskL1 主损失
 class BalanceLoss(nn.Layer):
     def __init__(
         self,
@@ -114,6 +116,7 @@ class BalanceLoss(nn.Layer):
         return balance_loss
 
 
+    # Dice 系数损失：掩码内预测与 GT 区域重叠度 1-2|A∩B|/(|A|+|B|)
 class DiceLoss(nn.Layer):
     def __init__(self, eps=1e-6):
         super(DiceLoss, self).__init__()
@@ -137,6 +140,7 @@ class DiceLoss(nn.Layer):
         return loss
 
 
+    # 掩码 L1：仅在有效 mask 像素上计算 |pred-gt| 均值
 class MaskL1Loss(nn.Layer):
     def __init__(self, eps=1e-6):
         super(MaskL1Loss, self).__init__()
@@ -151,6 +155,7 @@ class MaskL1Loss(nn.Layer):
         return loss
 
 
+    # 二值交叉熵封装，供 BalanceLoss 等检测分割分支调用
 class BCELoss(nn.Layer):
     def __init__(self, reduction="mean"):
         super(BCELoss, self).__init__()
@@ -161,6 +166,7 @@ class BCELoss(nn.Layer):
         return loss
 
 
+    # 带掩码 Focal Loss：难例加权，缓解文本/背景极度不平衡
 class MaskedFocalLoss(nn.Layer):
     """
     Binary Focal Loss with mask support, designed for text segmentation tasks.
@@ -226,6 +232,7 @@ class MaskedFocalLoss(nn.Layer):
         return (loss * mask).sum() / (mask.sum() + self.eps)
 
 
+    # Dice+Focal 组合：全局形状与像素级边界互补监督
 class DiceFocalLoss(nn.Layer):
     """
     Combined DiceLoss + MaskedFocalLoss for binary text segmentation.

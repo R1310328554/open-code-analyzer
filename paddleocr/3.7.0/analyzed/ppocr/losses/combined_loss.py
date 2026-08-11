@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import paddle
+# 组合损失：YAML 列表配置多路 loss 及 weight，加权求和为总 loss
 import paddle.nn as nn
 
 from .rec_ctc_loss import CTCLoss
@@ -40,6 +41,7 @@ from .distillation_loss import DistillationLossFromOutput
 from .distillation_loss import DistillationVQADistanceLoss
 
 
+    # 多任务组合：CTC+Center+ACE+蒸馏等子损失按 weight 累加
 class CombinedLoss(nn.Layer):
     """
     CombinedLoss:

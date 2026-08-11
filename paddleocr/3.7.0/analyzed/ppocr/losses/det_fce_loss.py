@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet 傅里叶轮廓检测损失：文本/中心分类 + 傅里叶系数回归
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/losses/fce_loss.py
@@ -29,6 +30,7 @@ def multi_apply(func, *args, **kwargs):
     return tuple(map(list, zip(*map_results)))
 
 
+    # FCE 多尺度损失：OHEM 文本/中心 CE + 傅里叶系数 SmoothL1 回归
 class FCELoss(nn.Layer):
     """The class for implementing FCENet loss
     FCENet(CVPR2021): Fourier Contour Embedding for Arbitrary-shaped

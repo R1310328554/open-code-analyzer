@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CentripetalText 检测损失：核 Dice + 向心距离 SmoothL1 与 OHEM 掩码
 """
 This code is refer from:
 https://github.com/shengtao96/CentripetalText/tree/main/models/loss
@@ -26,6 +27,7 @@ import paddle.nn.functional as F
 import numpy as np
 
 
+    # 单图 OHEM：保留全部正样本并选取最难负样本构成训练掩码
 def ohem_single(score, gt_text, training_mask):
     # online hard example mining
 
@@ -110,6 +112,7 @@ def iou(a, b, mask, n_class=2, reduce=True):
     return iou
 
 
+    # CT 核分割 Dice：sigmoid 后与 shrink 核 GT 在 OHEM 掩码内优化
 class DiceLoss(nn.Layer):
     def __init__(self, loss_weight=1.0):
         super(DiceLoss, self).__init__()
@@ -140,6 +143,7 @@ class DiceLoss(nn.Layer):
         return loss
 
 
+    # 向心距离回归：仅对实例边界不一致像素监督 offset 向量
 class SmoothL1Loss(nn.Layer):
     def __init__(self, beta=1.0, loss_weight=1.0):
         super(SmoothL1Loss, self).__init__()
@@ -243,6 +247,7 @@ class SmoothL1Loss(nn.Layer):
         return loss, iou_text
 
 
+    # CentripetalText 总损失：loss_kernels + loss_loc 加权求和
 class CTLoss(nn.Layer):
     def __init__(self):
         super(CTLoss, self).__init__()

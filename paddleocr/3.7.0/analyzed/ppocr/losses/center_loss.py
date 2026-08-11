@@ -22,9 +22,11 @@ import pickle
 
 import paddle
 import paddle.nn as nn
+# Center Loss：拉近特征与其类别中心，增强字符/类别判别性
 import paddle.nn.functional as F
 
 
+    # 中心损失：特征到可学习类中心的 L2 距离，仅对 argmax 类别回传
 class CenterLoss(nn.Layer):
     """
     Reference: Wen et al. A Discriminative Feature Learning Approach for Deep Face Recognition. ECCV 2016.

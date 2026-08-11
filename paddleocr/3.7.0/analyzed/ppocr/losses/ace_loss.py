@@ -19,9 +19,11 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
+# ACE 聚合交叉熵：序列识别中对时间步 softmax 聚合后与字符频次软标签对齐
 import paddle.nn as nn
 
 
+    # ACE 损失：时间维聚合预测分布，与 label_ace 频次向量计算 soft CE
 class ACELoss(nn.Layer):
     def __init__(self, **kwargs):
         super().__init__()

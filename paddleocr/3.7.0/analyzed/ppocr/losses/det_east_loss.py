@@ -16,11 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# EAST 检测损失：score 图 Dice + geo 向量 SmoothL1，按 score 掩码加权
 import paddle
 from paddle import nn
 from .det_basic_loss import DiceLoss
 
 
+    # EAST 总损失：f_score Dice（×0.01）与 8 通道几何 SmoothL1 之和
 class EASTLoss(nn.Layer):
     """ """
 

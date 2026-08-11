@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 深度关系图检测损失：文本/中心/高度/方向图与 GCN 边分类
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/losses/drrg_loss.py
@@ -21,6 +22,7 @@ import paddle.nn.functional as F
 from paddle import nn
 
 
+    # DRRG 多分支：平衡 BCE 文本、中心图、高度与 sin/cos 方向 + gcn CE
 class DRRGLoss(nn.Layer):
     def __init__(self, ohem_ratio=3.0):
         super().__init__()

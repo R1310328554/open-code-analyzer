@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# OCR 损失函数注册表：检测/识别/分类/蒸馏/表格/VQA 等任务 loss 工厂
 import copy
 import paddle
 import paddle.nn as nn
@@ -74,6 +75,7 @@ from .stroke_focus_loss import StrokeFocusLoss
 from .text_focus_loss import TelescopeLoss
 
 
+    # 按 YAML 配置 name 实例化对应 Loss 类并返回
 def build_loss(config):
     support_dict = [
         "DBLoss",

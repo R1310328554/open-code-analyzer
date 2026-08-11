@@ -20,6 +20,7 @@ import paddle
 import paddle.nn as nn
 from paddle.utils.cpp_extension import load
 
+# 旋转 RoI Align：JIT 编译 C++/CUDA 扩展，对倾斜文本框做双线性区域池化
 custom_ops = load(
     name="custom_jit_ops",
     sources=[
@@ -31,6 +32,7 @@ custom_ops = load(
 roi_align_rotated = custom_ops.roi_align_rotated
 
 
+    # 旋转候选框对齐层：按 spatial_scale 将特征图区域池化到固定 out_size
 class RoIAlignRotated(nn.Layer):
     """RoI align pooling layer for rotated proposals."""
 

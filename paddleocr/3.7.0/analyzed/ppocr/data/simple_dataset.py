@@ -28,6 +28,7 @@ from paddle.io import Dataset
 from .imaug import transform, create_operators
 from paddle import get_device
 
+# 通用 OCR 数据集：标签文件加载、比例采样、URL 预取与增强流水线
 # ------------------------------------------------------------------ #
 #  Per-worker-process URL prefetch cache
 #
@@ -169,6 +170,7 @@ def _img_path_exists(img_path):
     return os.path.exists(img_path)
 
 
+    # 基础数据集：多源标签合并、epoch 虚拟索引、ext_data 辅助样本与 transform
 class SimpleDataSet(Dataset):
     def __init__(self, config, mode, logger, seed=None):
         super(SimpleDataSet, self).__init__()
@@ -443,6 +445,7 @@ class SimpleDataSet(Dataset):
         return len(self.data_idx_order_list)
 
 
+    # 多尺度识别数据集：按宽高比排序并动态 resize_norm_img 批采样
 class MultiScaleDataSet(SimpleDataSet):
     def __init__(self, config, mode, logger, seed=None):
         super(MultiScaleDataSet, self).__init__(config, mode, logger, seed)

@@ -16,9 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 文本方向/场景分类损失：标准 CrossEntropy 对 batch 标签
 from paddle import nn
 
 
+    # 分类损失：predicts 与 batch[1] 整型标签计算 mean CE
 class ClsLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(ClsLoss, self).__init__()

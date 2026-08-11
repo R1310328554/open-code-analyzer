@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 通用基础损失：CE/标签平滑、KL-JS 散度、蒸馏 DML/DKD 与距离回归
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -21,6 +22,7 @@ from paddle.nn import MSELoss as L2Loss
 from paddle.nn import SmoothL1Loss
 
 
+    # 交叉熵损失：支持 label smoothing 与 soft label 输入
 class CELoss(nn.Layer):
     def __init__(self, epsilon=None):
         super().__init__()
@@ -54,6 +56,7 @@ class CELoss(nn.Layer):
         return loss
 
 
+    # KL 或 JS 对称散度，用于检测/识别特征或 logits 对齐
 class KLJSLoss(object):
     def __init__(self, mode="kl"):
         assert mode in [
@@ -92,6 +95,7 @@ class KLJSLoss(object):
         return loss
 
 
+    # 深度互学习：双分支 softmax/sigmoid 后 KL 一致性约束
 class DMLLoss(nn.Layer):
     """
     DMLLoss
@@ -133,6 +137,7 @@ class DMLLoss(nn.Layer):
         return loss
 
 
+    # L1/L2/SmoothL1 距离损失封装，蒸馏与回归通用
 class DistanceLoss(nn.Layer):
     """
     DistanceLoss:
@@ -153,6 +158,7 @@ class DistanceLoss(nn.Layer):
         return self.loss_func(x, y)
 
 
+    # 从模型输出 dict 按 key 提取 loss 并做 mean/sum 归约
 class LossFromOutput(nn.Layer):
     def __init__(self, key="loss", reduction="none"):
         super().__init__()
@@ -170,6 +176,7 @@ class LossFromOutput(nn.Layer):
         return {"loss": loss}
 
 
+    # 经典 KL 蒸馏：student log-softmax 对齐 teacher softmax
 class KLDivLoss(nn.Layer):
     """
     KLDivLoss
@@ -196,6 +203,7 @@ class KLDivLoss(nn.Layer):
         return loss
 
 
+    # 解耦知识蒸馏：TCKD 目标类 + NCKD 非目标类分支加权
 class DKDLoss(nn.Layer):
     """
     KLDivLoss
