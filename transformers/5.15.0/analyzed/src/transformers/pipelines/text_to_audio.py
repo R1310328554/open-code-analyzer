@@ -1,3 +1,4 @@
+# 文本转音频 Pipeline：文本条件生成波形或频谱
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +31,7 @@ if is_torch_available():
 DEFAULT_VOCODER_ID = "microsoft/speecht5_hifigan"
 
 
+# AudioOutput：音频输出 TypedDict：波形数组与采样率
 class AudioOutput(TypedDict, total=False):
     """
     audio (`AudioInput`):
@@ -42,6 +44,7 @@ class AudioOutput(TypedDict, total=False):
     sampling_rate: int
 
 
+# TextToAudioPipeline：文本转音频 Pipeline：Bark/MusicGen 等模型推理
 class TextToAudioPipeline(Pipeline):
     """
     Text-to-audio generation pipeline using any `AutoModelForTextToWaveform` or `AutoModelForTextToSpectrogram`. This

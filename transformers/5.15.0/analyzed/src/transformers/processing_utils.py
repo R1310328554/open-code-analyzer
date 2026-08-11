@@ -15,6 +15,7 @@
 Processing saving/loading class for common processors.
 """
 
+# 处理器工具：多模态 Processor 保存/加载与 chat template kwargs
 import bisect
 import copy
 import functools
@@ -95,6 +96,7 @@ SpecificProcessorType = TypeVar("SpecificProcessorType", bound="ProcessorMixin")
 transformers_module = direct_transformers_import(Path(__file__).parent)
 
 
+# _LazyAutoProcessorMapping：延迟 AutoProcessor 映射，避免循环导入
 class _LazyAutoProcessorMapping(dict):
     """
     Lazy dictionary to avoid circular imports.
@@ -163,6 +165,7 @@ else:
     Unpack = typing_extensions.Unpack
 
 
+# TextKwargs：文本预处理 TypedDict：padding/truncation/return_tensors 等
 class TextKwargs(TypedDict, total=False):
     """
     Keyword arguments for text processing. For extended documentation, check out tokenization_utils_base methods and
@@ -232,6 +235,7 @@ class TextKwargs(TypedDict, total=False):
     return_tensors: Annotated[str | TensorType | None, tensor_type_validator()]
 
 
+# ImagesKwargs：图像预处理 TypedDict：resize/normalize/pad 等
 class ImagesKwargs(TypedDict, total=False):
     """
     Keyword arguments for image processing. For extended documentation, check the appropriate ImageProcessor
@@ -305,6 +309,7 @@ class ImagesKwargs(TypedDict, total=False):
     image_seq_length: int | None
 
 
+# VideosKwargs：视频预处理 TypedDict：帧采样与时空 resize
 class VideosKwargs(TypedDict, total=False):
     """
     Keyword arguments for video processing.
@@ -382,6 +387,7 @@ class VideosKwargs(TypedDict, total=False):
     return_tensors: Annotated[str | TensorType | None, tensor_type_validator()]
 
 
+# AudioKwargs：音频预处理 TypedDict：采样率/padding/attention_mask
 class AudioKwargs(TypedDict, total=False):
     """
     Keyword arguments for audio processing.
@@ -430,6 +436,7 @@ class AudioKwargs(TypedDict, total=False):
     load_audio_backend: str | None
 
 
+# ProcessingKwargs：处理器 kwargs 基类：各模态子字典与 _defaults
 class ProcessingKwargs(TypedDict, total=False):
     """
     Base class for kwargs passing to processors.
@@ -485,6 +492,7 @@ class ProcessingKwargs(TypedDict, total=False):
     }
 
 
+# TokenizerChatTemplateKwargs：聊天模板 kwargs（已弃用）：tools/documents/generation_prompt
 class TokenizerChatTemplateKwargs(TypedDict, total=False):
     """
     NOTE: `TokenizerChatTemplateKwargs` is deprecated and will be removed in future versions
@@ -532,6 +540,7 @@ class TokenizerChatTemplateKwargs(TypedDict, total=False):
     reasoning_effort: str | None = None
 
 
+# ProcessorChatTemplateKwargs：处理器聊天模板 kwargs（已弃用）：tokenize/return_dict
 class ProcessorChatTemplateKwargs(TokenizerChatTemplateKwargs, total=False):
     """
     NOTE: `ProcessorChatTemplateKwargs` is deprecated and will be removed in future versions
@@ -552,6 +561,7 @@ class ProcessorChatTemplateKwargs(TokenizerChatTemplateKwargs, total=False):
     load_audio_from_video: bool | None = False
 
 
+# AllKwargsForChatTemplate：聊天模板全 kwargs 容器（已弃用）
 class AllKwargsForChatTemplate(TypedDict, total=False):
     "NOTE: `AllKwargsForChatTemplate` is deprecated and will be removed in future versions"
 
@@ -560,6 +570,7 @@ class AllKwargsForChatTemplate(TypedDict, total=False):
 
 
 @dataclass
+# MultiModalData：多模态辅助数据：图像/视频/音频 token 数量统计
 class MultiModalData:
     """
     Dataclass that holds extra useful data for processing
@@ -594,6 +605,7 @@ def _merge_typed_dict(preprocessor_typed_dict: type, modality_typed_dict: type) 
     )
 
 
+# ProcessorMixin：处理器 Mixin：子处理器组合、保存/加载与 apply_chat_template
 class ProcessorMixin(PushToHubMixin):
     """
     This is a mixin used to provide saving/loading functionality for all processor classes.

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PyTorch 工具：Conv1D、LayerNorm 查找与参数内存统计
 from __future__ import annotations
 
 import inspect
@@ -92,6 +93,7 @@ def prune_linear_layer(layer: nn.Linear, index: torch.LongTensor, dim: int = 0) 
     return new_layer
 
 
+# Conv1D：GPT 风格 Conv1D：权重转置的 1D 卷积线性层
 class Conv1D(nn.Module):
     """
     1D-convolutional layer as defined by Radford et al. for OpenAI GPT (and also used in GPT-2).

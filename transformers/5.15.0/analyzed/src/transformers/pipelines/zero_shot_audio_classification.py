@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 零样本音频分类 Pipeline：CLAP 文本-音频相似度打分
 from collections import UserDict
 from typing import Any
 
@@ -29,6 +30,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_feature_extractor=True, has_tokenizer=True))
+# ZeroShotAudioClassificationPipeline：零样本音频分类：候选标签假设模板打分
 class ZeroShotAudioClassificationPipeline(Pipeline):
     """
     Zero shot audio classification pipeline using `ClapModel`. This pipeline predicts the class of an audio when you

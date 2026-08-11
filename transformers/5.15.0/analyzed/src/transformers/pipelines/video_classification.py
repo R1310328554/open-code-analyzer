@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 视频分类 Pipeline：帧采样与 image/video processor 预处理
 from io import BytesIO
 from typing import Any, overload
 
@@ -38,6 +39,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True, has_video_processor=True))
+# VideoClassificationPipeline：视频分类 Pipeline：URL/路径/字节流输入预测类别
 class VideoClassificationPipeline(Pipeline):
     """
     Video classification pipeline using any `AutoModelForVideoClassification`. This pipeline predicts the class of a

@@ -1,3 +1,4 @@
+# 序列标注 Pipeline：NER/POS 等 token 级分类与实体聚合
 import types
 import warnings
 from typing import Any, overload
@@ -19,6 +20,7 @@ if is_torch_available():
     from ..models.auto.modeling_auto import MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING_NAMES
 
 
+# TokenClassificationArgumentHandler：参数处理器：批量化输入与 offset_mapping
 class TokenClassificationArgumentHandler(ArgumentHandler):
     """
     Handles arguments for token classification.
@@ -48,6 +50,7 @@ class TokenClassificationArgumentHandler(ArgumentHandler):
         return inputs, is_split_into_words, offset_mapping, delimiter
 
 
+# AggregationStrategy：子词聚合策略枚举：none/simple/first/average/max
 class AggregationStrategy(ExplicitEnum):
     """All the valid aggregation strategies for TokenClassificationPipeline"""
 
@@ -89,6 +92,7 @@ class AggregationStrategy(ExplicitEnum):
                 - "max" : (works only on word based models) Will use the `SIMPLE` strategy except that words, cannot
                   end up with different tags. Word entity will simply be the token with the maximum score.""",
 )
+# TokenClassificationPipeline：序列标注 Pipeline：分块 stride + 实体聚合
 class TokenClassificationPipeline(ChunkPipeline):
     """
     Named Entity Recognition pipeline using any `ModelForTokenClassification`. See the [named entity recognition

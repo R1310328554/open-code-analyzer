@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# AQLM 量化器：Additive Quantization LM 预量化模型加载
 from importlib import metadata
 from typing import TYPE_CHECKING
 
@@ -31,6 +32,7 @@ from ..utils.quantization_config import QuantizationConfigMixin
 logger = logging.get_logger(__name__)
 
 
+# AqlmHfQuantizer：AQLM 量化器：replace_with_aqlm_linear 替换线性层
 class AqlmHfQuantizer(HfQuantizer):
     """
     Quantizer of the AQLM method. Enables the loading of prequantized models.

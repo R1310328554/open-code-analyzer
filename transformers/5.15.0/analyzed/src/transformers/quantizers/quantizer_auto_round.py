@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# AutoRound 量化器：Round-to-nearest 预量化模型推理加载
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -26,6 +27,7 @@ from ..utils.quantization_config import QuantizationConfigMixin
 logger = logging.get_logger(__name__)
 
 
+# AutoRoundQuantizer：AutoRound 量化器：convert_hf_model 转换预量化权重
 class AutoRoundQuantizer(HfQuantizer):
     """
     Quantizer of the AutoRound method. (https://huggingface.co/papers/2309.05516)

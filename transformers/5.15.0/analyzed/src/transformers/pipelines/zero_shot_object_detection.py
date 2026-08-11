@@ -1,3 +1,4 @@
+# 零样本目标检测 Pipeline：OwlViT 文本条件边界框预测
 from typing import Any, Union, overload
 
 from ..utils import add_end_docstrings, is_torch_available, is_vision_available, logging, requires_backends
@@ -20,6 +21,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True))
+# ZeroShotObjectDetectionPipeline：零样本检测 Pipeline：候选标签生成边界框
 class ZeroShotObjectDetectionPipeline(ChunkPipeline):
     """
     Zero shot object detection pipeline using `OwlViTForObjectDetection`. This pipeline predicts bounding boxes of

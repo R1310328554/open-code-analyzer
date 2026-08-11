@@ -1,3 +1,4 @@
+# 零样本文本分类 Pipeline：NLI 蕴含分数作为标签概率
 import inspect
 
 import numpy as np
@@ -10,6 +11,7 @@ from .base import ArgumentHandler, ChunkPipeline, build_pipeline_init_args
 logger = logging.get_logger(__name__)
 
 
+# ZeroShotClassificationArgumentHandler：参数处理器：序列×标签 premise/hypothesis 配对
 class ZeroShotClassificationArgumentHandler(ArgumentHandler):
     """
     Handles arguments for zero-shot for text classification by turning each possible label into an NLI
@@ -41,6 +43,7 @@ class ZeroShotClassificationArgumentHandler(ArgumentHandler):
 
 
 @add_end_docstrings(build_pipeline_init_args(has_tokenizer=True))
+# ZeroShotClassificationPipeline：零样本分类 Pipeline：运行时指定 candidate_labels
 class ZeroShotClassificationPipeline(ChunkPipeline):
     """
     NLI-based zero-shot classification pipeline using a `ModelForSequenceClassification` trained on NLI (natural

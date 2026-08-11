@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 量化器基类：from_pretrained 前后处理与模块跳过逻辑
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -70,6 +71,7 @@ def _assign_is_quantized(model):
             module.config._is_quantized = True
 
 
+# HfQuantizer：HF 量化器抽象基类：加载前替换模块、dtype/device_map 调整
 class HfQuantizer(ABC):
     """
     Abstract class of the HuggingFace quantizer. Supports for now quantizing HF transformers models for inference and/or quantization.
@@ -308,6 +310,7 @@ class HfQuantizer(ABC):
         return weight_conversions + self.get_weight_conversions()
 
 
+# SequentialLlama4TextExperts：Llama4 MoE 专家 ModuleList 压缩表示
 class SequentialLlama4TextExperts(ModuleList):
     """
     A module that implements a compressed version of a list of expert modules.

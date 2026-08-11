@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 量化自动分发：quant_method → Config/Quantizer 映射表
 import warnings
 
 from ..models.auto.configuration_auto import AutoConfig
@@ -143,6 +144,7 @@ LOADING_ATTRIBUTES_CONFIG_TYPES = (
 logger = logging.get_logger(__name__)
 
 
+# AutoQuantizationConfig：自动量化配置：从 dict/pretrained 解析 QuantizationConfig
 class AutoQuantizationConfig:
     """
     The Auto-HF quantization config class that takes care of automatically dispatching to the correct
@@ -184,6 +186,7 @@ class AutoQuantizationConfig:
         return quantization_config
 
 
+# AutoHfQuantizer：自动 HF 量化器：按配置实例化对应 HfQuantizer 子类
 class AutoHfQuantizer:
     """
      The Auto-HF quantizer class that takes care of automatically instantiating to the correct

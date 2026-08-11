@@ -1,3 +1,4 @@
+# 文本生成 Pipeline：因果语言模型续写与对话模式
 import enum
 from typing import Any, overload
 
@@ -13,6 +14,7 @@ if is_torch_available():
     from ..models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 
 
+# ReturnType：生成返回类型枚举：张量/新文本/完整文本
 class ReturnType(enum.Enum):
     TENSORS = 0
     NEW_TEXT = 1
@@ -20,6 +22,7 @@ class ReturnType(enum.Enum):
 
 
 @add_end_docstrings(build_pipeline_init_args(has_tokenizer=True))
+# TextGenerationPipeline：文本生成 Pipeline：提示续写、对话续写与生成参数控制
 class TextGenerationPipeline(Pipeline):
     """
     Language generation pipeline using any `ModelWithLMHead` or `ModelForCausalLM`. This pipeline predicts the words

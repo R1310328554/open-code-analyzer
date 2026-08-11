@@ -1,3 +1,4 @@
+# 零样本图像分类 Pipeline：CLIP/SigLIP 图文匹配
 from collections import UserDict
 from typing import Any, Union, overload
 
@@ -26,6 +27,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True))
+# ZeroShotImageClassificationPipeline：零样本图像分类：候选标签图文相似度排序
 class ZeroShotImageClassificationPipeline(Pipeline):
     """
     Zero shot image classification pipeline using `CLIPModel`. This pipeline predicts the class of an image when you
