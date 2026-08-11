@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:00:33Z",
-  "files": [
-    "src/transformers/models/markuplm/__init__.py",
-    "src/transformers/models/markuplm/configuration_markuplm.py",
-    "src/transformers/models/markuplm/feature_extraction_markuplm.py",
-    "src/transformers/models/markuplm/modeling_markuplm.py",
-    "src/transformers/models/markuplm/processing_markuplm.py",
-    "src/transformers/models/markuplm/tokenization_markuplm.py",
-    "src/transformers/models/mask2former/__init__.py",
-    "src/transformers/models/mask2former/configuration_mask2former.py",
-    "src/transformers/models/mask2former/image_processing_mask2former.py",
-    "src/transformers/models/mask2former/image_processing_pil_mask2former.py",
-    "src/transformers/models/mask2former/modeling_mask2former.py",
-    "src/transformers/models/mask2former/modular_mask2former.py",
-    "src/transformers/models/maskformer/__init__.py",
-    "src/transformers/models/maskformer/configuration_maskformer.py",
-    "src/transformers/models/maskformer/configuration_maskformer_swin.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1329,
-  "done": 1335
+  "done": 1350
 }
