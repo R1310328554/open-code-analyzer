@@ -39,6 +39,7 @@ python release.py --post_release
 ```
 
 or use `make post-release`.
+# 发布工具：更新版本号、清理转换脚本并在发布前后执行仓库维护
 """
 
 import argparse
@@ -77,6 +78,7 @@ README_FILE = "README.md"
 UV_SCRIPT_MARKER = "# /// script"
 
 
+# update_version_in_file：在单个文件中按模式替换 Transformers 版本号
 def update_version_in_file(fname: str, version: str, file_type: str):
     """
     Update the version of Transformers in one file.
@@ -95,6 +97,7 @@ def update_version_in_file(fname: str, version: str, file_type: str):
         f.write(code)
 
 
+# update_version_in_examples：遍历 examples 目录更新 check_min_version 与 UV 脚本依赖
 def update_version_in_examples(version: str, patch: bool = False):
     """
     Update the version in all examples files.
@@ -118,6 +121,7 @@ def update_version_in_examples(version: str, patch: bool = False):
                     update_version_in_file(os.path.join(folder, fname), version, file_type="examples")
 
 
+# global_version_update：在 __init__/setup 等全局文件中统一更新版本
 def global_version_update(version: str, patch: bool = False):
     """
     Update the version in all needed files.
@@ -132,6 +136,7 @@ def global_version_update(version: str, patch: bool = False):
     # update_version_in_examples(version, patch=patch)
 
 
+# remove_conversion_scripts：删除 convert*.py 转换脚本以降低安全风险
 def remove_conversion_scripts():
     """
     Delete the scripts that convert models from older, unsupported formats. We don't want to include these
@@ -143,6 +148,7 @@ def remove_conversion_scripts():
         conversion_script.unlink()
 
 
+# remove_internal_utils：删除不应随 wheel 发布的内部工具脚本
 def remove_internal_utils():
     """
     Delete internal utils that should not be included in releases for security reasons.
@@ -150,6 +156,7 @@ def remove_internal_utils():
     (Path(PATH_TO_UTILS) / "modular_model_detector.py").unlink()
 
 
+# get_version：从 __init__.py 读取当前 packaging 版本对象
 def get_version() -> packaging.version.Version:
     """
     Reads the current version in the main __init__.
@@ -160,6 +167,7 @@ def get_version() -> packaging.version.Version:
     return packaging.version.parse(default_version)
 
 
+# pre_release_work：发布前确认版本、全局更新并清理脚本
 def pre_release_work(patch: bool = False):
     """
     Do all the necessary pre-release steps:
@@ -193,6 +201,7 @@ def pre_release_work(patch: bool = False):
     remove_internal_utils()
 
 
+# post_release_work：发布后切换到下一 dev 版本并更新仓库
 def post_release_work():
     """
     Do all the necessary post-release steps:

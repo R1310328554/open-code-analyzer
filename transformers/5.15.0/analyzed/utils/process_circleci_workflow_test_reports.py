@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CircleCI 工作流测试报告：拉取 artifact 汇总通过/失败并聚合失败详情
 import argparse
 import json
 import os

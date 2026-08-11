@@ -32,6 +32,8 @@ cd tests
 python ../utils/split_model_tests.py --num_splits 64
 ```
 """
+# 模型测试目录拆分：将 tests/models 子目录均分为多 slice 绕过 256 job 上限
+
 
 import argparse
 import ast

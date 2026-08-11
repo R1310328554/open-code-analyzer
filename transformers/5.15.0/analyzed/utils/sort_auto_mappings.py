@@ -28,6 +28,8 @@ To only check if the mappings are properly sorted (as used in `make check-repo`)
 python utils/sort_auto_mappings.py --check_only
 ```
 """
+# auto 映射排序：按字母序整理 auto 模块中 OrderedDict 映射条目
+
 
 import argparse
 import os
@@ -52,6 +54,7 @@ _re_intro_mapping = re.compile(r"[A-Z_]+(_MAPPING|_MODEL_TYPE_TO_MODULE)(\s+|_[A
 _re_identifier = re.compile(r'\s*\(\s*"(\S[^"]+)"')
 
 
+# sort_auto_mapping：对单个 auto 文件内所有 mapping 块按标识符排序
 def sort_auto_mapping(fname: str, overwrite: bool = False) -> bool | None:
     """
     Sort all auto mappings in a file.
@@ -104,6 +107,7 @@ def sort_auto_mapping(fname: str, overwrite: bool = False) -> bool | None:
         return "\n".join(new_lines) != content
 
 
+# sort_all_auto_mappings：遍历 auto 目录全部 .py 并检查或修复排序
 def sort_all_auto_mappings(overwrite: bool = False):
     """
     Sort all auto mappings in the library.

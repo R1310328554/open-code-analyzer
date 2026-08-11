@@ -30,6 +30,8 @@ python utils/split_doctest_jobs.py --only_return_keys --num_splits 4
 ```
 (this is used to allow GitHub Actions to generate more than 256 jobs using matrix)
 """
+# doctest 任务拆分：按目录分组 doctest 文件供 GHA matrix 并行执行
+
 
 import argparse
 from collections import defaultdict

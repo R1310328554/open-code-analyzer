@@ -10,6 +10,7 @@ This is used by `.github/workflows/check_failed_model_tests.yml` to produce a sl
    }
 }
 ```
+# 坏提交失败报告处理：上传 Hub、按作者分组并生成 Slack 通知 JSON
 """
 
 import json

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CircleCI 测试 artifact 处理：计算各 job 理想并行节点数
 """
 
 This helper computes the "ideal" number of nodes to use in circle CI.
@@ -26,6 +27,7 @@ MAX_PARALLEL_NODES = 8  # TODO create a mapping!
 AVERAGE_TESTS_PER_NODES = 5
 
 
+# count_lines：统计文件行数，用于估算测试列表规模
 def count_lines(filepath):
     """Count the number of lines in a file."""
     try:
@@ -35,6 +37,7 @@ def count_lines(filepath):
         return 0
 
 
+# compute_parallel_nodes：按行数与每节点平均测试数计算并行节点数
 def compute_parallel_nodes(line_count, max_tests_per_node=10):
     """Compute the number of parallel nodes required."""
     num_nodes = math.ceil(line_count / AVERAGE_TESTS_PER_NODES)
@@ -43,6 +46,7 @@ def compute_parallel_nodes(line_count, max_tests_per_node=10):
     return min(MAX_PARALLEL_NODES, num_nodes)
 
 
+# process_artifacts：解析 artifacts.json 并生成含并行度的 transformed 配置
 def process_artifacts(input_file, output_file):
     # Read the JSON data from the input file
     with open(input_file, "r") as f:

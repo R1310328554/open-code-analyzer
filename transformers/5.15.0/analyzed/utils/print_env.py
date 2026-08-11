@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 环境信息打印：输出 Python/transformers/Torch/DeepSpeed/FFmpeg 等运行时版本
 
 # this script dumps information about the environment
 

@@ -1,4 +1,5 @@
 """A simple script to set flexibly CUDA_VISIBLE_DEVICES in GitHub Actions CI workflow files."""
+# CI CUDA 设备设置：按测试目录或环境变量输出 CUDA_VISIBLE_DEVICES 值
 
 import argparse
 import os

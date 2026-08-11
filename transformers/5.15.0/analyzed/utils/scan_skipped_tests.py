@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 跳过测试扫描：统计各模型对 common/generate 测试的 skip 覆盖情况
 
 
 import argparse
@@ -29,6 +30,7 @@ COMMON_TEST_FILES: list[tuple[Path, str]] = [
 MODELS_DIR = REPO_ROOT / "tests/models"
 
 
+# get_common_tests：从公共测试文件提取 test_* 函数名及来源标签
 def get_common_tests(file_paths_with_origin: list[tuple[Path, str]]) -> dict[str, str]:
     """Extract all common test function names (e.g., 'test_forward')."""
     tests_with_origin: dict[str, str] = {}
@@ -41,6 +43,7 @@ def get_common_tests(file_paths_with_origin: list[tuple[Path, str]]) -> dict[str
     return tests_with_origin
 
 
+# get_models_and_test_files：枚举 tests/models 下所有 test_modeling_*.py
 def get_models_and_test_files(models_dir: Path) -> tuple[list[str], list[Path]]:
     if not models_dir.is_dir():
         raise FileNotFoundError(f"Models directory not found at {models_dir}")
@@ -49,6 +52,7 @@ def get_models_and_test_files(models_dir: Path) -> tuple[list[str], list[Path]]:
     return model_names, test_files
 
 
+# _extract_reason_from_decorators：从 @skip 装饰器块解析 skip reason 字符串
 def _extract_reason_from_decorators(decorators_block: str) -> str:
     """Extracts the reason string from a decorator block, if any."""
     reason_match = re.search(r'reason\s*=\s*["\'](.*?)["\']', decorators_block)
@@ -60,6 +64,7 @@ def _extract_reason_from_decorators(decorators_block: str) -> str:
     return decorators_block.strip().split("\n")[-1].strip()
 
 
+# extract_test_info：解析单文件内各 test 的 RAN/SKIPPED 状态与原因
 def extract_test_info(file_content: str) -> dict[str, tuple[str, str]]:
     """
     Parse a test file once and return a mapping of test functions to their
@@ -75,6 +80,7 @@ def extract_test_info(file_content: str) -> dict[str, tuple[str, str]]:
     return result
 
 
+# build_model_overrides：汇总各模型 test 覆盖/跳过信息为嵌套字典
 def build_model_overrides(model_test_files: list[Path]) -> dict[str, dict[str, tuple[str, str]]]:
     """Return *model_name → {test_name → (status, reason)}* mapping."""
     model_overrides: dict[str, dict[str, tuple[str, str]]] = {}
@@ -85,11 +91,13 @@ def build_model_overrides(model_test_files: list[Path]) -> dict[str, dict[str, t
     return model_overrides
 
 
+# save_json：将扫描结果写入 JSON 文件
 def save_json(obj: dict, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(obj, indent=2), encoding="utf-8")
 
 
+# summarize_single_test：打印并返回单个 common test 的 skip 统计
 def summarize_single_test(
     test_name: str,
     model_names: list[str],
@@ -124,6 +132,7 @@ def summarize_single_test(
     }
 
 
+# summarize_all_tests：聚合全部 common test 的 skip 比例与原因
 def summarize_all_tests(
     tests_with_origin: dict[str, str],
     model_names: list[str],
@@ -158,6 +167,7 @@ def summarize_all_tests(
     return results
 
 
+# main：CLI 入口，支持单测或全量扫描并输出 JSON
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Scan model tests for overridden or skipped common or generate tests.",
