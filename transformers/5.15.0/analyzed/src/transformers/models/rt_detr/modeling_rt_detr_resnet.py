@@ -29,13 +29,17 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring, logging
 from ...utils.generic import can_return_tuple
 from .configuration_rt_detr_resnet import RTDetrResNetConfig
+# RT-DETR ResNet 骨干：Basic/Bottleneck 残差块与多阶段 Backbone 输出
+
 
 
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.resnet.modeling_resnet.ResNetConvLayer with ResNet->RTDetrResNet
+# RTDetrResNetConvLayer：RT-DETR ResNet 卷积块：Conv2d + BatchNorm + 激活
 class RTDetrResNetConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -61,6 +65,7 @@ class RTDetrResNetConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -68,11 +73,13 @@ class RTDetrResNetConvLayer(nn.Module):
         return hidden_states
 
 
+# RTDetrResNetEmbeddings：RT-DETR ResNet stem：7×7 卷积 + MaxPool 初始下采样
 class RTDetrResNetEmbeddings(nn.Module):
     """
     ResNet Embeddings (stem) composed of a deep aggressive convolution.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrResNetConfig):
         super().__init__()
         self.embedder = nn.Sequential(
@@ -103,6 +110,7 @@ class RTDetrResNetEmbeddings(nn.Module):
         self.pooler = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.num_channels = config.num_channels
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: Tensor) -> Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -115,29 +123,34 @@ class RTDetrResNetEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.resnet.modeling_resnet.ResNetShortCut -> RTDetrResNetShortCut
+# RTDetrResNetShortCut：RT-DETR ResNet 残差捷径：1×1 卷积对齐维度与步长
 class RTDetrResNetShortCut(nn.Module):
     """
     ResNet shortcut, used to project the residual features to the correct size. If needed, it is also used to
     downsample the input using `stride=2`.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, out_channels: int, stride: int = 2):
         super().__init__()
         self.convolution = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
         self.normalization = nn.BatchNorm2d(out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = self.convolution(input)
         hidden_state = self.normalization(hidden_state)
         return hidden_state
 
 
+# RTDetrResNetBasicLayer：RT-DETR Basic 残差块：两层 3×3 卷积 + 捷径连接
 class RTDetrResNetBasicLayer(nn.Module):
     """
     A classic ResNet's residual layer composed by two `3x3` convolutions.
     See https://github.com/lyuwenyu/RT-DETR/blob/5b628eaa0a2fc25bdafec7e6148d5296b144af85/rtdetr_pytorch/src/nn/backbone/presnet.py#L34.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: RTDetrResNetConfig,
@@ -167,6 +180,7 @@ class RTDetrResNetBasicLayer(nn.Module):
         )
         self.activation = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -176,6 +190,7 @@ class RTDetrResNetBasicLayer(nn.Module):
         return hidden_state
 
 
+# RTDetrResNetBottleNeckLayer：RT-DETR Bottleneck 残差块：1×1-3×3-1×1 卷积降维/升维
 class RTDetrResNetBottleNeckLayer(nn.Module):
     """
     A classic RTDetrResNet's bottleneck layer composed by three `3x3` convolutions.
@@ -185,6 +200,7 @@ class RTDetrResNetBottleNeckLayer(nn.Module):
     `downsample_in_bottleneck` is true, downsample will be in the first layer instead of the second layer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: RTDetrResNetConfig,
@@ -222,6 +238,7 @@ class RTDetrResNetBottleNeckLayer(nn.Module):
         )
         self.activation = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -231,11 +248,13 @@ class RTDetrResNetBottleNeckLayer(nn.Module):
         return hidden_state
 
 
+# RTDetrResNetStage：RT-DETR ResNet 阶段：堆叠 Basic/Bottleneck 块并控制下采样
 class RTDetrResNetStage(nn.Module):
     """
     A RTDetrResNet stage composed by stacked layers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: RTDetrResNetConfig,
@@ -261,6 +280,7 @@ class RTDetrResNetStage(nn.Module):
             first_layer, *[layer(config, out_channels, out_channels) for _ in range(depth - 1)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = input
         for layer in self.layers:
@@ -269,7 +289,9 @@ class RTDetrResNetStage(nn.Module):
 
 
 # Copied from transformers.models.resnet.modeling_resnet.ResNetEncoder with ResNet->RTDetrResNet
+# RTDetrResNetEncoder：RT-DETR ResNet 编码器：stem + 四阶段残差特征提取
 class RTDetrResNetEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrResNetConfig):
         super().__init__()
         self.stages = nn.ModuleList([])
@@ -287,6 +309,7 @@ class RTDetrResNetEncoder(nn.Module):
         for (in_channels, out_channels), depth in zip(in_out_channels, config.depths[1:]):
             self.stages.append(RTDetrResNetStage(config, in_channels, out_channels, depth=depth))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_state: Tensor, output_hidden_states: bool = False, return_dict: bool = True
     ) -> BaseModelOutputWithNoAttention:
@@ -312,6 +335,7 @@ class RTDetrResNetEncoder(nn.Module):
 
 @auto_docstring
 # Copied from transformers.models.resnet.modeling_resnet.ResNetPreTrainedModel with ResNet->RTDetrResNet
+# RTDetrResNetPreTrainedModel：RT-DETR ResNet 预训练基类：Kaiming 初始化卷积权重
 class RTDetrResNetPreTrainedModel(PreTrainedModel):
     config: RTDetrResNetConfig
     base_model_prefix = "resnet"
@@ -320,6 +344,7 @@ class RTDetrResNetPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["RTDetrResNetConvLayer", "RTDetrResNetShortCut"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, nn.Conv2d):
@@ -346,9 +371,11 @@ class RTDetrResNetPreTrainedModel(PreTrainedModel):
     ResNet backbone, to be used with frameworks like RTDETR.
     """
 )
+# RTDetrResNetBackbone：RT-DETR ResNet Backbone：多阶段特征图输出供混合编码器
 class RTDetrResNetBackbone(BackboneMixin, RTDetrResNetPreTrainedModel):
     has_attentions = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -362,6 +389,7 @@ class RTDetrResNetBackbone(BackboneMixin, RTDetrResNetPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,

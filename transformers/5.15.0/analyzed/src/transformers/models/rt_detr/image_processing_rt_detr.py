@@ -26,6 +26,8 @@ from torchvision.transforms.v2 import functional as tvF
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature, SizeDict
 from ...image_transforms import (
+# RT-DETR 图像预处理：Torchvision 后端缩放、归一化与检测标注打包
+
     center_to_corners_format,
     corners_to_center_format,
     get_size_with_aspect_ratio,
@@ -48,6 +50,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, requires_backends
 
 
+# RTDetrImageProcessorKwargs：RT-DETR 图像处理器参数：尺寸、归一化与 COCO 标注选项
 class RTDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -65,6 +68,7 @@ class RTDetrImageProcessorKwargs(ImagesKwargs, total=False):
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# prepare_coco_detection_annotation：COCO 检测标注预处理：框坐标归一化与类别映射
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -125,6 +129,7 @@ def prepare_coco_detection_annotation(
 
 
 @auto_docstring
+# RTDetrImageProcessor：RT-DETR 图像预处理：Torchvision 缩放归一化与检测标注转换
 class RTDetrImageProcessor(TorchvisionBackend):
     valid_kwargs = RTDetrImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -140,6 +145,7 @@ class RTDetrImageProcessor(TorchvisionBackend):
     model_input_names = ["pixel_values", "pixel_mask"]
     do_convert_annotations = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[RTDetrImageProcessorKwargs]) -> None:
         # Backwards compatibility
         do_convert_annotations = kwargs.get("do_convert_annotations")
@@ -355,6 +361,7 @@ class RTDetrImageProcessor(TorchvisionBackend):
         return image, pixel_mask, annotation
 
     @auto_docstring
+    # preprocess：图像预处理：缩放、归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

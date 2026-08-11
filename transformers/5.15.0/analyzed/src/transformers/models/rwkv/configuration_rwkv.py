@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RWKV 配置：隐藏维度、层数、上下文长度与 WKV 时间混合超参数
+
 
 
 @auto_docstring(checkpoint="RWKV/rwkv-4-169m-pile")
 @strict
+# RwkvConfig：RWKV 超参数：隐藏维度、层数、上下文长度与时间混合系数
 class RwkvConfig(PreTrainedConfig):
     r"""
     context_length (`int`, *optional*, defaults to 1024):

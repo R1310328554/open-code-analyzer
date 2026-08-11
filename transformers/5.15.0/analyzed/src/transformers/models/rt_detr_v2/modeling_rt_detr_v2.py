@@ -39,8 +39,11 @@ from ...utils import ModelOutput, TransformersKwargs, auto_docstring, torch_comp
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_rt_detr_v2 import RTDetrV2Config
+# RT-DETR v2 建模：v2 可变形注意力、自注意力解码层与实时检测头
 
 
+
+# multi_scale_deformable_attention_v2：v2 多尺度可变形注意力：离散采样高效特征聚合
 def multi_scale_deformable_attention_v2(
     value: Tensor,
     value_spatial_shapes: Tensor,
@@ -116,12 +119,14 @@ def multi_scale_deformable_attention_v2(
 
 
 # the main change
+# RTDetrV2MultiscaleDeformableAttention：RT-DETR v2 可变形注意力：离散采样点的高效多尺度交互
 class RTDetrV2MultiscaleDeformableAttention(nn.Module):
     """
     RTDetrV2 version of multiscale deformable attention, extending the base implementation
     with improved offset handling and initialization.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
         num_heads = config.decoder_attention_heads
@@ -163,6 +168,7 @@ class RTDetrV2MultiscaleDeformableAttention(nn.Module):
         n_points_scale = [1 / n for n in n_points_list for _ in range(n)]
         self.n_points_scale = nn.Buffer(torch.tensor(n_points_scale, dtype=torch.float32))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -225,7 +231,9 @@ class RTDetrV2MultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# RTDetrV2MLP：RT-DETR v2 MLP：两层线性 + ReLU 前馈网络
 class RTDetrV2MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config, hidden_size: int, intermediate_size: int, activation_function: str):
         super().__init__()
         self.fc1 = nn.Linear(hidden_size, intermediate_size)
@@ -234,6 +242,7 @@ class RTDetrV2MLP(nn.Module):
         self.activation_dropout = config.activation_dropout
         self.dropout = config.dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.activation_fn(self.fc1(hidden_states))
         hidden_states = nn.functional.dropout(hidden_states, p=self.activation_dropout, training=self.training)
@@ -242,6 +251,7 @@ class RTDetrV2MLP(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -270,6 +280,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# RTDetrV2SelfAttention：RT-DETR v2 自注意力：解码层内标准多头缩放点积
 class RTDetrV2SelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -277,6 +288,7 @@ class RTDetrV2SelfAttention(nn.Module):
     In RT_DETR_V2, position embeddings are added to both queries and keys (but not values) in self-attention.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: RTDetrV2Config,
@@ -297,6 +309,7 @@ class RTDetrV2SelfAttention(nn.Module):
         self.q_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
         self.o_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -336,7 +349,9 @@ class RTDetrV2SelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# RTDetrV2DecoderLayer：RT-DETR v2 解码层：自注意力 + v2 可变形交叉注意力 + FFN
 class RTDetrV2DecoderLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
         self.hidden_size = config.d_model
@@ -358,6 +373,7 @@ class RTDetrV2DecoderLayer(nn.Module):
         self.mlp = RTDetrV2MLP(config, self.hidden_size, config.decoder_ffn_dim, config.decoder_activation_function)
         self.final_layer_norm = nn.LayerNorm(self.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -432,6 +448,7 @@ class RTDetrV2DecoderLayer(nn.Module):
 
 
 @auto_docstring
+# RTDetrV2PreTrainedModel：RT-DETR v2 预训练基类：v2 检测权重初始化策略
 class RTDetrV2PreTrainedModel(PreTrainedModel):
     config: RTDetrV2Config
     base_model_prefix = "rt_detr_v2"
@@ -444,6 +461,7 @@ class RTDetrV2PreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -516,6 +534,7 @@ class RTDetrV2PreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# RTDetrV2DecoderOutput：RT-DETR v2 解码器输出：隐状态与 cross-attention 权重
 class RTDetrV2DecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -545,6 +564,7 @@ class RTDetrV2DecoderOutput(ModelOutput):
     cross_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# inverse_sigmoid：逆 sigmoid 变换：将 [0,1] 概率映射回 logit 空间
 def inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
@@ -552,6 +572,7 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# RTDetrV2Decoder：RT-DETR v2 解码器：v2 可变形注意力与 query 迭代 refine
 class RTDetrV2Decoder(RTDetrV2PreTrainedModel):
     _can_record_outputs = {
         "hidden_states": RTDetrV2DecoderLayer,
@@ -559,6 +580,7 @@ class RTDetrV2Decoder(RTDetrV2PreTrainedModel):
         "cross_attentions": RTDetrV2MultiscaleDeformableAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
 
@@ -575,6 +597,7 @@ class RTDetrV2Decoder(RTDetrV2PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds=None,
@@ -667,6 +690,7 @@ class RTDetrV2Decoder(RTDetrV2PreTrainedModel):
     """
 )
 @dataclass
+# RTDetrV2ModelOutput：RT-DETR v2 模型输出：编码器/解码器隐状态与中间特征
 class RTDetrV2ModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -719,6 +743,7 @@ class RTDetrV2ModelOutput(ModelOutput):
     denoising_meta_values: dict | None = None
 
 
+# RTDetrV2FrozenBatchNorm2d：RT-DETR v2 冻结 BatchNorm：推理时固定 running 统计量
 class RTDetrV2FrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -727,6 +752,7 @@ class RTDetrV2FrozenBatchNorm2d(nn.Module):
     torchvision.models.resnet[18,34,50,101] produce nans.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, n):
         super().__init__()
         self.weight = nn.Buffer(torch.ones(n))
@@ -745,6 +771,7 @@ class RTDetrV2FrozenBatchNorm2d(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         # move reshapes to the beginning
         # to make it user-friendly
@@ -758,6 +785,7 @@ class RTDetrV2FrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# replace_batch_norm：替换 BatchNorm：将可训练 BN 转为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `RTDetrV2FrozenBatchNorm2d`.
@@ -782,6 +810,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# RTDetrV2ConvEncoder：RT-DETR v2 卷积编码器：轻量 CNN 补充多尺度特征
 class RTDetrV2ConvEncoder(nn.Module):
     """
     Convolutional backbone using the modeling_rt_detr_v2_resnet.py.
@@ -790,6 +819,7 @@ class RTDetrV2ConvEncoder(nn.Module):
     https://github.com/lyuwenyu/RT-DETR/blob/main/RTDetrV2_pytorch/src/nn/backbone/presnet.py#L142
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -802,6 +832,7 @@ class RTDetrV2ConvEncoder(nn.Module):
         self.model = backbone
         self.intermediate_channel_sizes = self.model.channels
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, pixel_mask: torch.Tensor):
         # send pixel_values through the model to get list of feature maps
         features = self.model(pixel_values).feature_maps
@@ -814,7 +845,9 @@ class RTDetrV2ConvEncoder(nn.Module):
         return out
 
 
+# RTDetrV2ConvNormLayer：RT-DETR v2 卷积归一化块：Conv2d + GroupNorm + 激活
 class RTDetrV2ConvNormLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, in_channels, out_channels, kernel_size, stride, padding=None, activation=None):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -828,6 +861,7 @@ class RTDetrV2ConvNormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels, config.batch_norm_eps)
         self.activation = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.conv(hidden_state)
         hidden_state = self.norm(hidden_state)
@@ -835,7 +869,9 @@ class RTDetrV2ConvNormLayer(nn.Module):
         return hidden_state
 
 
+# RTDetrV2EncoderLayer：RT-DETR v2 编码层：自注意力 + FFN Transformer 单元
 class RTDetrV2EncoderLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
         self.normalize_before = config.normalize_before
@@ -853,6 +889,7 @@ class RTDetrV2EncoderLayer(nn.Module):
         self.mlp = RTDetrV2MLP(config, self.hidden_size, config.encoder_ffn_dim, config.encoder_activation_function)
         self.final_layer_norm = nn.LayerNorm(self.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -904,11 +941,13 @@ class RTDetrV2EncoderLayer(nn.Module):
         return hidden_states
 
 
+# RTDetrV2RepVggBlock：RT-DETR v2 RepVGG 块：重参数化卷积分支融合
 class RTDetrV2RepVggBlock(nn.Module):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
 
@@ -918,16 +957,19 @@ class RTDetrV2RepVggBlock(nn.Module):
         self.conv2 = RTDetrV2ConvNormLayer(config, hidden_channels, hidden_channels, 1, 1, padding=0)
         self.activation = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         y = self.conv1(x) + self.conv2(x)
         return self.activation(y)
 
 
+# RTDetrV2CSPRepLayer：RT-DETR v2 CSP-Rep 层：跨阶段部分连接特征融合
 class RTDetrV2CSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
 
@@ -945,6 +987,7 @@ class RTDetrV2CSPRepLayer(nn.Module):
         else:
             self.conv3 = nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state_1 = self.conv1(hidden_state)
         hidden_state_1 = self.bottlenecks(hidden_state_1)
@@ -952,6 +995,7 @@ class RTDetrV2CSPRepLayer(nn.Module):
         return self.conv3(hidden_state_1 + hidden_state_2)
 
 
+# build_2d_sinusoidal_position_embedding：构建 2D 正弦位置嵌入：宽高维度独立正弦编码
 def build_2d_sinusoidal_position_embedding(
     height: int,
     width: int,
@@ -1000,11 +1044,13 @@ def build_2d_sinusoidal_position_embedding(
     return pos_embed.to(dtype)
 
 
+# RTDetrV2SinePositionEmbedding：RT-DETR v2 正弦位置编码：2D 参考点坐标嵌入
 class RTDetrV2SinePositionEmbedding(nn.Module):
     """
     2D sinusoidal position embedding used in RT-DETR hybrid encoder.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, embed_dim: int = 256, temperature: int = 10000):
         super().__init__()
         self.embed_dim = embed_dim
@@ -1015,6 +1061,7 @@ class RTDetrV2SinePositionEmbedding(nn.Module):
     def _cached_build_2d_sinusoidal_position_embedding(*args, **kwargs) -> torch.Tensor:
         return build_2d_sinusoidal_position_embedding(*args, **kwargs)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         width: int,
@@ -1038,11 +1085,13 @@ class RTDetrV2SinePositionEmbedding(nn.Module):
         ).unsqueeze(0)
 
 
+# RTDetrV2AIFILayer：RT-DETR v2 AIFI 层：intra-scale 注意力特征交互
 class RTDetrV2AIFILayer(nn.Module):
     """
     AIFI (Attention-based Intra-scale Feature Interaction) layer used in RT-DETR hybrid encoder.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
         self.config = config
@@ -1055,6 +1104,7 @@ class RTDetrV2AIFILayer(nn.Module):
         )
         self.layers = nn.ModuleList([RTDetrV2EncoderLayer(config) for _ in range(config.encoder_layers)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1095,6 +1145,7 @@ class RTDetrV2AIFILayer(nn.Module):
         return hidden_states
 
 
+# RTDetrV2HybridEncoder：RT-DETR v2 混合编码器：CNN + Transformer 多尺度融合
 class RTDetrV2HybridEncoder(RTDetrV2PreTrainedModel):
     """
     Hybrid encoder consisting of AIFI (Attention-based Intra-scale Feature Interaction) layers,
@@ -1110,6 +1161,7 @@ class RTDetrV2HybridEncoder(RTDetrV2PreTrainedModel):
         "attentions": RTDetrV2SelfAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
         self.config = config
@@ -1163,6 +1215,7 @@ class RTDetrV2HybridEncoder(RTDetrV2PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds=None,
@@ -1209,6 +1262,7 @@ class RTDetrV2HybridEncoder(RTDetrV2PreTrainedModel):
         return BaseModelOutput(last_hidden_state=pan_feature_maps)
 
 
+# get_contrastive_denoising_training_group：对比去噪训练组：构造正负 query 对增强解码训练
 def get_contrastive_denoising_training_group(
     targets,
     num_classes,
@@ -1337,7 +1391,9 @@ def get_contrastive_denoising_training_group(
     RT-DETR Model (consisting of a backbone and encoder-decoder) outputting raw hidden states without any head on top.
     """
 )
+# RTDetrV2Model：RT-DETR v2 完整模型：v2 混合编码器 + 解码器检测
 class RTDetrV2Model(RTDetrV2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
 
@@ -1458,6 +1514,7 @@ class RTDetrV2Model(RTDetrV2PreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1656,6 +1713,7 @@ class RTDetrV2Model(RTDetrV2PreTrainedModel):
         )
 
 
+# RTDetrV2MLPPredictionHead：RT-DETR v2 MLP 预测头：bbox/class 回归感知机
 class RTDetrV2MLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -1663,12 +1721,14 @@ class RTDetrV2MLPPredictionHead(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         for i, layer in enumerate(self.layers):
             x = nn.functional.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
@@ -1681,6 +1741,7 @@ class RTDetrV2MLPPredictionHead(nn.Module):
     """
 )
 @dataclass
+# RTDetrV2ObjectDetectionOutput：RT-DETR v2 检测输出：logits、边界框与辅助损失
 class RTDetrV2ObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -1759,6 +1820,7 @@ class RTDetrV2ObjectDetectionOutput(ModelOutput):
     decoded into scores and classes.
     """
 )
+# RTDetrV2ForObjectDetection：RT-DETR v2 目标检测：改进 set prediction 检测头
 class RTDetrV2ForObjectDetection(RTDetrV2PreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization
@@ -1770,6 +1832,7 @@ class RTDetrV2ForObjectDetection(RTDetrV2PreTrainedModel):
         "bbox_embed": "model.decoder.bbox_embed",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
         # RTDETR encoder-decoder model
@@ -1794,6 +1857,7 @@ class RTDetrV2ForObjectDetection(RTDetrV2PreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

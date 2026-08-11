@@ -26,6 +26,8 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging, torch_compilable_check
 from ..auto import AutoConfig
 from ..rt_detr.modeling_rt_detr import (
+# RT-DETR v2 modular 源：在 RT-DETR 基础上扩展 v2 注意力与解码逻辑
+
     RTDetrDecoder,
     RTDetrDecoderLayer,
     RTDetrForObjectDetection,
@@ -40,6 +42,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PekingU/rtdetr_r18vd")
 @strict
+# RTDetrV2Config：RT-DETR v2 联合配置：v2 可变形注意力与解码器增强超参数
 class RTDetrV2Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -212,6 +215,7 @@ class RTDetrV2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# multi_scale_deformable_attention_v2：v2 多尺度可变形注意力：离散采样高效特征聚合
 def multi_scale_deformable_attention_v2(
     value: Tensor,
     value_spatial_shapes: Tensor,
@@ -287,12 +291,14 @@ def multi_scale_deformable_attention_v2(
 
 
 # the main change
+# RTDetrV2MultiscaleDeformableAttention：RT-DETR v2 可变形注意力：离散采样点的高效多尺度交互
 class RTDetrV2MultiscaleDeformableAttention(nn.Module):
     """
     RTDetrV2 version of multiscale deformable attention, extending the base implementation
     with improved offset handling and initialization.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__()
         num_heads = config.decoder_attention_heads
@@ -334,6 +340,7 @@ class RTDetrV2MultiscaleDeformableAttention(nn.Module):
         n_points_scale = [1 / n for n in n_points_list for _ in range(n)]
         self.n_points_scale = nn.Buffer(torch.tensor(n_points_scale, dtype=torch.float32))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -396,7 +403,9 @@ class RTDetrV2MultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# RTDetrV2DecoderLayer：RT-DETR v2 解码层：自注意力 + v2 可变形交叉注意力 + FFN
 class RTDetrV2DecoderLayer(RTDetrDecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         # initialize parent class
         super().__init__(config)
@@ -404,7 +413,9 @@ class RTDetrV2DecoderLayer(RTDetrDecoderLayer):
         self.encoder_attn = RTDetrV2MultiscaleDeformableAttention(config)
 
 
+# RTDetrV2PreTrainedModel：RT-DETR v2 预训练基类：v2 检测权重初始化策略
 class RTDetrV2PreTrainedModel(RTDetrPreTrainedModel):
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, RTDetrV2MultiscaleDeformableAttention):
@@ -412,23 +423,29 @@ class RTDetrV2PreTrainedModel(RTDetrPreTrainedModel):
             init.copy_(module.n_points_scale, torch.tensor(n_points_scale, dtype=torch.float32))
 
 
+# RTDetrV2Decoder：RT-DETR v2 解码器：v2 可变形注意力与 query 迭代 refine
 class RTDetrV2Decoder(RTDetrDecoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
         self.layers = nn.ModuleList([RTDetrV2DecoderLayer(config) for _ in range(config.decoder_layers)])
 
 
+# RTDetrV2Model：RT-DETR v2 完整模型：v2 混合编码器 + 解码器检测
 class RTDetrV2Model(RTDetrModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         super().__init__(config)
         # decoder
         self.decoder = RTDetrV2Decoder(config)
 
 
+# RTDetrV2MLPPredictionHead：RT-DETR v2 MLP 预测头：bbox/class 回归感知机
 class RTDetrV2MLPPredictionHead(RTDetrMLPPredictionHead):
     pass
 
 
+# RTDetrV2ForObjectDetection：RT-DETR v2 目标检测：改进 set prediction 检测头
 class RTDetrV2ForObjectDetection(RTDetrForObjectDetection, RTDetrV2PreTrainedModel):
     _tied_weights_keys = {
         r"bbox_embed.(?![0])\d+": r"bbox_embed.0",
@@ -437,6 +454,7 @@ class RTDetrV2ForObjectDetection(RTDetrForObjectDetection, RTDetrV2PreTrainedMod
         "bbox_embed": "model.decoder.bbox_embed",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RTDetrV2Config):
         RTDetrV2PreTrainedModel.__init__(self, config)
         # RTDETR encoder-decoder model

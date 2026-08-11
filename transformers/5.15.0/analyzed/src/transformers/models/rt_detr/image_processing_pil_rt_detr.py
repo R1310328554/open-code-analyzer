@@ -25,6 +25,8 @@ import numpy as np
 from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature, SizeDict
 from ...image_transforms import (
+# RT-DETR PIL 图像预处理：缩放归一化与 COCO 检测标注转换
+
     PaddingMode,
     center_to_corners_format,
     corners_to_center_format,
@@ -57,6 +59,7 @@ if is_torch_available():
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# RTDetrImageProcessorKwargs：RT-DETR 图像处理器参数：尺寸、归一化与 COCO 标注选项
 class RTDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -71,6 +74,7 @@ class RTDetrImageProcessorKwargs(ImagesKwargs, total=False):
     do_convert_annotations: bool
 
 
+# prepare_coco_detection_annotation_pil：COCO 检测标注 PIL 预处理：PIL 图像上的标注转换
 def prepare_coco_detection_annotation_pil(
     image,
     target,
@@ -127,6 +131,7 @@ def prepare_coco_detection_annotation_pil(
 
 
 @requires(backends=("torch",))
+# RTDetrImageProcessorPil：RT-DETR PIL 图像预处理：PIL 后端缩放归一化与标注打包
 class RTDetrImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -142,6 +147,7 @@ class RTDetrImageProcessorPil(PilBackend):
     valid_kwargs = RTDetrImageProcessorKwargs
     do_convert_annotations = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[RTDetrImageProcessorKwargs]) -> None:
         # Backwards compatibility
         do_convert_annotations = kwargs.get("do_convert_annotations")
@@ -377,6 +383,7 @@ class RTDetrImageProcessorPil(PilBackend):
         return image, pixel_mask, annotation
 
     @auto_docstring
+    # preprocess：图像预处理：缩放、归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

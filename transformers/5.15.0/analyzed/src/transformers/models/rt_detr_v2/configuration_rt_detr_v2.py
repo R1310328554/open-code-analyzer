@@ -23,10 +23,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# RT-DETR v2 配置：离散采样可变形注意力与增强解码器超参数
+
 
 
 @auto_docstring(checkpoint="PekingU/rtdetr_r18vd")
 @strict
+# RTDetrV2Config：RT-DETR v2 联合配置：v2 可变形注意力与解码器增强超参数
 class RTDetrV2Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):

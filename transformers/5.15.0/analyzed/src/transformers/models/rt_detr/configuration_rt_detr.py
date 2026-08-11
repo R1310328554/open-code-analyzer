@@ -19,10 +19,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# RT-DETR 配置：混合编码器、可变形注意力解码器与 COCO 检测超参数
+
 
 
 @auto_docstring(checkpoint="PekingU/rtdetr_r50vd")
 @strict
+# RTDetrConfig：RT-DETR 联合配置：编码器/解码器层数、query 数与检测任务超参数
 class RTDetrConfig(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):

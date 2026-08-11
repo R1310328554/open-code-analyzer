@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RT-DETR ResNet 骨干配置：层深度、通道宽度与多阶段特征输出索引
+
 
 
 @auto_docstring(checkpoint="microsoft/resnet-50")
 @strict
+# RTDetrResNetConfig：RT-DETR ResNet 骨干超参数：深度、通道与 Backbone 输出阶段
 class RTDetrResNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     depths (`list[int]`, *optional*, defaults to `[3, 4, 6, 3]`):
