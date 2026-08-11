@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:10:30Z",
-  "files": [
-    "src/transformers/models/auto/auto_factory.py",
-    "src/transformers/models/auto/auto_mappings.py",
-    "src/transformers/models/auto/configuration_auto.py",
-    "src/transformers/models/auto/feature_extraction_auto.py",
-    "src/transformers/models/auto/image_processing_auto.py",
-    "src/transformers/models/auto/modeling_auto.py",
-    "src/transformers/models/auto/processing_auto.py",
-    "src/transformers/models/auto/tokenization_auto.py",
-    "src/transformers/models/auto/video_processing_auto.py",
-    "src/transformers/models/autoformer/__init__.py",
-    "src/transformers/models/autoformer/configuration_autoformer.py",
-    "src/transformers/models/autoformer/modeling_autoformer.py",
-    "src/transformers/models/axk1/__init__.py",
-    "src/transformers/models/axk1/configuration_axk1.py",
-    "src/transformers/models/axk1/modeling_axk1.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2439,
-  "done": 225
+  "done": 240
 }
