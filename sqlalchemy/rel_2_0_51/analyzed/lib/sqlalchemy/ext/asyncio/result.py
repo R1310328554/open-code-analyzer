@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# 异步结果集：greenlet_spawn 包装 sync Result
+
 from __future__ import annotations
 
 import operator
@@ -41,12 +43,14 @@ _T = TypeVar("_T", bound=Any)
 _TP = TypeVar("_TP", bound=Tuple[Any, ...])
 
 
+# AsyncResult 族公共：close / closed
 class AsyncCommon(FilterResult[_R]):
     __slots__ = ()
 
     _real_result: Result[Any]
     _metadata: ResultMetaData
 
+    # 异步关闭底层 Result
     async def close(self) -> None:  # type: ignore[override]
         """Close this result."""
 
@@ -63,6 +67,7 @@ class AsyncCommon(FilterResult[_R]):
         return self._real_result.closed
 
 
+# 服务端游标/async stream 的行结果
 class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
     """An asyncio wrapper around a :class:`_result.Result` object.
 
@@ -88,6 +93,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
 
     _real_result: Result[_TP]
 
+    # 包装 sync Result，复用 _row_getter
     def __init__(self, real_result: Result[_TP]):
         self._real_result = real_result
 
@@ -142,6 +148,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         return self  # type: ignore
 
     @_generative
+    # 去重修饰
     def unique(self, strategy: Optional[_UniqueFilterType] = None) -> Self:
         """Apply unique filtering to the objects returned by this
         :class:`_asyncio.AsyncResult`.
@@ -162,6 +169,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         """
         return self._column_slices(col_expressions)
 
+    # 分块迭代（server-side）
     async def partitions(
         self, size: Optional[int] = None
     ) -> AsyncIterator[Sequence[Row[_TP]]]:
@@ -189,6 +197,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
             else:
                 break
 
+    # greenlet_spawn fetchall
     async def fetchall(self) -> Sequence[Row[_TP]]:
         """A synonym for the :meth:`_asyncio.AsyncResult.all` method.
 
@@ -198,6 +207,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
 
         return await greenlet_spawn(self._allrows)
 
+    # 取单行
     async def fetchone(self) -> Optional[Row[_TP]]:
         """Fetch one row.
 
@@ -220,6 +230,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         else:
             return row
 
+    # 取多行
     async def fetchmany(
         self, size: Optional[int] = None
     ) -> Sequence[Row[_TP]]:
@@ -243,6 +254,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
 
         return await greenlet_spawn(self._manyrow_getter, self, size)
 
+    # 等价 fetchall
     async def all(self) -> Sequence[Row[_TP]]:
         """Return all rows in a list.
 
@@ -265,6 +277,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         else:
             return row
 
+    # 首行或 None
     async def first(self) -> Optional[Row[_TP]]:
         """Fetch the first row or ``None`` if no row is present.
 
@@ -301,6 +314,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         """
         return await greenlet_spawn(self._only_one_row, False, False, False)
 
+    # 零或一行
     async def one_or_none(self) -> Optional[Row[_TP]]:
         """Return at most one result or raise an exception.
 
@@ -328,6 +342,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
     async def scalar_one(self: AsyncResult[Tuple[_T]]) -> _T: ...
 
     @overload
+    # 恰好一个标量
     async def scalar_one(self) -> Any: ...
 
     async def scalar_one(self) -> Any:
@@ -351,6 +366,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
     ) -> Optional[_T]: ...
 
     @overload
+    # 零或一个标量
     async def scalar_one_or_none(self) -> Optional[Any]: ...
 
     async def scalar_one_or_none(self) -> Optional[Any]:
@@ -368,6 +384,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         """
         return await greenlet_spawn(self._only_one_row, True, False, True)
 
+    # 恰好一行否则异常
     async def one(self) -> Row[_TP]:
         """Return exactly one row or raise an exception.
 
@@ -403,6 +420,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
     async def scalar(self: AsyncResult[Tuple[_T]]) -> Optional[_T]: ...
 
     @overload
+    # 首列首行标量
     async def scalar(self) -> Any: ...
 
     async def scalar(self) -> Any:
@@ -421,6 +439,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         """
         return await greenlet_spawn(self._only_one_row, False, False, True)
 
+    # 冻结为可 pickle 结果
     async def freeze(self) -> FrozenResult[_TP]:
         """Return a callable object that will produce copies of this
         :class:`_asyncio.AsyncResult` when invoked.
@@ -453,6 +472,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
     def scalars(self: AsyncResult[Tuple[_T]]) -> AsyncScalarResult[_T]: ...
 
     @overload
+    # 单列 AsyncScalarResult
     def scalars(self, index: _KeyIndexType = 0) -> AsyncScalarResult[Any]: ...
 
     def scalars(self, index: _KeyIndexType = 0) -> AsyncScalarResult[Any]:
@@ -471,6 +491,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         """
         return AsyncScalarResult(self._real_result, index)
 
+    # RowMapping 视图
     def mappings(self) -> AsyncMappingResult:
         """Apply a mappings filter to returned rows, returning an instance of
         :class:`_asyncio.AsyncMappingResult`.
@@ -487,6 +508,7 @@ class AsyncResult(_WithKeys, AsyncCommon[Row[_TP]]):
         return AsyncMappingResult(self._real_result)
 
 
+# 标量结果序列
 class AsyncScalarResult(AsyncCommon[_R]):
     """A wrapper for a :class:`_asyncio.AsyncResult` that returns scalar values
     rather than :class:`_row.Row` values.
@@ -505,6 +527,7 @@ class AsyncScalarResult(AsyncCommon[_R]):
 
     _generate_rows = False
 
+    # 指定列索引
     def __init__(self, real_result: Result[Any], index: _KeyIndexType):
         self._real_result = real_result
 
@@ -565,6 +588,7 @@ class AsyncScalarResult(AsyncCommon[_R]):
         """
         return await greenlet_spawn(self._manyrow_getter, self, size)
 
+    # 全部标量
     async def all(self) -> Sequence[_R]:
         """Return all scalar values in a list.
 
@@ -585,6 +609,7 @@ class AsyncScalarResult(AsyncCommon[_R]):
         else:
             return row
 
+    # 首个标量
     async def first(self) -> Optional[_R]:
         """Fetch the first object or ``None`` if no object is present.
 
@@ -605,6 +630,7 @@ class AsyncScalarResult(AsyncCommon[_R]):
         """
         return await greenlet_spawn(self._only_one_row, True, False, False)
 
+    # 恰好一个标量
     async def one(self) -> _R:
         """Return exactly one object or raise an exception.
 
@@ -616,6 +642,7 @@ class AsyncScalarResult(AsyncCommon[_R]):
         return await greenlet_spawn(self._only_one_row, True, True, False)
 
 
+# 映射行结果（列名->值）
 class AsyncMappingResult(_WithKeys, AsyncCommon[RowMapping]):
     """A wrapper for a :class:`_asyncio.AsyncResult` that returns dictionary
     values rather than :class:`_engine.Row` values.
@@ -636,6 +663,7 @@ class AsyncMappingResult(_WithKeys, AsyncCommon[RowMapping]):
 
     _post_creational_filter = operator.attrgetter("_mapping")
 
+    # 包装 Result.mappings()
     def __init__(self, result: Result[Any]):
         self._real_result = result
         self._unique_filter_state = result._unique_filter_state
@@ -685,6 +713,7 @@ class AsyncMappingResult(_WithKeys, AsyncCommon[RowMapping]):
 
         return await greenlet_spawn(self._allrows)
 
+    # 单行 mapping
     async def fetchone(self) -> Optional[RowMapping]:
         """Fetch one object.
 
@@ -713,6 +742,7 @@ class AsyncMappingResult(_WithKeys, AsyncCommon[RowMapping]):
 
         return await greenlet_spawn(self._manyrow_getter, self, size)
 
+    # 全部 mapping
     async def all(self) -> Sequence[RowMapping]:
         """Return all rows in a list.
 
@@ -765,6 +795,7 @@ class AsyncMappingResult(_WithKeys, AsyncCommon[RowMapping]):
         return await greenlet_spawn(self._only_one_row, True, True, False)
 
 
+# 类型标记：typed tuple 行
 class AsyncTupleResult(AsyncCommon[_R], util.TypingOnly):
     """A :class:`_asyncio.AsyncResult` that's typed as returning plain
     Python tuples instead of rows.
@@ -933,6 +964,7 @@ class AsyncTupleResult(AsyncCommon[_R], util.TypingOnly):
 _RT = TypeVar("_RT", bound="Result[Any]")
 
 
+# 非 stream 路径禁止误用 AsyncResult API
 async def _ensure_sync_result(result: _RT, calling_method: Any) -> _RT:
     cursor_result: CursorResult[Any]
 

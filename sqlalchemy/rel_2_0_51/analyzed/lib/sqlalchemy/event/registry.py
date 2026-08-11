@@ -15,6 +15,8 @@ an equivalent :class:`._EventKey`.
 
 """
 
+# listen() 参数的托管注册：双向 weakref 索引
+
 from __future__ import annotations
 
 import collections
@@ -48,6 +50,7 @@ _EventKeyTupleType = Tuple[int, str, _ListenerFnKeyType]
 _ET = TypeVar("_ET", bound="EventTarget")
 
 
+# 可监听目标协议：Connection/Mapper/Session 等
 class EventTarget:
     """represents an event target, that is, something we can listen on
     either with that target as a class or as an instance.
@@ -101,6 +104,7 @@ ref(listenercollection) -> {
 """
 
 
+# RefCollection GC 时清理 _key_to_collection
 def _collection_gced(ref: weakref.ref[Any]) -> None:
     # defaultdict, so can't get a KeyError
     if not _collection_to_key or ref not in _collection_to_key:
@@ -118,6 +122,7 @@ def _collection_gced(ref: weakref.ref[Any]) -> None:
                 _key_to_collection.pop(key)
 
 
+# 记录 (target,id,fn) -> collection 映射
 def _stored_in_collection(
     event_key: _EventKey[_ET], owner: RefCollection[_ET]
 ) -> bool:
@@ -139,6 +144,7 @@ def _stored_in_collection(
     return True
 
 
+# 移除单条 collection 注册
 def _removed_from_collection(
     event_key: _EventKey[_ET], owner: RefCollection[_ET]
 ) -> None:
@@ -162,6 +168,7 @@ def _removed_from_collection(
         listener_to_key.pop(listen_ref, None)
 
 
+# propagate 时复制注册到新 owner
 def _stored_in_collection_multi(
     newowner: RefCollection[_ET],
     oldowner: RefCollection[_ET],
@@ -198,6 +205,7 @@ def _stored_in_collection_multi(
         new_listener_to_key[listen_ref] = key
 
 
+# 批量 clear 时撤销 registry 条目
 def _clear(
     owner: RefCollection[_ET],
     elements: Iterable[_ListenerFnType],
@@ -217,6 +225,7 @@ def _clear(
             del _key_to_collection[key]
 
 
+# listen() 三元组封装：listen/remove/contains
 class _EventKey(Generic[_ET]):
     """Represent :func:`.listen` arguments."""
 
@@ -258,6 +267,7 @@ class _EventKey(Generic[_ET]):
     def _key(self) -> _EventKeyTupleType:
         return (id(self.target), self.identifier, self.fn_key)
 
+    # 包装后 fn（named/legacy）的新 key
     def with_wrapper(self, fn_wrap: _ListenerFnType) -> _EventKey[_ET]:
         if fn_wrap is self._listen_fn:
             return self
@@ -270,6 +280,7 @@ class _EventKey(Generic[_ET]):
                 _fn_wrap=fn_wrap,
             )
 
+    # 更换 dispatch_target
     def with_dispatch_target(self, dispatch_target: Any) -> _EventKey[_ET]:
         if dispatch_target is self.dispatch_target:
             return self
@@ -282,6 +293,7 @@ class _EventKey(Generic[_ET]):
                 _fn_wrap=self.fn_wrap,
             )
 
+    # 注册：处理 once/named/deprecation
     def listen(self, *args: Any, **kw: Any) -> None:
         once = kw.pop("once", False)
         once_unless_exception = kw.pop("_once_unless_exception", False)
@@ -314,6 +326,7 @@ class _EventKey(Generic[_ET]):
         else:
             self.dispatch_target.dispatch._listen(self, *args, **kw)
 
+    # 从所有 collection 撤销监听
     def remove(self) -> None:
         key = self._key
 
@@ -331,10 +344,12 @@ class _EventKey(Generic[_ET]):
             if collection is not None and listener_fn is not None:
                 collection.remove(self.with_wrapper(listener_fn))
 
+    # 是否仍在 registry 中
     def contains(self) -> bool:
         """Return True if this event key is registered to listen."""
         return self._key in _key_to_collection
 
+    # 核心：for_modify + insert/append
     def base_listen(
         self,
         propagate: bool = False,
@@ -360,6 +375,7 @@ class _EventKey(Generic[_ET]):
     def _listen_fn(self) -> _ListenerFnType:
         return self.fn_wrap or self.fn
 
+    # 注册并 append 到 deque
     def append_to_list(
         self,
         owner: RefCollection[_ET],
@@ -371,6 +387,7 @@ class _EventKey(Generic[_ET]):
         else:
             return False
 
+    # 从 deque 移除并更新 registry
     def remove_from_list(
         self,
         owner: RefCollection[_ET],
@@ -379,6 +396,7 @@ class _EventKey(Generic[_ET]):
         _removed_from_collection(self, owner)
         list_.remove(self._listen_fn)
 
+    # 注册并 prepend 到 deque
     def prepend_to_list(
         self,
         owner: RefCollection[_ET],

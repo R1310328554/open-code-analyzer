@@ -7,6 +7,9 @@
 
 """Public API functions for the event system."""
 
+# 事件系统对外入口：注册、装饰器注册、移除与查询
+"""Public API functions for the event system."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -19,10 +22,13 @@ from .registry import _ListenerFnType
 from .. import exc
 from .. import util
 
+# 监听器返回此符号可取消后续传播
 CANCEL = util.symbol("CANCEL")
+# 标记无需处理返回值
 NO_RETVAL = util.symbol("NO_RETVAL")
 
 
+# 根据 target + identifier 解析 _EventKey
 def _event_key(
     target: _ET, identifier: str, fn: _ListenerFnType
 ) -> _EventKey[_ET]:
@@ -36,6 +42,7 @@ def _event_key(
         )
 
 
+# 为 target 注册 identifier 事件监听器
 def listen(
     target: Any, identifier: str, fn: Callable[..., Any], *args: Any, **kw: Any
 ) -> None:
@@ -121,6 +128,7 @@ def listen(
     _event_key(target, identifier, fn).listen(*args, **kw)
 
 
+# 装饰器形式注册监听器
 def listens_for(
     target: Any, identifier: str, *args: Any, **kw: Any
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -168,6 +176,7 @@ def listens_for(
     return decorate
 
 
+# 移除与 listen 参数完全匹配的监听器
 def remove(target: Any, identifier: str, fn: Callable[..., Any]) -> None:
     """Remove an event listener.
 
@@ -214,6 +223,7 @@ def remove(target: Any, identifier: str, fn: Callable[..., Any]) -> None:
     _event_key(target, identifier, fn).remove()
 
 
+# 判断 target/identifier/fn 是否已注册
 def contains(target: Any, identifier: str, fn: Callable[..., Any]) -> bool:
     """Return True if the given target/ident/fn is set up to listen."""
 

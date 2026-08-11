@@ -29,6 +29,8 @@ as well as support for subclass propagation (e.g. events assigned to
 
 """
 
+# _Dispatch 事件属性：类级/实例级监听器集合
+
 from __future__ import annotations
 
 import collections
@@ -73,6 +75,7 @@ if typing.TYPE_CHECKING:
     from .base import _HasEventsDispatch
 
 
+# 弱引用注册表：collection GC 时清理 registry
 class RefCollection(util.MemoizedSlots, Generic[_ET]):
     __slots__ = ("ref",)
 
@@ -82,6 +85,7 @@ class RefCollection(util.MemoizedSlots, Generic[_ET]):
         return weakref.ref(self, registry._collection_gced)
 
 
+# 空集合占位：禁止向子类传播类级事件时使用
 class _empty_collection(Collection[_T]):
     def append(self, element: _T) -> None:
         pass
@@ -101,6 +105,8 @@ class _empty_collection(Collection[_T]):
     def __iter__(self) -> Iterator[_T]:
         return iter([])
 
+    # 清空所有类级监听器
+    # 清空实例监听器
     def clear(self) -> None:
         pass
 
@@ -111,6 +117,7 @@ class _empty_collection(Collection[_T]):
 _ListenerFnSequenceType = Union[Deque[_T], _empty_collection[_T]]
 
 
+# 类级事件：WeakKeyDictionary 按类存储 deque
 class _ClsLevelDispatch(RefCollection[_ET]):
     """Class-level events on :class:`._Dispatch` classes."""
 
@@ -154,6 +161,7 @@ class _ClsLevelDispatch(RefCollection[_ET]):
 
         self._clslevel = weakref.WeakKeyDictionary()
 
+    # named 包装与 legacy 签名转换
     def _adjust_fn_spec(
         self, fn: _ListenerFnType, named: bool
     ) -> _ListenerFnType:
@@ -168,6 +176,7 @@ class _ClsLevelDispatch(RefCollection[_ET]):
                 fn = legacy._wrap_fn_for_legacy(self, fn, argspec)
         return fn
 
+    # named=True 时将位置参数转为 kwargs
     def _wrap_fn_for_kw(self, fn: _ListenerFnType) -> _ListenerFnType:
         def wrap_kw(*args: Any, **kw: Any) -> Any:
             argdict = dict(zip(self.arg_names, args))
@@ -176,6 +185,7 @@ class _ClsLevelDispatch(RefCollection[_ET]):
 
         return wrap_kw
 
+    # 向目标类及子类插入/追加监听器
     def _do_insert_or_append(
         self, event_key: _EventKey[_ET], is_append: bool
     ) -> None:
@@ -202,12 +212,19 @@ class _ClsLevelDispatch(RefCollection[_ET]):
                     self._clslevel[cls].appendleft(event_key._listen_fn)
         registry._stored_in_collection(event_key, self)
 
+    # prepend 监听器
+    # prepend 实例监听器
+    # 委托 local.insert
     def insert(self, event_key: _EventKey[_ET], propagate: bool) -> None:
         self._do_insert_or_append(event_key, is_append=False)
 
+    # append 监听器
+    # append 实例监听器
+    # 委托 local.append
     def append(self, event_key: _EventKey[_ET], propagate: bool) -> None:
         self._do_insert_or_append(event_key, is_append=True)
 
+    # 子类继承 MRO 上父类监听器
     def update_subclass(self, target: Type[_ET]) -> None:
         if target not in self._clslevel:
             if getattr(target, "_sa_propagate_class_events", True):
@@ -223,6 +240,9 @@ class _ClsLevelDispatch(RefCollection[_ET]):
                     [fn for fn in self._clslevel[cls] if fn not in clslevel]
                 )
 
+    # 从类及子类移除监听器
+    # 移除并更新 registry
+    # 委托 local.remove
     def remove(self, event_key: _EventKey[_ET]) -> None:
         target = event_key.dispatch_target
         cls: Type[_ET]
@@ -240,6 +260,8 @@ class _ClsLevelDispatch(RefCollection[_ET]):
             dispatcher.clear()
         registry._clear(self, to_clear)
 
+    # 类级 dispatch 返回 self
+    # 首次修改时升级为 _ListenerCollection
     def for_modify(self, obj: _Dispatch[_ET]) -> _ClsLevelDispatch[_ET]:
         """Return an event collection which can be modified.
 
@@ -250,6 +272,7 @@ class _ClsLevelDispatch(RefCollection[_ET]):
         return self
 
 
+# 实例级 dispatch 抽象基类
 class _InstanceLevelDispatch(RefCollection[_ET], Collection[_ListenerFnType]):
     __slots__ = ()
 
@@ -272,15 +295,20 @@ class _InstanceLevelDispatch(RefCollection[_ET], Collection[_ListenerFnType]):
     def __bool__(self) -> bool:
         raise NotImplementedError()
 
+    # 本 collection 生命周期内只执行一次
     def exec_once(self, *args: Any, **kw: Any) -> None:
         raise NotImplementedError()
 
+    # 异常时可重试的 exec_once
     def exec_once_unless_exception(self, *args: Any, **kw: Any) -> None:
         raise NotImplementedError()
 
+    # 首次带锁，之后无锁
     def _exec_w_sync_on_first_run(self, *args: Any, **kw: Any) -> None:
         raise NotImplementedError()
 
+    # 执行类级监听器链
+    # 依次调用 parent 与 instance 监听器
     def __call__(self, *args: Any, **kw: Any) -> None:
         raise NotImplementedError()
 
@@ -305,6 +333,7 @@ class _InstanceLevelDispatch(RefCollection[_ET], Collection[_ListenerFnType]):
         return self
 
 
+# 无实例监听器时代理类级 parent_listeners
 class _EmptyListener(_InstanceLevelDispatch[_ET]):
     """Serves as a proxy interface to the events
     served by a _ClsLevelDispatch, when there are no
@@ -400,6 +429,7 @@ class _EmptyListener(_InstanceLevelDispatch[_ET]):
         return bool(self.parent_listeners)
 
 
+# exec_once 互斥锁协议
 class _MutexProtocol(Protocol):
     def __enter__(self) -> bool: ...
 
@@ -411,6 +441,7 @@ class _MutexProtocol(Protocol):
     ) -> Optional[bool]: ...
 
 
+# 合并 parent + instance 监听器的复合执行
 class _CompoundListener(_InstanceLevelDispatch[_ET]):
     __slots__ = (
         "_exec_once_mutex",
@@ -429,9 +460,11 @@ class _CompoundListener(_InstanceLevelDispatch[_ET]):
         super().__init__(*arg, **kw)
         self._is_asyncio = False
 
+    # 标记使用 AsyncAdaptedLock
     def _set_asyncio(self) -> None:
         self._is_asyncio = True
 
+    # 懒创建 sync/async 互斥锁
     def _get_exec_once_mutex(self) -> _MutexProtocol:
         with util.mini_gil:
             if self._exec_once_mutex is not None:
@@ -445,6 +478,7 @@ class _CompoundListener(_InstanceLevelDispatch[_ET]):
 
             return mutex
 
+    # exec_once 核心：仅首次执行
     def _exec_once_impl(
         self, retry_on_exception: bool, *args: Any, **kw: Any
     ) -> None:
@@ -528,6 +562,7 @@ class _CompoundListener(_InstanceLevelDispatch[_ET]):
         return bool(self.listeners or self.parent_listeners)
 
 
+# 实例级监听器 deque + propagate 集合
 class _ListenerCollection(_CompoundListener[_ET]):
     """Instance-level attributes on instances of :class:`._Dispatch`.
 
@@ -577,6 +612,7 @@ class _ListenerCollection(_CompoundListener[_ET]):
         """
         return self
 
+    # 从另一 _Dispatch 复制 propagate 监听器
     def _update(
         self, other: _ListenerCollection[_ET], only_propagate: bool = True
     ) -> None:
@@ -622,6 +658,7 @@ class _ListenerCollection(_CompoundListener[_ET]):
         self.listeners.clear()
 
 
+# JoinedDispatcher 上的委托监听器
 class _JoinedListener(_CompoundListener[_ET]):
     __slots__ = "parent_dispatch", "name", "local", "parent_listeners"
 
@@ -660,6 +697,7 @@ class _JoinedListener(_CompoundListener[_ET]):
     ) -> _ListenerFnType:
         return self.local._adjust_fn_spec(fn, named)
 
+    # 委托 local.for_modify
     def for_modify(self, obj: _DispatchCommon[_ET]) -> _JoinedListener[_ET]:
         self.local = self.parent_listeners = self.local.for_modify(obj)
         return self

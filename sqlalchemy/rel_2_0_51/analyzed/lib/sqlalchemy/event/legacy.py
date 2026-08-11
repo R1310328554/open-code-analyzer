@@ -10,6 +10,8 @@ generation of deprecation notes and docstrings.
 
 """
 
+# 旧版事件签名适配、弃用提示与文档增强
+
 from __future__ import annotations
 
 import typing
@@ -36,6 +38,7 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 _LegacySignatureType = Tuple[str, List[str], Callable[..., Any]]
 
 
+# 装饰器：记录 since/argnames/converter 供运行时包装
 def _legacy_signature(
     since: str,
     argnames: List[str],
@@ -61,11 +64,13 @@ def _legacy_signature(
     return leg
 
 
+# 跳过标准 listen 示例注入
 def _omit_standard_example(fn: _F) -> _F:
     fn._omit_standard_example = True  # type: ignore[attr-defined]
     return fn
 
 
+# 按 legacy_signatures 包装监听器并 warn_deprecated
 def _wrap_fn_for_legacy(
     dispatch_collection: _ClsLevelDispatch[_ET],
     fn: _ListenerFnType,
@@ -123,10 +128,12 @@ def _wrap_fn_for_legacy(
         return fn
 
 
+# 文档缩进辅助
 def _indent(text: str, indent: str) -> str:
     return "\n".join(indent + line for line in text.split("\n"))
 
 
+# 生成 @listens_for 标准示例代码
 def _standard_listen_example(
     dispatch_collection: _ClsLevelDispatch[_ET],
     sample_target: Any,
@@ -168,6 +175,7 @@ def _standard_listen_example(
     return text
 
 
+# 生成已弃用签名示例
 def _legacy_listen_examples(
     dispatch_collection: _ClsLevelDispatch[_ET],
     sample_target: str,
@@ -196,6 +204,7 @@ def _legacy_listen_examples(
     return text
 
 
+# 生成 versionchanged 文档块
 def _version_signature_changes(
     parent_dispatch_cls: Type[_HasEventsDispatch[_ET]],
     dispatch_collection: _ClsLevelDispatch[_ET],
@@ -226,6 +235,7 @@ def _version_signature_changes(
     )
 
 
+# 向事件 stub 函数注入示例与版本说明
 def _augment_fn_docs(
     dispatch_collection: _ClsLevelDispatch[_ET],
     parent_dispatch_cls: Type[_HasEventsDispatch[_ET]],

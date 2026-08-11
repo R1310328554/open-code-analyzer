@@ -13,6 +13,8 @@ raised as a result of DBAPI exceptions are all subclasses of
 
 """
 
+# SQLAlchemy 异常层次：构造期与运行时错误
+
 from __future__ import annotations
 
 import typing
@@ -41,6 +43,7 @@ else:
     _version_token = None
 
 
+# 为异常/警告附加 code 与 sqlalche.me 链接
 class HasDescriptionCode:
     """helper which adds 'code' as an attribute and '_code_str' as a method"""
 
@@ -54,6 +57,7 @@ class HasDescriptionCode:
 
     _what_are_we = "error"
 
+    # 生成 Background on this error 链接
     def _code_str(self) -> str:
         if not self.code:
             return ""
@@ -70,9 +74,11 @@ class HasDescriptionCode:
         return message
 
 
+# 所有 SQLAlchemy 异常的根类
 class SQLAlchemyError(HasDescriptionCode, Exception):
     """Generic error class."""
 
+    # 单参数 unicode 友好 __str__
     def _message(self) -> str:
         # rules:
         #
@@ -104,6 +110,8 @@ class SQLAlchemyError(HasDescriptionCode, Exception):
             # a repr() of the tuple
             return str(self.args)
 
+    # 附加 code 的消息
+    # 附加 SQL 与 parameters _repr
     def _sql_message(self) -> str:
         message = self._message()
 
@@ -116,6 +124,7 @@ class SQLAlchemyError(HasDescriptionCode, Exception):
         return self._sql_message()
 
 
+# 无效或冲突的构造参数
 class ArgumentError(SQLAlchemyError):
     """Raised when an invalid or conflicting function argument is supplied.
 
@@ -124,6 +133,7 @@ class ArgumentError(SQLAlchemyError):
     """
 
 
+# Table 列名冲突且未允许替换
 class DuplicateColumnError(ArgumentError):
     """a Column is being added to a Table that would replace another
     Column, without appropriate parameters to allow this in place.
@@ -133,6 +143,7 @@ class DuplicateColumnError(ArgumentError):
     """
 
 
+# execute() 收到不可执行对象
 class ObjectNotExecutableError(ArgumentError):
     """Raised when an object is passed to .execute() that can't be
     executed as SQL.
@@ -147,21 +158,25 @@ class ObjectNotExecutableError(ArgumentError):
         return self.__class__, (self.target,)
 
 
+# 动态加载模块（方言）未找到
 class NoSuchModuleError(ArgumentError):
     """Raised when a dynamically-loaded module (usually a database dialect)
     of a particular name cannot be located."""
 
 
+# join 时两表间无外键
 class NoForeignKeysError(ArgumentError):
     """Raised when no foreign keys can be located between two selectables
     during a join."""
 
 
+# join 时外键匹配不唯一
 class AmbiguousForeignKeysError(ArgumentError):
     """Raised when more than one foreign key matching can be located
     between two selectables during a join."""
 
 
+# 约束引用不存在的列名
 class ConstraintColumnNotFoundError(ArgumentError):
     """raised when a constraint refers to a string column name that
     is not present in the table being constrained.
@@ -171,6 +186,7 @@ class ConstraintColumnNotFoundError(ArgumentError):
     """
 
 
+# 拓扑排序检测到循环依赖
 class CircularDependencyError(SQLAlchemyError):
     """Raised by topological sorts when a circular dependency is detected.
 
@@ -214,10 +230,12 @@ class CircularDependencyError(SQLAlchemyError):
         )
 
 
+# SQL 编译失败
 class CompileError(SQLAlchemyError):
     """Raised when an error occurs during SQL compilation"""
 
 
+# 编译器不支持该 ClauseElement
 class UnsupportedCompilationError(CompileError):
     """Raised when an operation is not supported by the given compiler.
 
@@ -248,10 +266,12 @@ class UnsupportedCompilationError(CompileError):
         return self.__class__, (self.compiler, self.element_type, self.message)
 
 
+# 标识符超出长度限制
 class IdentifierError(SQLAlchemyError):
     """Raised when a schema name is beyond the max character limit"""
 
 
+# 原始 DBAPI 连接断开
 class DisconnectionError(SQLAlchemyError):
     """A disconnect is detected on a raw DB-API connection.
 
@@ -267,6 +287,7 @@ class DisconnectionError(SQLAlchemyError):
     invalidate_pool: bool = False
 
 
+# 建议使整个连接池失效
 class InvalidatePoolError(DisconnectionError):
     """Raised when the connection pool should invalidate all stale connections.
 
@@ -285,10 +306,12 @@ class InvalidatePoolError(DisconnectionError):
     invalidate_pool: bool = True
 
 
+# 连接池获取连接超时
 class TimeoutError(SQLAlchemyError):  # noqa
     """Raised when a connection pool times out on getting a connection."""
 
 
+# 运行时无法完成的请求
 class InvalidRequestError(SQLAlchemyError):
     """SQLAlchemy was asked to do something it can't do.
 
@@ -297,6 +320,7 @@ class InvalidRequestError(SQLAlchemyError):
     """
 
 
+# 状态机非法状态转换
 class IllegalStateChangeError(InvalidRequestError):
     """An object that tracks state encountered an illegal state change
     of some kind.
@@ -306,11 +330,13 @@ class IllegalStateChangeError(InvalidRequestError):
     """
 
 
+# inspect() 无可用上下文
 class NoInspectionAvailable(InvalidRequestError):
     """A subject passed to :func:`sqlalchemy.inspection.inspect` produced
     no context for inspection."""
 
 
+# 事务失败需先 rollback
 class PendingRollbackError(InvalidRequestError):
     """A transaction has failed and needs to be rolled back before
     continuing.
@@ -320,15 +346,18 @@ class PendingRollbackError(InvalidRequestError):
     """
 
 
+# 对已关闭资源操作
 class ResourceClosedError(InvalidRequestError):
     """An operation was requested from a connection, cursor, or other
     object that's in a closed state."""
 
 
+# Row 请求不存在的列
 class NoSuchColumnError(InvalidRequestError, KeyError):
     """A nonexistent column is requested from a ``Row``."""
 
 
+# 需要单行结果但未找到
 class NoResultFound(InvalidRequestError):
     """A database result was required but none was found.
 
@@ -341,6 +370,7 @@ class NoResultFound(InvalidRequestError):
     """
 
 
+# 需要单行但返回多行
 class MultipleResultsFound(InvalidRequestError):
     """A single database result was required but more than one were found.
 
@@ -352,12 +382,14 @@ class MultipleResultsFound(InvalidRequestError):
     """
 
 
+# ForeignKey 无法解析引用
 class NoReferenceError(InvalidRequestError):
     """Raised by ``ForeignKey`` to indicate a reference cannot be resolved."""
 
     table_name: str
 
 
+# async greenlet 内缺少 await
 class AwaitRequired(InvalidRequestError):
     """Error raised by the async greenlet spawn if no async operation
     was awaited when it required one.
@@ -367,6 +399,7 @@ class AwaitRequired(InvalidRequestError):
     code = "xd1r"
 
 
+# 非 greenlet_spawn 上下文调用 await_
 class MissingGreenlet(InvalidRequestError):
     r"""Error raised by the async greenlet await\_ if called while not inside
     the greenlet spawn context.
@@ -376,6 +409,7 @@ class MissingGreenlet(InvalidRequestError):
     code = "xd2s"
 
 
+# ForeignKey 目标表不存在
 class NoReferencedTableError(NoReferenceError):
     """Raised by ``ForeignKey`` when the referred ``Table`` cannot be
     located.
@@ -390,6 +424,7 @@ class NoReferencedTableError(NoReferenceError):
         return self.__class__, (self.args[0], self.table_name)
 
 
+# ForeignKey 目标列不存在
 class NoReferencedColumnError(NoReferenceError):
     """Raised by ``ForeignKey`` when the referred ``Column`` cannot be
     located.
@@ -408,10 +443,12 @@ class NoReferencedColumnError(NoReferenceError):
         )
 
 
+# 表不存在或当前连接不可见
 class NoSuchTableError(InvalidRequestError):
     """Table does not exist or is not visible to a connection."""
 
 
+# 表存在但无法反射
 class UnreflectableTableError(InvalidRequestError):
     """Table exists but can't be reflected for some reason.
 
@@ -420,10 +457,12 @@ class UnreflectableTableError(InvalidRequestError):
     """
 
 
+# 无绑定连接时执行 SQL
 class UnboundExecutionError(InvalidRequestError):
     """SQL was attempted without a database connection to execute it on."""
 
 
+# 用户异常 mixin：不被 StatementError 包装
 class DontWrapMixin:
     """A mixin class which, when applied to a user-defined Exception class,
     will not be wrapped inside of :exc:`.StatementError` if the error is
@@ -448,6 +487,7 @@ class DontWrapMixin:
     """
 
 
+# SQL 执行错误：含 statement/params/orig
 class StatementError(SQLAlchemyError):
     """An error occurred during execution of a SQL statement.
 
@@ -495,6 +535,7 @@ class StatementError(SQLAlchemyError):
         self.hide_parameters = hide_parameters
         self.detail: List[str] = []
 
+    # 追加 detail 段落
     def add_detail(self, msg: str) -> None:
         self.detail.append(msg)
 
@@ -537,6 +578,7 @@ class StatementError(SQLAlchemyError):
         return "\n".join(["(%s)" % det for det in self.detail] + details)
 
 
+# DB-API 异常包装：映射驱动异常类型
 class DBAPIError(StatementError):
     """Raised when the execution of a database operation fails.
 
@@ -720,48 +762,56 @@ class DBAPIError(StatementError):
         self.connection_invalidated = connection_invalidated
 
 
+# 包装 DB-API InterfaceError
 class InterfaceError(DBAPIError):
     """Wraps a DB-API InterfaceError."""
 
     code = "rvf5"
 
 
+# 包装 DB-API DatabaseError
 class DatabaseError(DBAPIError):
     """Wraps a DB-API DatabaseError."""
 
     code = "4xp6"
 
 
+# 包装 DB-API DataError
 class DataError(DatabaseError):
     """Wraps a DB-API DataError."""
 
     code = "9h9h"
 
 
+# 包装 DB-API OperationalError
 class OperationalError(DatabaseError):
     """Wraps a DB-API OperationalError."""
 
     code = "e3q8"
 
 
+# 包装 DB-API IntegrityError
 class IntegrityError(DatabaseError):
     """Wraps a DB-API IntegrityError."""
 
     code = "gkpj"
 
 
+# 包装 DB-API InternalError
 class InternalError(DatabaseError):
     """Wraps a DB-API InternalError."""
 
     code = "2j85"
 
 
+# 包装 DB-API ProgrammingError
 class ProgrammingError(DatabaseError):
     """Wraps a DB-API ProgrammingError."""
 
     code = "f405"
 
 
+# 包装 DB-API NotSupportedError
 class NotSupportedError(DatabaseError):
     """Wraps a DB-API NotSupportedError."""
 
@@ -771,6 +821,7 @@ class NotSupportedError(DatabaseError):
 # Warnings
 
 
+# 测试套件非致命警告
 class SATestSuiteWarning(Warning):
     """warning for a condition detected during tests that is non-fatal
 
@@ -780,6 +831,7 @@ class SATestSuiteWarning(Warning):
     """
 
 
+# 弃用 API 警告
 class SADeprecationWarning(HasDescriptionCode, DeprecationWarning):
     """Issued for usage of deprecated APIs."""
 
@@ -787,6 +839,7 @@ class SADeprecationWarning(HasDescriptionCode, DeprecationWarning):
     "Indicates the version that started raising this deprecation warning"
 
 
+# SQLAlchemy 2.0 弃用/遗留 API
 class Base20DeprecationWarning(SADeprecationWarning):
     """Issued for usage of APIs specifically deprecated or legacy in
     SQLAlchemy 2.0.
@@ -809,14 +862,17 @@ class Base20DeprecationWarning(SADeprecationWarning):
         )
 
 
+# 长期 legacy 状态 API
 class LegacyAPIWarning(Base20DeprecationWarning):
     """indicates an API that is in 'legacy' status, a long term deprecation."""
 
 
+# 2.0 仅迁移位置的 API
 class MovedIn20Warning(Base20DeprecationWarning):
     """Subtype of RemovedIn20Warning to indicate an API that moved only."""
 
 
+# 历史 PendingDeprecation
 class SAPendingDeprecationWarning(PendingDeprecationWarning):
     """A similar warning as :class:`_exc.SADeprecationWarning`, this warning
     is not used in modern versions of SQLAlchemy.
@@ -827,6 +883,7 @@ class SAPendingDeprecationWarning(PendingDeprecationWarning):
     "Indicates the version that started raising this deprecation warning"
 
 
+# 运行时警告
 class SAWarning(HasDescriptionCode, RuntimeWarning):
     """Issued at runtime."""
 

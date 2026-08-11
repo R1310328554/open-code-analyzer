@@ -14,6 +14,8 @@ See the example ``examples/association/proxied_association.py``.
 
 """
 
+# 关联代理：将 relationship 集合映射为简化标量/集合视图
+
 from __future__ import annotations
 
 import operator
@@ -82,6 +84,7 @@ _KT = TypeVar("_KT", bound=Any)
 _VT = TypeVar("_VT", bound=Any)
 
 
+# 工厂：返回 AssociationProxy 描述符
 def association_proxy(
     target_collection: str,
     attr: str,
@@ -265,6 +268,7 @@ def association_proxy(
     )
 
 
+# InspectionAttr 扩展类型标识
 class AssociationProxyExtensionType(InspectionAttrExtensionType):
     ASSOCIATION_PROXY = "ASSOCIATION_PROXY"
     """Symbol indicating an :class:`.InspectionAttr` that's
@@ -276,34 +280,42 @@ class AssociationProxyExtensionType(InspectionAttrExtensionType):
     """
 
 
+# 从关联对象取值的可调用协议
 class _GetterProtocol(Protocol[_T_co]):
     def __call__(self, instance: Any) -> _T_co: ...
 
 
 # mypy 0.990 we are no longer allowed to make this Protocol[_T_con]
+# 赋值协议基类
 class _SetterProtocol(Protocol): ...
 
 
+# 标量 setter
 class _PlainSetterProtocol(_SetterProtocol, Protocol[_T_con]):
     def __call__(self, instance: Any, value: _T_con) -> None: ...
 
 
+# dict 键值 setter
 class _DictSetterProtocol(_SetterProtocol, Protocol[_T_con]):
     def __call__(self, instance: Any, key: Any, value: _T_con) -> None: ...
 
 
 # mypy 0.990 we are no longer allowed to make this Protocol[_T_con]
+# 创建关联对象协议
 class _CreatorProtocol(Protocol): ...
 
 
+# 标量 creator
 class _PlainCreatorProtocol(_CreatorProtocol, Protocol[_T_con]):
     def __call__(self, value: _T_con) -> Any: ...
 
 
+# dict key+value creator
 class _KeyCreatorProtocol(_CreatorProtocol, Protocol[_T_con]):
     def __call__(self, key: Any, value: Optional[_T_con]) -> Any: ...
 
 
+# 延迟获取底层 relationship 集合
 class _LazyCollectionProtocol(Protocol[_T]):
     def __call__(
         self,
@@ -312,6 +324,7 @@ class _LazyCollectionProtocol(Protocol[_T]):
     ]: ...
 
 
+# 自定义 getter/setter 工厂
 class _GetSetFactoryProtocol(Protocol):
     def __call__(
         self,
@@ -320,6 +333,7 @@ class _GetSetFactoryProtocol(Protocol):
     ) -> Tuple[_GetterProtocol[Any], _SetterProtocol]: ...
 
 
+# 自定义代理集合类型工厂
 class _ProxyFactoryProtocol(Protocol):
     def __call__(
         self,
@@ -330,12 +344,14 @@ class _ProxyFactoryProtocol(Protocol):
     ) -> Any: ...
 
 
+# 批量赋值协议
 class _ProxyBulkSetProtocol(Protocol):
     def __call__(
         self, proxy: _AssociationCollection[Any], collection: Iterable[Any]
     ) -> None: ...
 
 
+# AssociationProxy 内部协议
 class _AssociationProxyProtocol(Protocol[_T]):
     """describes the interface of :class:`.AssociationProxy`
     without including descriptor methods in the interface."""
@@ -353,15 +369,18 @@ class _AssociationProxyProtocol(Protocol[_T]):
     @util.ro_memoized_property
     def info(self) -> _InfoType: ...
 
+    # 返回 per-class AssociationProxyInstance
     def for_class(
         self, class_: Type[Any], obj: Optional[object] = None
     ) -> AssociationProxyInstance[_T]: ...
 
+    # 默认 attrgetter/setter 或 dict setter
     def _default_getset(
         self, collection_class: Any
     ) -> Tuple[_GetterProtocol[Any], _SetterProtocol]: ...
 
 
+# 描述符：读写目标 relationship 成员属性的代理视图
 class AssociationProxy(
     interfaces.InspectionAttrInfo,
     ORMDescriptor[_T],
@@ -373,6 +392,9 @@ class AssociationProxy(
     is_attribute = True
     extension_type = AssociationProxyExtensionType.ASSOCIATION_PROXY
 
+    # 构造：target_collection、value_attr 与 creator 等
+    # owning_class、target_class、value_attr
+    # lazy_collection + creator + getter/setter
     def __init__(
         self,
         target_collection: str,
@@ -430,6 +452,7 @@ class AssociationProxy(
             self._attribute_options = _DEFAULT_ATTRIBUTE_OPTIONS
 
     @overload
+    # 类访问 -> for_class；实例访问 -> get
     def __get__(
         self, instance: Literal[None], owner: Literal[None]
     ) -> Self: ...
@@ -455,10 +478,12 @@ class AssociationProxy(
 
         return self
 
+    # 实例赋值 -> set
     def __set__(self, instance: object, values: _T) -> None:
         class_ = type(instance)
         self._as_instance(class_, instance).set(instance, values)
 
+    # del 代理属性
     def __delete__(self, instance: object) -> None:
         class_ = type(instance)
         self._as_instance(class_, instance).delete(instance)
@@ -500,6 +525,7 @@ class AssociationProxy(
         """
         return self._as_instance(class_, obj)
 
+    # 缓存/解析 AssociationProxyInstance
     def _as_instance(
         self, class_: Any, obj: Any
     ) -> AssociationProxyInstance[_T]:
@@ -527,6 +553,7 @@ class AssociationProxy(
         else:
             return inst  # type: ignore  # TODO
 
+    # 解析 mapped class_manager
     def _calc_owner(self, target_cls: Any) -> Any:
         # we might be getting invoked for a subclass
         # that is not mapped yet, in some declarative situations.
@@ -578,6 +605,7 @@ class AssociationProxy(
 _Self = TypeVar("_Self", bound="AssociationProxyInstance[Any]")
 
 
+# 每映射类的代理状态：查询与 CRUD
 class AssociationProxyInstance(SQLORMOperations[_T]):
     """A per-class object that serves class- and object-specific results.
 
@@ -636,6 +664,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
     """
 
     @classmethod
+    # 从 AssociationProxy 构建实例（Object/Column/Ambiguous）
     def for_proxy(
         cls,
         parent: AssociationProxy[_T],
@@ -683,6 +712,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
             )
 
     @classmethod
+    # 根据 target 属性类型选择子类
     def _construct_for_assoc(
         cls,
         target_assoc: Optional[AssociationProxyInstance[_T]],
@@ -711,12 +741,14 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
                 parent, owning_class, target_class, value_attr
             )
 
+    # 底层 RelationshipProperty
     def _get_property(self) -> MapperProperty[Any]:
         return orm.class_mapper(self.owning_class).get_property(
             self.target_collection
         )
 
     @property
+    # relationship comparator
     def _comparator(self) -> PropComparator[Any]:
         return getattr(  # type: ignore
             self.owning_class, self.target_collection
@@ -747,6 +779,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
         )
 
     @property
+    # 远端（被代理）属性
     def remote_attr(self) -> SQLORMOperations[_T]:
         """The 'remote' class attribute referenced by this
         :class:`.AssociationProxyInstance`.
@@ -763,6 +796,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
         )
 
     @property
+    # 本地 relationship 属性
     def local_attr(self) -> SQLORMOperations[Any]:
         """The 'local' class attribute referenced by this
         :class:`.AssociationProxyInstance`.
@@ -780,6 +814,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
         )
 
     @property
+    # (local, remote) 元组
     def attr(self) -> Tuple[SQLORMOperations[Any], SQLORMOperations[_T]]:
         """Return a tuple of ``(local_attr, remote_attr)``.
 
@@ -811,6 +846,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
         return (self.local_attr, self.remote_attr)
 
     @util.memoized_property
+    # 是否为标量（非集合）代理
     def scalar(self) -> bool:
         """Return ``True`` if this :class:`.AssociationProxyInstance`
         proxies a scalar relationship on the local side."""
@@ -876,6 +912,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
     @overload
     def get(self, obj: Any) -> _T: ...
 
+    # 读取代理值（集合或标量）
     def get(
         self, obj: Any
     ) -> Union[Optional[_T], AssociationProxyInstance[_T]]:
@@ -907,6 +944,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
             setattr(obj, self.key, (id(obj), id(self), proxy))
             return proxy
 
+    # 写入代理值
     def set(self, obj: Any, values: _T) -> None:
         if self.scalar:
             creator = cast(
@@ -935,6 +973,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
             if proxy is not values:
                 proxy._bulk_replace(self, values)
 
+    # 删除/清空代理
     def delete(self, obj: Any) -> None:
         if self.owning_class is None:
             self._calc_owner(obj, None)
@@ -1079,6 +1118,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
 
         return self._comparator._criterion_exists(value_expr)
 
+    # 集合 EXISTS 查询
     def any(
         self,
         criterion: Optional[_ColumnExpressionArgument[bool]] = None,
@@ -1103,6 +1143,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
             criterion=criterion, is_has=False, **kwargs
         )
 
+    # 标量 EXISTS 查询
     def has(
         self,
         criterion: Optional[_ColumnExpressionArgument[bool]] = None,
@@ -1131,6 +1172,7 @@ class AssociationProxyInstance(SQLORMOperations[_T]):
         return "%s(%r)" % (self.__class__.__name__, self.parent)
 
 
+# 目标类上属性未直接映射时的歧义代理
 class AmbiguousAssociationProxyInstance(AssociationProxyInstance[_T]):
     """an :class:`.AssociationProxyInstance` where we cannot determine
     the type of target object.
@@ -1138,6 +1180,7 @@ class AmbiguousAssociationProxyInstance(AssociationProxyInstance[_T]):
 
     _is_canonical = False
 
+    # 类级操作不可用时报错
     def _ambiguous(self) -> NoReturn:
         raise AttributeError(
             "Association proxy %s.%s refers to an attribute '%s' that is not "
@@ -1185,6 +1228,7 @@ class AmbiguousAssociationProxyInstance(AssociationProxyInstance[_T]):
         # only B1(B) and B2(B) have "b_attr", keys in here would be B1, B2
         return {}
 
+    # 按实际对象类型查 _lookup_cache
     def _non_canonical_get_for_object(
         self, parent_instance: Any
     ) -> AssociationProxyInstance[_T]:
@@ -1210,6 +1254,7 @@ class AmbiguousAssociationProxyInstance(AssociationProxyInstance[_T]):
         # is a proxy with generally only instance-level functionality
         return self
 
+    # 多态子类解析具体 AssociationProxyInstance
     def _populate_cache(
         self, instance_class: Any, mapper: Mapper[Any]
     ) -> None:
@@ -1235,12 +1280,14 @@ class AmbiguousAssociationProxyInstance(AssociationProxyInstance[_T]):
                 )
 
 
+# 目标为 ORM 对象属性的代理
 class ObjectAssociationProxyInstance(AssociationProxyInstance[_T]):
     """an :class:`.AssociationProxyInstance` that has an object as a target."""
 
     _target_is_object: bool = True
     _is_canonical = True
 
+    # EXISTS contains 表达式
     def contains(self, other: Any, **kw: Any) -> ColumnElement[bool]:
         """Produce a proxied 'contains' expression using EXISTS.
 
@@ -1294,6 +1341,7 @@ class ObjectAssociationProxyInstance(AssociationProxyInstance[_T]):
         )
 
 
+# 目标为列属性的代理
 class ColumnAssociationProxyInstance(AssociationProxyInstance[_T]):
     """an :class:`.AssociationProxyInstance` that has a database column as a
     target.
@@ -1312,6 +1360,7 @@ class ColumnAssociationProxyInstance(AssociationProxyInstance[_T]):
         else:
             return expr
 
+    # 对 remote_attr 构造 EXISTS 运算
     def operate(
         self, op: operators.OperatorType, *other: Any, **kwargs: Any
     ) -> ColumnElement[Any]:
@@ -1320,6 +1369,7 @@ class ColumnAssociationProxyInstance(AssociationProxyInstance[_T]):
         )
 
 
+# pickle 友好的延迟集合访问
 class _lazy_collection(_LazyCollectionProtocol[_T]):
     def __init__(self, obj: Any, target: str):
         self.parent = obj
@@ -1348,6 +1398,7 @@ collection[_IT] type.
 """
 
 
+# 代理集合基类：getter/setter/creator
 class _AssociationCollection(Generic[_IT]):
     getter: _GetterProtocol[_IT]
     """A function.  Given an associated object, return the 'value'."""
@@ -1410,10 +1461,12 @@ class _AssociationCollection(Generic[_IT]):
         self.lazy_collection = state["lazy_collection"]
         self.parent._inflate(self)
 
+    # 清空底层 col
     def clear(self) -> None:
         raise NotImplementedError()
 
 
+# 标量/单元素集合基类
 class _AssociationSingleItem(_AssociationCollection[_T]):
     setter: _PlainSetterProtocol[_T]
     creator: _PlainCreatorProtocol[_T]
@@ -1431,6 +1484,7 @@ class _AssociationSingleItem(_AssociationCollection[_T]):
         assoc_proxy._set(self, values)
 
 
+# list 代理：读写转换元素 value_attr
 class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
     """Generic, converting, list-to-list proxy."""
 
@@ -1440,6 +1494,7 @@ class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
         self.setter(object_, value)
 
     @overload
+    # 索引访问返回 getter 转换值
     def __getitem__(self, index: int) -> _T: ...
 
     @overload
@@ -1454,6 +1509,7 @@ class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
             return [self._get(member) for member in self.col[index]]
 
     @overload
+    # 赋值经 setter 写回关联对象
     def __setitem__(self, index: int, value: _T) -> None: ...
 
     @overload
@@ -1523,6 +1579,7 @@ class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
             yield self._get(member)
         return
 
+    # 创建关联对象并 append
     def append(self, value: _T) -> None:
         col = self.col
         item = self._create(value)
@@ -1535,16 +1592,20 @@ class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
                 count += 1
         return count
 
+    # 批量 extend
     def extend(self, values: Iterable[_T]) -> None:
         for v in values:
             self.append(v)
 
+    # 指定位置 insert
     def insert(self, index: int, value: _T) -> None:
         self.col[index:index] = [self._create(value)]
 
+    # pop 并返回代理值
     def pop(self, index: int = -1) -> _T:
         return self.getter(self.col.pop(index))
 
+    # 按代理值 remove
     def remove(self, value: _T) -> None:
         for i, val in enumerate(self):
             if val == value:
@@ -1657,6 +1718,7 @@ class _AssociationList(_AssociationSingleItem[_T], MutableSequence[_T]):
         del func_name, func
 
 
+# dict 代理：键值经 creator/setter
 class _AssociationDict(_AssociationCollection[_VT], MutableMapping[_KT, _VT]):
     """Generic, converting, dict-to-dict proxy."""
 
@@ -1673,9 +1735,11 @@ class _AssociationDict(_AssociationCollection[_VT], MutableMapping[_KT, _VT]):
     def _set(self, object_: Any, key: _KT, value: _VT) -> None:
         return self.setter(object_, key, value)
 
+    # getter 转换值
     def __getitem__(self, key: _KT) -> _VT:
         return self._get(self.col[key])
 
+    # 存在则 setter，否则 creator
     def __setitem__(self, key: _KT, value: _VT) -> None:
         if key in self.col:
             self._set(self.col[key], key, value)
@@ -1811,6 +1875,7 @@ class _AssociationDict(_AssociationCollection[_VT], MutableMapping[_KT, _VT]):
         del func_name, func
 
 
+# set 代理：元素为 value_attr 视图
 class _AssociationSet(_AssociationSingleItem[_T], MutableSet[_T]):
     """Generic, converting, set-to-set proxy."""
 
@@ -1842,12 +1907,14 @@ class _AssociationSet(_AssociationSingleItem[_T], MutableSet[_T]):
             yield self._get(member)
         return
 
+    # creator 新元素并加入 col
     def add(self, __element: _T) -> None:
         if __element not in self:
             self.col.add(self._create(__element))
 
     # for discard and remove, choosing a more expensive check strategy rather
     # than call self.creator()
+    # 按代理值 discard
     def discard(self, __element: _T) -> None:
         for member in self.col:
             if self._get(member) == __element:
@@ -1867,6 +1934,7 @@ class _AssociationSet(_AssociationSingleItem[_T], MutableSet[_T]):
         member = self.col.pop()
         return self._get(member)
 
+    # 批量 update
     def update(self, *s: Iterable[_T]) -> None:
         for iterable in s:
             for value in iterable:

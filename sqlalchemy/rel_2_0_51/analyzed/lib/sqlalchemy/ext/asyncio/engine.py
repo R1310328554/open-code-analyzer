@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# asyncio 引擎与连接：greenlet_spawn 包装 sync Engine
+
 from __future__ import annotations
 
 import asyncio
@@ -67,6 +69,7 @@ _P = ParamSpec("_P")
 _T = TypeVar("_T", bound=Any)
 
 
+# 创建 AsyncEngine（须 asyncio 方言）
 def create_async_engine(url: Union[str, URL], **kw: Any) -> AsyncEngine:
     """Create a new async engine instance.
 
@@ -121,6 +124,7 @@ def create_async_engine(url: Union[str, URL], **kw: Any) -> AsyncEngine:
     return AsyncEngine(sync_engine)
 
 
+# 从配置 dict 创建 AsyncEngine
 def async_engine_from_config(
     configuration: Dict[str, Any], prefix: str = "sqlalchemy.", **kwargs: Any
 ) -> AsyncEngine:
@@ -146,6 +150,7 @@ def async_engine_from_config(
     return create_async_engine(url, **options)
 
 
+# 创建异步连接池
 def create_async_pool_from_url(url: Union[str, URL], **kwargs: Any) -> Pool:
     """Create a new async engine instance.
 
@@ -161,10 +166,12 @@ def create_async_pool_from_url(url: Union[str, URL], **kwargs: Any) -> Pool:
     return _create_pool_from_url(url, **kwargs)
 
 
+# 异步可连接基类：禁止直接挂 async 事件
 class AsyncConnectable:
     __slots__ = "_slots_dispatch", "__weakref__"
 
     @classmethod
+    # 提示在 sync_engine/sync_connection 上监听
     def _no_async_engine_events(cls) -> NoReturn:
         raise NotImplementedError(
             "asynchronous events are not implemented at this time.  Apply "
@@ -187,6 +194,7 @@ class AsyncConnectable:
     ],
 )
 # "Class has incompatible disjoint bases" - no idea
+# Connection 的 asyncio 代理
 class AsyncConnection(  # type: ignore[misc]
     ProxyComparable[Connection],
     StartableContext["AsyncConnection"],
@@ -220,6 +228,7 @@ class AsyncConnection(  # type: ignore[misc]
         "sync_connection",
     )
 
+    # 包装 sync Connection，ReversibleProxy 注册
     def __init__(
         self,
         async_engine: AsyncEngine,
@@ -255,6 +264,9 @@ class AsyncConnection(  # type: ignore[misc]
     """
 
     @classmethod
+    # 从 Connection 重建 AsyncConnection
+    # 从 Engine 重建 AsyncEngine
+    # 从 Transaction 重建
     def _regenerate_proxy_for_target(
         cls, target: Connection, **additional_kw: Any  # noqa: U100
     ) -> AsyncConnection:
@@ -262,6 +274,7 @@ class AsyncConnection(  # type: ignore[misc]
             AsyncEngine._retrieve_proxy_for_target(target.engine), target
         )
 
+    # 获取并 start sync 连接
     async def start(
         self, is_ctxmanager: bool = False  # noqa: U100
     ) -> AsyncConnection:
@@ -322,16 +335,19 @@ class AsyncConnection(  # type: ignore[misc]
         return self._proxied.info
 
     @util.ro_non_memoized_property
+    # 底层 sync Connection
     def _proxied(self) -> Connection:
         if not self.sync_connection:
             self._raise_for_not_started()
         return self.sync_connection
 
+    # 返回 AsyncTransaction 上下文
     def begin(self) -> AsyncTransaction:
         """Begin a transaction prior to autobegin occurring."""
         assert self._proxied
         return AsyncTransaction(self)
 
+    # 嵌套 savepoint 事务
     def begin_nested(self) -> AsyncTransaction:
         """Begin a nested transaction and return a transaction handle."""
         assert self._proxied
@@ -443,6 +459,8 @@ class AsyncConnection(  # type: ignore[misc]
         assert c2 is conn
         return self
 
+    # greenlet_spawn commit
+    # 提交 sync 事务
     async def commit(self) -> None:
         """Commit the transaction that is currently in progress.
 
@@ -457,6 +475,8 @@ class AsyncConnection(  # type: ignore[misc]
         """
         await greenlet_spawn(self._proxied.commit)
 
+    # greenlet_spawn rollback
+    # 回滚 sync 事务
     async def rollback(self) -> None:
         """Roll back the transaction that is currently in progress.
 
@@ -473,6 +493,8 @@ class AsyncConnection(  # type: ignore[misc]
         """
         await greenlet_spawn(self._proxied.rollback)
 
+    # 关闭 sync 连接
+    # 关闭/取消事务
     async def close(self) -> None:
         """Close this :class:`_asyncio.AsyncConnection`.
 
@@ -516,6 +538,7 @@ class AsyncConnection(  # type: ignore[misc]
         return await _ensure_sync_result(result, self.exec_driver_sql)
 
     @overload
+    # 服务端游标流式 AsyncResult
     def stream(
         self,
         statement: TypedReturnsRows[_T],
@@ -601,6 +624,7 @@ class AsyncConnection(  # type: ignore[misc]
             await asyncio.shield(task)
 
     @overload
+    # 执行 SQL 返回 Result/AsyncResult
     async def execute(
         self,
         statement: TypedReturnsRows[_T],
@@ -666,6 +690,7 @@ class AsyncConnection(  # type: ignore[misc]
         return await _ensure_sync_result(result, self.execute)
 
     @overload
+    # 执行并返回首列首行
     async def scalar(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -706,6 +731,7 @@ class AsyncConnection(  # type: ignore[misc]
         return result.scalar()
 
     @overload
+    # 返回 AsyncScalarResult
     async def scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -817,6 +843,7 @@ class AsyncConnection(  # type: ignore[misc]
         ) as result:
             yield result.scalars()
 
+    # 在 greenlet 中运行 sync 可调用
     async def run_sync(
         self,
         fn: Callable[Concatenate[Connection, _P], _T],
@@ -996,6 +1023,7 @@ class AsyncConnection(  # type: ignore[misc]
     attributes=["url", "pool", "dialect", "engine", "name", "driver", "echo"],
 )
 # "Class has incompatible disjoint bases" - no idea
+# Engine 的 asyncio 薄代理
 class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[misc]  # noqa:E501
     """An asyncio proxy for a :class:`_engine.Engine`.
 
@@ -1030,6 +1058,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
         :ref:`asyncio_events`
     """
 
+    # 校验 dialect.is_async
     def __init__(self, sync_engine: Engine):
         if not sync_engine.dialect.is_async:
             raise exc.InvalidRequestError(
@@ -1039,6 +1068,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
         self.sync_engine = self._assign_proxied(sync_engine)
 
     @util.ro_non_memoized_property
+    # 底层 sync Engine（事件目标）
     def _proxied(self) -> Engine:
         return self.sync_engine
 
@@ -1049,6 +1079,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
         return AsyncEngine(target)
 
     @contextlib.asynccontextmanager
+    # connect + begin 组合上下文
     async def begin(self) -> AsyncIterator[AsyncConnection]:
         """Return a context manager which when entered will deliver an
         :class:`_asyncio.AsyncConnection` with an
@@ -1069,6 +1100,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
             async with conn.begin():
                 yield conn
 
+    # 获取 AsyncConnection
     def connect(self) -> AsyncConnection:
         """Return an :class:`_asyncio.AsyncConnection` object.
 
@@ -1110,6 +1142,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
     ) -> AsyncEngine: ...
 
     @overload
+    # 返回带新 execution_options 的引擎
     def execution_options(self, **opt: Any) -> AsyncEngine: ...
 
     def execution_options(self, **opt: Any) -> AsyncEngine:
@@ -1124,6 +1157,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
 
         return AsyncEngine(self.sync_engine.execution_options(**opt))
 
+    # 释放连接池
     async def dispose(self, close: bool = True) -> None:
         """Dispose of the connection pool used by this
         :class:`_asyncio.AsyncEngine`.
@@ -1330,6 +1364,7 @@ class AsyncEngine(ProxyComparable[Engine], AsyncConnectable):  # type: ignore[mi
     # END PROXY METHODS AsyncEngine
 
 
+# Transaction 的 asyncio 代理
 class AsyncTransaction(
     ProxyComparable[Transaction], StartableContext["AsyncTransaction"]
 ):
@@ -1341,6 +1376,7 @@ class AsyncTransaction(
     connection: AsyncConnection
     nested: bool
 
+    # nested 时用 begin_nested
     def __init__(self, connection: AsyncConnection, nested: bool = False):
         self.connection = connection
         self.sync_transaction = None
@@ -1401,6 +1437,7 @@ class AsyncTransaction(
 
         await greenlet_spawn(self._proxied.commit)
 
+    # begin/begin_nested 并可选 __enter__
     async def start(self, is_ctxmanager: bool = False) -> AsyncTransaction:
         """Start this :class:`_asyncio.AsyncTransaction` object's context
         outside of using a Python ``with:`` block.
@@ -1423,6 +1460,7 @@ class AsyncTransaction(
 
 
 @overload
+# 内部：从 AsyncEngine/AsyncConnection 取 sync 对象
 def _get_sync_engine_or_connection(async_engine: AsyncEngine) -> Engine: ...
 
 
@@ -1447,6 +1485,7 @@ def _get_sync_engine_or_connection(
 
 
 @inspection._inspects(AsyncConnection)
+# inspect(AsyncConnection) 暂不支持
 def _no_insp_for_async_conn_yet(
     subject: AsyncConnection,  # noqa: U100
 ) -> NoReturn:
@@ -1459,6 +1498,7 @@ def _no_insp_for_async_conn_yet(
 
 
 @inspection._inspects(AsyncEngine)
+# inspect(AsyncEngine) 暂不支持
 def _no_insp_for_async_engine_xyet(
     subject: AsyncEngine,  # noqa: U100
 ) -> NoReturn:

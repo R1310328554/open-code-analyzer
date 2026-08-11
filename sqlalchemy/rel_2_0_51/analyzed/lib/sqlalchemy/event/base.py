@@ -16,6 +16,8 @@ instances of ``_Dispatch``.
 
 """
 
+# 事件 dispatch 基类：Events 与 _Dispatch 镜像
+
 from __future__ import annotations
 
 import typing
@@ -48,6 +50,7 @@ _registrars: MutableMapping[str, List[Type[_HasEventsDispatch[Any]]]] = (
 )
 
 
+# 判断 Events 子类方法名是否为事件名
 def _is_event_name(name: str) -> bool:
     # _sa_event prefix is special to support internal-only event names.
     # most event names are just plain method names that aren't
@@ -58,6 +61,7 @@ def _is_event_name(name: str) -> bool:
     ) or name.startswith("_sa_event")
 
 
+# pickle 反序列化时重建 _Dispatch
 class _UnpickleDispatch:
     """Serializable callable that re-generates an instance of
     :class:`_Dispatch` given a particular :class:`.Events` subclass.
@@ -74,14 +78,17 @@ class _UnpickleDispatch:
             raise AttributeError("No class with a 'dispatch' member present.")
 
 
+# dispatch 公共接口：join / __getattr__
 class _DispatchCommon(Generic[_ET]):
     __slots__ = ()
 
     _instance_cls: Optional[Type[_ET]]
 
+    # 合并两个 dispatch 的事件链
     def _join(self, other: _DispatchCommon[_ET]) -> _JoinedDispatcher[_ET]:
         raise NotImplementedError()
 
+    # 按需挂载 _EmptyListener
     def __getattr__(self, name: str) -> _InstanceLevelDispatch[_ET]:
         raise NotImplementedError()
 
@@ -90,6 +97,7 @@ class _DispatchCommon(Generic[_ET]):
         raise NotImplementedError()
 
 
+# Events 的 dispatch 镜像：类级与实例级监听器容器
 class _Dispatch(_DispatchCommon[_ET]):
     """Mirror the event listening definitions of an Events class with
     listener collections.
@@ -175,12 +183,17 @@ class _Dispatch(_DispatchCommon[_ET]):
             # to relevant event name.
             yield getattr(self, k)
 
+    # 委托 Events._listen
+    # 子类实现具体 listen 逻辑
+    # 调用 event_key.base_listen
     def _listen(self, event_key: _EventKey[_ET], **kw: Any) -> None:
         return self._events._listen(event_key, **kw)
 
+    # 为具体类创建实例 dispatch
     def _for_class(self, instance_cls: Type[_ET]) -> _Dispatch[_ET]:
         return self.__class__(self, instance_cls)
 
+    # 按实例类型获取 dispatch
     def _for_instance(self, instance: _ET) -> _Dispatch[_ET]:
         instance_cls = instance.__class__
         return self._for_class(instance_cls)
@@ -199,6 +212,7 @@ class _Dispatch(_DispatchCommon[_ET]):
     def __reduce__(self) -> Union[str, Tuple[Any, ...]]:
         return _UnpickleDispatch(), (self._instance_cls,)
 
+    # 从另一 dispatch 复制 propagate 监听器
     def _update(
         self, other: _Dispatch[_ET], only_propagate: bool = True
     ) -> None:
@@ -211,11 +225,13 @@ class _Dispatch(_DispatchCommon[_ET]):
                 ls, only_propagate=only_propagate
             )
 
+    # 清空所有事件监听器
     def _clear(self) -> None:
         for ls in self._event_descriptors:
             ls.for_modify(self).clear()
 
 
+# 从 _registrars 注销 Events 类
 def _remove_dispatcher(cls: Type[_HasEventsDispatch[_ET]]) -> None:
     for k in cls.dispatch._event_names:
         _registrars[k].remove(cls)
@@ -223,6 +239,7 @@ def _remove_dispatcher(cls: Type[_HasEventsDispatch[_ET]]) -> None:
             del _registrars[k]
 
 
+# Events 基类：子类化时自动生成 _Dispatch
 class _HasEventsDispatch(Generic[_ET]):
     _dispatch_target: Optional[Type[_ET]]
     """class which will receive the .dispatch collection"""
@@ -238,6 +255,7 @@ class _HasEventsDispatch(Generic[_ET]):
 
         def __getattr__(self, name: str) -> _InstanceLevelDispatch[_ET]: ...
 
+    # 拦截子类创建并 _create_dispatcher_class
     def __init_subclass__(cls) -> None:
         """Intercept new Event subclasses and create associated _Dispatch
         classes."""
@@ -245,6 +263,8 @@ class _HasEventsDispatch(Generic[_ET]):
         cls._create_dispatcher_class(cls.__name__, cls.__bases__, cls.__dict__)
 
     @classmethod
+    # 判断 target 是否接受本 Events 类
+    # 检查 target.dispatch 类型与 Joined 链
     def _accept_with(
         cls, target: Union[_ET, Type[_ET]], identifier: str
     ) -> Optional[Union[_ET, Type[_ET]]]:
@@ -263,6 +283,7 @@ class _HasEventsDispatch(Generic[_ET]):
         raise NotImplementedError()
 
     @staticmethod
+    # 绑定 dispatch 与 Events 双向引用
     def _set_dispatch(
         klass: Type[_HasEventsDispatch[_ET]],
         dispatch_cls: Type[_Dispatch[_ET]],
@@ -277,6 +298,7 @@ class _HasEventsDispatch(Generic[_ET]):
         return klass.dispatch
 
     @classmethod
+    # 动态生成 Dispatch 子类并注册事件名
     def _create_dispatcher_class(
         cls, classname: str, bases: Tuple[type, ...], dict_: Mapping[str, Any]
     ) -> None:
@@ -335,6 +357,7 @@ class _HasEventsDispatch(Generic[_ET]):
         globals()[klass.__name__] = klass
 
 
+# 连接 local 与 parent 两个 dispatch
 class _JoinedDispatcher(_DispatchCommon[_ET]):
     """Represent a connection between two _Dispatch objects."""
 
@@ -354,6 +377,7 @@ class _JoinedDispatcher(_DispatchCommon[_ET]):
     def __reduce__(self) -> Any:
         return (self.__class__, (self.local, self.parent))
 
+    # 按需创建 _JoinedListener
     def __getattr__(self, name: str) -> _JoinedListener[_ET]:
         # Assign _JoinedListeners as attributes on demand
         # to reduce startup time for new dispatch objects.
@@ -370,6 +394,7 @@ class _JoinedDispatcher(_DispatchCommon[_ET]):
         return self.parent._events
 
 
+# 公开 Events 基类：target.dispatch 匹配时接受监听
 class Events(_HasEventsDispatch[_ET]):
     """Define event listening functions for a particular target type."""
 
@@ -417,14 +442,17 @@ class Events(_HasEventsDispatch[_ET]):
         )
 
     @classmethod
+    # 类级 remove 入口
     def _remove(cls, event_key: _EventKey[_ET]) -> None:
         event_key.remove()
 
     @classmethod
+    # 清空 cls.dispatch 所有监听器
     def _clear(cls) -> None:
         cls.dispatch._clear()
 
 
+# 描述符：类访问返回 _Dispatch，实例访问返回 per-instance dispatch
 class dispatcher(Generic[_ET]):
     """Descriptor used by target classes to
     deliver the _Dispatch class at the class level
@@ -445,6 +473,8 @@ class dispatcher(Generic[_ET]):
     @overload
     def __get__(self, obj: Any, cls: Type[Any]) -> _DispatchCommon[_ET]: ...
 
+    # None -> 类 dispatch；实例 -> _for_instance
+    # 实例 dispatch 存 _slots_dispatch
     def __get__(self, obj: Any, cls: Type[Any]) -> Any:
         if obj is None:
             return self.dispatch
@@ -460,6 +490,7 @@ class dispatcher(Generic[_ET]):
         return disp
 
 
+# __slots__ 目标用 _slots_dispatch 缓存
 class slots_dispatcher(dispatcher[_ET]):
     def __get__(self, obj: Any, cls: Type[Any]) -> Any:
         if obj is None:

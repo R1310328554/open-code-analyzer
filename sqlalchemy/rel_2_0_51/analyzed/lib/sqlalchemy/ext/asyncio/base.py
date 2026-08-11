@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# asyncio 代理基础设施：可逆 weakref 与可启动上下文
+
 from __future__ import annotations
 
 import abc
@@ -37,6 +39,7 @@ _T_co = TypeVar("_T_co", bound=Any, covariant=True)
 _PT = TypeVar("_PT", bound=Any)
 
 
+# 同步对象与异步代理双向 weakref 映射
 class ReversibleProxy(Generic[_PT]):
     _proxy_objects: ClassVar[
         Dict[weakref.ref[Any], weakref.ref[ReversibleProxy[Any]]]
@@ -49,6 +52,7 @@ class ReversibleProxy(Generic[_PT]):
     @overload
     def _assign_proxied(self, target: None) -> None: ...
 
+    # 注册 target<->proxy
     def _assign_proxied(self, target: Optional[_PT]) -> Optional[_PT]:
         if target is not None:
             target_ref: weakref.ref[_PT] = weakref.ref(
@@ -63,6 +67,7 @@ class ReversibleProxy(Generic[_PT]):
         return target
 
     @classmethod
+    # target GC 时清理 _proxy_objects
     def _target_gced(
         cls,
         ref: weakref.ref[_PT],
@@ -71,6 +76,7 @@ class ReversibleProxy(Generic[_PT]):
         cls._proxy_objects.pop(ref, None)
 
     @classmethod
+    # 子类实现：从 sync 对象重建代理
     def _regenerate_proxy_for_target(
         cls, target: _PT, **additional_kw: Any
     ) -> Self:
@@ -78,6 +84,7 @@ class ReversibleProxy(Generic[_PT]):
 
     @overload
     @classmethod
+    # 查找或 regenerate 代理
     def _retrieve_proxy_for_target(
         cls, target: _PT, regenerate: Literal[True] = ..., **additional_kw: Any
     ) -> Self: ...
@@ -107,10 +114,13 @@ class ReversibleProxy(Generic[_PT]):
             return None
 
 
+# 可 await 也可 async with 的上下文
 class StartableContext(Awaitable[_T_co], abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
+    # 显式启动（非 with 路径）
+    # anext 首值；非 ctx 则 aclose
     async def start(self, is_ctxmanager: bool = False) -> _T_co:
         raise NotImplementedError()
 
@@ -121,11 +131,13 @@ class StartableContext(Awaitable[_T_co], abc.ABC):
         return await self.start(is_ctxmanager=True)
 
     @abc.abstractmethod
+    # 生成器 athrow/StopAsyncIteration 处理
     async def __aexit__(
         self, type_: Any, value: Any, traceback: Any
     ) -> Optional[bool]:
         pass
 
+    # 未 start 时访问 _proxied
     def _raise_for_not_started(self) -> NoReturn:
         raise async_exc.AsyncContextNotStarted(
             "%s context has not been started and object has not been awaited."
@@ -133,6 +145,7 @@ class StartableContext(Awaitable[_T_co], abc.ABC):
         )
 
 
+# @asyncstartablecontext 包装异步生成器
 class GeneratorStartableContext(StartableContext[_T_co]):
     __slots__ = ("gen",)
 
@@ -214,6 +227,7 @@ class GeneratorStartableContext(StartableContext[_T_co]):
             raise RuntimeError("generator didn't stop after athrow()")
 
 
+# 装饰器：支持 await fn() 与 async with fn()
 def asyncstartablecontext(
     func: Callable[..., AsyncIterator[_T_co]],
 ) -> Callable[..., GeneratorStartableContext[_T_co]]:
@@ -258,16 +272,19 @@ def asyncstartablecontext(
     return helper
 
 
+# 代理相等性基于 _proxied
 class ProxyComparable(ReversibleProxy[_PT]):
     __slots__ = ()
 
     @util.ro_non_memoized_property
+    # 子类提供底层 sync 对象
     def _proxied(self) -> _PT:
         raise NotImplementedError()
 
     def __hash__(self) -> int:
         return id(self)
 
+    # 同类且 _proxied 相等
     def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, self.__class__)
