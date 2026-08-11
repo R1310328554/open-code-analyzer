@@ -48,6 +48,7 @@ from ...utils import TransformersKwargs, auto_docstring, is_peft_available
 from .configuration_data2vec_audio import Data2VecAudioConfig
 
 
+# Data2VecAudioConvLayer：1D 卷积特征提取层，含 LayerNorm 与激活
 class Data2VecAudioConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -75,6 +76,7 @@ class Data2VecAudioConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Data2VecAudioPadLayer：偶数卷积核时裁剪末尾 padding
 class Data2VecAudioPadLayer(nn.Module):
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
@@ -86,6 +88,7 @@ class Data2VecAudioPadLayer(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioPositionalConvLayer：分组卷积位置编码层
 class Data2VecAudioPositionalConvLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -113,6 +116,7 @@ class Data2VecAudioPositionalConvLayer(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioPositionalConvEmbedding：堆叠多层卷积位置嵌入
 class Data2VecAudioPositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -128,6 +132,7 @@ class Data2VecAudioPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioFeatureEncoder：原始波形经多层 Conv1d 下采样为帧特征
 class Data2VecAudioFeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
@@ -157,6 +162,7 @@ class Data2VecAudioFeatureEncoder(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioFeatureProjection：帧特征线性投影至 hidden_size
 class Data2VecAudioFeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -172,6 +178,7 @@ class Data2VecAudioFeatureProjection(nn.Module):
         return hidden_states, norm_hidden_states
 
 
+# eager_attention_forward：标准缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -200,6 +207,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Data2VecAudioAttention：双向自注意力，支持 Flash/SDPA 后端
 class Data2VecAudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -285,6 +293,7 @@ class Data2VecAudioAttention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# Data2VecAudioFeedForward：两层 MLP 前馈，intermediate 扩展维
 class Data2VecAudioFeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -309,6 +318,7 @@ class Data2VecAudioFeedForward(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioEncoderLayer：Pre-LN 自注意力 + FFN 残差块
 class Data2VecAudioEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -345,6 +355,7 @@ class Data2VecAudioEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# Data2VecAudioEncoder：堆叠 Transformer 层，可选 adapter 微调
 class Data2VecAudioEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -417,6 +428,7 @@ class Data2VecAudioEncoder(nn.Module):
         )
 
 
+# Data2VecAudioAdapterLayer：瓶颈 Adapter，用于参数高效微调
 class Data2VecAudioAdapterLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -435,6 +447,7 @@ class Data2VecAudioAdapterLayer(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioAdapter：多层 Adapter 插入编码器
 class Data2VecAudioAdapter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -467,6 +480,7 @@ class Data2VecAudioAdapter(nn.Module):
 
 
 @auto_docstring
+# Data2VecAudioPreTrainedModel：权重初始化与梯度检查点基类
 class Data2VecAudioPreTrainedModel(PreTrainedModel):
     config: Data2VecAudioConfig
     base_model_prefix = "data2vec_audio"
@@ -536,6 +550,7 @@ class Data2VecAudioPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# _compute_mask_indices：训练时随机掩码帧索引，用于自监督目标
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -659,6 +674,7 @@ Data2VecAudioBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
 @auto_docstring
+# Data2VecAudioModel：特征编码器 + 投影 + Transformer 编码器骨干
 class Data2VecAudioModel(Data2VecAudioPreTrainedModel):
     def __init__(self, config: Data2VecAudioConfig):
         super().__init__(config)
@@ -798,6 +814,7 @@ _HIDDEN_STATES_START_POSITION = 2
     Data2VecAudio Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).
     """
 )
+# Data2VecAudioForCTC：CTC 连接时序分类头，用于 ASR
 class Data2VecAudioForCTC(Data2VecAudioPreTrainedModel):
     def __init__(self, config):
         r"""
@@ -912,6 +929,7 @@ class Data2VecAudioForCTC(Data2VecAudioPreTrainedModel):
     SUPERB Keyword Spotting.
     """
 )
+# Data2VecAudioForSequenceClassification：序列级分类，池化末帧隐状态
 class Data2VecAudioForSequenceClassification(Data2VecAudioPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1017,6 +1035,7 @@ class Data2VecAudioForSequenceClassification(Data2VecAudioPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecAudioForAudioFrameClassification：逐帧分类（如音素/事件检测）
 class Data2VecAudioForAudioFrameClassification(Data2VecAudioPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1111,6 +1130,7 @@ class Data2VecAudioForAudioFrameClassification(Data2VecAudioPreTrainedModel):
         )
 
 
+# AMSoftmaxLoss：加性间隔 Softmax，用于 XVector 说话人识别
 class AMSoftmaxLoss(nn.Module):
     def __init__(self, input_dim, num_labels, scale=30.0, margin=0.4):
         super().__init__()
@@ -1134,6 +1154,7 @@ class AMSoftmaxLoss(nn.Module):
         return loss
 
 
+# TDNNLayer：时延神经网络层，膨胀卷积捕获上下文
 class TDNNLayer(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -1171,6 +1192,7 @@ class TDNNLayer(nn.Module):
     Data2VecAudio Model with an XVector feature extraction head on top for tasks like Speaker Verification.
     """
 )
+# Data2VecAudioForXVector：TDNN + 统计池化 + AMSoftmax 说话人嵌入
 class Data2VecAudioForXVector(Data2VecAudioPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

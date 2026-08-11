@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/deberta-base")
 @strict
+# DebertaConfig：relative_attention、pos_att_type 与 legacy MLM 头开关
 class DebertaConfig(PreTrainedConfig):
     r"""
     relative_attention (`bool`, *optional*, defaults to `False`):
@@ -92,3 +93,5 @@ class DebertaConfig(PreTrainedConfig):
 
 
 __all__ = ["DebertaConfig"]
+# 模块 src/transformers/models/deberta/configuration_deberta.py：Transformers 5.15.0 wave18a 中文文档注释。
+

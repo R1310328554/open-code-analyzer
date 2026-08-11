@@ -42,10 +42,12 @@ from ..mixtral.modeling_mixtral import load_balancing_loss_func
 from .configuration_dbrx import DbrxConfig
 
 
+# DbrxRotaryEmbedding：继承 Llama 动态 RoPE
 class DbrxRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# DbrxAttention：模块化 GQA 注意力，可复用于不同架构
 class DbrxAttention(nn.Module):
     """Modular DBRX attention component that can be reused across different model architectures."""
 
@@ -131,6 +133,7 @@ class DbrxAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DbrxExpertGLU：单专家 GLU 前馈单元
 class DbrxExpertGLU(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -156,6 +159,7 @@ class DbrxExpertGLU(nn.Module):
         return down_proj
 
 
+# DbrxExperts：MoE 专家参数矩阵
 class DbrxExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -195,6 +199,7 @@ class DbrxExperts(nn.Module):
         return next_states
 
 
+# DbrxRouter：token 级专家路由门控
 class DbrxRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -212,6 +217,7 @@ class DbrxRouter(nn.Module):
         return router_logits
 
 
+# DbrxFFN：Router + Experts 组合的 MoE 层
 class DbrxFFN(nn.Module):
     """Modular DBRX MLP/FFN component with MoE support."""
 
@@ -239,6 +245,7 @@ class DbrxFFN(nn.Module):
         return output
 
 
+# DbrxNormAttentionNorm：Pre-Norm 注意力 + Pre-Norm MoE FFN
 class DbrxNormAttentionNorm(nn.Module):
     def __init__(self, config: DbrxConfig, layer_idx: int | None = None):
         super().__init__()
@@ -279,6 +286,7 @@ class DbrxNormAttentionNorm(nn.Module):
         return residual_states, hidden_states
 
 
+# DbrxBlock：单层 DBRX 解码块
 class DbrxBlock(GradientCheckpointingLayer):
     def __init__(self, config: DbrxConfig, layer_idx: int):
         super().__init__()
@@ -313,6 +321,7 @@ class DbrxBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DbrxPreTrainedModel：MoE 模型预训练基类
 class DbrxPreTrainedModel(PreTrainedModel):
     config: DbrxConfig
     base_model_prefix = "transformer"
@@ -340,6 +349,7 @@ class DbrxPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DbrxModel：DBRX 解码器骨干
 class DbrxModel(DbrxPreTrainedModel):
     """Transformer decoder consisting of *config.num_hidden_layers*. Each layer is a [`DbrxBlock`] layer.
 
@@ -428,6 +438,7 @@ class DbrxModel(DbrxPreTrainedModel):
         )
 
 
+# DbrxForCausalLM：因果语言建模与 generate 接口
 class DbrxForCausalLM(DbrxPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

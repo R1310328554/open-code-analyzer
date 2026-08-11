@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/data2vec-vision-base")
 @strict
+# Data2VecVisionConfig：ViT 风格视觉骨干，含 PPM 池化尺度与 auxiliary head 超参
 class Data2VecVisionConfig(PreTrainedConfig):
     r"""
     use_mask_token (`bool`, *optional*, defaults to `False`):

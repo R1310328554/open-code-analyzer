@@ -25,6 +25,7 @@ from ...utils import auto_docstring
     custom_intro="This config is used to instantiate attention layers.",
     checkpoint="transformers-community/dbrx-instruct",
 )
+# DbrxAttentionConfig：GQA 注意力 dropout、QKV clip 与 kv 头数
 class DbrxAttentionConfig(PreTrainedConfig):
     r"""
     attn_pdrop (`float`, *optional*, defaults to 0.0):
@@ -47,6 +48,7 @@ class DbrxAttentionConfig(PreTrainedConfig):
     custom_intro="This config is used to instantiate feedforward layers.",
     checkpoint="transformers-community/dbrx-instruct",
 )
+# DbrxFFNConfig：MoE 专家数、top-k 路由与负载均衡 loss 权重
 class DbrxFFNConfig(PreTrainedConfig):
     r"""
     ffn_act_fn (`dict`, *optional*, defaults to `None`):
@@ -78,6 +80,7 @@ class DbrxFFNConfig(PreTrainedConfig):
     moe_loss_weight: float = 0.01
     moe_normalize_expert_weights: float | None = 1.0
 
+# __post_init__：默认 silu 激活并校验未知 kwargs
     def __post_init__(self, **kwargs):
         if self.ffn_act_fn is None:
             self.ffn_act_fn = {"name": "silu"}
@@ -101,6 +104,7 @@ class DbrxFFNConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="transformers-community/dbrx-instruct")
 @strict
+# DbrxConfig：顶层 DBRX 配置，n_layers/d_model/n_heads 与 RoPE 参数
 class DbrxConfig(PreTrainedConfig):
     r"""
     max_seq_len (`int`, *optional*, defaults to 2048):

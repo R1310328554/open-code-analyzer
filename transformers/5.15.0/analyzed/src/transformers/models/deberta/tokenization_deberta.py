@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# DebertaTokenizer：vocab.json + merges.txt BPE，支持 add_prefix_space
 class DebertaTokenizer(TokenizersBackend):
     """
     Construct a "fast" DeBERTa tokenizer (backed by HuggingFace's *tokenizers* library). Based on byte-level
@@ -190,3 +191,5 @@ class DebertaTokenizer(TokenizersBackend):
 
 
 __all__ = ["DebertaTokenizer"]
+# 模块 src/transformers/models/deberta/tokenization_deberta.py：Transformers 5.15.0 wave18a 中文文档注释。
+

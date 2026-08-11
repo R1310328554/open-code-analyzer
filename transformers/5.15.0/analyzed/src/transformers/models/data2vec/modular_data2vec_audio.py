@@ -39,6 +39,7 @@ from ..wav2vec2.modeling_wav2vec2 import (
 from .configuration_data2vec_audio import Data2VecAudioConfig
 
 
+# Data2VecAudioConvLayer：自定义 Conv1d 特征层（modular 源文件）
 class Data2VecAudioConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -66,10 +67,12 @@ class Data2VecAudioConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Data2VecAudioPadLayer：继承 Wav2Vec2 同长 padding 裁剪
 class Data2VecAudioPadLayer(Wav2Vec2SamePadLayer):
     pass
 
 
+# Data2VecAudioPositionalConvLayer：分组卷积位置编码
 class Data2VecAudioPositionalConvLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -97,6 +100,7 @@ class Data2VecAudioPositionalConvLayer(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioPositionalConvEmbedding：多层卷积位置嵌入
 class Data2VecAudioPositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -112,6 +116,7 @@ class Data2VecAudioPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# Data2VecAudioFeatureEncoder：复用 Wav2Vec2 卷积前端
 class Data2VecAudioFeatureEncoder(Wav2Vec2FeatureEncoder):
     def __init__(self, config):
         nn.Module.__init__(self)
@@ -122,18 +127,22 @@ class Data2VecAudioFeatureEncoder(Wav2Vec2FeatureEncoder):
         self._requires_grad = True
 
 
+# Data2VecAudioFeatureProjection：帧特征线性投影
 class Data2VecAudioFeatureProjection(Wav2Vec2FeatureProjection):
     pass
 
 
+# Data2VecAudioEncoder：复用 Wav2Vec2 Transformer 编码器
 class Data2VecAudioEncoder(Wav2Vec2Encoder):
     pass
 
 
+# Data2VecAudioAdapter：参数高效 Adapter 模块
 class Data2VecAudioAdapter(Wav2Vec2Adapter):
     pass
 
 
+# Data2VecAudioPreTrainedModel：多继承预训练基类
 class Data2VecAudioPreTrainedModel(PreTrainedModel, Wav2Vec2PreTrainedModel):
     config: Data2VecAudioConfig
     base_model_prefix = "data2vec_audio"
@@ -174,6 +183,7 @@ class Data2VecAudioPreTrainedModel(PreTrainedModel, Wav2Vec2PreTrainedModel):
 Data2VecAudioBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# Data2VecAudioModel：骨干模型，编码器输出帧级表征
 class Data2VecAudioModel(Data2VecAudioPreTrainedModel, Wav2Vec2Model):
     def __init__(self, config: Data2VecAudioConfig):
         Data2VecAudioPreTrainedModel.__init__(self, config)
@@ -203,6 +213,7 @@ class Data2VecAudioModel(Data2VecAudioPreTrainedModel, Wav2Vec2Model):
         return super().forward(**super_kwargs)
 
 
+# Data2VecAudioForCTC：CTC 语音识别头
 class Data2VecAudioForCTC(Data2VecAudioPreTrainedModel, Wav2Vec2ForCTC):
     def __init__(self, config):
         r"""
@@ -241,14 +252,17 @@ class Data2VecAudioForCTC(Data2VecAudioPreTrainedModel, Wav2Vec2ForCTC):
         return super().forward(**super_kwargs)
 
 
+# Data2VecAudioForSequenceClassification：音频序列分类
 class Data2VecAudioForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 
 
+# Data2VecAudioForAudioFrameClassification：逐帧音频分类
 class Data2VecAudioForAudioFrameClassification(Wav2Vec2ForAudioFrameClassification):
     pass
 
 
+# Data2VecAudioForXVector：说话人 XVector 嵌入
 class Data2VecAudioForXVector(Wav2Vec2ForXVector):
     pass
 

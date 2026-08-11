@@ -42,6 +42,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_dbrx import DbrxConfig
 
 
+# DbrxRotaryEmbedding：动态 RoPE，支持 llama/rope 类型
 class DbrxRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DbrxConfig, device=None):
@@ -99,6 +100,7 @@ class DbrxRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 半维旋转变换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -107,6 +109,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 cos/sin 旋转嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -132,6 +135,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -144,6 +148,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 路径
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -169,6 +174,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DbrxAttention：GQA 因果自注意力，可选 QKV clip
 class DbrxAttention(nn.Module):
     """Modular DBRX attention component that can be reused across different model architectures."""
 
@@ -254,6 +260,7 @@ class DbrxAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DbrxExpertGLU：单专家 SwiGLU 前馈（w1/w2/v1 三线性）
 class DbrxExpertGLU(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -279,6 +286,7 @@ class DbrxExpertGLU(nn.Module):
         return down_proj
 
 
+# DbrxExperts：并行 MoE 专家权重，按 token 路由计算
 class DbrxExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -318,6 +326,7 @@ class DbrxExperts(nn.Module):
         return next_states
 
 
+# DbrxRouter：线性门控路由，top-k 选专家
 class DbrxRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -335,6 +344,7 @@ class DbrxRouter(nn.Module):
         return router_logits
 
 
+# DbrxFFN：MoE 前馈，router + experts 组合
 class DbrxFFN(nn.Module):
     """Modular DBRX MLP/FFN component with MoE support."""
 
@@ -362,6 +372,7 @@ class DbrxFFN(nn.Module):
         return output
 
 
+# DbrxNormAttentionNorm：Norm-Attn-Norm-FFN 块（DBRX 特有顺序）
 class DbrxNormAttentionNorm(nn.Module):
     def __init__(self, config: DbrxConfig, layer_idx: int | None = None):
         super().__init__()
@@ -402,6 +413,7 @@ class DbrxNormAttentionNorm(nn.Module):
         return residual_states, hidden_states
 
 
+# DbrxBlock：单层 DBRX 解码块，含梯度检查点
 class DbrxBlock(GradientCheckpointingLayer):
     def __init__(self, config: DbrxConfig, layer_idx: int):
         super().__init__()
@@ -436,6 +448,7 @@ class DbrxBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DbrxPreTrainedModel：支持 Flash/SDPA 与 MoE 初始化
 class DbrxPreTrainedModel(PreTrainedModel):
     config: DbrxConfig
     base_model_prefix = "transformer"
@@ -463,6 +476,7 @@ class DbrxPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DbrxModel：词嵌入 + 堆叠 DbrxBlock + 最终 RMSNorm
 class DbrxModel(DbrxPreTrainedModel):
     """Transformer decoder consisting of *config.num_hidden_layers*. Each layer is a [`DbrxBlock`] layer.
 
@@ -551,6 +565,7 @@ class DbrxModel(DbrxPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助 loss
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -633,6 +648,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# DbrxForCausalLM：因果 LM 头，训练时叠加 router aux loss
 class DbrxForCausalLM(DbrxPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

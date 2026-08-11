@@ -35,6 +35,7 @@ from .configuration_deberta import DebertaConfig
 logger = logging.get_logger(__name__)
 
 
+# DebertaLayerNorm：epsilon 在 sqrt 内的 LayerNorm 变体
 class DebertaLayerNorm(nn.Module):
     """LayerNorm module (epsilon inside the square root)."""
 
@@ -55,6 +56,7 @@ class DebertaLayerNorm(nn.Module):
         return y
 
 
+# DebertaSelfOutput：注意力输出 dense + Dropout
 class DebertaSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -70,6 +72,7 @@ class DebertaSelfOutput(nn.Module):
 
 
 @torch.jit.script
+# build_relative_position：构造 content-to-position 相对位置索引
 def build_relative_position(query_layer, key_layer):
     """
     Build relative position according to the query and key
@@ -99,16 +102,19 @@ def build_relative_position(query_layer, key_layer):
 
 
 @torch.jit.script
+# c2p_dynamic_expand：content-to-position 偏置动态扩展
 def c2p_dynamic_expand(c2p_pos, query_layer, relative_pos):
     return c2p_pos.expand([query_layer.size(0), query_layer.size(1), query_layer.size(2), relative_pos.size(-1)])
 
 
 @torch.jit.script
+# p2c_dynamic_expand：position-to-content 偏置动态扩展
 def p2c_dynamic_expand(c2p_pos, query_layer, key_layer):
     return c2p_pos.expand([query_layer.size(0), query_layer.size(1), key_layer.size(-2), key_layer.size(-2)])
 
 
 @torch.jit.script
+# pos_dynamic_expand：位置索引广播至注意力分数形状
 def pos_dynamic_expand(pos_index, p2c_att, key_layer):
     return pos_index.expand(p2c_att.size()[:2] + (pos_index.size(-2), key_layer.size(-2)))
 
@@ -117,11 +123,13 @@ def pos_dynamic_expand(pos_index, p2c_att, key_layer):
 # which are not supported by torch.jit.trace.
 # Full credits to @Szustarol
 @torch.jit.script
+# scaled_size_sqrt：按 query/key 长度比缩放注意力尺度
 def scaled_size_sqrt(query_layer: torch.Tensor, scale_factor: int):
     return torch.sqrt(torch.tensor(query_layer.size(-1), dtype=torch.float) * scale_factor)
 
 
 @torch.jit.script
+# build_rpos：构建相对位置 one-hot 索引张量
 def build_rpos(query_layer: torch.Tensor, key_layer: torch.Tensor, relative_pos):
     if query_layer.size(-2) != key_layer.size(-2):
         return build_relative_position(query_layer, key_layer)
@@ -130,11 +138,13 @@ def build_rpos(query_layer: torch.Tensor, key_layer: torch.Tensor, relative_pos)
 
 
 @torch.jit.script
+# compute_attention_span：计算有效相对注意力跨度
 def compute_attention_span(query_layer: torch.Tensor, key_layer: torch.Tensor, max_relative_positions: int):
     return torch.tensor(min(max(query_layer.size(-2), key_layer.size(-2)), max_relative_positions))
 
 
 @torch.jit.script
+# uneven_size_corrected：Q/K 长度不等时的 p2c 注意力修正
 def uneven_size_corrected(p2c_att, query_layer: torch.Tensor, key_layer: torch.Tensor, relative_pos):
     if query_layer.size(-2) != key_layer.size(-2):
         pos_index = relative_pos[:, :, :, 0].unsqueeze(-1)
@@ -146,6 +156,7 @@ def uneven_size_corrected(p2c_att, query_layer: torch.Tensor, key_layer: torch.T
 ########################################################################################################################
 
 
+# DisentangledSelfAttention：解耦 content 与 position 注意力分数
 class DisentangledSelfAttention(nn.Module):
     """
     Disentangled self-attention module
@@ -344,6 +355,7 @@ class DisentangledSelfAttention(nn.Module):
         return score
 
 
+# DebertaEmbeddings：词嵌入 + 可选绝对位置嵌入
 class DebertaEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -423,6 +435,7 @@ class DebertaEmbeddings(nn.Module):
         return embeddings
 
 
+# DebertaAttention：解耦自注意力 + 输出投影
 class DebertaAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -458,6 +471,7 @@ class DebertaAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Deberta
+# DebertaIntermediate：FFN 扩展层
 class DebertaIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -473,6 +487,7 @@ class DebertaIntermediate(nn.Module):
         return hidden_states
 
 
+# DebertaOutput：FFN 投影 + LayerNorm 残差
 class DebertaOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -488,6 +503,7 @@ class DebertaOutput(nn.Module):
         return hidden_states
 
 
+# DebertaLayer：Pre-LN 注意力 + FFN 双残差
 class DebertaLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -521,6 +537,7 @@ class DebertaLayer(GradientCheckpointingLayer):
             return (layer_output, None)
 
 
+# DebertaEncoder：堆叠 DebertaLayer，支持 checkpoint 与相对位置
 class DebertaEncoder(nn.Module):
     """Modified BertEncoder with relative position bias support"""
 
@@ -604,6 +621,7 @@ class DebertaEncoder(nn.Module):
 
 
 @auto_docstring
+# DebertaPreTrainedModel：DeBERTa 权重初始化基类
 class DebertaPreTrainedModel(PreTrainedModel):
     config: DebertaConfig
     base_model_prefix = "deberta"
@@ -624,6 +642,7 @@ class DebertaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DebertaModel：嵌入 + 编码器，输出 sequence 隐状态
 class DebertaModel(DebertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -724,6 +743,7 @@ class DebertaModel(DebertaPreTrainedModel):
         )
 
 
+# LegacyDebertaPredictionHeadTransform：旧版 MLM 头变换层
 class LegacyDebertaPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -743,6 +763,7 @@ class LegacyDebertaPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# LegacyDebertaLMPredictionHead：旧版 MLM 预测头
 class LegacyDebertaLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -762,6 +783,7 @@ class LegacyDebertaLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->LegacyDeberta
+# LegacyDebertaOnlyMLMHead：legacy 模式 MLM 头封装
 class LegacyDebertaOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -772,6 +794,7 @@ class LegacyDebertaOnlyMLMHead(nn.Module):
         return prediction_scores
 
 
+# DebertaLMPredictionHead：Enhanced Mask Decoder MLM 头
 class DebertaLMPredictionHead(nn.Module):
     """https://github.com/microsoft/DeBERTa/blob/master/DeBERTa/deberta/bert.py#L270"""
 
@@ -799,6 +822,7 @@ class DebertaLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# DebertaOnlyMLMHead：标准 MLM 头（非 legacy）
 class DebertaOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -811,6 +835,7 @@ class DebertaOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# DebertaForMaskedLM：掩码语言建模
 class DebertaForMaskedLM(DebertaPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -903,6 +928,7 @@ class DebertaForMaskedLM(DebertaPreTrainedModel):
         )
 
 
+# ContextPooler：Context Pooling 序列表示（分类用）
 class ContextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -931,6 +957,7 @@ class ContextPooler(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# DebertaForSequenceClassification：序列分类，ContextPooler 输出
 class DebertaForSequenceClassification(DebertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1039,6 +1066,7 @@ class DebertaForSequenceClassification(DebertaPreTrainedModel):
 
 
 @auto_docstring
+# DebertaForTokenClassification：逐 token 分类
 class DebertaForTokenClassification(DebertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1102,6 +1130,7 @@ class DebertaForTokenClassification(DebertaPreTrainedModel):
 
 
 @auto_docstring
+# DebertaForQuestionAnswering：抽取式 QA start/end logits
 class DebertaForQuestionAnswering(DebertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

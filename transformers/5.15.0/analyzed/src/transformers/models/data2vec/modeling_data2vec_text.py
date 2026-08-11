@@ -52,6 +52,7 @@ from .configuration_data2vec_text import Data2VecTextConfig
 logger = logging.get_logger(__name__)
 
 
+# Data2VecTextEmbeddings：词/位置/segment 嵌入求和 + LayerNorm
 class Data2VecTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -154,6 +155,7 @@ class Data2VecTextEmbeddings(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# eager_attention_forward：缩放点积注意力 eager 路径
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -182,6 +184,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Data2VecTextSelfAttention：多头自注意力，支持 KV 缓存
 class Data2VecTextSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -249,6 +252,7 @@ class Data2VecTextSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Data2VecTextCrossAttention：交叉注意力，用于 encoder-decoder
 class Data2VecTextCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -325,6 +329,7 @@ class Data2VecTextCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Data2VecTextSelfOutput：注意力输出线性 + Dropout
 class Data2VecTextSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -339,6 +344,7 @@ class Data2VecTextSelfOutput(nn.Module):
         return hidden_states
 
 
+# Data2VecTextAttention：自注意力 + 输出投影封装
 class Data2VecTextAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -368,6 +374,7 @@ class Data2VecTextAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# Data2VecTextIntermediate：FFN 扩展层 GELU 激活
 class Data2VecTextIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -383,6 +390,7 @@ class Data2VecTextIntermediate(nn.Module):
         return hidden_states
 
 
+# Data2VecTextOutput：FFN 投影回 hidden_size
 class Data2VecTextOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -397,6 +405,7 @@ class Data2VecTextOutput(nn.Module):
         return hidden_states
 
 
+# Data2VecTextLayer：Pre-LN 自注意力 + FFN 双残差
 class Data2VecTextLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -463,6 +472,7 @@ class Data2VecTextLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Data2VecTextPreTrainedModel：预训练基类，支持 Flash/SDPA
 class Data2VecTextPreTrainedModel(PreTrainedModel):
     config_class = Data2VecTextConfig
     base_model_prefix = "data2vec_text"
@@ -485,6 +495,7 @@ class Data2VecTextPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# Data2VecTextEncoder：堆叠 Data2VecTextLayer
 class Data2VecTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -517,6 +528,7 @@ class Data2VecTextEncoder(nn.Module):
         )
 
 
+# Data2VecTextPooler：取 [CLS] 隐状态 tanh 池化
 class Data2VecTextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -533,6 +545,7 @@ class Data2VecTextPooler(nn.Module):
 
 
 @auto_docstring
+# Data2VecTextModel：嵌入 + 编码器 + 可选 pooler
 class Data2VecTextModel(Data2VecTextPreTrainedModel):
     _no_split_modules = ["Data2VecTextEmbeddings", "Data2VecTextLayer"]
 
@@ -660,6 +673,7 @@ class Data2VecTextModel(Data2VecTextPreTrainedModel):
         return attention_mask, encoder_attention_mask
 
 
+# Data2VecTextLMHead：带 bias 的 LM 解码头
 class Data2VecTextLMHead(nn.Module):
     """Data2VecText Head for masked language modeling."""
 
@@ -682,6 +696,7 @@ class Data2VecTextLMHead(nn.Module):
         return x
 
 
+# Data2VecTextClassificationHead：dense + tanh + dropout + 分类线性
 class Data2VecTextClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -709,6 +724,7 @@ class Data2VecTextClassificationHead(nn.Module):
     Data2VecText Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# Data2VecTextForCausalLM：因果语言建模，支持 generate
 class Data2VecTextForCausalLM(Data2VecTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "data2vec_text.embeddings.word_embeddings.weight",
@@ -809,6 +825,7 @@ class Data2VecTextForCausalLM(Data2VecTextPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# Data2VecTextForMaskedLM：掩码语言建模（MLM）
 class Data2VecTextForMaskedLM(Data2VecTextPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "data2vec_text.embeddings.word_embeddings.weight",
@@ -891,6 +908,7 @@ class Data2VecTextForMaskedLM(Data2VecTextPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# Data2VecTextForSequenceClassification：序列分类，pooler 输出
 class Data2VecTextForSequenceClassification(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -967,6 +985,7 @@ class Data2VecTextForSequenceClassification(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForMultipleChoice：多选任务，展平选项后分类
 class Data2VecTextForMultipleChoice(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1063,6 +1082,7 @@ class Data2VecTextForMultipleChoice(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForTokenClassification：逐 token 标注（NER 等）
 class Data2VecTextForTokenClassification(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1125,6 +1145,7 @@ class Data2VecTextForTokenClassification(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForQuestionAnswering：抽取式 QA，start/end  logits
 class Data2VecTextForQuestionAnswering(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

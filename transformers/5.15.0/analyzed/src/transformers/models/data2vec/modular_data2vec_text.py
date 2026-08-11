@@ -47,23 +47,28 @@ from .configuration_data2vec_text import Data2VecTextConfig
 logger = logging.get_logger(__name__)
 
 
+# Data2VecTextEmbeddings：复用 RoBERTa 词/位置嵌入
 class Data2VecTextEmbeddings(RobertaEmbeddings):
     pass
 
 
+# Data2VecTextSelfAttention：RoBERTa 多头自注意力
 class Data2VecTextSelfAttention(RobertaSelfAttention):
     pass
 
 
+# Data2VecTextCrossAttention：RoBERTa 交叉注意力
 class Data2VecTextCrossAttention(RobertaCrossAttention):
     pass
 
 
+# Data2VecTextLayer：RoBERTa 解码层
 class Data2VecTextLayer(RobertaLayer):
     pass
 
 
 @auto_docstring
+# Data2VecTextPreTrainedModel：预训练基类与权重初始化
 class Data2VecTextPreTrainedModel(PreTrainedModel):
     config_class = Data2VecTextConfig
     base_model_prefix = "data2vec_text"
@@ -87,14 +92,17 @@ class Data2VecTextPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextModel：RoBERTa 编码器骨干
 class Data2VecTextModel(RobertaModel):
     pass
 
 
+# Data2VecTextLMHead：RoBERTa LM 头
 class Data2VecTextLMHead(RobertaLMHead):
     pass
 
 
+# Data2VecTextClassificationHead：RoBERTa 分类头
 class Data2VecTextClassificationHead(RobertaClassificationHead):
     pass
 
@@ -104,6 +112,7 @@ class Data2VecTextClassificationHead(RobertaClassificationHead):
     Data2VecText Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# Data2VecTextForCausalLM：因果 LM，支持 generate 采样
 class Data2VecTextForCausalLM(Data2VecTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "data2vec_text.embeddings.word_embeddings.weight",
@@ -204,6 +213,7 @@ class Data2VecTextForCausalLM(Data2VecTextPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# Data2VecTextForMaskedLM：掩码语言建模
 class Data2VecTextForMaskedLM(Data2VecTextPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "data2vec_text.embeddings.word_embeddings.weight",
@@ -286,6 +296,7 @@ class Data2VecTextForMaskedLM(Data2VecTextPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# Data2VecTextForSequenceClassification：序列分类
 class Data2VecTextForSequenceClassification(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -362,6 +373,7 @@ class Data2VecTextForSequenceClassification(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForMultipleChoice：多选分类
 class Data2VecTextForMultipleChoice(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -458,6 +470,7 @@ class Data2VecTextForMultipleChoice(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForTokenClassification：token 级分类
 class Data2VecTextForTokenClassification(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -520,6 +533,7 @@ class Data2VecTextForTokenClassification(Data2VecTextPreTrainedModel):
 
 
 @auto_docstring
+# Data2VecTextForQuestionAnswering：抽取式问答
 class Data2VecTextForQuestionAnswering(Data2VecTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

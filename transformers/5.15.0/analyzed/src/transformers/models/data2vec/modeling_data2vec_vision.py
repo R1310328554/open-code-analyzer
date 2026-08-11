@@ -47,6 +47,7 @@ logger = logging.get_logger(__name__)
 )
 @dataclass
 # Copied from transformers.models.beit.modeling_beit.BeitModelOutputWithPooling with Beit->Data2VecVision
+# Data2VecVisionModelOutputWithPooling：含 mean pool 或 CLS pooler 输出
 class Data2VecVisionModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -57,6 +58,7 @@ class Data2VecVisionModelOutputWithPooling(BaseModelOutputWithPooling):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitEmbeddings with Beit->Data2VecVision
+# Data2VecVisionEmbeddings：CLS/patch/mask token 嵌入与位置插值
 class Data2VecVisionEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -153,6 +155,7 @@ class Data2VecVisionEmbeddings(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitPatchEmbeddings with Beit->Data2VecVision
+# Data2VecVisionPatchEmbeddings：Conv2d patch 投影
 class Data2VecVisionPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -192,6 +195,7 @@ class Data2VecVisionPatchEmbeddings(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitSelfAttention with Beit->Data2VecVision
+# Data2VecVisionSelfAttention：多头自注意力 + 相对位置偏置
 class Data2VecVisionSelfAttention(nn.Module):
     def __init__(self, config: Data2VecVisionConfig, window_size: tuple | None = None) -> None:
         super().__init__()
@@ -266,6 +270,7 @@ class Data2VecVisionSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitSdpaSelfAttention with Beit->Data2VecVision
+# Data2VecVisionSdpaSelfAttention：SDPA 加速版自注意力
 class Data2VecVisionSdpaSelfAttention(Data2VecVisionSelfAttention):
     def forward(
         self,
@@ -318,6 +323,7 @@ class Data2VecVisionSdpaSelfAttention(Data2VecVisionSelfAttention):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitSelfOutput with Beit->Data2VecVision
+# Data2VecVisionSelfOutput：注意力输出投影 + Dropout
 class Data2VecVisionSelfOutput(nn.Module):
     """
     The residual connection is defined in Data2VecVisionLayer instead of here (as is the case with other models), due to the
@@ -343,6 +349,7 @@ DATA2VEC_VISION_SELF_ATTENTION_CLASSES = {
 
 
 # Copied from tests.models.beit.modeling_beit.BeitAttention with Beit->Data2VecVision, BEIT->DATA2VEC_VISION
+# Data2VecVisionAttention：自注意力模块封装
 class Data2VecVisionAttention(nn.Module):
     def __init__(self, config: Data2VecVisionConfig, window_size: tuple | None = None) -> None:
         super().__init__()
@@ -370,6 +377,7 @@ class Data2VecVisionAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitIntermediate with Beit->Data2VecVision
+# Data2VecVisionIntermediate：MLP 扩展层
 class Data2VecVisionIntermediate(nn.Module):
     def __init__(self, config: Data2VecVisionConfig) -> None:
         super().__init__()
@@ -387,6 +395,7 @@ class Data2VecVisionIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitOutput with Beit->Data2VecVision
+# Data2VecVisionOutput：MLP 投影层
 class Data2VecVisionOutput(nn.Module):
     def __init__(self, config: Data2VecVisionConfig) -> None:
         super().__init__()
@@ -401,6 +410,7 @@ class Data2VecVisionOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->Data2VecVisionDropPath
+# Data2VecVisionDropPath：随机深度 DropPath 正则
 class Data2VecVisionDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -426,6 +436,7 @@ class Data2VecVisionDropPath(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitLayer with Beit->Data2VecVision,BEiT->Data2VecVision
+# Data2VecVisionLayer：LayerScale + Pre/Post-LN 注意力与 FFN
 class Data2VecVisionLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -492,6 +503,7 @@ class Data2VecVisionLayer(GradientCheckpointingLayer):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitRelativePositionBias with Beit->Data2VecVision
+# Data2VecVisionRelativePositionBias：可学习 2D 相对位置偏置表
 class Data2VecVisionRelativePositionBias(nn.Module):
     def __init__(self, config: Data2VecVisionConfig, window_size: tuple) -> None:
         super().__init__()
@@ -577,6 +589,7 @@ class Data2VecVisionRelativePositionBias(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitEncoder with Beit->Data2VecVision
+# Data2VecVisionEncoder：堆叠 Data2VecVisionLayer，可选共享相对偏置
 class Data2VecVisionEncoder(nn.Module):
     def __init__(self, config: Data2VecVisionConfig, window_size: tuple | None = None) -> None:
         super().__init__()
@@ -651,6 +664,7 @@ class Data2VecVisionEncoder(nn.Module):
 
 @auto_docstring
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitPreTrainedModel with Beit->Data2VecVision,beit->data2vec_vision
+# Data2VecVisionPreTrainedModel：ViT 权重初始化基类
 class Data2VecVisionPreTrainedModel(PreTrainedModel):
     config: Data2VecVisionConfig
     base_model_prefix = "data2vec_vision"
@@ -681,6 +695,7 @@ class Data2VecVisionPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitModel with BEIT->DATA2VEC_VISION,Beit->Data2VecVision,True->False
+# Data2VecVisionModel：视觉骨干，输出多层 hidden states
 class Data2VecVisionModel(Data2VecVisionPreTrainedModel):
     def __init__(self, config: Data2VecVisionConfig, add_pooling_layer: bool = False) -> None:
         r"""
@@ -753,6 +768,7 @@ class Data2VecVisionModel(Data2VecVisionPreTrainedModel):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitPooler with Beit->Data2VecVision
+# Data2VecVisionPooler：mean pool 或 CLS token 池化
 class Data2VecVisionPooler(nn.Module):
     def __init__(self, config: Data2VecVisionConfig) -> None:
         super().__init__()
@@ -772,6 +788,7 @@ class Data2VecVisionPooler(nn.Module):
     """
 )
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitForImageClassification with BEIT->DATA2VEC_VISION,Beit->Data2VecVision,beit->data2vec_vision
+# Data2VecVisionForImageClassification：图像分类线性头
 class Data2VecVisionForImageClassification(Data2VecVisionPreTrainedModel):
     def __init__(self, config: Data2VecVisionConfig) -> None:
         super().__init__(config)
@@ -832,6 +849,7 @@ class Data2VecVisionForImageClassification(Data2VecVisionPreTrainedModel):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitConvLayer with Beit->Data2VecVision
+# Data2VecVisionConvLayer：分割头用 Conv-BN-ReLU 块
 class Data2VecVisionConvLayer(nn.Module):
     def __init__(
         self,
@@ -867,6 +885,7 @@ class Data2VecVisionConvLayer(nn.Module):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitPyramidPoolingBlock with Beit->Data2VecVision
+# Data2VecVisionPyramidPoolingBlock：PPM 单尺度自适应池化
 class Data2VecVisionPyramidPoolingBlock(nn.Module):
     def __init__(self, pool_scale: int, in_channels: int, channels: int) -> None:
         super().__init__()
@@ -881,6 +900,7 @@ class Data2VecVisionPyramidPoolingBlock(nn.Module):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitPyramidPoolingModule with Beit->Data2VecVision
+# Data2VecVisionPyramidPoolingModule：多尺度金字塔池化模块
 class Data2VecVisionPyramidPoolingModule(nn.Module):
     """
     Pyramid Pooling Module (PPM) used in PSPNet.
@@ -912,6 +932,7 @@ class Data2VecVisionPyramidPoolingModule(nn.Module):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitUperHead with Beit->Data2VecVision
+# Data2VecVisionUperHead：UPerNet 解码头，融合多 stage 特征
 class Data2VecVisionUperHead(nn.Module):
     """
     Unified Perceptual Parsing for Scene Understanding. This head is the implementation of
@@ -994,6 +1015,7 @@ class Data2VecVisionUperHead(nn.Module):
 
 
 # Copied from transformers.models.beit.modeling_beit.BeitFCNHead with Beit->Data2VecVision
+# Data2VecVisionFCNHead：FCN 辅助分割头
 class Data2VecVisionFCNHead(nn.Module):
     """
     Fully Convolution Networks for Semantic Segmentation. This head is implemented of
@@ -1061,6 +1083,7 @@ class Data2VecVisionFCNHead(nn.Module):
 
 @auto_docstring
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.beit.modeling_beit.BeitForSemanticSegmentation with BEIT->DATA2VEC_VISION,Beit->Data2VecVision,microsoft/beit-base-finetuned-ade-640-640->facebook/data2vec-vision-base,beit->data2vec_vision
+# Data2VecVisionForSemanticSegmentation：语义分割，主头 + 可选辅助 loss
 class Data2VecVisionForSemanticSegmentation(Data2VecVisionPreTrainedModel):
     def __init__(self, config: Data2VecVisionConfig) -> None:
         super().__init__(config)
