@@ -2,6 +2,8 @@
 #
 # The *_FORMAT strings use the Django date format syntax,
 # see https://docs.djangoproject.com/en/dev/ref/templates/builtins/#date
+# 捷克语日期、时间与数字本地化格式
+# 完整日期显示格式
 DATE_FORMAT = "j. E Y"
 TIME_FORMAT = "G:i"
 DATETIME_FORMAT = "j. E Y G:i"
@@ -9,10 +11,12 @@ YEAR_MONTH_FORMAT = "F Y"
 MONTH_DAY_FORMAT = "j. F"
 SHORT_DATE_FORMAT = "d.m.Y"
 SHORT_DATETIME_FORMAT = "d.m.Y G:i"
+# 一周起始日：1 表示周一
 FIRST_DAY_OF_WEEK = 1  # Monday
 
 # The *_INPUT_FORMATS strings use the Python strftime format syntax,
 # see https://docs.python.org/library/datetime.html#strftime-strptime-behavior
+# 表单日期输入接受的 strftime 格式列表
 DATE_INPUT_FORMATS = [
     "%d.%m.%Y",  # '05.01.2006'
     "%d.%m.%y",  # '05.01.06'
@@ -21,7 +25,7 @@ DATE_INPUT_FORMATS = [
     # "%d. %B %Y",  # '25. October 2006'
     # "%d. %b. %Y",  # '25. Oct. 2006'
 ]
-# Kept ISO formats as one is in first position
+# 保留 ISO 格式在列表首位
 TIME_INPUT_FORMATS = [
     "%H:%M:%S",  # '04:30:59'
     "%H.%M",  # '04.30'
@@ -39,5 +43,7 @@ DATETIME_INPUT_FORMATS = [
     "%Y-%m-%d %H.%M",  # '2006-01-05 04.30'
 ]
 DECIMAL_SEPARATOR = ","
+# 千位分隔符（非断行空格）
 THOUSAND_SEPARATOR = "\xa0"  # non-breaking space
+# 数字分组位数（千分位）
 NUMBER_GROUPING = 3
