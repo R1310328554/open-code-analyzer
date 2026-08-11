@@ -14,6 +14,8 @@ and `secondaryjoin` aspects of :func:`_orm.relationship`.
 
 """
 
+# ORM 关系属性：RelationshipProperty、JoinCondition 与 Declarative Relationship
+
 from __future__ import annotations
 
 import collections
@@ -208,6 +210,7 @@ _ColumnPairs = Sequence[Tuple[ColumnElement[Any], ColumnElement[Any]]]
 _MutableColumnPairs = List[Tuple[ColumnElement[Any], ColumnElement[Any]]]
 
 
+# 标记列为 relationship remote() 侧（join 解析）
 def remote(expr: _CEA) -> _CEA:
     """Annotate a portion of a primaryjoin expression
     with a 'remote' annotation.
@@ -227,6 +230,7 @@ def remote(expr: _CEA) -> _CEA:
     )
 
 
+# 标记列为 relationship foreign() 侧（join 解析）
 def foreign(expr: _CEA) -> _CEA:
     """Annotate a portion of a primaryjoin expression
     with a 'foreign' annotation.
@@ -248,6 +252,7 @@ def foreign(expr: _CEA) -> _CEA:
 
 
 @dataclasses.dataclass
+# relationship 延迟解析参数：configure 时从字符串/registry 求值
 class _RelationshipArg(Generic[_T1, _T2]):
     """stores a user-defined parameter value that must be resolved and
     parsed later at mapper configuration time.
@@ -280,6 +285,7 @@ class _RelationshipArg(Generic[_T1, _T2]):
 _RelationshipOrderByArg = Union[Literal[False], Tuple[ColumnElement[Any], ...]]
 
 
+# relationship() 全部命名参数的结构化容器
 class _RelationshipArgs(NamedTuple):
     """stores user-passed parameters that are resolved at mapper configuration
     time.
@@ -307,7 +313,9 @@ class _RelationshipArgs(NamedTuple):
     ]
 
 
+# 关系属性描述符：一对多/多对一/多对多关联与 loader 策略
 @log.class_logger
+# Declarative relationship() 前端子类
 class RelationshipProperty(
     _IntrospectsAnnotations, StrategizedProperty[_T], log.Identified
 ):
@@ -2264,6 +2272,7 @@ def _annotate_columns(element: _CE, annotations: _AnnotationDict) -> _CE:
     return element
 
 
+# 关系 join 条件解析：primaryjoin/secondaryjoin 与 sync 对
 class JoinCondition:
     primaryjoin_initial: Optional[ColumnElement[bool]]
     primaryjoin: ColumnElement[bool]
@@ -3457,6 +3466,7 @@ class JoinCondition:
         return lazywhere, bind_to_col, equated_columns
 
 
+# 列注解检测：local/remote 标记序列化辅助
 class _ColInAnnotations:
     """Serializable object that tests for names in c._annotations.
 
@@ -3500,6 +3510,7 @@ class Relationship(
     """:meta private:"""
 
 
+# 声明式映射隐式使用的 Relationship 子类
 class _RelationshipDeclared(  # type: ignore[misc]
     Relationship[_T],
     WriteOnlyMapped[_T],  # not compatible with Mapped[_T]

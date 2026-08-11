@@ -12,6 +12,8 @@ mapped attributes.
 
 """
 
+# ORM 列属性：ColumnProperty 与 Declarative MappedColumn
+
 from __future__ import annotations
 
 from typing import Any
@@ -94,6 +96,7 @@ __all__ = [
 ]
 
 
+# 列属性描述符：Table 列或 SQL 表达式映射到实例属性
 @log.class_logger
 class ColumnProperty(
     _MapsColumns[_T],
@@ -490,6 +493,7 @@ class ColumnProperty(
         return str(self.parent.class_.__name__) + "." + self.key
 
 
+# Declarative 列表达式属性：column_property() 前端
 class MappedSQLExpression(ColumnProperty[_T], _DeclarativeMapped[_T]):
     """Declarative front-end for the :class:`.ColumnProperty` class.
 
@@ -508,6 +512,7 @@ class MappedSQLExpression(ColumnProperty[_T], _DeclarativeMapped[_T]):
     """:meta private:"""
 
 
+# Declarative 单列映射：mapped_column() 构造的 ColumnProperty
 class MappedColumn(
     _IntrospectsAnnotations,
     _MapsColumns[_T],

@@ -16,6 +16,8 @@ in unitofwork.py.
 
 """
 
+# ORM 持久化 emit：UoW flush 时 INSERT/UPDATE/DELETE 语句生成
+
 from __future__ import annotations
 
 from itertools import chain
@@ -38,6 +40,7 @@ from ..sql.elements import BooleanClauseList
 from ..sql.selectable import LABEL_STYLE_TABLENAME_PLUS_COL
 
 
+# flush 保存：对 states 批量/逐条 emit INSERT 与 UPDATE
 def save_obj(base_mapper, states, uowtransaction, single=False):
     """Issue ``INSERT`` and/or ``UPDATE`` statements for a list
     of objects.
@@ -121,6 +124,7 @@ def save_obj(base_mapper, states, uowtransaction, single=False):
     )
 
 
+# relationship post_update：额外 UPDATE 维护关联 FK
 def post_update(base_mapper, states, uowtransaction, post_update_cols):
     """Issue UPDATE statements on behalf of a relationship() which
     specifies post_update.
@@ -166,6 +170,7 @@ def post_update(base_mapper, states, uowtransaction, post_update_cols):
         )
 
 
+# flush 删除：emit DELETE 并处理 FK 级联
 def delete_obj(base_mapper, states, uowtransaction):
     """Issue ``DELETE`` statements for a list of objects.
 
@@ -726,6 +731,7 @@ def _collect_delete_commands(
         yield params, connection
 
 
+# 生成并执行 UPDATE 语句（含 version_id 乐观锁）
 def _emit_update_statements(
     base_mapper,
     uowtransaction,
@@ -960,6 +966,7 @@ def _emit_update_statements(
             )
 
 
+# 生成并执行 INSERT 语句（含 RETURNING 回填 PK）
 def _emit_insert_statements(
     base_mapper,
     uowtransaction,
@@ -1408,6 +1415,7 @@ def _emit_post_update_statements(
             )
 
 
+# 生成并执行 DELETE 语句
 def _emit_delete_statements(
     base_mapper, uowtransaction, mapper, table, delete
 ):
@@ -1743,6 +1751,7 @@ def _postfetch_bulk_save(mapper, dict_, table):
         sync.bulk_populate_inherit_keys(dict_, m, equated_pairs)
 
 
+# 为 states 解析 flush 用 Connection（含分片 bind）
 def _connections_for_states(base_mapper, uowtransaction, states):
     """Return an iterator of (state, state.dict, mapper, connection).
 

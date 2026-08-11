@@ -7,6 +7,8 @@
 
 """Provides the Session class and related utilities."""
 
+# ORM Session：identity map、事务、flush 与 execute 入口
+
 from __future__ import annotations
 
 import contextlib
@@ -168,6 +170,7 @@ JoinTransactionMode = Literal[
 ]
 
 
+# 分片持久化 callable：按实例返回 Connection
 class _ConnectionCallableProto(Protocol):
     """a callable that returns a :class:`.Connection` given an instance.
 
@@ -189,6 +192,7 @@ class _ConnectionCallableProto(Protocol):
     ) -> Connection: ...
 
 
+# 从 InstanceState 取所属 Session
 def _state_session(state: InstanceState[Any]) -> Optional[Session]:
     """Given an :class:`.InstanceState`, return the :class:`.Session`
     associated, if any.
@@ -196,6 +200,7 @@ def _state_session(state: InstanceState[Any]) -> Optional[Session]:
     return state.session
 
 
+# Session/sessionmaker 类方法：identity_key/object_session
 class _SessionClassMethods:
     """Class-level methods for :class:`.Session`, :class:`.sessionmaker`."""
 
@@ -246,6 +251,9 @@ class _SessionClassMethods:
         return object_session(instance)
 
 
+# Session 事务状态枚举：ACTIVE/PREPARED/COMMITTED 等
+# Session 级事务对象：begin/commit/rollback 上下文
+# ORM 工作单元：实例跟踪、flush 与查询执行
 class SessionTransactionState(_StateChangeState):
     ACTIVE = 1
     PREPARED = 2
@@ -261,6 +269,7 @@ ACTIVE, PREPARED, COMMITTED, DEACTIVE, CLOSED, PROVISIONING_CONNECTION = tuple(
 )
 
 
+# Session.execute 事件钩子状态：可改写 statement/参数
 class ORMExecuteState(util.MemoizedSlots):
     """Represents a call to the :meth:`_orm.Session.execute` method, as passed
     to the :meth:`.SessionEvents.do_orm_execute` event hook.
@@ -820,6 +829,7 @@ class ORMExecuteState(util.MemoizedSlots):
         ]
 
 
+# 事务起源：显式 begin/begin_nested/subtransaction
 class SessionTransactionOrigin(Enum):
     """indicates the origin of a :class:`.SessionTransaction`.
 
@@ -1449,6 +1459,7 @@ class SessionTransaction(_StateChange, TransactionalContext):
         return self._state not in (COMMITTED, CLOSED)
 
 
+# Session 关闭状态：ACTIVE/CLOSED/CLOSE_IS_RESET
 class _SessionCloseState(Enum):
     ACTIVE = 1
     CLOSED = 2
@@ -4929,6 +4940,7 @@ class Session(_SessionClassMethods, EventTarget):
 _S = TypeVar("_S", bound="Session")
 
 
+# 可配置 Session 工厂：绑定 engine 与构造参数
 class sessionmaker(_SessionClassMethods, Generic[_S]):
     """A configurable :class:`.Session` factory.
 
@@ -5161,6 +5173,7 @@ class sessionmaker(_SessionClassMethods, Generic[_S]):
         )
 
 
+# 关闭进程内所有 Session
 def close_all_sessions() -> None:
     """Close all sessions in memory.
 
@@ -5283,6 +5296,7 @@ def make_transient_to_detached(instance: object) -> None:
     state._expire_attributes(state.dict, state.unloaded)
 
 
+# 公开 API：从实例取所属 Session
 def object_session(instance: object) -> Optional[Session]:
     """Return the :class:`.Session` to which the given instance belongs.
 

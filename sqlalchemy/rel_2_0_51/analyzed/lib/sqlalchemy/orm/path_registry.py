@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 """Path tracking utilities, representing mapper graph traversals."""
 
+# ORM 加载路径注册表：joinedload/subqueryload 等选项的路径键
+
 from __future__ import annotations
 
 from functools import reduce
@@ -75,6 +77,7 @@ _EvenPathRepresentation = Sequence[Union["StrategizedProperty[Any]", str]]
 log = logging.getLogger(__name__)
 
 
+# pickle 反序列化：还原 PathRegistry 对象
 def _unreduce_path(path: _SerializedPath) -> PathRegistry:
     return PathRegistry.deserialize(path)
 
@@ -83,6 +86,7 @@ _WILDCARD_TOKEN: _LiteralStar = "*"
 _DEFAULT_TOKEN = "_sa_default"
 
 
+# 加载路径抽象基类：实体/属性/token 链与 cache key
 class PathRegistry(HasCacheKey):
     """Represent query load paths and registry functions.
 
@@ -349,6 +353,7 @@ class PathRegistry(HasCacheKey):
         return f"{self.__class__.__name__}({self.path!r})"
 
 
+# 可生成 TokenRegistry 的路径节点
 class CreatesToken(PathRegistry):
     __slots__ = ()
 
@@ -364,6 +369,7 @@ class CreatesToken(PathRegistry):
             raise exc.ArgumentError(f"invalid token: {token}")
 
 
+# 根路径：按 mapper 维护路径树入口
 class RootRegistry(CreatesToken):
     """Root registry, defers to mappers so that
     paths are maintained per-root-mapper.
@@ -405,6 +411,7 @@ class RootRegistry(CreatesToken):
 PathRegistry.root = RootRegistry()
 
 
+# 路径 token 字符串：InspectionAttr + HasCacheKey
 class PathToken(orm_base.InspectionAttr, HasCacheKey, str):
     """cacheable string token"""
 
@@ -428,6 +435,7 @@ class PathToken(orm_base.InspectionAttr, HasCacheKey, str):
             return result
 
 
+# 通配符/默认 token 路径节点（* / _sa_default）
 class TokenRegistry(PathRegistry):
     __slots__ = ("token", "parent", "path", "natural_path")
 
@@ -514,6 +522,7 @@ class TokenRegistry(PathRegistry):
         __getitem__ = _getitem
 
 
+# 属性路径节点：relationship/column loader 选项挂载点
 class PropRegistry(PathRegistry):
     __slots__ = (
         "prop",
@@ -653,6 +662,7 @@ class PropRegistry(PathRegistry):
         __getitem__ = _getitem
 
 
+# 实体路径节点抽象：含 mapper/aliased 信息
 class AbstractEntityRegistry(CreatesToken):
     __slots__ = (
         "key",
@@ -764,12 +774,14 @@ class AbstractEntityRegistry(CreatesToken):
         __getitem__ = _getitem
 
 
+# 实体路径节点：__slots__ 轻量实现
 class SlotsEntityRegistry(AbstractEntityRegistry):
     # for aliased class, return lightweight, no-cycles created
     # version
     inherit_cache = True
 
 
+# 实体注册表内部 dict：延迟创建 SlotsEntityRegistry
 class _ERDict(Dict[Any, Any]):
     def __init__(self, registry: CachingEntityRegistry):
         self.registry = registry
@@ -780,6 +792,7 @@ class _ERDict(Dict[Any, Any]):
         return item
 
 
+# 带 LRU 缓存的实体路径注册表
 class CachingEntityRegistry(AbstractEntityRegistry):
     # for long lived mapper, return dict based caching
     # version that creates reference cycles

@@ -12,6 +12,8 @@ defines a large part of the ORM's interactivity.
 
 """
 
+# ORM 实例状态：InstanceState 跟踪加载/过期/脏数据
+
 from __future__ import annotations
 
 from typing import Any
@@ -77,10 +79,12 @@ if not TYPE_CHECKING:
     _async_provider = None  # noqa
 
 
+# 实例 dict 协议：延迟返回 IdentityMap
 class _InstanceDictProto(Protocol):
     def __call__(self) -> Optional[IdentityMap]: ...
 
 
+# 结果加载时安装 per-instance deferred/lazy loader
 class _InstallLoaderCallableProto(Protocol[_O]):
     """used at result loading time to install a _LoaderCallable callable
     upon a specific InstanceState, which will be used to populate an
@@ -97,6 +101,7 @@ class _InstallLoaderCallableProto(Protocol[_O]):
 
 
 @inspection._self_inspects
+# 实例状态核心：identity、session 绑定与属性历史
 class InstanceState(interfaces.InspectionAttrInfo, Generic[_O]):
     """Tracks state information at the instance level.
 
@@ -1033,6 +1038,7 @@ class InstanceState(interfaces.InspectionAttrInfo, Generic[_O]):
             state._strong_obj = None
 
 
+# 单属性状态视图：loaded/expired/history 查询
 class AttributeState:
     """Provide an inspection interface corresponding
     to a particular attribute on a particular mapped object.
@@ -1134,6 +1140,7 @@ class AttributeState:
         return self.state.get_history(self.key, PASSIVE_OFF ^ INIT_OK)
 
 
+# 尚未 flush 的集合变更缓冲
 class PendingCollection:
     """A writable placeholder for an unloaded collection.
 

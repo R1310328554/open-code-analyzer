@@ -8,6 +8,8 @@
 
 """ """
 
+# ORM loader 选项：Load/contains_eager/joinedload/selectinload 等
+
 from __future__ import annotations
 
 import typing
@@ -85,6 +87,7 @@ _OptsType = Dict[str, Any]
 _AttrGroupType = Tuple[_AttrType, ...]
 
 
+# loader 选项抽象基类：Generative 链式 API
 class _AbstractLoad(traversals.GenerativeOnTraversal, LoaderOption):
     __slots__ = ("propagate_to_loaders",)
 
@@ -161,7 +164,8 @@ class _AbstractLoad(traversals.GenerativeOnTraversal, LoaderOption):
         )
         return cloned
 
-    def load_only(self, *attrs: _AttrType, raiseload: bool = False) -> Self:
+    # 构造 load_only 选项：仅加载指定列
+def load_only(self, *attrs: _AttrType, raiseload: bool = False) -> Self:
         r"""Indicate that for a particular entity, only the given list
         of column-based attribute names should be loaded; all others will be
         deferred.
@@ -540,7 +544,8 @@ class _AbstractLoad(traversals.GenerativeOnTraversal, LoaderOption):
             attr, {"lazy": "raise_on_sql" if sql_only else "raise"}
         )
 
-    def defaultload(self, attr: _AttrType) -> Self:
+    # 构造 defaultload 选项：为路径设置默认 loader
+def defaultload(self, attr: _AttrType) -> Self:
         """Indicate an attribute should load using its predefined loader style.
 
         The behavior of this loading option is to not change the current
@@ -967,6 +972,7 @@ class _AbstractLoad(traversals.GenerativeOnTraversal, LoaderOption):
         return to_chop[i + 1 :]
 
 
+# 公开 Load 选项：按 entity/relationship 指定加载策略
 class Load(_AbstractLoad):
     """Represents loader options which modify the state of a
     ORM-enabled :class:`_sql.Select` or a legacy :class:`_query.Query` in
@@ -1335,6 +1341,7 @@ class Load(_AbstractLoad):
         self._shallow_from_dict(state)
 
 
+# 通配符 Load：relationship/column 全局策略
 class _WildcardLoad(_AbstractLoad):
     """represent a standalone '*' load operation"""
 
@@ -1527,6 +1534,7 @@ class _WildcardLoad(_AbstractLoad):
         self._shallow_from_dict(state)
 
 
+# 单个 loader 选项元素：路径+策略参数
 class _LoadElement(
     cache_key.HasCacheKey, traversals.HasShallowCopy, visitors.Traversible
 ):
@@ -1876,6 +1884,7 @@ class _LoadElement(
         )
 
 
+# 属性级策略元素：joinedload(A.b) 等
 class _AttributeStrategyLoad(_LoadElement):
     """Loader strategies against specific relationship or column paths.
 
@@ -2149,6 +2158,7 @@ class _AttributeStrategyLoad(_LoadElement):
             self._of_type = None
 
 
+# token 级策略元素：relationship/column 通配
 class _TokenStrategyLoad(_LoadElement):
     """Loader strategies against wildcard attributes
 
@@ -2238,6 +2248,7 @@ class _TokenStrategyLoad(_LoadElement):
         ]
 
 
+# 实体级策略元素：load_only/raiseload 等
 class _ClassStrategyLoad(_LoadElement):
     """Loader strategies that deals with a class as a target, not
     an attribute path

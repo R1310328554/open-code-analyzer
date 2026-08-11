@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# 线程/协程作用域 Session：scoped_session 与 query_property
+
 from __future__ import annotations
 
 from typing import Any
@@ -75,6 +77,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound=Any)
 
 
+# 类级 query_property 描述符 typing 协议
 class QueryPropertyDescriptor(Protocol):
     """Describes the type applied to a class-level
     :meth:`_orm.scoped_session.query_property` attribute.
@@ -140,6 +143,7 @@ __all__ = ["scoped_session"]
         "info",
     ],
 )
+# 作用域 Session 代理：按 scopefunc 复用/创建 Session 实例
 class scoped_session(Generic[_S]):
     """Provides scoped management of :class:`.Session` objects.
 

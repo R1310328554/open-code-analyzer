@@ -15,6 +15,8 @@ as well as some of the attribute loading strategies.
 
 """
 
+# ORM 结果行加载：CursorResult 转实例、identity 查找与 post_load
+
 from __future__ import annotations
 
 from typing import Any
@@ -76,6 +78,7 @@ _new_runid = util.counter()
 _PopulatorDict = Dict[str, List[Tuple[str, Any]]]
 
 
+# 将 ORM 查询 CursorResult 转为 Result（核心行→对象流水线）
 def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
     """Return a :class:`.Result` given an ORM query context.
 
@@ -298,6 +301,7 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
 
 
 @util.preload_module("sqlalchemy.orm.context")
+# 从 FrozenResult 合并/重建 ORM 实例
 def merge_frozen_result(session, statement, frozen_result, load=True):
     """Merge a :class:`_engine.FrozenResult` back into a :class:`_orm.Session`,
     returning a new :class:`_engine.Result` object with :term:`persistent`
@@ -363,6 +367,7 @@ def merge_frozen_result(session, statement, frozen_result, load=True):
     "is superseded by the :func:`_orm.merge_frozen_result` function.",
 )
 @util.preload_module("sqlalchemy.orm.context")
+# 将任意 Result 行合并进 Session identity map
 def merge_result(
     query: Query[Any],
     iterator: Union[FrozenResult, Iterable[Sequence[Any]], Iterable[object]],
@@ -447,6 +452,7 @@ def merge_result(
         session.autoflush = autoflush
 
 
+# 按 identity key 从 Session 取已存在实例
 def get_from_identity(
     session: Session,
     mapper: Mapper[_O],
@@ -485,6 +491,7 @@ def get_from_identity(
         return None
 
 
+# 按主键标识加载单个对象（Session.get 底层）
 def load_on_ident(
     session: Session,
     statement: Union[Select, FromStatement],
@@ -524,6 +531,7 @@ def load_on_ident(
     )
 
 
+# 按 PK identity 执行 SELECT 并填充实例
 def load_on_pk_identity(
     session: Session,
     statement: Union[Select, FromStatement],
@@ -809,6 +817,7 @@ def _warn_for_runid_changed(state):
     )
 
 
+# 构建行→实例填充 callable（per-entity 列映射）
 def _instance_processor(
     query_entity,
     mapper,
@@ -1326,6 +1335,7 @@ def _load_subclass_via_in(
     return do_load
 
 
+# 完整填充实例 dict（含 deferred/过期列）
 def _populate_full(
     context,
     row,
@@ -1383,6 +1393,7 @@ def _populate_full(
             # populator(state, dict_, row, new_path=False)
 
 
+# 部分填充：仅写入 SELECT 返回列
 def _populate_partial(
     context, row, state, dict_, isnew, load_path, unloaded, populators
 ):
@@ -1526,6 +1537,7 @@ def _decorate_polymorphic_switch(
     return polymorphic_instance
 
 
+# post_load 批处理：SelectIn/Subquery 等策略的延迟加载调度
 class PostLoad:
     """Track loaders and states for "post load" operations."""
 
@@ -1598,6 +1610,7 @@ class PostLoad:
         )
 
 
+# 按需加载标量列属性（expire/refresh 路径）
 def load_scalar_attributes(mapper, state, attribute_names, passive):
     """initiate a column-based attribute refresh operation."""
 

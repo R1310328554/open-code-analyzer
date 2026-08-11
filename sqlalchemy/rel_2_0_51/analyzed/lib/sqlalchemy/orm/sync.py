@@ -12,6 +12,8 @@ between instances based on join conditions.
 
 """
 
+# 关系同步工具：flush 时按 synchronize_pairs 复制/清空列值
+
 from __future__ import annotations
 
 from . import exc
@@ -19,6 +21,7 @@ from . import util as orm_util
 from .base import PassiveFlag
 
 
+# 将 source 实例列值复制到 dest（含 PK 级联标记）
 def populate(
     source,
     source_mapper,
@@ -62,6 +65,7 @@ def populate(
             uowcommit.attributes[("pk_cascaded", dest, r)] = True
 
 
+# bulk insert 简化版 populate：仅操作 dict
 def bulk_populate_inherit_keys(source_dict, source_mapper, synchronize_pairs):
     # a simplified version of populate() used by bulk insert mode
     for l, r in synchronize_pairs:
@@ -78,6 +82,7 @@ def bulk_populate_inherit_keys(source_dict, source_mapper, synchronize_pairs):
             _raise_col_to_prop(True, source_mapper, l, source_mapper, r, err)
 
 
+# 按 sync 规则将 dest 列置 NULL（禁止清空 PK）
 def clear(dest, dest_mapper, synchronize_pairs):
     for l, r in synchronize_pairs:
         if (
@@ -96,6 +101,7 @@ def clear(dest, dest_mapper, synchronize_pairs):
             _raise_col_to_prop(True, None, l, dest_mapper, r, err)
 
 
+# 写入新值并保留 old_prefix 前缀的旧值（UPDATE 参数）
 def update(source, source_mapper, dest, old_prefix, synchronize_pairs):
     for l, r in synchronize_pairs:
         try:
@@ -111,6 +117,7 @@ def update(source, source_mapper, dest, old_prefix, synchronize_pairs):
         dest[old_prefix + r.key] = oldvalue
 
 
+# 将 source 列值写入参数字典
 def populate_dict(source, source_mapper, dict_, synchronize_pairs):
     for l, r in synchronize_pairs:
         try:
@@ -123,6 +130,7 @@ def populate_dict(source, source_mapper, dict_, synchronize_pairs):
         dict_[r.key] = value
 
 
+# 判断 source 在 sync 列上是否有变更
 def source_modified(uowcommit, source, source_mapper, synchronize_pairs):
     """return true if the source object has changes from an old to a
     new value on the given synchronize pairs

@@ -10,6 +10,8 @@
 """sqlalchemy.orm.interfaces.LoaderStrategy
 implementations, and related MapperOptions."""
 
+# ORM loader 策略：列/relationship 的 lazy/joined/subquery/selectin 实现
+
 from __future__ import annotations
 
 import collections
@@ -149,6 +151,7 @@ def _register_attribute(
 
 
 @properties.ColumnProperty.strategy_for(instrument=False, deferred=False)
+# 非 instrument 列加载：多态 discriminator 等场景
 class UninstrumentedColumnLoader(LoaderStrategy):
     """Represent a non-instrumented MapperProperty.
 
@@ -194,6 +197,7 @@ class UninstrumentedColumnLoader(LoaderStrategy):
 
 @log.class_logger
 @properties.ColumnProperty.strategy_for(instrument=True, deferred=False)
+# 即时列加载：SELECT 行内直接填充
 class ColumnLoader(LoaderStrategy):
     """Provide loading behavior for a :class:`.ColumnProperty`."""
 
@@ -286,6 +290,7 @@ class ColumnLoader(LoaderStrategy):
 
 @log.class_logger
 @properties.ColumnProperty.strategy_for(query_expression=True)
+# SQL 表达式列加载：column_property 等
 class ExpressionColumnLoader(ColumnLoader):
     def __init__(self, parent, strategy_key):
         super().__init__(parent, strategy_key)
@@ -379,6 +384,7 @@ class ExpressionColumnLoader(ColumnLoader):
     deferred=True, instrument=True, raiseload=True
 )
 @properties.ColumnProperty.strategy_for(do_nothing=True)
+# 延迟列加载：访问时触发 SELECT
 class DeferredColumnLoader(LoaderStrategy):
     """Provide loading behavior for a deferred :class:`.ColumnProperty`."""
 
@@ -554,6 +560,7 @@ class DeferredColumnLoader(LoaderStrategy):
         )
 
 
+# 批量 deferred 列加载调度器
 class LoadDeferredColumns:
     """serializable loader object used by DeferredColumnLoader"""
 
@@ -578,6 +585,7 @@ class LoadDeferredColumns:
         return strategy._load_for_state(state, passive)
 
 
+# 关系 loader 策略抽象基类
 class AbstractRelationshipLoader(LoaderStrategy):
     """LoaderStratgies which deal with related objects."""
 
@@ -617,6 +625,7 @@ class AbstractRelationshipLoader(LoaderStrategy):
 
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(do_nothing=True)
+# 空操作 loader：不触发任何 SQL
 class DoNothingLoader(LoaderStrategy):
     """Relationship loader that makes no change to the object's state.
 
@@ -630,6 +639,7 @@ class DoNothingLoader(LoaderStrategy):
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(lazy="noload")
 @relationships.RelationshipProperty.strategy_for(lazy=None)
+# 禁用加载：viewonly/raise 等策略
 class NoLoader(AbstractRelationshipLoader):
     """Provide loading behavior for a :class:`.Relationship`
     with "lazy=None".
@@ -674,6 +684,7 @@ class NoLoader(AbstractRelationshipLoader):
 @relationships.RelationshipProperty.strategy_for(lazy="raise")
 @relationships.RelationshipProperty.strategy_for(lazy="raise_on_sql")
 @relationships.RelationshipProperty.strategy_for(lazy="baked_select")
+# lazy='select'：首次访问发 SELECT
 class LazyLoader(
     AbstractRelationshipLoader, util.MemoizedSlots, log.Identified
 ):
@@ -1232,6 +1243,7 @@ class LazyLoader(
             populators["new"].append((self.key, reset_for_lazy_callable))
 
 
+# 单属性 lazy 加载触发器
 class LoadLazyAttribute:
     """semi-serializable loader object used by LazyLoader
 
@@ -1284,6 +1296,7 @@ class LoadLazyAttribute:
         )
 
 
+# post_load 策略基类：SelectIn/Subquery 共用
 class PostLoader(AbstractRelationshipLoader):
     """A relationship loader that emits a second SELECT statement."""
 
@@ -1361,6 +1374,7 @@ class PostLoader(AbstractRelationshipLoader):
 
 
 @relationships.RelationshipProperty.strategy_for(lazy="immediate")
+# lazy='immediate'：父行加载后立即 SELECT 子行
 class ImmediateLoader(PostLoader):
     __slots__ = ("join_depth",)
 
@@ -1462,6 +1476,7 @@ class ImmediateLoader(PostLoader):
 
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(lazy="subquery")
+# lazy='subquery'：IN 子查询批量加载
 class SubqueryLoader(PostLoader):
     __slots__ = ("join_depth",)
 
@@ -2120,6 +2135,7 @@ class SubqueryLoader(PostLoader):
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(lazy="joined")
 @relationships.RelationshipProperty.strategy_for(lazy=False)
+# lazy='joined'/'selectin' 的 JOIN  eager 加载
 class JoinedLoader(AbstractRelationshipLoader):
     """Provide loading behavior for a :class:`.Relationship`
     using joined eager loading.
@@ -2943,6 +2959,7 @@ class JoinedLoader(AbstractRelationshipLoader):
 
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(lazy="selectin")
+# lazy='selectin'：主键 IN 批量 eager 加载
 class SelectInLoader(PostLoader, util.MemoizedSlots):
     __slots__ = (
         "join_depth",

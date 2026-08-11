@@ -16,6 +16,8 @@ available in :class:`~sqlalchemy.orm.`.
 
 """
 
+# ORM Mapper：类↔表映射配置、属性解析与多态继承
+
 from __future__ import annotations
 
 from collections import deque
@@ -160,6 +162,7 @@ NO_ATTRIBUTE = util.symbol("NO_ATTRIBUTE")
 _CONFIGURE_MUTEX = threading.RLock()
 
 
+# 映射器核心：关联 Python 类与数据库表/ selectable
 @inspection._self_inspects
 @log.class_logger
 class Mapper(
@@ -4122,10 +4125,12 @@ class Mapper(
         return result
 
 
+# mapper 选项解析时列尚不可用的内部异常
 class _OptGetColumnsNotAvailable(Exception):
     pass
 
 
+# 全局 configure：解析 relationship 并完成所有 pending mapper
 def configure_mappers() -> None:
     """Initialize the inter-mapper relationships of all mappers that
     have been constructed thus far across all :class:`_orm.registry`
@@ -4318,6 +4323,7 @@ def _dispose_registries(registries: Set[_RegistryType], cascade: bool) -> None:
         reg._new_mappers = False
 
 
+# 装饰器：标记实例从 DB 加载后调用的重建方法
 def reconstructor(fn: _Fn) -> _Fn:
     """Decorate a method as the 'reconstructor' hook.
 
@@ -4422,6 +4428,7 @@ def _event_on_init(state, args, kwargs):
             instrumenting_mapper._set_polymorphic_identity(state)
 
 
+# 列→MapperProperty 映射：缺失列时抛出 UnmappedColumnError
 class _ColumnMapping(Dict["ColumnElement[Any]", "MapperProperty[Any]"]):
     """Error reporting helper for mapper._columntoproperty."""
 

@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# ORM 字典集合：column/attribute 键控 mapped dict 工厂
+
 from __future__ import annotations
 
 import operator
@@ -43,6 +45,7 @@ _KT = TypeVar("_KT", bound=Any)
 _VT = TypeVar("_VT", bound=Any)
 
 
+# 列键提取器：直接从 Column 取值作为 dict 键
 class _PlainColumnGetter(Generic[_KT]):
     """Plain column getter, stores collection of Column objects
     directly.
@@ -88,6 +91,7 @@ class _PlainColumnGetter(Generic[_KT]):
                 return obj
 
 
+# 可序列化列键提取器：pickle 友好但 __call__ 较慢
 class _SerializableColumnGetterV2(_PlainColumnGetter[_KT]):
     """Updated serializable getter which deals with
     multi-table mapped classes.
@@ -141,6 +145,7 @@ class _SerializableColumnGetterV2(_PlainColumnGetter[_KT]):
         return cols
 
 
+# 工厂：以 mapped 列值作为 collection dict 键
 def column_keyed_dict(
     mapping_spec: Union[Type[_KT], Callable[[_KT], _VT]],
     *,
@@ -198,6 +203,7 @@ def column_keyed_dict(
     )
 
 
+# 属性键提取器：从 mapped 对象属性取值作 dict 键
 class _AttrGetter:
     __slots__ = ("attr_name", "getter")
 
@@ -224,6 +230,7 @@ class _AttrGetter:
         return _AttrGetter, (self.attr_name,)
 
 
+# 工厂：以 Python 属性值作为 collection dict 键
 def attribute_keyed_dict(
     attr_name: str, *, ignore_unpopulated_attribute: bool = False
 ) -> Type[KeyFuncDict[Any, Any]]:
@@ -273,6 +280,7 @@ def attribute_keyed_dict(
     )
 
 
+# 工厂：自定义 keyfunc 构造 KeyFuncDict 子类
 def keyfunc_mapping(
     keyfunc: Callable[[Any], Any],
     *,
@@ -322,6 +330,7 @@ def keyfunc_mapping(
     )
 
 
+# ORM 字典集合基类：配合 keyfunc 维护关联映射
 class KeyFuncDict(Dict[_KT, _VT]):
     """Base for ORM mapped dictionary classes.
 

@@ -19,6 +19,8 @@ database to return iterable result sets.
 
 """
 
+# 旧版 Query API：SELECT 构建、过滤与 ORM 结果加载（1.x 兼容）
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -154,6 +156,7 @@ __all__ = ["Query", "QueryContext"]
 _T = TypeVar("_T", bound=Any)
 
 
+# 链式 ORM 查询构造器：filter/join/options 与 Session 绑定
 @inspection._self_inspects
 @log.class_logger
 class Query(
@@ -3370,6 +3373,7 @@ class Query(
         return context
 
 
+# 已弃用 loader 选项：from_statement 别名匹配
 class AliasOption(interfaces.LoaderOption):
     inherit_cache = False
 
@@ -3390,6 +3394,7 @@ class AliasOption(interfaces.LoaderOption):
         pass
 
 
+# 批量 UPDATE/DELETE 内部基类
 class BulkUD:
     """State used for the orm.Query version of update() / delete().
 
@@ -3433,6 +3438,7 @@ class BulkUD:
         return self.query.session
 
 
+# Query.update() 批量 UPDATE 包装
 class BulkUpdate(BulkUD):
     """BulkUD which handles UPDATEs."""
 
@@ -3447,6 +3453,7 @@ class BulkUpdate(BulkUD):
         self.update_kwargs = update_kwargs
 
 
+# Query.delete() 批量 DELETE 包装
 class BulkDelete(BulkUD):
     """BulkUD which handles DELETEs."""
 
@@ -3459,6 +3466,7 @@ class BulkDelete(BulkUD):
         self.delete_kwargs = delete_kwargs
 
 
+# 返回 Row 元组而非 ORM 实例的 Query 变体
 class RowReturningQuery(Query[Row[_TP]]):
     if TYPE_CHECKING:
 

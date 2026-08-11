@@ -7,6 +7,8 @@
 
 """State tracking utilities used by :class:`_orm.Session`."""
 
+# Session 状态机断言：@declare_states 装饰器与 IllegalStateChangeError
+
 from __future__ import annotations
 
 import contextlib
@@ -28,10 +30,13 @@ from ..util.typing import Literal
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 
+# 状态变更枚举基类
+# 状态断言 mixin：SessionTransaction 等方法的前置/后置状态检查
 class _StateChangeState(Enum):
     pass
 
 
+# 状态常量：ANY/NO_CHANGE/CHANGE_IN_PROGRESS
 class _StateChangeStates(_StateChangeState):
     ANY = 1
     NO_CHANGE = 2
