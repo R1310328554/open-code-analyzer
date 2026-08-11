@@ -27,6 +27,8 @@ from ...utils.import_utils import requires
 
 logger = logging.get_logger(__name__)
 
+
+# Marian 分词：源/目标独立 SentencePiece 双语翻译分词器
 VOCAB_FILES_NAMES = {
     "source_spm": "source.spm",
     "target_spm": "target.spm",
@@ -42,6 +44,7 @@ SPIECE_UNDERLINE = "▁"
 
 
 @requires(backends=("sentencepiece",))
+# MarianTokenizer：Marian SentencePiece 双语分词器（源/目标独立 SPM）
 class MarianTokenizer(PreTrainedTokenizer):
     r"""
     Construct a Marian tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -407,17 +410,20 @@ class MarianTokenizer(PreTrainedTokenizer):
             return self._special_token_mask(token_ids_0 + token_ids_1) + [1]
 
 
+# load_spm：加载 SentencePiece 模型文件
 def load_spm(path: str, sp_model_kwargs: dict[str, Any]) -> sentencepiece.SentencePieceProcessor:
     spm = sentencepiece.SentencePieceProcessor(**sp_model_kwargs)
     spm.Load(path)
     return spm
 
 
+# save_json：保存 JSON 词表/配置文件
 def save_json(data, path: str) -> None:
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
 
 
+# load_json：加载 JSON 词表/配置文件
 def load_json(path: str) -> dict | list:
     with open(path, "r") as f:
         return json.load(f)

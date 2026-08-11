@@ -43,9 +43,12 @@ from ...utils.import_utils import (
 from .configuration_mamba import MambaConfig
 
 
+# Mamba 建模：选择性状态空间（SSM）因果解码器，线性复杂度序列建模
+
 logger = logging.get_logger(__name__)
 
 
+# apply_mask_to_padding_states：将 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -59,6 +62,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积增量解码状态更新
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -79,6 +83,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积前向（带缓存）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -102,6 +107,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_inner_fn", "mamba_ssm")
+# mamba_inner_fn：Mamba SSM 核心内层前向（选择性扫描）
 def mamba_inner_fn(
     xz: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -126,6 +132,7 @@ def mamba_inner_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba_selective_state_update：Mamba 选择性状态空间单步更新
 def mamba_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -172,6 +179,7 @@ def mamba_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_scan_fn", "mamba_ssm")
+# mamba_selective_scan：Mamba 选择性扫描并行/序列实现
 def mamba_selective_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -282,6 +290,7 @@ def mamba_selective_scan(
 @use_kernelized_func(
     [mamba_inner_fn, mamba_selective_scan, mamba_selective_state_update, causal_conv1d_fn, causal_conv1d_update]
 )
+# MambaMixer：Mamba 选择性状态空间混合器（in_proj + conv + SSM + out_proj）
 class MambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -482,6 +491,7 @@ class MambaMixer(nn.Module):
         return contextualized_states
 
 
+# MambaRMSNorm：Mamba RMS 层归一化
 class MambaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -502,6 +512,7 @@ class MambaRMSNorm(nn.Module):
         return f"{self.weight.shape[0]}, eps={self.variance_epsilon}"
 
 
+# MambaBlock：Mamba 解码器单层（Mixer + RMSNorm 残差）
 class MambaBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -529,6 +540,7 @@ class MambaBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MambaPreTrainedModel：Mamba 预训练基类与权重初始化
 class MambaPreTrainedModel(PreTrainedModel):
     config: MambaConfig
     base_model_prefix = "backbone"
@@ -571,6 +583,7 @@ class MambaPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# MambaOutput：Mamba 主干输出 dataclass
 class MambaOutput(ModelOutput):
     r"""
     cache_params (`Cache`):
@@ -591,6 +604,7 @@ class MambaOutput(ModelOutput):
     """
 )
 @dataclass
+# MambaCausalLMOutput：Mamba 因果语言建模输出 dataclass
 class MambaCausalLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -611,6 +625,7 @@ class MambaCausalLMOutput(ModelOutput):
 
 
 @auto_docstring
+# MambaModel：Mamba 选择性状态空间因果解码器主干
 class MambaModel(MambaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -706,6 +721,7 @@ class MambaModel(MambaPreTrainedModel):
     embeddings).
     """
 )
+# MambaForCausalLM：Mamba 因果语言建模
 class MambaForCausalLM(MambaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "backbone.embeddings.weight"}
 

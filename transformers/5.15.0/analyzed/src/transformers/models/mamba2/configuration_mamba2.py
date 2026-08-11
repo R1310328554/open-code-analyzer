@@ -21,8 +21,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Mamba2 配置：state-spaces/mamba2-2.8b 结构化状态空间（SSD）因果 LM 超参
+
+# Mamba2Config：state-spaces/mamba2-2.8b 结构化状态空间（SSD）因果 LM 默认超参
 @auto_docstring(checkpoint="state-spaces/mamba2-2.8b")
 @strict
+# Mamba2Config：state-spaces/mamba2-2.8b 结构化状态空间（SSD）因果 LM 默认超参
 class Mamba2Config(PreTrainedConfig):
     r"""
     layer_norm_epsilon (`float`, *optional*, defaults to 1e-05):

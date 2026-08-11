@@ -28,6 +28,8 @@ from ...utils.import_utils import requires
 
 logger = logging.get_logger(__name__)
 
+
+# M2M100 分词：SentencePiece BPE + 100 语言代码前缀
 SPIECE_UNDERLINE = "▁"
 
 VOCAB_FILES_NAMES = {
@@ -46,6 +48,7 @@ FAIRSEQ_LANGUAGE_CODES = {
 
 
 @requires(backends=("sentencepiece",))
+# M2M100Tokenizer：M2M100 SentencePiece 多语言分词器（100 语言代码）
 class M2M100Tokenizer(PreTrainedTokenizer):
     """
     Construct an M2M100 tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -366,17 +369,20 @@ class M2M100Tokenizer(PreTrainedTokenizer):
         return self.lang_token_to_id[lang_token]
 
 
+# load_spm：加载 SentencePiece 模型文件
 def load_spm(path: str, sp_model_kwargs: dict[str, Any]) -> sentencepiece.SentencePieceProcessor:
     spm = sentencepiece.SentencePieceProcessor(**sp_model_kwargs)
     spm.Load(str(path))
     return spm
 
 
+# load_json：加载 JSON 词表/配置文件
 def load_json(path: str) -> dict | list:
     with open(path, "r") as f:
         return json.load(f)
 
 
+# save_json：保存 JSON 词表/配置文件
 def save_json(data, path: str) -> None:
     with open(path, "w") as f:
         json.dump(data, f, indent=2)

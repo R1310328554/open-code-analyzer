@@ -49,10 +49,13 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_marian import MarianConfig
 
 
+# Marian 建模：Helsinki-NLP OPUS-MT 编码器-解码器神经机器翻译
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：将 decoder 输入右移一位并插入起始 token
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -69,6 +72,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# MarianSinusoidalPositionalEmbedding：Marian 正弦位置编码（非交错 cos/sin）
 class MarianSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -104,6 +108,7 @@ class MarianSinusoidalPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -133,6 +138,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->Marian
+# MarianAttention：Marian 多头自/交叉注意力
 class MarianAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -251,6 +257,7 @@ class MarianAttention(nn.Module):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartEncoderLayer with Bart->Marian, BART->MARIAN
+# MarianEncoderLayer：Marian 编码器单层（双向自注意力 + FFN）
 class MarianEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MarianConfig, layer_idx: int | None = None):
         super().__init__()
@@ -303,6 +310,7 @@ class MarianEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderLayer with Bart->Marian, BART->MARIAN
+# MarianDecoderLayer：Marian 解码器单层（因果自注意力 + 交叉注意力 + FFN）
 class MarianDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MarianConfig, layer_idx: int | None = None):
         super().__init__()
@@ -386,6 +394,7 @@ class MarianDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MarianPreTrainedModel：Marian 预训练基类与权重初始化
 class MarianPreTrainedModel(PreTrainedModel):
     config: MarianConfig
     base_model_prefix = "model"
@@ -416,6 +425,7 @@ class MarianPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
 
+# MarianEncoder：Marian 双向 Transformer 编码器主干
 class MarianEncoder(MarianPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -499,6 +509,7 @@ class MarianEncoder(MarianPreTrainedModel):
         )
 
 
+# MarianDecoder：Marian 因果 Transformer 解码器（带交叉注意力）
 class MarianDecoder(MarianPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`MarianDecoderLayer`]
@@ -622,6 +633,7 @@ class MarianDecoder(MarianPreTrainedModel):
 
 
 @auto_docstring
+# MarianModel：Marian 编码器-解码器 seq2seq 翻译主干
 class MarianModel(MarianPreTrainedModel):
     _keys_to_ignore_on_load_missing = [
         "model.encoder.embed_positions.weight",
@@ -798,6 +810,7 @@ class MarianModel(MarianPreTrainedModel):
     The Marian Model with a language modeling head. Can be used for summarization.
     """
 )
+# MarianMTModel：Marian 神经机器翻译条件生成模型
 class MarianMTModel(MarianPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = [
@@ -1002,6 +1015,7 @@ class MarianMTModel(MarianPreTrainedModel, GenerationMixin):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderWrapper with Bart->Marian
+# MarianDecoderWrapper：Marian 独立解码器封装（用于 CausalLM）
 class MarianDecoderWrapper(MarianPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -1018,6 +1032,7 @@ class MarianDecoderWrapper(MarianPreTrainedModel):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartForCausalLM with Bart->Marian, facebook/bart-base->Helsinki-NLP/opus-mt-fr-en
+# MarianForCausalLM：Marian 解码器因果语言建模
 class MarianForCausalLM(MarianPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",

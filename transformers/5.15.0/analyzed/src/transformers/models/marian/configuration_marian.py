@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Marian 配置：Helsinki-NLP/opus-mt 神经机器翻译 seq2seq 超参
+
+# MarianConfig：Helsinki-NLP/opus-mt-en-de 神经机器翻译默认超参
 @auto_docstring(checkpoint="Helsinki-NLP/opus-mt-en-de")
 @strict
+# MarianConfig：Helsinki-NLP/opus-mt-en-de 神经机器翻译默认超参
 class MarianConfig(PreTrainedConfig):
     r"""
     decoder_vocab_size (`int`, *optional*):

@@ -43,10 +43,13 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_m2m_100 import M2M100Config
 
 
+# M2M100 建模：Fairseq 风格多语言编码器-解码器 Transformer 翻译
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：将 decoder 输入右移一位并插入起始 token
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -64,6 +67,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 # Copied from transformers.models.bart.modeling_bart.BartScaledWordEmbedding with Bart->M2M100
+# M2M100ScaledWordEmbedding：M2M100 带缩放因子的词嵌入层
 class M2M100ScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -77,6 +81,7 @@ class M2M100ScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale
 
 
+# M2M100SinusoidalPositionalEmbedding：M2M100 正弦位置编码（Fairseq 风格）
 class M2M100SinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -180,6 +185,7 @@ class M2M100SinusoidalPositionalEmbedding(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -209,6 +215,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->M2M100
+# M2M100Attention：M2M100 多头自/交叉注意力（支持 GQA）
 class M2M100Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -327,6 +334,7 @@ class M2M100Attention(nn.Module):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartEncoderLayer with MBart->M2M100, MBART->M2M100
+# M2M100EncoderLayer：M2M100 编码器单层（双向自注意力 + FFN）
 class M2M100EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: M2M100Config):
         super().__init__()
@@ -384,6 +392,7 @@ class M2M100EncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartDecoderLayer with MBart->M2M100, MBART->M2M100
+# M2M100DecoderLayer：M2M100 解码器单层（因果自注意力 + 交叉注意力 + FFN）
 class M2M100DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: M2M100Config, layer_idx: int | None = None):
         super().__init__()
@@ -478,6 +487,7 @@ class M2M100DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# M2M100PreTrainedModel：M2M100 预训练基类与权重初始化
 class M2M100PreTrainedModel(PreTrainedModel):
     config: M2M100Config
     base_model_prefix = "model"
@@ -498,6 +508,7 @@ class M2M100PreTrainedModel(PreTrainedModel):
             init.copy_(module.weights, emb_weights)
 
 
+# M2M100Encoder：M2M100 双向 Transformer 编码器主干
 class M2M100Encoder(M2M100PreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -590,6 +601,7 @@ class M2M100Encoder(M2M100PreTrainedModel):
         )
 
 
+# M2M100Decoder：M2M100 因果 Transformer 解码器（带交叉注意力）
 class M2M100Decoder(M2M100PreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`M2M100DecoderLayer`]
@@ -713,6 +725,7 @@ class M2M100Decoder(M2M100PreTrainedModel):
 
 
 @auto_docstring
+# M2M100Model：M2M100 编码器-解码器 seq2seq 多语言翻译主干
 class M2M100Model(M2M100PreTrainedModel):
     _tied_weights_keys = {
         "decoder.embed_tokens.weight": "shared.weight",
@@ -815,6 +828,7 @@ class M2M100Model(M2M100PreTrainedModel):
     The M2M100 Model with a language modeling head. Can be used for summarization.
     """
 )
+# M2M100ForConditionalGeneration：M2M100 多语言条件生成翻译模型
 class M2M100ForConditionalGeneration(M2M100PreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = {"lm_head.weight": "model.shared.weight"}

@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# M2M100 配置：facebook/m2m100_418M 100 语言 seq2seq 翻译超参
+
+# M2M100Config：facebook/m2m100_418M 多语言 seq2seq 翻译默认超参
 @auto_docstring(checkpoint="facebook/m2m100_418M")
 @strict
+# M2M100Config：facebook/m2m100_418M 多语言 seq2seq 翻译默认超参
 class M2M100Config(PreTrainedConfig):
     r"""
     Example:

@@ -21,8 +21,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Mamba 配置：state-spaces/mamba-2.8b 选择性状态空间因果语言模型超参
+
+# MambaConfig：state-spaces/mamba-2.8b 选择性状态空间因果 LM 默认超参
 @auto_docstring(checkpoint="state-spaces/mamba-2.8b")
 @strict
+# MambaConfig：state-spaces/mamba-2.8b 选择性状态空间因果 LM 默认超参
 class MambaConfig(PreTrainedConfig):
     r"""
     layer_norm_epsilon (`float`, *optional*, defaults to 1e-05):

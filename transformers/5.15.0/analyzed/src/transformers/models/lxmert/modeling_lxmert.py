@@ -27,9 +27,12 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_lxmert import LxmertConfig
 
 
+# LXMERT 建模：语言-视觉跨模态 Transformer（关系编码器 + 交叉注意力）
+
 logger = logging.get_logger(__name__)
 
 
+# GeLU：LXMERT 使用的 GELU 激活封装
 class GeLU(nn.Module):
     def __init__(self):
         super().__init__()
@@ -46,6 +49,7 @@ class GeLU(nn.Module):
     """
 )
 @dataclass
+# LxmertModelOutput：LXMERT 多模态主干输出 dataclass（语言/视觉/跨模态隐状态与注意力）
 class LxmertModelOutput(ModelOutput):
     r"""
     language_output (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -91,6 +95,7 @@ class LxmertModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LxmertForQuestionAnsweringOutput：LXMERT 视觉问答输出 dataclass
 class LxmertForQuestionAnsweringOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -133,6 +138,7 @@ class LxmertForQuestionAnsweringOutput(ModelOutput):
     """
 )
 @dataclass
+# LxmertForPreTrainingOutput：LXMERT 预训练输出 dataclass（MLM + 视觉目标）
 class LxmertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -176,6 +182,7 @@ class LxmertForPreTrainingOutput(ModelOutput):
     cross_encoder_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# LxmertEmbeddings：LXMERT 语言 token 嵌入 + 位置嵌入 + LayerNorm
 class LxmertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -214,6 +221,7 @@ class LxmertEmbeddings(nn.Module):
         return embeddings
 
 
+# LxmertAttention：LXMERT 多头自注意力（Q/K/V 投影 + 缩放点积）
 class LxmertAttention(nn.Module):
     def __init__(self, config, ctx_dim=None):
         super().__init__()
@@ -266,6 +274,7 @@ class LxmertAttention(nn.Module):
         return outputs
 
 
+# LxmertAttentionOutput：LXMERT 注意力输出投影 + 残差 LayerNorm
 class LxmertAttentionOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -280,6 +289,7 @@ class LxmertAttentionOutput(nn.Module):
         return hidden_states
 
 
+# LxmertCrossAttentionLayer：LXMERT 跨模态交叉注意力层
 class LxmertCrossAttentionLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -295,6 +305,7 @@ class LxmertCrossAttentionLayer(nn.Module):
         return outputs
 
 
+# LxmertSelfAttentionLayer：LXMERT 单模态自注意力层（含 FFN）
 class LxmertSelfAttentionLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -316,6 +327,7 @@ class LxmertSelfAttentionLayer(nn.Module):
         return outputs
 
 
+# LxmertIntermediate：LXMERT FFN 中间层（线性扩展 + 激活）
 class LxmertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -328,6 +340,7 @@ class LxmertIntermediate(nn.Module):
         return hidden_states
 
 
+# LxmertOutput：LXMERT FFN 输出层（线性投影 + 残差 LayerNorm）
 class LxmertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -342,6 +355,7 @@ class LxmertOutput(nn.Module):
         return hidden_states
 
 
+# LxmertLayer：LXMERT 单模态 Transformer 层（自注意力 + FFN）
 class LxmertLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -358,6 +372,7 @@ class LxmertLayer(nn.Module):
         return outputs
 
 
+# LxmertXLayer：LXMERT 跨模态 Transformer 层（语言↔视觉双向交叉注意力）
 class LxmertXLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -449,6 +464,7 @@ class LxmertXLayer(nn.Module):
         )
 
 
+# LxmertVisualFeatureEncoder：LXMERT 视觉特征编码器（关系编码器）
 class LxmertVisualFeatureEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -476,6 +492,7 @@ class LxmertVisualFeatureEncoder(nn.Module):
         return output
 
 
+# LxmertEncoder：LXMERT 语言/视觉/跨模态三层编码器堆叠
 class LxmertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -557,6 +574,7 @@ class LxmertEncoder(nn.Module):
         )
 
 
+# LxmertPooler：LXMERT CLS token 池化（线性 + Tanh）
 class LxmertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -572,6 +590,7 @@ class LxmertPooler(nn.Module):
         return pooled_output
 
 
+# LxmertPredictionHeadTransform：LXMERT MLM 预测头变换（Dense + 激活 + LayerNorm）
 class LxmertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -586,6 +605,7 @@ class LxmertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# LxmertLMPredictionHead：LXMERT 掩码语言建模预测头
 class LxmertLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -599,6 +619,7 @@ class LxmertLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# LxmertVisualAnswerHead：LXMERT 视觉问答答案预测头
 class LxmertVisualAnswerHead(nn.Module):
     def __init__(self, config, num_labels):
         super().__init__()
@@ -614,6 +635,7 @@ class LxmertVisualAnswerHead(nn.Module):
         return self.logit_fc(hidden_states)
 
 
+# LxmertVisualObjHead：LXMERT 视觉对象/属性预测头
 class LxmertVisualObjHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -645,6 +667,7 @@ class LxmertVisualObjHead(nn.Module):
         return output
 
 
+# LxmertPreTrainingHeads：LXMERT 预训练任务头集合（MLM + 视觉目标）
 class LxmertPreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -658,6 +681,7 @@ class LxmertPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# LxmertPreTrainedModel：LXMERT 预训练基类与权重初始化
 class LxmertPreTrainedModel(PreTrainedModel):
     config: LxmertConfig
     base_model_prefix = "lxmert"
@@ -672,6 +696,7 @@ class LxmertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LxmertModel：LXMERT 语言-视觉跨模态表示学习主干
 class LxmertModel(LxmertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -823,6 +848,7 @@ class LxmertModel(LxmertPreTrainedModel):
 
 
 @auto_docstring
+# LxmertForPreTraining：LXMERT 预训练（MLM + 视觉特征/对象/属性预测）
 class LxmertForPreTraining(LxmertPreTrainedModel):
     # help saving them
     _tied_weights_keys = {
@@ -1120,6 +1146,7 @@ class LxmertForPreTraining(LxmertPreTrainedModel):
     Lxmert Model with a visual-answering head on top for downstream QA tasks
     """
 )
+# LxmertForQuestionAnswering：LXMERT 视觉问答（VQA）
 class LxmertForQuestionAnswering(LxmertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
