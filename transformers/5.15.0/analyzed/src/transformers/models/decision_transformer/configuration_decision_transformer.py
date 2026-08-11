@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="")
 @strict
+# DecisionTransformerConfig：state_dim、act_dim、max_ep_len 与 action_tanh 开关
 class DecisionTransformerConfig(PreTrainedConfig):
     r"""
     state_dim (`int`, *optional*, defaults to 17):
@@ -88,3 +89,5 @@ class DecisionTransformerConfig(PreTrainedConfig):
 
 
 __all__ = ["DecisionTransformerConfig"]
+# 模块 src/transformers/models/decision_transformer/configuration_decision_transformer.py：Transformers 5.15.0 wave18b 中文文档注释。
+

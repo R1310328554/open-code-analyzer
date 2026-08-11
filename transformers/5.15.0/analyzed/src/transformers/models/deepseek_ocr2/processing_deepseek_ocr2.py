@@ -27,6 +27,7 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# DeepseekOcr2ProcessorKwargs：text/images 默认 kwargs（crop_to_patches 等）
 class DeepseekOcr2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -41,6 +42,7 @@ class DeepseekOcr2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekOcr2Processor：image_processor + tokenizer 多模态 Processor
 class DeepseekOcr2Processor(ProcessorMixin):
     def __init__(
         self,

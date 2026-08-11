@@ -44,6 +44,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.eager_attention_forward
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(module, query, key, value, attention_mask, scaling=None, dropout=0.0, **kwargs):
     if scaling is None:
         scaling = query.size(-1) ** -0.5
@@ -66,6 +67,7 @@ def eager_attention_forward(module, query, key, value, attention_mask, scaling=N
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.GPT2Attention with GPT2->DecisionTransformerGPT2
+# DecisionTransformerGPT2Attention：GPT2 风格因果自注意力（无位置嵌入）
 class DecisionTransformerGPT2Attention(nn.Module):
     def __init__(self, config, is_cross_attention=False, layer_idx=None):
         super().__init__()
@@ -135,6 +137,7 @@ class DecisionTransformerGPT2Attention(nn.Module):
 
         return attn_output, attn_weights
 
+# forward：拼接 RL 轨迹 token，自回归预测 action（及可选 state/return）
     def forward(
         self,
         hidden_states: tuple[torch.FloatTensor] | None,
@@ -221,6 +224,7 @@ class DecisionTransformerGPT2Attention(nn.Module):
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.GPT2MLP with GPT2->DecisionTransformerGPT2
+# DecisionTransformerGPT2MLP：GPT2 FFN（c_fc + GELU + c_proj）
 class DecisionTransformerGPT2MLP(nn.Module):
     def __init__(self, intermediate_size, config):
         super().__init__()
@@ -239,6 +243,7 @@ class DecisionTransformerGPT2MLP(nn.Module):
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.GPT2Block with GPT2->DecisionTransformerGPT2
+# DecisionTransformerGPT2Block：Attn + MLP 的 GPT2 解码块
 class DecisionTransformerGPT2Block(GradientCheckpointingLayer):
     # Ignore copy
     def __init__(self, config, layer_idx=None):
@@ -309,6 +314,7 @@ class DecisionTransformerGPT2Block(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DecisionTransformerGPT2PreTrainedModel：GPT2 子模块预训练基类
 class DecisionTransformerGPT2PreTrainedModel(PreTrainedModel):
     config: DecisionTransformerConfig
     base_model_prefix = "transformer"
@@ -341,6 +347,7 @@ class DecisionTransformerGPT2PreTrainedModel(PreTrainedModel):
                     init.normal_(p, mean=0.0, std=self.config.initializer_range / math.sqrt(2 * self.config.n_layer))
 
 
+# DecisionTransformerGPT2Model：无 wpe 的 GPT2 主干，供 DT 复用
 class DecisionTransformerGPT2Model(DecisionTransformerGPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -464,6 +471,7 @@ class DecisionTransformerGPT2Model(DecisionTransformerGPT2PreTrainedModel):
     """
 )
 @dataclass
+# DecisionTransformerOutput：state/action/return 预测与 hidden_states
 class DecisionTransformerOutput(ModelOutput):
     r"""
     state_preds (`torch.FloatTensor` of shape `(batch_size, sequence_length, state_dim)`):
@@ -482,6 +490,7 @@ class DecisionTransformerOutput(ModelOutput):
     last_hidden_state: torch.FloatTensor | None = None
 
 
+# DecisionTransformerPreTrainedModel：主输入为 states 的预训练基类
 class DecisionTransformerPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -499,6 +508,7 @@ class DecisionTransformerPreTrainedModel(PreTrainedModel):
     The Decision Transformer Model
     """
 )
+# DecisionTransformerModel：嵌入 state/action/return/timestep 后 GPT2 前向
 class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
     """
 

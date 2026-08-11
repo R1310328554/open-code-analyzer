@@ -40,6 +40,7 @@ from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
 
 
+# DeepseekOcr2ImageProcessorKwargs：PIL 后端图像预处理可选参数
 class DeepseekOcr2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_to_patches (`bool`, *optional*, defaults to `self.crop_to_patches`):
@@ -66,6 +67,7 @@ class DeepseekOcr2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：计算 min~max tile 数下的宽高比列表
 def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given minimum and maximum number of input tiles.
@@ -101,6 +103,7 @@ def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) 
 
 
 @lru_cache(maxsize=100)
+# get_optimal_tiled_canvas：按宽高比选取最优 tile 布局
 def get_optimal_tiled_canvas(
     original_image_size: tuple[int, int],
     target_tile_size: tuple[int, int],
@@ -141,6 +144,7 @@ def get_optimal_tiled_canvas(
 
 @requires(backends=("vision",))
 @auto_docstring
+# DeepseekOcr2ImageProcessorPil：PIL 后端分块预处理，无 torch 依赖路径
 class DeepseekOcr2ImageProcessorPil(PilBackend):
     valid_kwargs = DeepseekOcr2ImageProcessorKwargs
     resample = PILImageResampling.BICUBIC

@@ -39,6 +39,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.deberta.modeling_deberta.DebertaSelfOutput with DebertaLayerNorm->LayerNorm
+# DebertaV2SelfOutput：自注意力输出线性投影 + LayerNorm 残差
 class DebertaV2SelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -54,6 +55,7 @@ class DebertaV2SelfOutput(nn.Module):
 
 
 @torch.jit.script
+# make_log_bucket_position：相对位置对数分桶编码
 def make_log_bucket_position(relative_pos, bucket_size: int, max_position: int):
     sign = torch.sign(relative_pos)
     mid = bucket_size // 2
@@ -69,6 +71,7 @@ def make_log_bucket_position(relative_pos, bucket_size: int, max_position: int):
     return bucket_pos
 
 
+# build_relative_position：构建 content-to-position 相对位置矩阵
 def build_relative_position(query_layer, key_layer, bucket_size: int = -1, max_position: int = -1):
     """
     Build relative position according to the query and key
@@ -134,6 +137,7 @@ def build_rpos(query_layer, key_layer, relative_pos, position_buckets: int, max_
         return relative_pos
 
 
+# DisentangledSelfAttention：DeBERTa 解耦 c2p/p2c 相对位置注意力核心
 class DisentangledSelfAttention(nn.Module):
     """
     Disentangled self-attention module
@@ -346,6 +350,7 @@ class DisentangledSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.deberta.modeling_deberta.DebertaAttention with Deberta->DebertaV2
+# DebertaV2Attention：封装 DisentangledSelfAttention 与输出投影
 class DebertaV2Attention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -381,6 +386,7 @@ class DebertaV2Attention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->DebertaV2
+# DebertaV2Intermediate：FFN 中间 GELU 层
 class DebertaV2Intermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -397,6 +403,7 @@ class DebertaV2Intermediate(nn.Module):
 
 
 # Copied from transformers.models.deberta.modeling_deberta.DebertaOutput with DebertaLayerNorm->LayerNorm
+# DebertaV2Output：FFN 输出投影 + LayerNorm 残差
 class DebertaV2Output(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -413,6 +420,7 @@ class DebertaV2Output(nn.Module):
 
 
 # Copied from transformers.models.deberta.modeling_deberta.DebertaLayer with Deberta->DebertaV2
+# DebertaV2Layer：自注意力 + FFN 的 Transformer 层
 class DebertaV2Layer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -446,6 +454,7 @@ class DebertaV2Layer(GradientCheckpointingLayer):
             return (layer_output, None)
 
 
+# ConvLayer：可选卷积增强层，局部特征提取
 class ConvLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -483,6 +492,7 @@ class ConvLayer(nn.Module):
 
 
 # Copied from transformers.models.deberta.modeling_deberta.DebertaEmbeddings with DebertaLayerNorm->LayerNorm,Deberta->DebertaV2
+# DebertaV2Embeddings：词嵌入 + 绝对位置偏置 + LayerNorm
 class DebertaV2Embeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -562,6 +572,7 @@ class DebertaV2Embeddings(nn.Module):
         return embeddings
 
 
+# DebertaV2Encoder：堆叠 DebertaV2Layer，支持 z_steps 迭代 refine
 class DebertaV2Encoder(nn.Module):
     """Modified BertEncoder with relative position bias support"""
 
@@ -681,6 +692,7 @@ class DebertaV2Encoder(nn.Module):
 
 
 @auto_docstring
+# DebertaV2PreTrainedModel：预训练基类，忽略 position_embeddings 加载
 class DebertaV2PreTrainedModel(PreTrainedModel):
     config: DebertaV2Config
     base_model_prefix = "deberta"
@@ -699,6 +711,7 @@ class DebertaV2PreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.deberta.modeling_deberta.DebertaModel with Deberta->DebertaV2
+# DebertaV2Model：嵌入 + 编码器，输出 last_hidden_state
 class DebertaV2Model(DebertaV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -819,6 +832,7 @@ class LegacyDebertaV2PredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# LegacyDebertaV2LMPredictionHead：旧版 MLM 头，掩码填充任务不兼容
 class LegacyDebertaV2LMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -847,6 +861,7 @@ class LegacyDebertaV2OnlyMLMHead(nn.Module):
         return prediction_scores
 
 
+# DebertaV2LMPredictionHead：新版 MLM 预测头
 class DebertaV2LMPredictionHead(nn.Module):
     """https://github.com/microsoft/DeBERTa/blob/master/DeBERTa/deberta/bert.py#L270"""
 
@@ -884,6 +899,7 @@ class DebertaV2OnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# DebertaV2ForMaskedLM：掩码语言建模，CrossEntropy 损失
 class DebertaV2ForMaskedLM(DebertaV2PreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -978,6 +994,7 @@ class DebertaV2ForMaskedLM(DebertaV2PreTrainedModel):
 
 
 # Copied from transformers.models.deberta.modeling_deberta.ContextPooler
+# ContextPooler：序列分类用的上下文池化（首 token + 全序列 dense）
 class ContextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1006,6 +1023,7 @@ class ContextPooler(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# DebertaV2ForSequenceClassification：句级分类头
 class DebertaV2ForSequenceClassification(DebertaV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1116,6 +1134,7 @@ class DebertaV2ForSequenceClassification(DebertaV2PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.deberta.modeling_deberta.DebertaForTokenClassification with Deberta->DebertaV2
+# DebertaV2ForTokenClassification：序列标注（NER 等）
 class DebertaV2ForTokenClassification(DebertaV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1179,6 +1198,7 @@ class DebertaV2ForTokenClassification(DebertaV2PreTrainedModel):
 
 
 @auto_docstring
+# DebertaV2ForQuestionAnswering：抽取式问答 start/end  logits
 class DebertaV2ForQuestionAnswering(DebertaV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1257,6 +1277,7 @@ class DebertaV2ForQuestionAnswering(DebertaV2PreTrainedModel):
 
 
 @auto_docstring
+# DebertaV2ForMultipleChoice：多选分类，展平 batch×choice 维度
 class DebertaV2ForMultipleChoice(DebertaV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

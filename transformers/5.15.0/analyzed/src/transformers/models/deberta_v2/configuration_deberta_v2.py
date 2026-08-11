@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DebertaV2Config：128K 词表、相对位置 p2c/c2p 注意力与 pooler 超参
 @auto_docstring(checkpoint="microsoft/deberta-v2-xlarge")
 @strict
+# DebertaV2Config：支持 relative_attention、pos_att_type 与 legacy MLM 头切换
 class DebertaV2Config(PreTrainedConfig):
     r"""
     relative_attention (`bool`, *optional*, defaults to `True`):
@@ -82,6 +84,7 @@ class DebertaV2Config(PreTrainedConfig):
     legacy: bool = True
     tie_word_embeddings: bool = True
 
+# __post_init__：解析 pos_att_type 字符串并设置 pooler_hidden_size
     def __post_init__(self, **kwargs):
         # Backwards compatibility
         if isinstance(self.pos_att_type, str):

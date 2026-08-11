@@ -87,6 +87,7 @@ from ..sam.modeling_sam import (
 logger = logging.get_logger(__name__)
 
 
+# DeepseekOcr2ImageProcessorKwargs：继承 GotOcr2 分块预处理参数
 class DeepseekOcr2ImageProcessorKwargs(GotOcr2ImageProcessorKwargs, total=False):
     r"""
     crop_to_patches (`bool`, *optional*, defaults to `self.crop_to_patches`):
@@ -109,6 +110,7 @@ class DeepseekOcr2ImageProcessorKwargs(GotOcr2ImageProcessorKwargs, total=False)
 
 
 @auto_docstring
+# DeepseekOcr2ImageProcessor：modular 定义 Torchvision 分块图像处理
 class DeepseekOcr2ImageProcessor(GotOcr2ImageProcessor):
     image_mean = IMAGENET_STANDARD_MEAN
     image_std = IMAGENET_STANDARD_STD
@@ -319,6 +321,7 @@ class DeepseekOcr2ImageProcessor(GotOcr2ImageProcessor):
 
 @requires(backends=("vision",))
 @auto_docstring
+# DeepseekOcr2ImageProcessorPil：modular 定义 PIL 分块图像处理
 class DeepseekOcr2ImageProcessorPil(GotOcr2ImageProcessorPil):
     image_mean = IMAGENET_STANDARD_MEAN
     image_std = IMAGENET_STANDARD_STD
@@ -491,6 +494,7 @@ class DeepseekOcr2ImageProcessorPil(GotOcr2ImageProcessorPil):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2SamVisionConfig：继承 SAM 视觉配置
 class DeepseekOcr2SamVisionConfig(SamVisionConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -520,6 +524,7 @@ class DeepseekOcr2SamVisionConfig(SamVisionConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2VisionEncoderConfig：Qwen2 视觉编码器配置别名
 class DeepseekOcr2VisionEncoderConfig(Qwen2Config):
     r"""
     Example:
@@ -536,6 +541,7 @@ class DeepseekOcr2VisionEncoderConfig(Qwen2Config):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2VisionConfig：SAM + VisionEncoder 组合配置
 class DeepseekOcr2VisionConfig(PreTrainedConfig):
     r"""
     sam_config (`dict` or `DeepseekOcr2SamVisionConfig`, *optional*):
@@ -570,6 +576,7 @@ class DeepseekOcr2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2TextConfig：DeepSeek-V2 文本塔配置扩展
 class DeepseekOcr2TextConfig(DeepseekV2Config):
     r"""
     n_group (`int`, *optional*):
@@ -618,6 +625,7 @@ class DeepseekOcr2TextConfig(DeepseekV2Config):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2Config：顶层多模态配置，含 vision/text 子配置
 class DeepseekOcr2Config(PreTrainedConfig):
     r"""
     vision_config (`dict` or `DeepseekOcr2VisionConfig`, *optional*):
@@ -650,6 +658,7 @@ class DeepseekOcr2Config(PreTrainedConfig):
 
 
 @dataclass
+# DeepseekOcr2ModelOutputWithPooling：多模态池化输出类型
 class DeepseekOcr2ModelOutputWithPooling(BaseModelOutputWithPooling):
     """
     local_last_hidden_state (`torch.FloatTensor` of shape `(total_local_patches, sequence_length, hidden_size)`, *optional*):
@@ -665,14 +674,17 @@ class DeepseekOcr2ModelOutputWithPooling(BaseModelOutputWithPooling):
     local_attentions: torch.FloatTensor | None = None
 
 
+# DeepseekOcr2ModelOutputWithPast：继承 LlavaNext 多模态输出
 class DeepseekOcr2ModelOutputWithPast(LlavaNextModelOutputWithPast):
     pass
 
 
+# DeepseekOcr2CausalLMOutputWithPast：继承 LlavaNext 因果 LM 输出
 class DeepseekOcr2CausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     pass
 
 
+# DeepseekOcr2PreTrainedModel：继承 LlavaNext 预训练基类
 class DeepseekOcr2PreTrainedModel(LlavaNextPreTrainedModel):
     _no_split_modules = [
         "DeepseekOcr2SamVisionLayer",
@@ -743,6 +755,7 @@ class DeepseekOcr2SamVisionProj(nn.Module):
         return hidden_states
 
 
+# DeepseekOcr2SamVisionEncoder：SAM 编码器 + OCR2 投影层
 class DeepseekOcr2SamVisionEncoder(SamVisionEncoder, DeepseekOcr2PreTrainedModel):
     def __init__(self, config: DeepseekOcr2SamVisionConfig):
         super().__init__(config)
@@ -804,6 +817,7 @@ class DeepseekOcr2VisionEncoderLayer(Qwen2DecoderLayer):
 
 
 @auto_docstring(custom_intro="Vision encoder for DeepSeek-OCR-2.")
+# DeepseekOcr2VisionEncoder：Qwen2Model 视觉序列编码
 class DeepseekOcr2VisionEncoder(Qwen2Model, DeepseekOcr2PreTrainedModel):
     _can_record_outputs = {
         "hidden_states": DeepseekOcr2VisionEncoderLayer,
@@ -862,6 +876,7 @@ class DeepseekOcr2VisionEncoder(Qwen2Model, DeepseekOcr2PreTrainedModel):
         return BaseModelOutputWithPast(last_hidden_state=hidden_states)
 
 
+# DeepseekOcr2VisionModel：SAM + VisionEncoder 视觉组合
 class DeepseekOcr2VisionModel(DeepseekOcr2PreTrainedModel):
     """Vision pipeline: SAM ViT-B (with neck)"""
 
@@ -932,6 +947,7 @@ class DeepseekOcr2TextPreTrainedModel(DeepseekV2PreTrainedModel):
     pass
 
 
+# DeepseekOcr2TextModel：DeepSeek-V2 文本主干 modular 定义
 class DeepseekOcr2TextModel(DeepseekV2Model):
     def __init__(self, config: DeepseekOcr2TextConfig):
         super().__init__(config)
@@ -939,6 +955,7 @@ class DeepseekOcr2TextModel(DeepseekV2Model):
         self.rotary_emb = DeepseekOcr2TextRotaryEmbedding(config=config)
 
 
+# DeepseekOcr2Model：继承 LlavaNext 多模态 forward 逻辑
 class DeepseekOcr2Model(LlavaNextModel):
     def __init__(self, config: DeepseekOcr2Config):
         super().__init__(config)
@@ -1068,6 +1085,7 @@ class DeepseekOcr2Model(LlavaNextModel):
 
 
 @auto_docstring
+# DeepseekOcr2ForConditionalGeneration：OCR 条件生成 modular 定义
 class DeepseekOcr2ForConditionalGeneration(LlavaNextForConditionalGeneration):
     def pack_image_features(self):
         raise NotImplementedError("DeepseekOcr2 does not use pack_image_features")

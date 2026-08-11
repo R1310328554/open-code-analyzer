@@ -25,8 +25,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# DeepseekV2Config：64 路由专家、2 共享专家、kv/q LoRA 秩与 topk 路由
 @auto_docstring(checkpoint="deepseek-ai/DeepSeek-V2-Lite")
 @strict
+# DeepseekV2Config：first_k_dense_replace 控制前几层 dense，其后 MoE
 class DeepseekV2Config(PreTrainedConfig):
     r"""
     first_k_dense_replace (`int`, *optional*, defaults to 0):
@@ -119,6 +121,7 @@ class DeepseekV2Config(PreTrainedConfig):
     num_experts_per_tok: int | None = None
     moe_intermediate_size: int = 1407
 
+# __post_init__：推导 qk_head_dim、head_dim 与 num_key_value_heads
     def __post_init__(self, **kwargs):
         # Also tells shared code this is an MLA config (key and value head dims differ)
         self.qk_head_dim = self.qk_nope_head_dim + self.qk_rope_head_dim
@@ -130,6 +133,7 @@ class DeepseekV2Config(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 hidden_size 可被 num_attention_heads 整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:

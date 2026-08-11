@@ -27,6 +27,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2SamVisionConfig：SAM ViT 骨干，window/global 注意力与 neck 通道
 class DeepseekOcr2SamVisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -75,6 +76,7 @@ class DeepseekOcr2SamVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2VisionEncoderConfig：Qwen2 风格视觉 Transformer 编码器超参
 class DeepseekOcr2VisionEncoderConfig(PreTrainedConfig):
     r"""
     Example:
@@ -147,6 +149,7 @@ class DeepseekOcr2VisionEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2VisionConfig：组合 SAM + VisionEncoder 的顶层视觉配置
 class DeepseekOcr2VisionConfig(PreTrainedConfig):
     r"""
     sam_config (`dict` or `DeepseekOcr2SamVisionConfig`, *optional*):
@@ -181,6 +184,7 @@ class DeepseekOcr2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2TextConfig：DeepSeek-V2 MLA + MoE 文本塔配置
 class DeepseekOcr2TextConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*):
@@ -275,6 +279,7 @@ class DeepseekOcr2TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="deepseek-community/DeepSeek-OCR-2")
 @strict
+# DeepseekOcr2Config：vision_config + text_config 多模态总配置
 class DeepseekOcr2Config(PreTrainedConfig):
     r"""
     vision_config (`dict` or `DeepseekOcr2VisionConfig`, *optional*):

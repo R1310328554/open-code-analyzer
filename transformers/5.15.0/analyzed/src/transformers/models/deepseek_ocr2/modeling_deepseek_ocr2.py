@@ -55,6 +55,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# DeepseekOcr2ModelOutputWithPooling：含 pooler_output 的多模态中间输出
 class DeepseekOcr2ModelOutputWithPooling(BaseModelOutputWithPooling):
     """
     local_last_hidden_state (`torch.FloatTensor` of shape `(total_local_patches, sequence_length, hidden_size)`, *optional*):
@@ -76,6 +77,7 @@ class DeepseekOcr2ModelOutputWithPooling(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# DeepseekOcr2ModelOutputWithPast：多模态前向输出含 past_key_values
 class DeepseekOcr2ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -97,6 +99,7 @@ class DeepseekOcr2ModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# DeepseekOcr2CausalLMOutputWithPast：条件生成 loss/logits 与 image_hidden_states
 class DeepseekOcr2CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -122,6 +125,7 @@ class DeepseekOcr2CausalLMOutputWithPast(ModelOutput):
 
 
 @auto_docstring
+# DeepseekOcr2PreTrainedModel：声明 image+text 双模态输入支持
 class DeepseekOcr2PreTrainedModel(PreTrainedModel):
     config: DeepseekOcr2Config
     base_model_prefix = "model"
@@ -156,6 +160,7 @@ class DeepseekOcr2PreTrainedModel(PreTrainedModel):
             init.normal_(module.view_separator, mean=0.0, std=embed_std)
 
 
+# DeepseekOcr2SamVisionAttention：SAM ViT 窗口/全局注意力
 class DeepseekOcr2SamVisionAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
@@ -360,6 +365,7 @@ DEEPSEEK_OCR2_SAM_VISION_ATTENTION_CLASSES = {
 }
 
 
+# DeepseekOcr2SamVisionLayer：SAM 视觉 Transformer 层
 class DeepseekOcr2SamVisionLayer(GradientCheckpointingLayer):
     def __init__(self, config, window_size):
         super().__init__()
@@ -470,6 +476,7 @@ class DeepseekOcr2SamLayerNorm(nn.LayerNorm):
         return features
 
 
+# DeepseekOcr2SamVisionNeck：SAM 特征 neck 多尺度融合
 class DeepseekOcr2SamVisionNeck(nn.Module):
     def __init__(self, config: DeepseekOcr2SamVisionConfig):
         super().__init__()
@@ -490,6 +497,7 @@ class DeepseekOcr2SamVisionNeck(nn.Module):
         return hidden_states
 
 
+# DeepseekOcr2SamPatchEmbeddings：图像 patch 卷积嵌入
 class DeepseekOcr2SamPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -516,6 +524,7 @@ class DeepseekOcr2SamPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# DeepseekOcr2SamVisionProj：SAM 输出投影至文本隐层维度
 class DeepseekOcr2SamVisionProj(nn.Module):
     """Neck and multi-scale downsampling for SAM ViT-B output."""
 
@@ -544,6 +553,7 @@ class DeepseekOcr2SamVisionProj(nn.Module):
         return hidden_states
 
 
+# DeepseekOcr2SamVisionEncoder：SAM ViT 编码器栈
 class DeepseekOcr2SamVisionEncoder(DeepseekOcr2PreTrainedModel):
     _can_record_outputs = {"hidden_states": DeepseekOcr2SamVisionLayer, "attentions": DeepseekOcr2SamVisionAttention}
 
@@ -617,6 +627,7 @@ class DeepseekOcr2SamVisionEncoder(DeepseekOcr2PreTrainedModel):
         return pos_embed
 
 
+# DeepseekOcr2VisionMLP：Qwen2 风格 SwiGLU 视觉 FFN
 class DeepseekOcr2VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -781,6 +792,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# DeepseekOcr2VisionAttention：视觉塔 GQA 自注意力
 class DeepseekOcr2VisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -842,6 +854,7 @@ class DeepseekOcr2VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeepseekOcr2VisionEncoderLayer：视觉 Transformer 解码层
 class DeepseekOcr2VisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeepseekOcr2VisionConfig, layer_idx: int):
         super().__init__()
@@ -886,6 +899,7 @@ class DeepseekOcr2VisionEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring(custom_intro="Vision encoder for DeepSeek-OCR-2.")
+# DeepseekOcr2VisionEncoder：Qwen2Model 风格视觉序列编码
 class DeepseekOcr2VisionEncoder(DeepseekOcr2PreTrainedModel):
     _can_record_outputs = {
         "hidden_states": DeepseekOcr2VisionEncoderLayer,
@@ -952,6 +966,7 @@ class DeepseekOcr2VisionEncoder(DeepseekOcr2PreTrainedModel):
         return BaseModelOutputWithPast(last_hidden_state=hidden_states)
 
 
+# DeepseekOcr2VisionModel：SAM + VisionEncoder 组合视觉塔
 class DeepseekOcr2VisionModel(DeepseekOcr2PreTrainedModel):
     """Vision pipeline: SAM ViT-B (with neck)"""
 
@@ -1051,6 +1066,7 @@ class DeepseekOcr2TextRotaryEmbedding(nn.Module):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# DeepseekOcr2TextAttention：DeepSeek-V2 MLA 文本注意力
 class DeepseekOcr2TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -1208,6 +1224,7 @@ class DeepseekOcr2TextTopkRouter(nn.Module):
         return router_logits, topk_weights, topk_indices
 
 
+# DeepseekOcr2TextMoe：路由 top-k 专家 + 共享专家 MoE 块
 class DeepseekOcr2TextMoe(nn.Module):
     def __init__(self, config: DeepseekOcr2TextConfig):
         super().__init__()
@@ -1249,6 +1266,7 @@ class DeepseekOcr2TextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DeepseekOcr2TextDecoderLayer：Attn + MoE/dense MLP 文本解码层
 class DeepseekOcr2TextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -1324,6 +1342,7 @@ class DeepseekOcr2TextPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekOcr2TextModel：DeepSeek-V2 文本主干
 class DeepseekOcr2TextModel(DeepseekOcr2TextPreTrainedModel):
     def __init__(self, config: DeepseekOcr2TextConfig):
         super().__init__(config)
@@ -1403,6 +1422,7 @@ class DeepseekOcr2TextModel(DeepseekOcr2TextPreTrainedModel):
     The Llava-Next model which consists of a vision backbone and a language model without language modeling head.
     """
 )
+# DeepseekOcr2Model：vision_model + text_model 多模态融合
 class DeepseekOcr2Model(DeepseekOcr2PreTrainedModel):
     base_model_prefix = "model"
 
@@ -1424,6 +1444,7 @@ class DeepseekOcr2Model(DeepseekOcr2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+# get_image_features：视觉塔前向并返回 image_hidden_states
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -1555,6 +1576,7 @@ class DeepseekOcr2Model(DeepseekOcr2PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekOcr2ForConditionalGeneration：OCR 条件生成，支持 generate
 class DeepseekOcr2ForConditionalGeneration(DeepseekOcr2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

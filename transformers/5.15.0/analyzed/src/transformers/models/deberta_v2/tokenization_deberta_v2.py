@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "spm.model", "tokenizer_file": "tokenizer.json"}
 
 
+# DebertaV2Tokenizer：基于 tokenizers 库的 DeBERTa-v2 分词器
 class DebertaV2Tokenizer(TokenizersBackend):
     """
     Construct a DeBERTa-v2 tokenizer (backed by HuggingFace's *tokenizers* library). Based on Unigram tokenization.
