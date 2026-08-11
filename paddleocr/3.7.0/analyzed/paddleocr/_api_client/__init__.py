@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# AI Studio 云端 OCR API 客户端子包（同步/异步 HTTP、轮询与模型选项）# limitations under the License.

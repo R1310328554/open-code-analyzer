@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# paddleocr 包公共入口：重导出 pipeline、单模型、云端 API 客户端与 doc2md 工具
 from paddlex.inference.utils.benchmark import benchmark
 
 from ._models import (
@@ -67,6 +68,7 @@ from ._utils.logging import logger
 from ._version import version as __version__
 
 
+    # 将 Office 文档转换为 Markdown，委托 _doc2md.convert
 def doc2md_convert(source, **kwargs):
     """Convert an office document to Markdown. See paddleocr._doc2md.convert."""
     from ._doc2md import convert
@@ -74,6 +76,7 @@ def doc2md_convert(source, **kwargs):
     return convert(source, **kwargs)
 
 
+    # 返回 doc2md 支持的文件扩展名列表
 def doc2md_supported_formats():
     """Return supported file extensions. See paddleocr._doc2md.supported_formats."""
     from ._doc2md import supported_formats
@@ -81,6 +84,7 @@ def doc2md_supported_formats():
     return supported_formats()
 
 
+    # 对外公开符号：CLI pipeline、Model/Options、API 客户端与异常类型
 __all__ = [
     "benchmark",
     "PaddleOCRClient",

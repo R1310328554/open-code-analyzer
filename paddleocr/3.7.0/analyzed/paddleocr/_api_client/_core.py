@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# API 客户端核心工具：模型/选项解析、响应解包、job 状态校验与 HTTP 错误映射
 from typing import Optional, Union
 
 from .errors import (
@@ -35,6 +36,7 @@ from .models import (
 from .results import BatchStatus, Job, JobStatus, Progress
 
 
+    # 校验 file_url 与 file_path 二选一且不可同时为空
 def validate_input_source(file_url: Optional[str], file_path: Optional[str]) -> None:
     if not file_url and not file_path:
         raise InvalidRequestError("Either file_url or file_path is required.")
@@ -42,6 +44,7 @@ def validate_input_source(file_url: Optional[str], file_path: Optional[str]) -> 
         raise InvalidRequestError("file_url and file_path are mutually exclusive.")
 
 
+    # 按 OCR/文档解析模型类型生成默认 optionalPayload
 def default_payload(model: Model) -> dict:
     if is_ocr_model(model):
         return OCROptions().to_payload()
@@ -123,6 +126,7 @@ def validate_state(data: dict) -> str:
     return state
 
 
+    # 将 API 原始 dict 规范化为 JobStatus（含 extractProgress）
 def job_status_from_data(job_id: str, data: dict) -> JobStatus:
     state = validate_state(data)
     progress = None
@@ -145,6 +149,7 @@ def job_status_from_data(job_id: str, data: dict) -> JobStatus:
     )
 
 
+    # 将 HTTP 状态码映射为 AuthError/RateLimitError/APIError 等
 def raise_for_status(status_code: int, msg: str) -> None:
     if 200 <= status_code < 300:
         return
@@ -159,6 +164,7 @@ def raise_for_status(status_code: int, msg: str) -> None:
     raise APIError(status_code, msg)
 
 
+    # 校验 { code, data } 信封并返回 data 对象
 def unwrap_api_response(payload: dict, status_code: int) -> dict:
     if not isinstance(payload, dict):
         raise ResponseFormatError("Response body must be a JSON object.")
@@ -192,6 +198,7 @@ def validate_result_json_url(data: dict) -> str:
     return json_url
 
 
+    # 解析 batch extractResult 列表为 BatchStatus
 def parse_batch_status(batch_id: str, data: dict) -> BatchStatus:
     result = data.get("extractResult")
     if not isinstance(result, list):

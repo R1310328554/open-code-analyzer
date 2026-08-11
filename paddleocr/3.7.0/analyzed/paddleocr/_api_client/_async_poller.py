@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 异步任务轮询器：指数退避查询 job 状态直至 done/failed/超时
 import asyncio
 from typing import Any
 
@@ -33,6 +34,7 @@ DEFAULT_MAX_INTERVAL = 15.0
 DEFAULT_MAX_WAIT_TIME = 600.0
 
 
+    # 封装 poll_until_done、get_status 与 batch 状态聚合
 class AsyncPoller:
     def __init__(
         self,
@@ -48,6 +50,7 @@ class AsyncPoller:
         self._max_interval = max_interval
         self._max_wait_time = max_wait_time
 
+        # 循环 get_job_status，done 时拉取 JSONL 结果，failed 抛 JobFailedError
     async def poll_until_done(self, job_id: str) -> Any:
         interval = self._initial_interval
         loop = asyncio.get_running_loop()
@@ -81,6 +84,7 @@ class AsyncPoller:
         data = await self._http.get_job_status(job_id)
         return job_status_from_data(job_id, data)
 
+        # 查询 batch 下全部子 job 的 extractResult
     async def get_batch_status(self, batch_id: str) -> BatchStatus:
         data = await self._http.get_batch_status(batch_id)
         return parse_batch_status(batch_id, data)

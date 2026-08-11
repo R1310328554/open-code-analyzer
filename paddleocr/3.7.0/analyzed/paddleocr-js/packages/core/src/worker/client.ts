@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 主线程 Worker 传输客户端：request/response 关联、错误反序列化与生命周期管理
 import { createTransportRequest, deserializeError, isTransportResponse } from "./protocol";
 
 interface PendingRequest {
@@ -10,10 +11,12 @@ interface PendingRequest {
   reject: (reason: unknown) => void;
 }
 
+  // 可选 createWorker 工厂，用于注入自定义 module worker 入口
 export interface WorkerOptions {
   createWorker?: () => Worker;
 }
 
+  // 封装 postMessage 往返：按 requestId 匹配 pending Promise
 export class WorkerTransportClient {
   private workerOptions: WorkerOptions;
   private worker: Worker | null;
@@ -35,6 +38,7 @@ export class WorkerTransportClient {
     }
   }
 
+    // 懒创建 worker 并挂载 onmessage/onerror，复用单例实例
   ensureWorker(): Worker {
     this.ensureActive();
     if (this.worker) {
@@ -69,6 +73,7 @@ export class WorkerTransportClient {
     return worker;
   }
 
+    // 发送 transport 请求，支持 ImageBitmap 等 transferables 零拷贝
   request(type: string, payload: unknown, transferables: Transferable[] = []): Promise<unknown> {
     const worker = this.ensureWorker();
     const requestId = this.nextRequestId;
@@ -88,6 +93,7 @@ export class WorkerTransportClient {
     this.worker = null;
   }
 
+    // 标记 disposed、reject 全部 pending 并 terminate worker
   dispose(): void {
     if (this.disposed) {
       return;
@@ -101,6 +107,7 @@ export class WorkerTransportClient {
   }
 }
 
+  // 工厂函数：构造 WorkerTransportClient 实例
 export function createWorkerTransportClient(workerOptions: WorkerOptions): WorkerTransportClient {
   return new WorkerTransportClient(workerOptions);
 }

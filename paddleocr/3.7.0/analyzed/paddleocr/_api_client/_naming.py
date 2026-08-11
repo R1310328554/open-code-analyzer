@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# API 客户端命名适配：将 snake_case 选项键转为 camelCase 以匹配 REST 载荷
 from paddleocr._utils.naming import snake_keys_to_camel, snake_to_camel
 
+    # 对外重导出 snake_to_camel 与 snake_keys_to_camel
 __all__ = ["snake_keys_to_camel", "snake_to_camel"]

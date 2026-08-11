@@ -16,6 +16,7 @@ import json
 import os
 from typing import Any, Dict, Optional
 
+# 异步 HTTP 客户端：aiohttp 封装 AI Studio /api/v2/ocr/jobs 提交与查询
 import aiohttp
 
 from ._core import (
@@ -33,6 +34,7 @@ from .errors import (
 from ._http import API_PATH, DEFAULT_BASE_URL
 
 
+    # Bearer 鉴权 + Client-Platform 头，支持 URL/文件 multipart 提交
 class AsyncHTTPClient:
     def __init__(
         self,
@@ -77,6 +79,7 @@ class AsyncHTTPClient:
             headers["Client-Platform"] = self._client_platform
         return headers
 
+        # JSON POST 提交 fileUrl 任务，返回 jobId
     async def submit_url(
         self,
         model: str,
@@ -105,6 +108,7 @@ class AsyncHTTPClient:
             data = await self._response_data(resp)
             return extract_job_id(data)
 
+        # multipart 上传本地文件并附带 optionalPayload
     async def submit_file(
         self,
         model: str,
@@ -138,6 +142,7 @@ class AsyncHTTPClient:
             data = await self._response_data(resp)
             return extract_job_id(data)
 
+        # GET /jobs/{jobId} 查询单任务状态与进度
     async def get_job_status(self, job_id: str) -> Dict[str, Any]:
         await self._ensure_session()
         async with self._session.get(f"{self._jobs_url}/{job_id}") as resp:
@@ -150,6 +155,7 @@ class AsyncHTTPClient:
             await self._raise_for_response(resp)
             return await self._response_data(resp)
 
+        # 下载预签名 resultUrl.jsonUrl 并逐行解析 JSONL
     async def fetch_jsonl(self, url: str) -> list:
         timeout = aiohttp.ClientTimeout(total=self._timeout)
         async with aiohttp.ClientSession(timeout=timeout) as bare_session:

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Worker 主线程 RPC 协议：kind 区分请求/响应，requestId 关联异步回调
 const REQUEST_KIND = "worker-transport-request";
 const RESPONSE_KIND = "worker-transport-response";
 
@@ -12,6 +13,7 @@ export interface SerializedError {
   stack: string;
 }
 
+  // 主线程 → worker 请求：type、payload 与递增 requestId
 export interface TransportRequest {
   kind: typeof REQUEST_KIND;
   type: string;
@@ -33,8 +35,10 @@ export interface TransportErrorResponse {
   error: SerializedError;
 }
 
+  // 响应联合体：success 携带 payload，error 携带 SerializedError
 export type TransportResponse = TransportSuccessResponse | TransportErrorResponse;
 
+  // 构造标准 transport 请求对象
 export function createTransportRequest(
   type: string,
   payload: unknown,
@@ -69,6 +73,7 @@ export function createTransportError(requestId: number, error: unknown): Transpo
   };
 }
 
+  // 类型守卫：校验 kind 是否为 worker-transport-request
 export function isTransportRequest(message: unknown): message is TransportRequest {
   return (
     typeof message === "object" &&
@@ -87,6 +92,7 @@ export function isTransportResponse(message: unknown): message is TransportRespo
   );
 }
 
+  // 将异常序列化为可结构化克隆的 name/message/stack
 export function serializeError(error: unknown): SerializedError {
   const err = error as Partial<Error> | undefined;
   return {
@@ -96,6 +102,7 @@ export function serializeError(error: unknown): SerializedError {
   };
 }
 
+  // 在 main thread 重建 Error 实例并恢复 stack
 export function deserializeError(error: unknown): Error {
   const normalized = (error || {}) as SerializedError;
   const instance = new Error(normalized.message || "Unknown worker error.");

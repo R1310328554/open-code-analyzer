@@ -16,6 +16,7 @@ import json
 import os
 from typing import Any, Dict, Optional
 
+# 同步 HTTP 客户端：requests.Session 封装 jobs API 提交、查询与 JSONL 下载
 import requests
 
 from ._core import (
@@ -31,6 +32,7 @@ from .errors import (
     ResultParseError,
 )
 
+  # AI Studio OCR 服务默认 base URL
 DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com"
 API_PATH = "/api/v2/ocr/jobs"
 
@@ -72,6 +74,7 @@ def _job_id_from_response(response: requests.Response) -> str:
     return extract_job_id(_response_data(response))
 
 
+    # 与 AsyncHTTPClient 对称的阻塞实现，供 PaddleOCRClient 使用
 class HTTPClient:
     def __init__(
         self,
@@ -93,6 +96,7 @@ class HTTPClient:
     def timeout(self) -> float:
         return self._timeout
 
+        # JSON POST 提交远程 fileUrl，超时/连接错误转为 SDK 异常
     def submit_url(
         self,
         model: str,
@@ -123,6 +127,7 @@ class HTTPClient:
         _raise_for_response(resp)
         return _job_id_from_response(resp)
 
+        # multipart 上传本地文件路径
     def submit_file(
         self,
         model: str,
@@ -182,6 +187,7 @@ class HTTPClient:
         _raise_for_response(resp)
         return _response_data(resp)
 
+        # 独立 GET 预签名 URL，逐行 json.loads 解析结果
     def fetch_jsonl(self, url: str) -> list:
         # Result URLs are often pre-signed object storage links.
         try:

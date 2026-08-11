@@ -1,3 +1,4 @@
+// @paddleocr/core Vite 库构建：双入口 index/viz、worker 后处理与 ORT CDN 注入
 import { resolve, dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -27,6 +28,7 @@ const ortVersion = JSON.parse(
 //    The stripping must run here (main build generateBundle), not in
 //    worker.rollupOptions.plugins, because Vite injects the data URIs as a
 //    post-processing step after the worker's own Rollup pipeline finishes.
+  // 构建后处理：重写 worker URL、剥离 ORT base64 WASM 以减小 bundle
 function libraryWorkerPlugin() {
   const ortWasmDataUriPattern = /data:application\/wasm;base64,[A-Za-z0-9+/=]+/g;
 
@@ -58,6 +60,7 @@ function libraryWorkerPlugin() {
   };
 }
 
+  // ES 库输出：external ORT/OpenCV/clipper/js-yaml，保留 sourcemap
 export default defineConfig({
   plugins: [
     dts({
@@ -66,6 +69,7 @@ export default defineConfig({
     libraryWorkerPlugin()
   ],
   define: {
+    // 编译期注入 ORT WASM CDN 前缀，worker 内可回退加载
     __ORT_WASM_CDN_PREFIX__: JSON.stringify(
       `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`
     )

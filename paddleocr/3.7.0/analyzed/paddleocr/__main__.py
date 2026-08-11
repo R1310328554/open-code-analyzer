@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# python -m paddleocr 入口：委托 CLI main，并妥善处理 SIGPIPE/BrokenPipeError
 import os
 import sys
 
 from ._cli import main
 
 
+    # setuptools console_scripts 入口：flush 后捕获 BrokenPipe 避免二次异常
 def console_entry() -> int:
     # See https://docs.python.org/3/library/signal.html#note-on-sigpipe
     try:
@@ -35,5 +37,6 @@ def console_entry() -> int:
         sys.exit(1)
 
 
+    # 直接运行模块时调用 console_entry
 if __name__ == "__main__":
     console_entry()
