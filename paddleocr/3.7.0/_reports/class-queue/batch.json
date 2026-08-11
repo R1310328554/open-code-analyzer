@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:59:06Z",
-  "files": [
-    "paddleocr/_doc2md/converters/pptx.py",
-    "paddleocr/_doc2md/converters/xlsx.py",
-    "paddleocr/_doc2md/core.py",
-    "paddleocr/_doc2md/math/__init__.py",
-    "paddleocr/_doc2md/math/latex_dict.py",
-    "paddleocr/_doc2md/math/omml.py",
-    "paddleocr/_doc2md/registry.py",
-    "paddleocr/_env.py",
-    "paddleocr/_models/__init__.py",
-    "paddleocr/_models/_doc_vlm.py",
-    "paddleocr/_models/_image_classification.py",
-    "paddleocr/_models/_object_detection.py",
-    "paddleocr/_models/_text_detection.py",
-    "paddleocr/_models/base.py",
-    "paddleocr/_models/chart_parsing.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 362,
-  "done": 225
+  "done": 240
 }
