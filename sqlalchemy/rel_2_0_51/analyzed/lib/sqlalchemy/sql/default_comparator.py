@@ -7,6 +7,10 @@
 
 """Default implementation of SQL comparison operations."""
 
+# 默认 SQL 比较运算实现：ColumnOperators 的 operate 分发
+
+# 默认 SQL 比较运算实现：ColumnOperators 的 operate 分发
+
 from __future__ import annotations
 
 import typing
@@ -47,6 +51,8 @@ if typing.TYPE_CHECKING:
     from .type_api import TypeEngine
 
 
+# 布尔比较核心：= != is distinct 等到 BinaryExpression
+# 布尔比较核心：= != is distinct 等到 BinaryExpression
 def _boolean_compare(
     expr: ColumnElement[Any],
     op: OperatorType,
@@ -160,6 +166,8 @@ def _custom_op_operate(
     )
 
 
+# 二元算术/位运算：+ - * / 等
+# 二元算术/位运算：+ - * / 等
 def _binary_operate(
     expr: ColumnElement[Any],
     op: OperatorType,
@@ -188,6 +196,8 @@ def _binary_operate(
     )
 
 
+# AND/OR 连接运算
+# AND/OR 连接运算
 def _conjunction_operate(
     expr: ColumnElement[Any], op: OperatorType, other: Any, **kw: Any
 ) -> ColumnElement[Any]:
@@ -208,6 +218,8 @@ def _scalar(
     return fn(expr)
 
 
+# IN / NOT IN 实现
+# IN / NOT IN 实现
 def _in_impl(
     expr: ColumnElement[Any],
     op: OperatorType,
@@ -280,6 +292,8 @@ def _bitwise_not_impl(
     )
 
 
+# MATCH/LIKE/ILIKE 等模式匹配
+# MATCH/LIKE/ILIKE 等模式匹配
 def _match_impl(
     expr: ColumnElement[Any], op: OperatorType, other: Any, **kw: Any
 ) -> ColumnElement[Any]:
@@ -313,6 +327,8 @@ def _distinct_impl(
     )
 
 
+# BETWEEN 实现
+# BETWEEN 实现
 def _between_impl(
     expr: ColumnElement[Any],
     op: OperatorType,

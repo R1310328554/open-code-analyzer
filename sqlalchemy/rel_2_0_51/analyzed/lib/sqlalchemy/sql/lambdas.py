@@ -6,6 +6,10 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# Lambda SQL：闭包跟踪与 statement cache 友好的延迟语句
+
+# Lambda SQL：闭包跟踪与 statement cache 友好的延迟语句
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -68,6 +72,8 @@ _E = TypeVar("_E", bound=Executable)
 _StmtLambdaElementType = Callable[[_E], Any]
 
 
+# Lambda 跟踪选项：closure/bound values 开关
+# Lambda 跟踪选项：closure/bound values 开关
 class LambdaOptions(Options):
     enable_tracking = True
     track_closure_variables = True
@@ -77,6 +83,8 @@ class LambdaOptions(Options):
     lambda_cache: Optional[_LambdaCacheType] = None
 
 
+# 构造 StatementLambdaElement 装饰器/工厂
+# 构造 StatementLambdaElement 装饰器/工厂
 def lambda_stmt(
     lmb: _StmtLambdaType,
     enable_tracking: bool = True,
@@ -150,6 +158,8 @@ def lambda_stmt(
     )
 
 
+# Lambda 包装：首次调用解析为 ClauseElement
+# Lambda 包装：首次调用解析为 ClauseElement
 class LambdaElement(elements.ClauseElement):
     """A SQL construct where the state is stored as an un-invoked lambda.
 
@@ -423,6 +433,8 @@ class LambdaElement(elements.ClauseElement):
         return fn()  # type: ignore[no-any-return]
 
 
+# 延迟 Lambda：嵌套语句中稍后解析
+# 延迟 Lambda：嵌套语句中稍后解析
 class DeferredLambdaElement(LambdaElement):
     """A LambdaElement where the lambda accepts arguments and is
     invoked within the compile phase with special context.
@@ -497,6 +509,8 @@ class DeferredLambdaElement(LambdaElement):
             self._transforms += (deferred_copy_internals,)
 
 
+# 完整语句 Lambda：支持多次 bind 变体
+# 完整语句 Lambda：支持多次 bind 变体
 class StatementLambdaElement(
     roles.AllowsLambdaRole, LambdaElement, Executable
 ):
@@ -650,6 +664,8 @@ class StatementLambdaElement(
         return NullLambdaStatement(self.fn())
 
 
+# 空 Lambda 占位：allows_lambda 路径
+# 空 Lambda 占位：allows_lambda 路径
 class NullLambdaStatement(roles.AllowsLambdaRole, elements.ClauseElement):
     """Provides the :class:`.StatementLambdaElement` API but does not
     cache or analyze lambdas.
@@ -697,6 +713,8 @@ class NullLambdaStatement(roles.AllowsLambdaRole, elements.ClauseElement):
             raise exc.ObjectNotExecutableError(self)
 
 
+# 链接 Lambda：共享 AnalyzedFunction 缓存
+# 链接 Lambda：共享 AnalyzedFunction 缓存
 class LinkedLambdaElement(StatementLambdaElement):
     """Represent subsequent links of a :class:`.StatementLambdaElement`."""
 
@@ -720,6 +738,8 @@ class LinkedLambdaElement(StatementLambdaElement):
         return fn(self.parent_lambda._resolved)
 
 
+# 已分析闭包代码：跟踪自由变量与 bound 默认值
+# 已分析闭包代码：跟踪自由变量与 bound 默认值
 class AnalyzedCode:
     __slots__ = (
         "track_closure_variables",
@@ -1076,6 +1096,8 @@ class AnalyzedCode:
         )
 
 
+# 未分析 Lambda 缓存条目
+# 未分析 Lambda 缓存条目
 class NonAnalyzedFunction:
     __slots__ = ("expr",)
 
@@ -1094,6 +1116,8 @@ class NonAnalyzedFunction:
         return self.expr
 
 
+# 已分析 Lambda：含 pywrapper 与 cache key
+# 已分析 Lambda：含 pywrapper 与 cache key
 class AnalyzedFunction:
     __slots__ = (
         "analyzed_code",
@@ -1274,6 +1298,8 @@ class AnalyzedFunction:
         return func
 
 
+# Python 值包装：ColumnOperators 代理到 BindParameter
+# Python 值包装：ColumnOperators 代理到 BindParameter
 class PyWrapper(ColumnOperators):
     """A wrapper object that is injected into the ``__globals__`` and
     ``__closure__`` of a Python function.

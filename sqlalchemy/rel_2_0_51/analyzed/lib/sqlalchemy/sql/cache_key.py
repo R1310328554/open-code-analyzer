@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# 语句缓存键：HasCacheKey 与 CacheKey 生成/比较
+
+# 语句缓存键：HasCacheKey 与 CacheKey 生成/比较
+
 from __future__ import annotations
 
 import enum
@@ -42,12 +46,18 @@ if typing.TYPE_CHECKING:
     from ..engine.interfaces import _CoreSingleExecuteParams
 
 
+# cache key 遍历 dispatch 协议
+# cache key 专用访问者：anon_map 与 traverse 规则
+# cache key 遍历 dispatch 协议
+# cache key 专用访问者：anon_map 与 traverse 规则
 class _CacheKeyTraversalDispatchType(Protocol):
     def __call__(
         s, self: HasCacheKey, visitor: _CacheKeyTraversal
     ) -> _CacheKeyTraversalDispatchTypeReturn: ...
 
 
+# 缓存常量枚举：NO_CACHE 标记不可缓存子树
+# 缓存常量枚举：NO_CACHE 标记不可缓存子树
 class CacheConst(enum.Enum):
     NO_CACHE = 0
 
@@ -60,6 +70,8 @@ _CacheKeyTraversalType = Union[
 ]
 
 
+# 遍历目标枚举：IN_PLACE/GEN_KEY/STATIC 等
+# 遍历目标枚举：IN_PLACE/GEN_KEY/STATIC 等
 class CacheTraverseTarget(enum.Enum):
     CACHE_IN_PLACE = 0
     CALL_GEN_CACHE_KEY = 1
@@ -89,6 +101,8 @@ _CacheKeyTraversalDispatchTypeReturn = Sequence[
 ]
 
 
+# 可生成 cache key 的 ClauseElement mixin
+# 可生成 cache key 的 ClauseElement mixin
 class HasCacheKey:
     """Mixin for objects which can produce a cache key.
 
@@ -401,10 +415,14 @@ class HasCacheKey:
             return CacheKey(key, bindparams)
 
 
+# 同时支持 traverse 与 cache key 生成
+# 同时支持 traverse 与 cache key 生成
 class HasCacheKeyTraverse(HasTraverseInternals, HasCacheKey):
     pass
 
 
+# memoized cache key：_gen_cache_key 结果缓存
+# memoized cache key：_gen_cache_key 结果缓存
 class MemoizedHasCacheKey(HasCacheKey, HasMemoized):
     __slots__ = ()
 
@@ -413,6 +431,8 @@ class MemoizedHasCacheKey(HasCacheKey, HasMemoized):
         return HasCacheKey._generate_cache_key(self)
 
 
+# __slots__ 版 MemoizedHasCacheKey
+# __slots__ 版 MemoizedHasCacheKey
 class SlotsMemoizedHasCacheKey(HasCacheKey, util.MemoizedSlots):
     __slots__ = ()
 
@@ -420,6 +440,8 @@ class SlotsMemoizedHasCacheKey(HasCacheKey, util.MemoizedSlots):
         return HasCacheKey._generate_cache_key(self)
 
 
+# 缓存键 NamedTuple：key + bindparams 元组
+# 缓存键 NamedTuple：key + bindparams 元组
 class CacheKey(NamedTuple):
     """The key used to identify a SQL statement construct in the
     SQL compilation cache.
@@ -571,6 +593,8 @@ class CacheKey(NamedTuple):
         )
 
 
+# 从参数元组构造临时 CacheKey（无 HasCacheKey 对象时）
+# 从参数元组构造临时 CacheKey（无 HasCacheKey 对象时）
 def _ad_hoc_cache_key_from_args(
     tokens: Tuple[Any, ...],
     traverse_args: Iterable[Tuple[str, InternalTraversal]],

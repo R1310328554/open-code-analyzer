@@ -7,6 +7,10 @@
 
 """SQL function API, factories, and built-in functions."""
 
+# SQL 函数：func 命名空间、FunctionElement 与内置聚合
+
+# SQL 函数：func 命名空间、FunctionElement 与内置聚合
+
 from __future__ import annotations
 
 import datetime
@@ -87,6 +91,8 @@ _registry: util.defaultdict[str, Dict[str, Type[Function[Any]]]] = (
 )
 
 
+# 注册 identifier 到 GenericFunction 子类
+# 注册 identifier 到 GenericFunction 子类
 def register_function(
     identifier: str, fn: Type[Function[Any]], package: str = "_default"
 ) -> None:
@@ -111,6 +117,10 @@ def register_function(
     reg[identifier] = fn
 
 
+# SQL 函数元素基类：Executable + ColumnElement + FromClause
+# 具名 SQL 函数实例
+# SQL 函数元素基类：Executable + ColumnElement + FromClause
+# 具名 SQL 函数实例
 class FunctionElement(Executable, ColumnElement[_T], FromClause, Generative):
     """Base for SQL function-oriented constructs.
 
@@ -780,6 +790,8 @@ class FunctionElement(Executable, ColumnElement[_T], FromClause, Generative):
         return _entity_namespace(self.clause_expr)
 
 
+# 二元函数包装：如 concat 作 || 渲染
+# 二元函数包装：如 concat 作 || 渲染
 class FunctionAsBinary(BinaryExpression[Any]):
     _traverse_internals = [
         ("sql_function", InternalTraversal.dp_clauseelement),
@@ -832,6 +844,8 @@ class FunctionAsBinary(BinaryExpression[Any]):
         right = right_expr
 
 
+# 标量函数的列引用
+# 标量函数的列引用
 class ScalarFunctionColumn(NamedColumn[_T]):
     __visit_name__ = "scalar_function_column"
 
@@ -858,6 +872,8 @@ class ScalarFunctionColumn(NamedColumn[_T]):
         self.type = type_api.to_instance(type_)  # type: ignore
 
 
+# func.xxx 动态属性生成器
+# func.xxx 动态属性生成器
 class _FunctionGenerator:
     """Generate SQL function expressions.
 
@@ -1403,6 +1419,8 @@ class Function(FunctionElement[_T]):
         )
 
 
+# 可注册自定义函数类型基类
+# 可注册自定义函数类型基类
 class GenericFunction(Function[_T]):
     """Define a 'generic' function.
 
@@ -1579,6 +1597,8 @@ register_function("cast", Cast)  # type: ignore
 register_function("extract", Extract)  # type: ignore
 
 
+# 序列 next value 函数
+# 序列 next value 函数
 class next_value(GenericFunction[int]):
     """Represent the 'next value', given a :class:`.Sequence`
     as its single argument.
@@ -1616,6 +1636,8 @@ class next_value(GenericFunction[int]):
         return []
 
 
+# ANSI 标准函数基类
+# ANSI 标准函数基类
 class AnsiFunction(GenericFunction[_T]):
     """Define a function in "ansi" format, which doesn't render parenthesis."""
 
@@ -1627,6 +1649,8 @@ class AnsiFunction(GenericFunction[_T]):
         GenericFunction.__init__(self, *args, **kwargs)
 
 
+# 返回类型由参数类型推断的函数基类
+# 返回类型由参数类型推断的函数基类
 class ReturnTypeFromArgs(GenericFunction[_T]):
     """Define a function whose return type is bound to the type of its
     arguments.
@@ -1680,6 +1704,8 @@ class ReturnTypeFromArgs(GenericFunction[_T]):
         super().__init__(*fn_args, **kwargs)
 
 
+# 可选参数版 ReturnTypeFromArgs
+# 可选参数版 ReturnTypeFromArgs
 class ReturnTypeFromOptionalArgs(ReturnTypeFromArgs[_T]):
     inherit_cache = True
 
@@ -1715,29 +1741,39 @@ class ReturnTypeFromOptionalArgs(ReturnTypeFromArgs[_T]):
         super().__init__(*args, **kwargs)  # type: ignore
 
 
+# COALESCE 函数
+# COALESCE 函数
 class coalesce(ReturnTypeFromOptionalArgs[_T]):
     _has_args = True
     inherit_cache = True
 
 
+# MAX 聚合函数
+# MAX 聚合函数
 class max(ReturnTypeFromArgs[_T]):  # noqa:  A001
     """The SQL MAX() aggregate function."""
 
     inherit_cache = True
 
 
+# MIN 聚合函数
+# MIN 聚合函数
 class min(ReturnTypeFromArgs[_T]):  # noqa: A001
     """The SQL MIN() aggregate function."""
 
     inherit_cache = True
 
 
+# SUM 聚合函数
+# SUM 聚合函数
 class sum(ReturnTypeFromArgs[_T]):  # noqa: A001
     """The SQL SUM() aggregate function."""
 
     inherit_cache = True
 
 
+# 当前时间戳函数
+# 当前时间戳函数
 class now(GenericFunction[datetime.datetime]):
     """The SQL now() datetime function.
 
@@ -1750,6 +1786,8 @@ class now(GenericFunction[datetime.datetime]):
     inherit_cache = True
 
 
+# 字符串连接函数
+# 字符串连接函数
 class concat(GenericFunction[str]):
     """The SQL CONCAT() function, which concatenates strings.
 
@@ -1776,6 +1814,8 @@ class concat(GenericFunction[str]):
     inherit_cache = True
 
 
+# 字符长度函数
+# 字符长度函数
 class char_length(GenericFunction[int]):
     """The CHAR_LENGTH() SQL function."""
 
@@ -1788,6 +1828,8 @@ class char_length(GenericFunction[int]):
         super().__init__(arg, **kw)
 
 
+# 随机数函数
+# 随机数函数
 class random(GenericFunction[float]):
     """The RANDOM() SQL function."""
 
@@ -1795,6 +1837,8 @@ class random(GenericFunction[float]):
     inherit_cache = True
 
 
+# COUNT 聚合函数
+# COUNT 聚合函数
 class count(GenericFunction[int]):
     r"""The ANSI COUNT aggregate function.  With no arguments,
     emits COUNT \*.
@@ -1834,6 +1878,8 @@ class count(GenericFunction[int]):
         super().__init__(expression, **kwargs)
 
 
+# CURRENT_DATE
+# CURRENT_DATE
 class current_date(AnsiFunction[datetime.date]):
     """The CURRENT_DATE() SQL function."""
 
@@ -1841,6 +1887,8 @@ class current_date(AnsiFunction[datetime.date]):
     inherit_cache = True
 
 
+# CURRENT_TIME
+# CURRENT_TIME
 class current_time(AnsiFunction[datetime.time]):
     """The CURRENT_TIME() SQL function."""
 
@@ -1848,6 +1896,8 @@ class current_time(AnsiFunction[datetime.time]):
     inherit_cache = True
 
 
+# CURRENT_TIMESTAMP
+# CURRENT_TIMESTAMP
 class current_timestamp(AnsiFunction[datetime.datetime]):
     """The CURRENT_TIMESTAMP() SQL function."""
 
@@ -1855,6 +1905,8 @@ class current_timestamp(AnsiFunction[datetime.datetime]):
     inherit_cache = True
 
 
+# CURRENT_USER
+# CURRENT_USER
 class current_user(AnsiFunction[str]):
     """The CURRENT_USER() SQL function."""
 
@@ -1862,6 +1914,8 @@ class current_user(AnsiFunction[str]):
     inherit_cache = True
 
 
+# LOCALTIME
+# LOCALTIME
 class localtime(AnsiFunction[datetime.datetime]):
     """The localtime() SQL function."""
 
@@ -1869,6 +1923,8 @@ class localtime(AnsiFunction[datetime.datetime]):
     inherit_cache = True
 
 
+# LOCALTIMESTAMP
+# LOCALTIMESTAMP
 class localtimestamp(AnsiFunction[datetime.datetime]):
     """The localtimestamp() SQL function."""
 
@@ -1876,6 +1932,8 @@ class localtimestamp(AnsiFunction[datetime.datetime]):
     inherit_cache = True
 
 
+# SESSION_USER
+# SESSION_USER
 class session_user(AnsiFunction[str]):
     """The SESSION_USER() SQL function."""
 
@@ -1883,6 +1941,8 @@ class session_user(AnsiFunction[str]):
     inherit_cache = True
 
 
+# SYSDATE（Oracle 等）
+# SYSDATE（Oracle 等）
 class sysdate(AnsiFunction[datetime.datetime]):
     """The SYSDATE() SQL function."""
 
@@ -1890,6 +1950,8 @@ class sysdate(AnsiFunction[datetime.datetime]):
     inherit_cache = True
 
 
+# USER 函数
+# USER 函数
 class user(AnsiFunction[str]):
     """The USER() SQL function."""
 
@@ -1897,6 +1959,8 @@ class user(AnsiFunction[str]):
     inherit_cache = True
 
 
+# ARRAY_AGG 聚合
+# ARRAY_AGG 聚合
 class array_agg(ReturnTypeFromArgs[Sequence[_T]]):
     """Support for the ARRAY_AGG function.
 
@@ -1940,6 +2004,8 @@ class array_agg(ReturnTypeFromArgs[Sequence[_T]]):
         super().__init__(*fn_args, **kwargs)
 
 
+# ordered-set 聚合基类
+# ordered-set 聚合基类
 class OrderedSetAgg(GenericFunction[_T]):
     """Define a function where the return type is based on the sort
     expression type as defined by the expression passed to the
@@ -1961,6 +2027,8 @@ class OrderedSetAgg(GenericFunction[_T]):
             return order_by[0].type
 
 
+# MODE 聚合
+# MODE 聚合
 class mode(OrderedSetAgg[_T]):
     """Implement the ``mode`` ordered-set aggregate function.
 
@@ -1974,6 +2042,8 @@ class mode(OrderedSetAgg[_T]):
     inherit_cache = True
 
 
+# PERCENTILE_CONT 连续分位
+# PERCENTILE_CONT 连续分位
 class percentile_cont(OrderedSetAgg[_T]):
     """Implement the ``percentile_cont`` ordered-set aggregate function.
 
@@ -1990,6 +2060,8 @@ class percentile_cont(OrderedSetAgg[_T]):
     inherit_cache = True
 
 
+# PERCENTILE_DISC 离散分位
+# PERCENTILE_DISC 离散分位
 class percentile_disc(OrderedSetAgg[_T]):
     """Implement the ``percentile_disc`` ordered-set aggregate function.
 
@@ -2006,6 +2078,8 @@ class percentile_disc(OrderedSetAgg[_T]):
     inherit_cache = True
 
 
+# RANK 窗口/聚合
+# RANK 窗口/聚合
 class rank(GenericFunction[int]):
     """Implement the ``rank`` hypothetical-set aggregate function.
 
@@ -2020,6 +2094,8 @@ class rank(GenericFunction[int]):
     inherit_cache = True
 
 
+# DENSE_RANK
+# DENSE_RANK
 class dense_rank(GenericFunction[int]):
     """Implement the ``dense_rank`` hypothetical-set aggregate function.
 
@@ -2034,6 +2110,8 @@ class dense_rank(GenericFunction[int]):
     inherit_cache = True
 
 
+# PERCENT_RANK
+# PERCENT_RANK
 class percent_rank(GenericFunction[decimal.Decimal]):
     """Implement the ``percent_rank`` hypothetical-set aggregate function.
 
@@ -2048,6 +2126,8 @@ class percent_rank(GenericFunction[decimal.Decimal]):
     inherit_cache = True
 
 
+# CUME_DIST
+# CUME_DIST
 class cume_dist(GenericFunction[decimal.Decimal]):
     """Implement the ``cume_dist`` hypothetical-set aggregate function.
 
@@ -2062,6 +2142,8 @@ class cume_dist(GenericFunction[decimal.Decimal]):
     inherit_cache = True
 
 
+# CUBE 分组集
+# CUBE 分组集
 class cube(GenericFunction[_T]):
     r"""Implement the ``CUBE`` grouping operation.
 
@@ -2080,6 +2162,8 @@ class cube(GenericFunction[_T]):
     inherit_cache = True
 
 
+# ROLLUP 分组集
+# ROLLUP 分组集
 class rollup(GenericFunction[_T]):
     r"""Implement the ``ROLLUP`` grouping operation.
 
@@ -2098,6 +2182,8 @@ class rollup(GenericFunction[_T]):
     inherit_cache = True
 
 
+# GROUPING SETS
+# GROUPING SETS
 class grouping_sets(GenericFunction[_T]):
     r"""Implement the ``GROUPING SETS`` grouping operation.
 
@@ -2129,6 +2215,8 @@ class grouping_sets(GenericFunction[_T]):
     inherit_cache = True
 
 
+# 字符串聚合（方言扩展）
+# 字符串聚合（方言扩展）
 class aggregate_strings(GenericFunction[str]):
     """Implement a generic string aggregation function.
 

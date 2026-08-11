@@ -15,6 +15,10 @@ related in any way to the pep-593 concept of "Annotated".
 
 """
 
+# SQL 注解层：为 ClauseElement 附加上下文标记的哈希等价副本
+
+# SQL 注解层：为 ClauseElement 附加上下文标记的哈希等价副本
+
 from __future__ import annotations
 
 import typing
@@ -50,6 +54,8 @@ _AnnotationDict = Mapping[str, Any]
 EMPTY_ANNOTATIONS: util.immutabledict[str, Any] = util.EMPTY_DICT
 
 
+# 注解协议：支持 _annotate/_deannotate 与注解 cache key
+# 注解协议：支持 _annotate/_deannotate 与注解 cache key
 class SupportsAnnotations(ExternallyTraversible):
     __slots__ = ()
 
@@ -111,6 +117,8 @@ class SupportsAnnotations(ExternallyTraversible):
         )
 
 
+# 包装型注解：通过 _constructor 克隆并合并注解
+# 包装型注解：通过 _constructor 克隆并合并注解
 class SupportsWrappingAnnotations(SupportsAnnotations):
     __slots__ = ()
 
@@ -169,6 +177,8 @@ class SupportsWrappingAnnotations(SupportsAnnotations):
             return self
 
 
+# 克隆型注解：_with_annotations 生成带新注解的副本
+# 克隆型注解：_with_annotations 生成带新注解的副本
 class SupportsCloneAnnotations(SupportsWrappingAnnotations):
     # SupportsCloneAnnotations extends from SupportsWrappingAnnotations
     # to support the structure of having the base ClauseElement
@@ -244,6 +254,8 @@ class SupportsCloneAnnotations(SupportsWrappingAnnotations):
             return self
 
 
+# 注解包装器：哈希等价副本，携带 proxy_set 等上下文关联
+# 注解包装器：哈希等价副本，携带 proxy_set 等上下文关联
 class Annotated(SupportsAnnotations):
     """clones a SupportsAnnotations and applies an 'annotations' dictionary.
 
@@ -395,6 +407,8 @@ annotated_classes: Dict[Type[SupportsWrappingAnnotations], Type[Annotated]] = (
 _SA = TypeVar("_SA", bound="SupportsAnnotations")
 
 
+# 安全附加注解：不可变对象跳过或浅拷贝
+# 安全附加注解：不可变对象跳过或浅拷贝
 def _safe_annotate(to_annotate: _SA, annotations: _AnnotationDict) -> _SA:
     try:
         _annotate = to_annotate._annotate
@@ -407,6 +421,8 @@ def _safe_annotate(to_annotate: _SA, annotations: _AnnotationDict) -> _SA:
         return _annotate(annotations)
 
 
+# 递归为子树所有 SupportsAnnotations 节点附加注解
+# 递归为子树所有 SupportsAnnotations 节点附加注解
 def _deep_annotate(
     element: _SA,
     annotations: _AnnotationDict,

@@ -7,11 +7,25 @@
 
 """Defines the public namespace for SQL expression constructs."""
 
+# 本模块聚合 sql 子包公开构造器与类型，供 from sqlalchemy import select 等
+"""Defines the public namespace for SQL expression constructs."""
+
+# 本模块聚合 sql 子包公开构造器与类型，供 from sqlalchemy import select 等
+"""Defines the public namespace for SQL expression constructs."""
+
+# SQL 表达式公开命名空间：select/insert/func 等 API 重导出
+
+# SQL 表达式公开命名空间：select/insert/func 等 API 重导出
+
 from __future__ import annotations
 
+# DML 构造器：insert/update/delete
+# DML 构造器：insert/update/delete
 from ._dml_constructors import delete as delete
 from ._dml_constructors import insert as insert
 from ._dml_constructors import update as update
+# 表达式构造器：and_/or_/bindparam/case/cast 等
+# 表达式构造器：and_/or_/bindparam/case/cast 等
 from ._elements_constructors import all_ as all_
 from ._elements_constructors import and_ as and_
 from ._elements_constructors import any_ as any_
@@ -42,6 +56,8 @@ from ._elements_constructors import try_cast as try_cast
 from ._elements_constructors import tuple_ as tuple_
 from ._elements_constructors import type_coerce as type_coerce
 from ._elements_constructors import within_group as within_group
+# SELECTable 构造器：select/join/union/cte 等
+# SELECTable 构造器：select/join/union/cte 等
 from ._selectable_constructors import alias as alias
 from ._selectable_constructors import cte as cte
 from ._selectable_constructors import except_ as except_
@@ -103,10 +119,14 @@ from .elements import TypeClause as TypeClause
 from .elements import TypeCoerce as TypeCoerce
 from .elements import UnaryExpression as UnaryExpression
 from .elements import WithinGroup as WithinGroup
+# 函数命名空间 func 与 Function 类型
+# 函数命名空间 func 与 Function 类型
 from .functions import func as func
 from .functions import Function as Function
 from .functions import FunctionElement as FunctionElement
 from .functions import modifier as modifier
+# Lambda 语句：延迟解析的 cached SQL
+# Lambda 语句：延迟解析的 cached SQL
 from .lambdas import lambda_stmt as lambda_stmt
 from .lambdas import LambdaElement as LambdaElement
 from .lambdas import StatementLambdaElement as StatementLambdaElement

@@ -11,6 +11,10 @@
 
 """
 
+# SQL 表达式元素：ClauseElement 层次与列/运算符 AST
+
+# SQL 表达式元素：ClauseElement 层次与列/运算符 AST
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -132,6 +136,8 @@ _NMT = TypeVar("_NMT", bound="_NUMBER")
 
 
 @overload
+# 构造 BindParameter 字面量
+# 构造 BindParameter 字面量
 def literal(
     value: Any,
     type_: _TypeEngineArgument[_T],
@@ -192,6 +198,8 @@ def literal(
     )
 
 
+# 构造无表绑定的 literal ColumnClause
+# 构造无表绑定的 literal ColumnClause
 def literal_column(
     text: str, type_: Optional[_TypeEngineArgument[_T]] = None
 ) -> ColumnClause[_T]:
@@ -230,6 +238,8 @@ def literal_column(
     return ColumnClause(text, type_=type_, is_literal=True)
 
 
+# 可编译 SQL 元素基类：compile() 返回 Compiled
+# 可编译 SQL 元素基类：compile() 返回 Compiled
 class CompilerElement(Visitable):
     """base class for SQL elements that can be compiled to produce a
     SQL string.
@@ -326,6 +336,8 @@ class CompilerElement(Visitable):
         return str(self.compile())
 
 
+# SQL 表达式根基类：traverse/cache key/copy/annotate
+# SQL 表达式根基类：traverse/cache key/copy/annotate
 @inspection._self_inspects
 class ClauseElement(
     SupportsWrappingAnnotations,
@@ -774,6 +786,8 @@ class ClauseElement(
             )
 
 
+# DQL/DML 共用 ClauseElement 子基类
+# DQL/DML 共用 ClauseElement 子基类
 class DQLDMLClauseElement(ClauseElement):
     """represents a :class:`.ClauseElement` that compiles to a DQL or DML
     expression, not DDL.
@@ -797,6 +811,8 @@ class DQLDMLClauseElement(ClauseElement):
         ) -> SQLCompiler: ...
 
 
+# 编译期列元素：无独立 visit
+# 编译期列元素：无独立 visit
 class CompilerColumnElement(
     roles.DMLColumnRole,
     roles.DDLConstraintColumnRole,
@@ -818,6 +834,8 @@ class CompilerColumnElement(
 # SQLCoreOperations should be suiting the ExpressionElementRole
 # and ColumnsClauseRole.   however the MRO issues become too elaborate
 # at the moment.
+# 列运算符 TypingOnly 基类：类型检查用
+# 列运算符 TypingOnly 基类：类型检查用
 class SQLCoreOperations(Generic[_T_co], ColumnOperators, TypingOnly):
     __slots__ = ()
 
@@ -1197,6 +1215,8 @@ class SQLCoreOperations(Generic[_T_co], ColumnOperators, TypingOnly):
         def __rfloordiv__(self, other: Any) -> ColumnElement[Any]: ...
 
 
+# SQL 列表达式 Protocol：ColumnElement 语义
+# SQL 列表达式 Protocol：ColumnElement 语义
 class SQLColumnExpression(
     SQLCoreOperations[_T_co], roles.ExpressionElementRole[_T_co], TypingOnly
 ):
@@ -1220,6 +1240,8 @@ class SQLColumnExpression(
 _SQO = SQLCoreOperations
 
 
+# 列表达式核心：比较/算术/cast 等到 SQL AST
+# 列表达式核心：比较/算术/cast 等到 SQL AST
 class ColumnElement(
     roles.ColumnArgumentOrKeyRole,
     roles.StatementOptionRole,
@@ -1854,6 +1876,8 @@ class ColumnElement(
         return self._anon_label(label, add_hash=idx)
 
 
+# 带 key 的列元素基类
+# 带 key 的列元素基类
 class KeyedColumnElement(ColumnElement[_T]):
     """ColumnElement where ``.key`` is non-None."""
 
@@ -1862,6 +1886,8 @@ class KeyedColumnElement(ColumnElement[_T]):
     key: str
 
 
+# 包装列表达式：内部 element 代理
+# 包装列表达式：内部 element 代理
 class WrapsColumnExpression(ColumnElement[_T]):
     """Mixin that defines a :class:`_expression.ColumnElement`
     as a wrapper with special
@@ -1928,6 +1954,8 @@ class WrapsColumnExpression(ColumnElement[_T]):
         return super()._proxy_key
 
 
+# 绑定参数：execute 时由 DBAPI 填充
+# 绑定参数：execute 时由 DBAPI 填充
 class BindParameter(roles.InElementRole, KeyedColumnElement[_T]):
     r"""Represent a "bound expression".
 
@@ -2214,6 +2242,8 @@ class BindParameter(roles.InElementRole, KeyedColumnElement[_T]):
         )
 
 
+# CAST 等语句中的类型子句
+# CAST 等语句中的类型子句
 class TypeClause(DQLDMLClauseElement):
     """Handle a type keyword in a SQL statement.
 
@@ -2232,6 +2262,8 @@ class TypeClause(DQLDMLClauseElement):
         self.type = type_
 
 
+# 原生 SQL 文本：text() 构造
+# 原生 SQL 文本：text() 构造
 class TextClause(
     roles.DDLConstraintColumnRole,
     roles.DDLExpressionRole,
@@ -2620,6 +2652,8 @@ class TextClause(
             return self
 
 
+# SQL NULL 单例常量
+# SQL NULL 单例常量
 class Null(SingletonConstant, roles.ConstExprRole[None], ColumnElement[None]):
     """Represent the NULL keyword in a SQL statement.
 
@@ -2649,6 +2683,8 @@ class Null(SingletonConstant, roles.ConstExprRole[None], ColumnElement[None]):
 Null._create_singleton()
 
 
+# SQL FALSE 单例常量
+# SQL FALSE 单例常量
 class False_(
     SingletonConstant, roles.ConstExprRole[bool], ColumnElement[bool]
 ):
@@ -2680,6 +2716,8 @@ class False_(
 False_._create_singleton()
 
 
+# SQL TRUE 单例常量
+# SQL TRUE 单例常量
 class True_(SingletonConstant, roles.ConstExprRole[bool], ColumnElement[bool]):
     """Represent the ``true`` keyword, or equivalent, in a SQL statement.
 
@@ -2719,6 +2757,8 @@ class True_(SingletonConstant, roles.ConstExprRole[bool], ColumnElement[bool]):
 True_._create_singleton()
 
 
+# 逗号分隔子句列表
+# 逗号分隔子句列表
 class ClauseList(
     roles.InElementRole,
     roles.OrderByRole,
@@ -2827,6 +2867,8 @@ class ClauseList(
             return self
 
 
+# 运算符表达式基类
+# 运算符表达式基类
 class OperatorExpression(ColumnElement[_T]):
     """base for expressions that contain an operator and operands
 
@@ -2915,6 +2957,8 @@ class OperatorExpression(ColumnElement[_T]):
         )
 
 
+# 表达式列表：IN/tuple 等
+# 表达式列表：IN/tuple 等
 class ExpressionClauseList(OperatorExpression[_T]):
     """Describe a list of clauses, separated by an operator,
     in a column expression context.
@@ -3008,6 +3052,8 @@ class ExpressionClauseList(OperatorExpression[_T]):
         return UnaryExpression(grouped, operator=operators.inv)
 
 
+# 布尔表达式列表：AND/OR 链
+# 布尔表达式列表：AND/OR 链
 class BooleanClauseList(ExpressionClauseList[bool]):
     __visit_name__ = "expression_clauselist"
     inherit_cache = True
@@ -3220,6 +3266,8 @@ and_ = BooleanClauseList.and_
 or_ = BooleanClauseList.or_
 
 
+# SQL 行/tuple 字面量
+# SQL 行/tuple 字面量
 class Tuple(ClauseList, ColumnElement[typing_Tuple[Any, ...]]):
     """Represent a SQL tuple."""
 
@@ -3297,6 +3345,8 @@ class Tuple(ClauseList, ColumnElement[typing_Tuple[Any, ...]]):
         return self
 
 
+# CASE WHEN 表达式
+# CASE WHEN 表达式
 class Case(ColumnElement[_T]):
     """Represent a ``CASE`` expression.
 
@@ -3394,6 +3444,8 @@ class Case(ColumnElement[_T]):
         )
 
 
+# CAST(type AS ...) 表达式
+# CAST(type AS ...) 表达式
 class Cast(WrapsColumnExpression[_T]):
     """Represent a ``CAST`` expression.
 
@@ -3454,6 +3506,8 @@ class Cast(WrapsColumnExpression[_T]):
         return self.clause
 
 
+# TRY_CAST 表达式（SQL Server 等）
+# TRY_CAST 表达式（SQL Server 等）
 class TryCast(Cast[_T]):
     """Represent a TRY_CAST expression.
 
@@ -3470,6 +3524,8 @@ class TryCast(Cast[_T]):
     inherit_cache = True
 
 
+# 类型强制：不改变 SQL 仅影响 bind 处理
+# 类型强制：不改变 SQL 仅影响 bind 处理
 class TypeCoerce(WrapsColumnExpression[_T]):
     """Represent a Python-side type-coercion wrapper.
 
@@ -3534,6 +3590,8 @@ class TypeCoerce(WrapsColumnExpression[_T]):
             return self
 
 
+# EXTRACT(field FROM ...) 表达式
+# EXTRACT(field FROM ...) 表达式
 class Extract(ColumnElement[int]):
     """Represent a SQL EXTRACT clause, ``extract(field FROM expr)``."""
 
@@ -3557,6 +3615,8 @@ class Extract(ColumnElement[int]):
         return self.expr._from_objects
 
 
+# 编译期 Label 引用
+# 编译期 Label 引用
 class _label_reference(ColumnElement[_T]):
     """Wrap a column expression as it appears in a 'reference' context.
 
@@ -3586,6 +3646,8 @@ class _label_reference(ColumnElement[_T]):
         return []
 
 
+# 文本 Label 引用
+# 文本 Label 引用
 class _textual_label_reference(ColumnElement[Any]):
     __visit_name__ = "textual_label_reference"
 
@@ -3601,6 +3663,8 @@ class _textual_label_reference(ColumnElement[Any]):
         return TextClause(self.element)
 
 
+# 一元表达式：NOT/负号/IS NULL 等
+# 一元表达式：NOT/负号/IS NULL 等
 class UnaryExpression(ColumnElement[_T]):
     """Define a 'unary' expression.
 
@@ -3751,6 +3815,8 @@ class UnaryExpression(ColumnElement[_T]):
             return self
 
 
+# 集合聚合：ANY/ALL 等
+# 集合聚合：ANY/ALL 等
 class CollectionAggregate(UnaryExpression[_T]):
     """Forms the basis for right-hand collection operator modifiers
     ANY and ALL.
@@ -3852,6 +3918,8 @@ class CollectionAggregate(UnaryExpression[_T]):
         )
 
 
+# 转布尔包装表达式
+# 转布尔包装表达式
 class AsBoolean(WrapsColumnExpression[bool], UnaryExpression[bool]):
     inherit_cache = True
 
@@ -3877,6 +3945,8 @@ class AsBoolean(WrapsColumnExpression[bool], UnaryExpression[bool]):
             return AsBoolean(self.element, self.negate, self.operator)
 
 
+# 二元表达式：比较/算术/连接
+# 二元表达式：比较/算术/连接
 class BinaryExpression(OperatorExpression[_T]):
     """Represent an expression that is ``LEFT <operator> RIGHT``.
 
@@ -4029,6 +4099,8 @@ class BinaryExpression(OperatorExpression[_T]):
             return self.self_group()._negate()
 
 
+# 切片表达式（方言扩展）
+# 切片表达式（方言扩展）
 class Slice(ColumnElement[Any]):
     """Represent SQL for a Python array-slice object.
 
@@ -4071,6 +4143,8 @@ class Slice(ColumnElement[Any]):
         return self
 
 
+# 下标/JSON 路径表达式
+# 下标/JSON 路径表达式
 class IndexExpression(BinaryExpression[Any]):
     """Represent the class of expressions that are like an "index"
     operation."""
@@ -4078,6 +4152,8 @@ class IndexExpression(BinaryExpression[Any]):
     inherit_cache = True
 
 
+# 分组元素基类：括号包装
+# 分组元素基类：括号包装
 class GroupedElement(DQLDMLClauseElement):
     """Represent any parenthesized expression"""
 
@@ -4090,6 +4166,8 @@ class GroupedElement(DQLDMLClauseElement):
         raise NotImplementedError()
 
 
+# 括号分组：(expr)
+# 括号分组：(expr)
 class Grouping(GroupedElement, ColumnElement[_T]):
     """Represent a grouping within a column expression"""
 
@@ -4158,6 +4236,8 @@ class Grouping(GroupedElement, ColumnElement[_T]):
         ) -> Self: ...
 
 
+# 覆盖 bind 的分组包装
+# 覆盖 bind 的分组包装
 class _OverrideBinds(Grouping[_T]):
     """used by cache_key->_apply_params_to_element to allow compilation /
     execution of a SQL element that's been cached, using an alternate set of
@@ -4209,6 +4289,8 @@ class _OverrideBinds(Grouping[_T]):
         return ck
 
 
+# OVER 窗口范围枚举
+# OVER 窗口范围枚举
 class _OverRange(Enum):
     RANGE_UNBOUNDED = 0
     RANGE_CURRENT = 1
@@ -4220,6 +4302,8 @@ RANGE_CURRENT = _OverRange.RANGE_CURRENT
 _IntOrRange = Union[int, _OverRange]
 
 
+# 窗口函数 OVER 子句
+# 窗口函数 OVER 子句
 class Over(ColumnElement[_T]):
     """Represent an OVER clause.
 
@@ -4354,6 +4438,8 @@ class Over(ColumnElement[_T]):
         )
 
 
+# ordered-set 聚合 WITHIN GROUP
+# ordered-set 聚合 WITHIN GROUP
 class WithinGroup(ColumnElement[_T]):
     """Represent a WITHIN GROUP (ORDER BY) clause.
 
@@ -4462,6 +4548,8 @@ class WithinGroup(ColumnElement[_T]):
         )
 
 
+# FILTER (WHERE ...) 函数过滤
+# FILTER (WHERE ...) 函数过滤
 class FunctionFilter(Generative, ColumnElement[_T]):
     """Represent a function FILTER clause.
 
@@ -4605,6 +4693,8 @@ class FunctionFilter(Generative, ColumnElement[_T]):
         )
 
 
+# 命名列基类：name/key/label
+# 命名列基类：name/key/label
 class NamedColumn(KeyedColumnElement[_T]):
     is_literal = False
     table: Optional[FromClause] = None
@@ -4715,6 +4805,8 @@ class NamedColumn(KeyedColumnElement[_T]):
 _PS = ParamSpec("_PS")
 
 
+# 列标签：AS alias
+# 列标签：AS alias
 class Label(roles.LabeledColumnExprRole[_T], NamedColumn[_T]):
     """Represents a column label (AS).
 
@@ -4902,6 +4994,8 @@ class Label(roles.LabeledColumnExprRole[_T], NamedColumn[_T]):
         return self.key, e
 
 
+# 列子句：column()/Table.c 单元
+# 列子句：column()/Table.c 单元
 class ColumnClause(
     roles.DDLReferredColumnRole,
     roles.LabeledColumnExprRole[_T],
@@ -5159,6 +5253,8 @@ class ColumnClause(
         return c.key, c
 
 
+# 表值函数列引用
+# 表值函数列引用
 class TableValuedColumn(NamedColumn[_T]):
     __visit_name__ = "table_valued_column"
 
@@ -5184,6 +5280,8 @@ class TableValuedColumn(NamedColumn[_T]):
         return [self.scalar_alias]
 
 
+# COLLATE 子句
+# COLLATE 子句
 class CollationClause(ColumnElement[str]):
     __visit_name__ = "collation"
 
@@ -5217,6 +5315,8 @@ class CollationClause(ColumnElement[str]):
         self.collation = collation
 
 
+# 带标识符的可执行子句基类
+# 带标识符的可执行子句基类
 class _IdentifiedClause(Executable, ClauseElement):
     __visit_name__ = "identified"
 
@@ -5224,21 +5324,29 @@ class _IdentifiedClause(Executable, ClauseElement):
         self.ident = ident
 
 
+# SAVEPOINT 子句
+# SAVEPOINT 子句
 class SavepointClause(_IdentifiedClause):
     __visit_name__ = "savepoint"
     inherit_cache = False
 
 
+# ROLLBACK TO SAVEPOINT 子句
+# ROLLBACK TO SAVEPOINT 子句
 class RollbackToSavepointClause(_IdentifiedClause):
     __visit_name__ = "rollback_to_savepoint"
     inherit_cache = False
 
 
+# RELEASE SAVEPOINT 子句
+# RELEASE SAVEPOINT 子句
 class ReleaseSavepointClause(_IdentifiedClause):
     __visit_name__ = "release_savepoint"
     inherit_cache = False
 
 
+# 引号标识符 str 子类：quote/escape 标记
+# 引号标识符 str 子类：quote/escape 标记
 class quoted_name(util.MemoizedSlots, str):
     """Represent a SQL identifier combined with quoting preferences.
 
@@ -5369,6 +5477,8 @@ def _corresponding_column_or_error(fromclause, column, require_embedded=False):
     return c
 
 
+# NullType 排除的 memoized_property
+# NullType 排除的 memoized_property
 class _memoized_property_but_not_nulltype(
     util.memoized_property["TypeEngine[_T]"]
 ):
@@ -5383,6 +5493,8 @@ class _memoized_property_but_not_nulltype(
         return result
 
 
+# 带注解的 ColumnElement 包装
+# 带注解的 ColumnElement 包装
 class AnnotatedColumnElement(Annotated):
     _Annotated__element: ColumnElement[Any]
 
@@ -5453,6 +5565,8 @@ class AnnotatedColumnElement(Annotated):
         return self._Annotated__element._anon_name_label
 
 
+# 截断标签 quoted_name
+# 截断标签 quoted_name
 class _truncated_label(quoted_name):
     """A unicode subclass used to identify symbolic "
     "names that may require truncation."""
@@ -5471,6 +5585,8 @@ class _truncated_label(quoted_name):
         return self
 
 
+# 命名约定 conv() 包装标签
+# 命名约定 conv() 包装标签
 class conv(_truncated_label):
     """Mark a string indicating that a name has already been converted
     by a naming convention.
@@ -5529,6 +5645,8 @@ class conv(_truncated_label):
 _generated_label = _truncated_label
 
 
+# 编译器生成的匿名标签
+# 编译器生成的匿名标签
 class _anonymous_label(_truncated_label):
     """A unicode subclass used to identify anonymously
     generated names."""

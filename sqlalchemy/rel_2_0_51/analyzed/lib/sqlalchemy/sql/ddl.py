@@ -12,6 +12,10 @@ to invoke them for a create/drop call.
 
 """
 
+# DDL 构造与 Schema 生成/删除：CREATE TABLE 等到可执行语句
+
+# DDL 构造与 Schema 生成/删除：CREATE TABLE 等到可执行语句
+
 from __future__ import annotations
 
 import contextlib
@@ -59,6 +63,8 @@ if typing.TYPE_CHECKING:
 _SI = TypeVar("_SI", bound=Union["SchemaItem", str])
 
 
+# DDL 根基类：_compiler 返回 DDLCompiler
+# DDL 根基类：_compiler 返回 DDLCompiler
 class BaseDDLElement(ClauseElement):
     """The root of DDL constructs, including those that are sub-elements
     within the "create table" and other processes.
@@ -91,6 +97,12 @@ class BaseDDLElement(ClauseElement):
         raise NotImplementedError()
 
 
+# DDL execute_if 可调用协议
+# DDL 条件执行：dialect/callable 过滤
+# 通用 DDL 字符串元素：支持 execute_if 事件
+# DDL execute_if 可调用协议
+# DDL 条件执行：dialect/callable 过滤
+# 通用 DDL 字符串元素：支持 execute_if 事件
 class DDLIfCallable(Protocol):
     def __call__(
         self,
@@ -146,6 +158,8 @@ class DDLIf(typing.NamedTuple):
         return True
 
 
+# 可执行 DDL 基类：DDL/CreateTable 等
+# 可执行 DDL 基类：DDL/CreateTable 等
 class ExecutableDDLElement(roles.DDLRole, Executable, BaseDDLElement):
     """Base class for standalone executable DDL expression constructs.
 
@@ -423,6 +437,8 @@ class DDL(ExecutableDDLElement):
         )
 
 
+# CREATE/DROP 共用基类：element 与 if 条件
+# CREATE/DROP 共用基类：element 与 if 条件
 class _CreateDropBase(ExecutableDDLElement, Generic[_SI]):
     """Base class for DDL constructs that represent CREATE and DROP or
     equivalents.
@@ -455,18 +471,24 @@ class _CreateDropBase(ExecutableDDLElement, Generic[_SI]):
         return False
 
 
+# CREATE 语句基类
+# CREATE 语句基类
 class _CreateBase(_CreateDropBase[_SI]):
     def __init__(self, element: _SI, if_not_exists: bool = False) -> None:
         super().__init__(element)
         self.if_not_exists = if_not_exists
 
 
+# DROP 语句基类
+# DROP 语句基类
 class _DropBase(_CreateDropBase[_SI]):
     def __init__(self, element: _SI, if_exists: bool = False) -> None:
         super().__init__(element)
         self.if_exists = if_exists
 
 
+# CREATE SCHEMA DDL
+# CREATE SCHEMA DDL
 class CreateSchema(_CreateBase[str]):
     """Represent a CREATE SCHEMA statement.
 
@@ -488,6 +510,8 @@ class CreateSchema(_CreateBase[str]):
         super().__init__(element=name, if_not_exists=if_not_exists)
 
 
+# DROP SCHEMA DDL
+# DROP SCHEMA DDL
 class DropSchema(_DropBase[str]):
     """Represent a DROP SCHEMA statement.
 
@@ -511,6 +535,8 @@ class DropSchema(_DropBase[str]):
         self.cascade = cascade
 
 
+# CREATE TABLE DDL
+# CREATE TABLE DDL
 class CreateTable(_CreateBase["Table"]):
     """Represent a CREATE TABLE statement."""
 
@@ -545,6 +571,8 @@ class CreateTable(_CreateBase["Table"]):
         self.include_foreign_key_constraints = include_foreign_key_constraints
 
 
+# DROP VIEW DDL
+# DROP VIEW DDL
 class _DropView(_DropBase["Table"]):
     """Semi-public 'DROP VIEW' construct.
 
@@ -556,6 +584,8 @@ class _DropView(_DropBase["Table"]):
     __visit_name__ = "drop_view"
 
 
+# CREATE CONSTRAINT DDL（独立）
+# CREATE CONSTRAINT DDL（独立）
 class CreateConstraint(BaseDDLElement):
     element: Constraint
 
@@ -563,6 +593,8 @@ class CreateConstraint(BaseDDLElement):
         self.element = element
 
 
+# CREATE COLUMN DDL（ALTER 内）
+# CREATE COLUMN DDL（ALTER 内）
 class CreateColumn(BaseDDLElement):
     """Represent a :class:`_schema.Column`
     as rendered in a CREATE TABLE statement,
@@ -682,6 +714,8 @@ class CreateColumn(BaseDDLElement):
         self.element = element
 
 
+# DROP TABLE DDL
+# DROP TABLE DDL
 class DropTable(_DropBase["Table"]):
     """Represent a DROP TABLE statement."""
 
@@ -702,18 +736,24 @@ class DropTable(_DropBase["Table"]):
         super().__init__(element, if_exists=if_exists)
 
 
+# CREATE SEQUENCE DDL
+# CREATE SEQUENCE DDL
 class CreateSequence(_CreateBase["Sequence"]):
     """Represent a CREATE SEQUENCE statement."""
 
     __visit_name__ = "create_sequence"
 
 
+# DROP SEQUENCE DDL
+# DROP SEQUENCE DDL
 class DropSequence(_DropBase["Sequence"]):
     """Represent a DROP SEQUENCE statement."""
 
     __visit_name__ = "drop_sequence"
 
 
+# CREATE INDEX DDL
+# CREATE INDEX DDL
 class CreateIndex(_CreateBase["Index"]):
     """Represent a CREATE INDEX statement."""
 
@@ -733,6 +773,8 @@ class CreateIndex(_CreateBase["Index"]):
         super().__init__(element, if_not_exists=if_not_exists)
 
 
+# DROP INDEX DDL
+# DROP INDEX DDL
 class DropIndex(_DropBase["Index"]):
     """Represent a DROP INDEX statement."""
 
@@ -752,6 +794,8 @@ class DropIndex(_DropBase["Index"]):
         super().__init__(element, if_exists=if_exists)
 
 
+# ALTER TABLE ADD CONSTRAINT DDL
+# ALTER TABLE ADD CONSTRAINT DDL
 class AddConstraint(_CreateBase["Constraint"]):
     """Represent an ALTER TABLE ADD CONSTRAINT statement."""
 
@@ -786,6 +830,8 @@ class AddConstraint(_CreateBase["Constraint"]):
             )
 
 
+# ALTER TABLE DROP CONSTRAINT DDL
+# ALTER TABLE DROP CONSTRAINT DDL
 class DropConstraint(_DropBase["Constraint"]):
     """Represent an ALTER TABLE DROP CONSTRAINT statement."""
 
@@ -827,12 +873,16 @@ class DropConstraint(_DropBase["Constraint"]):
             )
 
 
+# 设置表注释 DDL
+# 设置表注释 DDL
 class SetTableComment(_CreateDropBase["Table"]):
     """Represent a COMMENT ON TABLE IS statement."""
 
     __visit_name__ = "set_table_comment"
 
 
+# 删除表注释 DDL
+# 删除表注释 DDL
 class DropTableComment(_CreateDropBase["Table"]):
     """Represent a COMMENT ON TABLE '' statement.
 
@@ -843,30 +893,40 @@ class DropTableComment(_CreateDropBase["Table"]):
     __visit_name__ = "drop_table_comment"
 
 
+# 设置列注释 DDL
+# 设置列注释 DDL
 class SetColumnComment(_CreateDropBase["Column[Any]"]):
     """Represent a COMMENT ON COLUMN IS statement."""
 
     __visit_name__ = "set_column_comment"
 
 
+# 删除列注释 DDL
+# 删除列注释 DDL
 class DropColumnComment(_CreateDropBase["Column[Any]"]):
     """Represent a COMMENT ON COLUMN IS NULL statement."""
 
     __visit_name__ = "drop_column_comment"
 
 
+# 设置约束注释 DDL
+# 设置约束注释 DDL
 class SetConstraintComment(_CreateDropBase["Constraint"]):
     """Represent a COMMENT ON CONSTRAINT IS statement."""
 
     __visit_name__ = "set_constraint_comment"
 
 
+# 删除约束注释 DDL
+# 删除约束注释 DDL
 class DropConstraintComment(_CreateDropBase["Constraint"]):
     """Represent a COMMENT ON CONSTRAINT IS NULL statement."""
 
     __visit_name__ = "drop_constraint_comment"
 
 
+# SchemaVisitor：遍历并 invoke 单条 DDL
+# SchemaVisitor：遍历并 invoke 单条 DDL
 class InvokeDDLBase(SchemaVisitor):
     def __init__(self, connection, **kw):
         self.connection = connection
@@ -880,6 +940,8 @@ class InvokeDDLBase(SchemaVisitor):
         raise NotImplementedError()
 
 
+# CREATE 遍历访问者基类
+# CREATE 遍历访问者基类
 class InvokeCreateDDLBase(InvokeDDLBase):
     @contextlib.contextmanager
     def with_ddl_events(self, target, **kw):
@@ -895,6 +957,8 @@ class InvokeCreateDDLBase(InvokeDDLBase):
         )
 
 
+# DROP 遍历访问者基类
+# DROP 遍历访问者基类
 class InvokeDropDDLBase(InvokeDDLBase):
     @contextlib.contextmanager
     def with_ddl_events(self, target, **kw):
@@ -910,6 +974,8 @@ class InvokeDropDDLBase(InvokeDDLBase):
         )
 
 
+# MetaData.create_all 的 CREATE 生成器
+# MetaData.create_all 的 CREATE 生成器
 class SchemaGenerator(InvokeCreateDDLBase):
     def __init__(
         self, dialect, connection, checkfirst=False, tables=None, **kwargs
@@ -1064,6 +1130,8 @@ class SchemaGenerator(InvokeCreateDDLBase):
             CreateIndex(index)._invoke_with(self.connection)
 
 
+# MetaData.drop_all 的 DROP 生成器
+# MetaData.drop_all 的 DROP 生成器
 class SchemaDropper(InvokeDropDDLBase):
     def __init__(
         self, dialect, connection, checkfirst=False, tables=None, **kwargs

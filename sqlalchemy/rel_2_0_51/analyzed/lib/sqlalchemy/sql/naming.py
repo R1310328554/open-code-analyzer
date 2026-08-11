@@ -8,6 +8,10 @@
 
 """Establish constraint and index naming conventions."""
 
+# 约束/索引命名约定：MetaData.naming_convention 模板解析
+
+# 约束/索引命名约定：MetaData.naming_convention 模板解析
+
 from __future__ import annotations
 
 import re
@@ -27,6 +31,8 @@ from .. import event
 from .. import exc
 
 
+# 命名模板字典：%(table_name)s 等 token 替换
+# 命名模板字典：%(table_name)s 等 token 替换
 class ConventionDict:
     def __init__(self, const, table, convention):
         self.const = const
@@ -136,6 +142,8 @@ _prefix_dict = {
 }
 
 
+# 按约束类型 MRO 查找 naming_convention 模板
+# 按约束类型 MRO 查找 naming_convention 模板
 def _get_convention(dict_, key):
     for super_ in key.__mro__:
         if super_ in _prefix_dict and _prefix_dict[super_] in dict_:
@@ -146,6 +154,8 @@ def _get_convention(dict_, key):
         return None
 
 
+# 为约束/索引生成 conv() 包装的最终名称
+# 为约束/索引生成 conv() 包装的最终名称
 def _constraint_name_for_table(const, table):
     metadata = table.metadata
     convention = _get_convention(metadata.naming_convention, type(const))

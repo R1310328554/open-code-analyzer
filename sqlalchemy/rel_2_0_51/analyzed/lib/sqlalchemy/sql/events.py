@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# Schema DDL 事件：before/after create/drop 与列反射
+
+# Schema DDL 事件：before/after create/drop 与列反射
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,6 +27,8 @@ if TYPE_CHECKING:
     from ..engine.reflection import Inspector
 
 
+# DDL 事件集：Table/MetaData/Index 等 create/drop 钩子
+# DDL 事件集：Table/MetaData/Index 等 create/drop 钩子
 class DDLEvents(event.Events[SchemaEventTarget]):
     """
     Define event listeners for schema objects,

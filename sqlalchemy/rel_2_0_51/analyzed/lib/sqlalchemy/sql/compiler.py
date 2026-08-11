@@ -24,6 +24,10 @@ To generate user-defined SQL strings, see
 
 """
 
+# SQL/DDL 编译器：ClauseElement 到 SQL 字符串与 bind 参数
+
+# SQL/DDL 编译器：ClauseElement 到 SQL 字符串与 bind 参数
+
 from __future__ import annotations
 
 import collections
@@ -363,6 +367,8 @@ COMPOUND_KEYWORDS = {
 }
 
 
+# 结果列条目：cursor.description 与 Row 映射元数据
+# 结果列条目：cursor.description 与 Row 映射元数据
 class ResultColumnsEntry(NamedTuple):
     """Tracks a column expression that is expected to be represented
     in the result rows for this statement.
@@ -394,6 +400,8 @@ class ResultColumnsEntry(NamedTuple):
     """
 
 
+# 结果映射追加协议：register result column
+# 结果映射追加协议：register result column
 class _ResultMapAppender(Protocol):
     def __call__(
         self,
@@ -412,12 +420,16 @@ RM_OBJECTS: Literal[2] = 2
 RM_TYPE: Literal[3] = 3
 
 
+# 编译器栈条目基 TypedDict
+# 编译器栈条目基 TypedDict
 class _BaseCompilerStackEntry(TypedDict):
     asfrom_froms: Set[FromClause]
     correlate_froms: Set[FromClause]
     selectable: ReturnsRows
 
 
+# 编译器栈条目：correlate/asfrom 等上下文
+# 编译器栈条目：correlate/asfrom 等上下文
 class _CompilerStackEntry(_BaseCompilerStackEntry, total=False):
     compile_state: CompileState
     need_result_map_for_nested: bool
@@ -426,6 +438,8 @@ class _CompilerStackEntry(_BaseCompilerStackEntry, total=False):
     insert_from_select: Select[Any]
 
 
+# IN 展开状态：展开后的 literal/bind 列表
+# IN 展开状态：展开后的 literal/bind 列表
 class ExpandedState(NamedTuple):
     """represents state to use when producing "expanded" and
     "post compile" bound parameters for a statement.
@@ -487,6 +501,8 @@ class ExpandedState(NamedTuple):
         return self.parameters
 
 
+# insertmanyvalues 批次元数据
+# insertmanyvalues 批次元数据
 class _InsertManyValues(NamedTuple):
     """represents state to use for executing an "insertmanyvalues" statement.
 
@@ -619,6 +635,8 @@ class _InsertManyValues(NamedTuple):
     """
 
 
+# 单批 insertmanyvalues 行与 sentinel
+# 单批 insertmanyvalues 行与 sentinel
 class _InsertManyValuesBatch(NamedTuple):
     """represents an individual batch SQL statement for insertmanyvalues.
 
@@ -644,6 +662,8 @@ class _InsertManyValuesBatch(NamedTuple):
     is_downgraded: bool
 
 
+# insertmanyvalues sentinel 选项位标志
+# insertmanyvalues sentinel 选项位标志
 class InsertmanyvaluesSentinelOpts(FastIntFlag):
     """bitflag enum indicating styles of PK defaults
     which can work as implicit sentinel columns
@@ -662,6 +682,8 @@ class InsertmanyvaluesSentinelOpts(FastIntFlag):
     RENDER_SELECT_COL_CASTS = 64
 
 
+# 编译器状态枚举：编译阶段标记
+# 编译器状态枚举：编译阶段标记
 class CompilerState(IntEnum):
     COMPILING = 0
     """statement is present, compilation phase in progress"""
@@ -678,6 +700,8 @@ class CompilerState(IntEnum):
     for method access"""
 
 
+# FROM 子句 lint 级别枚举
+# FROM 子句 lint 级别枚举
 class Linting(IntEnum):
     """represent preferences for the 'SQL linting' feature.
 
@@ -706,6 +730,8 @@ NO_LINTING, COLLECT_CARTESIAN_PRODUCTS, WARN_LINTING, FROM_LINTING = tuple(
 )
 
 
+# FROM 子句 linter：检测 cartesian/缺失 join
+# FROM 子句 linter：检测 cartesian/缺失 join
 class FromLinter(collections.namedtuple("FromLinter", ["froms", "edges"])):
     """represents current state for the "cartesian product" detection
     feature."""
@@ -772,6 +798,8 @@ class FromLinter(collections.namedtuple("FromLinter", ["froms", "edges"])):
                 util.warn(message)
 
 
+# 已编译语句/DDL：string 与 params 载体
+# 已编译语句/DDL：string 与 params 载体
 class Compiled:
     """Represent a compiled SQL or DDL expression.
 
@@ -976,6 +1004,8 @@ class Compiled:
         return self.construct_params()
 
 
+# 类型编译器：TypeEngine 到 DDL 类型字符串
+# 类型编译器：TypeEngine 到 DDL 类型字符串
 class TypeCompiler(util.EnsureKWArg):
     """Produces DDL specification for TypeEngine objects."""
 
@@ -1000,6 +1030,8 @@ class TypeCompiler(util.EnsureKWArg):
 
 # this was a Visitable, but to allow accurate detection of
 # column elements this is actually a column element
+# 编译期 Label 包装：render 时引用 element
+# 编译期 Label 包装：render 时引用 element
 class _CompileLabel(
     roles.BinaryElementRole[Any], elements.CompilerColumnElement
 ):
@@ -1025,6 +1057,8 @@ class _CompileLabel(
         return self
 
 
+# ILIKE 大小写不敏感包装：lower() 或 PG 直通
+# ILIKE 大小写不敏感包装：lower() 或 PG 直通
 class ilike_case_insensitive(
     roles.BinaryElementRole[Any], elements.CompilerColumnElement
 ):
@@ -1063,6 +1097,8 @@ class ilike_case_insensitive(
         )
 
 
+# 默认 SQL 编译器：SELECT/INSERT/UPDATE/DELETE
+# 默认 SQL 编译器：SELECT/INSERT/UPDATE/DELETE
 class SQLCompiler(Compiled):
     """Default implementation of :class:`.Compiled`.
 
@@ -6635,6 +6671,8 @@ class SQLCompiler(Compiled):
         )
 
 
+# 字符串 SQL 编译器：literal_binds 友好输出
+# 字符串 SQL 编译器：literal_binds 友好输出
 class StrSQLCompiler(SQLCompiler):
     """A :class:`.SQLCompiler` subclass which allows a small selection
     of non-standard SQL features to render into a string value.
@@ -6746,6 +6784,8 @@ class StrSQLCompiler(SQLCompiler):
         )
 
 
+# DDL 编译器：CREATE/DROP/ALTER 等
+# DDL 编译器：CREATE/DROP/ALTER 等
 class DDLCompiler(Compiled):
     is_ddl = True
 
@@ -7319,6 +7359,8 @@ class DDLCompiler(Compiled):
         return text
 
 
+# 通用类型编译器：跨方言类型渲染
+# 通用类型编译器：跨方言类型渲染
 class GenericTypeCompiler(TypeCompiler):
     def visit_FLOAT(self, type_: sqltypes.Float[Any], **kw: Any) -> str:
         return "FLOAT"
@@ -7508,6 +7550,8 @@ class GenericTypeCompiler(TypeCompiler):
         return type_.get_col_spec(**kw)
 
 
+# 字符串类型编译器：调试/测试用
+# 字符串类型编译器：调试/测试用
 class StrSQLTypeCompiler(GenericTypeCompiler):
     def process(self, type_, **kw):
         try:
@@ -7541,14 +7585,20 @@ class StrSQLTypeCompiler(GenericTypeCompiler):
             return get_col_spec(**kw)
 
 
+# 对象 schema 解析协议
+# 对象 schema 解析协议
 class _SchemaForObjectCallable(Protocol):
     def __call__(self, __obj: Any) -> str: ...
 
 
+# 列 bind 名生成协议
+# 列 bind 名生成协议
 class _BindNameForColProtocol(Protocol):
     def __call__(self, col: ColumnClause[Any]) -> str: ...
 
 
+# 标识符预处理器：quote/escape 规则
+# 标识符预处理器：quote/escape 规则
 class IdentifierPreparer:
     """Handle quoting and case-folding of identifiers based on options."""
 

@@ -10,6 +10,10 @@ Provide :class:`_expression.Insert`, :class:`_expression.Update` and
 
 """
 
+# DML 语句：INSERT/UPDATE/DELETE 与 CompileState
+
+# DML 语句：INSERT/UPDATE/DELETE 与 CompileState
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -112,6 +116,8 @@ _DMLColumnElement = Union[str, ColumnClause[Any]]
 _DMLTableElement = Union[TableClause, Alias, Join]
 
 
+# DML 编译状态基类：参数/主表/returning 解析
+# DML 编译状态基类：参数/主表/returning 解析
 class DMLState(CompileState):
     _no_parameters = True
     _dict_parameters: Optional[MutableMapping[_DMLColumnElement, Any]] = None
@@ -262,6 +268,10 @@ class DMLState(CompileState):
 
 
 @CompileState.plugin_for("default", "insert")
+# INSERT 编译状态
+# INSERT 语句构造
+# INSERT 编译状态
+# INSERT 语句构造
 class InsertDMLState(DMLState):
     isinsert = True
 
@@ -333,6 +343,10 @@ class InsertDMLState(DMLState):
 
 
 @CompileState.plugin_for("default", "update")
+# UPDATE 编译状态
+# UPDATE 语句构造
+# UPDATE 编译状态
+# UPDATE 语句构造
 class UpdateDMLState(DMLState):
     isupdate = True
 
@@ -374,6 +388,10 @@ class UpdateDMLState(DMLState):
 
 
 @CompileState.plugin_for("default", "delete")
+# DELETE 编译状态
+# DELETE 语句构造
+# DELETE 编译状态
+# DELETE 语句构造
 class DeleteDMLState(DMLState):
     isdelete = True
 
@@ -387,6 +405,8 @@ class DeleteDMLState(DMLState):
         self.is_multitable = ef
 
 
+# DML 语句基类：INSERT/UPDATE/DELETE 公共 API
+# DML 语句基类：INSERT/UPDATE/DELETE 公共 API
 class UpdateBase(
     roles.DMLRole,
     HasCTE,
@@ -986,6 +1006,8 @@ class UpdateBase(
         return meth(self)
 
 
+# 带 VALUES 的 DML：INSERT 与 bulk 参数
+# 带 VALUES 的 DML：INSERT 与 bulk 参数
 class ValuesBase(UpdateBase):
     """Supplies support for :meth:`.ValuesBase.values` to
     INSERT and UPDATE constructs."""
@@ -1442,6 +1464,8 @@ class Insert(ValuesBase):
         ) -> ReturningInsert[Any]: ...
 
 
+# 带 RETURNING 的 INSERT 类型
+# 带 RETURNING 的 INSERT 类型
 class ReturningInsert(Insert, TypedReturnsRows[_TP]):
     """Typing-only class that establishes a generic type form of
     :class:`.Insert` which tracks returned column types.
@@ -1454,6 +1478,8 @@ class ReturningInsert(Insert, TypedReturnsRows[_TP]):
     """
 
 
+# 带 WHERE 的 DML mixin
+# 带 WHERE 的 DML mixin
 class DMLWhereBase:
     table: _DMLTableElement
     _where_criteria: Tuple[ColumnElement[Any], ...] = ()
@@ -1710,6 +1736,8 @@ class Update(DMLWhereBase, ValuesBase):
         ) -> ReturningUpdate[Any]: ...
 
 
+# 带 RETURNING 的 UPDATE 类型
+# 带 RETURNING 的 UPDATE 类型
 class ReturningUpdate(Update, TypedReturnsRows[_TP]):
     """Typing-only class that establishes a generic type form of
     :class:`.Update` which tracks returned column types.
@@ -1842,6 +1870,8 @@ class Delete(DMLWhereBase, UpdateBase):
         ) -> ReturningDelete[Any]: ...
 
 
+# 带 RETURNING 的 DELETE 类型
+# 带 RETURNING 的 DELETE 类型
 class ReturningDelete(Update, TypedReturnsRows[_TP]):
     """Typing-only class that establishes a generic type form of
     :class:`.Delete` which tracks returned column types.

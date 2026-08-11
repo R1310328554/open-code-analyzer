@@ -11,6 +11,10 @@ within INSERT and UPDATE statements.
 
 """
 
+# INSERT/UPDATE 参数解析：compiler 生成 bind 与 prefetch/postfetch
+
+# INSERT/UPDATE 参数解析：compiler 生成 bind 与 prefetch/postfetch
+
 from __future__ import annotations
 
 import functools
@@ -104,6 +108,8 @@ _CrudParamElementSQLExpr = Tuple[
 _CrudParamSequence = List[_CrudParamElement]
 
 
+# CRUD 参数元组：single/multi params 与 sentinel 配置
+# CRUD 参数元组：single/multi params 与 sentinel 配置
 class _CrudParams(NamedTuple):
     single_params: List[_CrudParamElementStr]
     all_multi_params: List[Sequence[_CrudParamElementStr]]
@@ -112,6 +118,8 @@ class _CrudParams(NamedTuple):
     use_sentinel_columns: Optional[Sequence[Column[Any]]] = None
 
 
+# 解析 INSERT/UPDATE 列值，填充 prefetch/postfetch/returning
+# 解析 INSERT/UPDATE 列值，填充 prefetch/postfetch/returning
 def _get_crud_params(
     compiler: SQLCompiler,
     stmt: ValuesBase,
@@ -433,6 +441,8 @@ def _get_crud_params(
 
 
 @overload
+# 为 CRUD 列值创建 BindParameter
+# 为 CRUD 列值创建 BindParameter
 def _create_bind_param(
     compiler: SQLCompiler,
     col: ColumnElement[Any],
@@ -640,6 +650,8 @@ def _scan_insert_from_select_cols(
         compiler.stack[-1]["insert_from_select"] = ins_from_select
 
 
+# 扫描语句 VALUES/SET 列并 yield CRUD 参数元素
+# 扫描语句 VALUES/SET 列并 yield CRUD 参数元素
 def _scan_cols(
     compiler,
     stmt,
@@ -1327,6 +1339,8 @@ def _create_update_prefetch_bind_param(
     return param
 
 
+# 多参数列占位：executemany 时按 index 区分 bind
+# 多参数列占位：executemany 时按 index 区分 bind
 class _multiparam_column(elements.ColumnElement[Any]):
     _is_multiparam_column = True
 

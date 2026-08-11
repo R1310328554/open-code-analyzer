@@ -6,6 +6,10 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# 角色驱动强制转换：expect() 将 Python 值转为 ClauseElement
+
+# 角色驱动强制转换：expect() 将 Python 值转为 ClauseElement
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -160,7 +164,15 @@ def _expression_collection_was_a_list(
     return cast("Sequence[_T]", args)
 
 
+# expect：按 SQL Role 将用户输入强制转换为正确 ClauseElement 类型
+
+# expect：按 SQL Role 将用户输入强制转换为正确 ClauseElement 类型
+
 @overload
+def expect(
+    role: Type[roles.TruncatedLabelRole],@overload
+def expect(
+    role: Type[roles.TruncatedLabelRole],@overload
 def expect(
     role: Type[roles.TruncatedLabelRole],
     element: Any,
@@ -427,6 +439,8 @@ def expect(
         )
 
 
+# 强制转换并返回字符串键（列名/标签）
+# 强制转换并返回字符串键（列名/标签）
 def expect_as_key(
     role: Type[roles.DMLColumnRole], element: Any, **kw: Any
 ) -> str:
@@ -434,6 +448,8 @@ def expect_as_key(
     return expect(role, element, as_key=True, **kw)
 
 
+# 解析列表达式集合并 yield (resolved, column, strname, add_element)
+# 解析列表达式集合并 yield (resolved, column, strname, add_element)
 def expect_col_expression_collection(
     role: Type[roles.DDLConstraintColumnRole],
     expressions: Iterable[_DDLColumnArgument],
@@ -464,6 +480,8 @@ def expect_col_expression_collection(
         yield resolved, column, strname, add_element
 
 
+# Role 实现基类：literal_coercion 与 implicit_coercions
+# Role 实现基类：literal_coercion 与 implicit_coercions
 class RoleImpl:
     __slots__ = ("_role_class", "name", "_use_inspection")
 
@@ -519,6 +537,8 @@ class RoleImpl:
         raise exc.ArgumentError(msg, code=code) from err
 
 
+# DDL Role mixin：强制转换前先 deannotate
+# DDL Role mixin：强制转换前先 deannotate
 class _Deannotate:
     __slots__ = ()
 
@@ -528,12 +548,16 @@ class _Deannotate:
         return _deep_deannotate(resolved)
 
 
+# 仅接受字符串的 Role mixin
+# 仅接受字符串的 Role mixin
 class _StringOnly:
     __slots__ = ()
 
     _resolve_literal_only = True
 
 
+# 强制转换结果作为字符串键返回
+# 强制转换结果作为字符串键返回
 class _ReturnsStringKey(RoleImpl):
     __slots__ = ()
 
@@ -547,6 +571,8 @@ class _ReturnsStringKey(RoleImpl):
         return element
 
 
+# 列表达式强制转换：text()/literal 等到 ColumnElement
+# 列表达式强制转换：text()/literal 等到 ColumnElement
 class _ColumnCoercions(RoleImpl):
     __slots__ = ()
 
@@ -593,6 +619,8 @@ def _no_text_coercion(
     ) from err
 
 
+# 禁止裸字符串隐式转 text() 的 mixin
+# 禁止裸字符串隐式转 text() 的 mixin
 class _NoTextCoercion(RoleImpl):
     __slots__ = ()
 
@@ -605,6 +633,8 @@ class _NoTextCoercion(RoleImpl):
             self._raise_for_expected(element, argname)
 
 
+# 字面量强制转换：int/str 等到 BindParameter
+# 字面量强制转换：int/str 等到 BindParameter
 class _CoerceLiterals(RoleImpl):
     __slots__ = ()
     _coerce_consts = False
@@ -635,6 +665,8 @@ class _CoerceLiterals(RoleImpl):
         self._raise_for_expected(element, argname)
 
 
+# LiteralValueRole 实现：bindparam 包装 Python 值
+# LiteralValueRole 实现：bindparam 包装 Python 值
 class LiteralValueImpl(RoleImpl):
     _resolve_literal_only = True
 
@@ -665,6 +697,8 @@ class LiteralValueImpl(RoleImpl):
         return element
 
 
+# 拒绝 SELECT 误作 FROM 的 mixin
+# 拒绝 SELECT 误作 FROM 的 mixin
 class _SelectIsNotFrom(RoleImpl):
     __slots__ = ()
 
@@ -706,6 +740,8 @@ class _SelectIsNotFrom(RoleImpl):
         assert False
 
 
+# HasCacheKey 子类 Role 实现
+# HasCacheKey 子类 Role 实现
 class HasCacheKeyImpl(RoleImpl):
     __slots__ = ()
 
@@ -725,6 +761,8 @@ class HasCacheKeyImpl(RoleImpl):
         return element
 
 
+# ExecutableOption Role 实现
+# ExecutableOption Role 实现
 class ExecutableOptionImpl(RoleImpl):
     __slots__ = ()
 
@@ -744,6 +782,8 @@ class ExecutableOptionImpl(RoleImpl):
         return element
 
 
+# 通用表达式元素 Role 实现
+# 通用表达式元素 Role 实现
 class ExpressionElementImpl(_ColumnCoercions, RoleImpl):
     __slots__ = ()
 
@@ -787,6 +827,8 @@ class ExpressionElementImpl(_ColumnCoercions, RoleImpl):
         )
 
 
+# 二元表达式 Role：比较/算术运算符
+# 二元表达式 Role：比较/算术运算符
 class BinaryElementImpl(ExpressionElementImpl, RoleImpl):
     __slots__ = ()
 
@@ -813,6 +855,8 @@ class BinaryElementImpl(ExpressionElementImpl, RoleImpl):
         return resolved
 
 
+# IN 子句 Role：序列/tuple_/select 等
+# IN 子句 Role：序列/tuple_/select 等
 class InElementImpl(RoleImpl):
     __slots__ = ()
 
@@ -899,6 +943,8 @@ class InElementImpl(RoleImpl):
             return element
 
 
+# JOIN ON 子句 Role 实现
+# JOIN ON 子句 Role 实现
 class OnClauseImpl(_ColumnCoercions, RoleImpl):
     __slots__ = ()
 
@@ -918,6 +964,8 @@ class OnClauseImpl(_ColumnCoercions, RoleImpl):
         return resolved
 
 
+# WHERE/HAVING 子句 Role 实现
+# WHERE/HAVING 子句 Role 实现
 class WhereHavingImpl(_CoerceLiterals, _ColumnCoercions, RoleImpl):
     __slots__ = ()
 
@@ -927,6 +975,8 @@ class WhereHavingImpl(_CoerceLiterals, _ColumnCoercions, RoleImpl):
         return _no_text_coercion(element, argname)
 
 
+# 语句选项 Role 实现
+# 语句选项 Role 实现
 class StatementOptionImpl(_CoerceLiterals, RoleImpl):
     __slots__ = ()
 
@@ -936,14 +986,20 @@ class StatementOptionImpl(_CoerceLiterals, RoleImpl):
         return elements.TextClause(element)
 
 
+# 列参数 Role：禁止 text 强制转换
+# 列参数 Role：禁止 text 强制转换
 class ColumnArgumentImpl(_NoTextCoercion, RoleImpl):
     __slots__ = ()
 
 
+# 列参数或键名 Role 实现
+# 列参数或键名 Role 实现
 class ColumnArgumentOrKeyImpl(_ReturnsStringKey, RoleImpl):
     __slots__ = ()
 
 
+# 字符串转 plain ColumnClause 的 Role
+# 字符串转 plain ColumnClause 的 Role
 class StrAsPlainColumnImpl(_CoerceLiterals, RoleImpl):
     __slots__ = ()
 
@@ -951,6 +1007,8 @@ class StrAsPlainColumnImpl(_CoerceLiterals, RoleImpl):
         return elements.ColumnClause(element)
 
 
+# GROUP BY / ORDER BY 共用 Role 基类
+# GROUP BY / ORDER BY 共用 Role 基类
 class ByOfImpl(_CoerceLiterals, _ColumnCoercions, RoleImpl, roles.ByOfRole):
     __slots__ = ()
 
@@ -960,6 +1018,8 @@ class ByOfImpl(_CoerceLiterals, _ColumnCoercions, RoleImpl, roles.ByOfRole):
         return elements._textual_label_reference(element)
 
 
+# ORDER BY 表达式 Role 实现
+# ORDER BY 表达式 Role 实现
 class OrderByImpl(ByOfImpl, RoleImpl):
     __slots__ = ()
 
@@ -973,6 +1033,8 @@ class OrderByImpl(ByOfImpl, RoleImpl):
             return resolved
 
 
+# GROUP BY 表达式 Role 实现
+# GROUP BY 表达式 Role 实现
 class GroupByImpl(ByOfImpl, RoleImpl):
     __slots__ = ()
 
@@ -989,6 +1051,8 @@ class GroupByImpl(ByOfImpl, RoleImpl):
             return resolved
 
 
+# DML 列引用 Role：返回字符串键
+# DML 列引用 Role：返回字符串键
 class DMLColumnImpl(_ReturnsStringKey, RoleImpl):
     __slots__ = ()
 
@@ -999,6 +1063,8 @@ class DMLColumnImpl(_ReturnsStringKey, RoleImpl):
             return element
 
 
+# 常量表达式 Role：Null/True_/False_
+# 常量表达式 Role：Null/True_/False_
 class ConstExprImpl(RoleImpl):
     __slots__ = ()
 
@@ -1013,6 +1079,8 @@ class ConstExprImpl(RoleImpl):
             self._raise_for_expected(element, argname)
 
 
+# 截断标签 Role：标识符长度限制
+# 截断标签 Role：标识符长度限制
 class TruncatedLabelImpl(_StringOnly, RoleImpl):
     __slots__ = ()
 
@@ -1042,6 +1110,8 @@ class TruncatedLabelImpl(_StringOnly, RoleImpl):
             return elements._truncated_label(element)
 
 
+# DDL 表达式 Role 实现
+# DDL 表达式 Role 实现
 class DDLExpressionImpl(_Deannotate, _CoerceLiterals, RoleImpl):
     __slots__ = ()
 
@@ -1055,14 +1125,20 @@ class DDLExpressionImpl(_Deannotate, _CoerceLiterals, RoleImpl):
         return elements.TextClause(element)
 
 
+# DDL 约束列引用 Role
+# DDL 约束列引用 Role
 class DDLConstraintColumnImpl(_Deannotate, _ReturnsStringKey, RoleImpl):
     __slots__ = ()
 
 
+# DDL 被引用列 Role（外键等）
+# DDL 被引用列 Role（外键等）
 class DDLReferredColumnImpl(DDLConstraintColumnImpl):
     __slots__ = ()
 
 
+# LIMIT/OFFSET Role 实现
+# LIMIT/OFFSET Role 实现
 class LimitOffsetImpl(RoleImpl):
     __slots__ = ()
 
@@ -1090,6 +1166,8 @@ class LimitOffsetImpl(RoleImpl):
             )
 
 
+# 带标签列表达式 Role
+# 带标签列表达式 Role
 class LabeledColumnExprImpl(ExpressionElementImpl):
     __slots__ = ()
 
@@ -1112,6 +1190,8 @@ class LabeledColumnExprImpl(ExpressionElementImpl):
                 self._raise_for_expected(element, argname, resolved)
 
 
+# SELECT 列子句 Role 实现
+# SELECT 列子句 Role 实现
 class ColumnsClauseImpl(_SelectIsNotFrom, _CoerceLiterals, RoleImpl):
     __slots__ = ()
 
@@ -1153,10 +1233,14 @@ class ColumnsClauseImpl(_SelectIsNotFrom, _CoerceLiterals, RoleImpl):
         )
 
 
+# 返回行的 selectable Role
+# 返回行的 selectable Role
 class ReturnsRowsImpl(RoleImpl):
     __slots__ = ()
 
 
+# 通用语句 Role 实现
+# 通用语句 Role 实现
 class StatementImpl(_CoerceLiterals, RoleImpl):
     __slots__ = ()
 
@@ -1199,6 +1283,8 @@ class StatementImpl(_CoerceLiterals, RoleImpl):
             )
 
 
+# SELECT 语句 Role 实现
+# SELECT 语句 Role 实现
 class SelectStatementImpl(_NoTextCoercion, RoleImpl):
     __slots__ = ()
 
@@ -1215,14 +1301,20 @@ class SelectStatementImpl(_NoTextCoercion, RoleImpl):
             self._raise_for_expected(element, argname, resolved)
 
 
+# 含 CTE 的语句 Role
+# 含 CTE 的语句 Role
 class HasCTEImpl(ReturnsRowsImpl):
     __slots__ = ()
 
 
+# CTE 自身 Role 实现
+# CTE 自身 Role 实现
 class IsCTEImpl(RoleImpl):
     __slots__ = ()
 
 
+# JOIN 目标 Role：ORM/Table 等到 FromClause
+# JOIN 目标 Role：ORM/Table 等到 FromClause
 class JoinTargetImpl(RoleImpl):
     __slots__ = ()
 
@@ -1262,6 +1354,8 @@ class JoinTargetImpl(RoleImpl):
             self._raise_for_expected(element, argname, resolved)
 
 
+# FROM 子句 Role 实现
+# FROM 子句 Role 实现
 class FromClauseImpl(_SelectIsNotFrom, _NoTextCoercion, RoleImpl):
     __slots__ = ()
 
@@ -1299,6 +1393,8 @@ class FromClauseImpl(_SelectIsNotFrom, _NoTextCoercion, RoleImpl):
             return element
 
 
+# 严格 FROM Role：拒绝 subquery 误用
+# 严格 FROM Role：拒绝 subquery 误用
 class StrictFromClauseImpl(FromClauseImpl):
     __slots__ = ()
 
@@ -1324,6 +1420,8 @@ class StrictFromClauseImpl(FromClauseImpl):
             self._raise_for_expected(element, argname, resolved)
 
 
+# 匿名化 FROM Role：alias 包装
+# 匿名化 FROM Role：alias 包装
 class AnonymizedFromClauseImpl(StrictFromClauseImpl):
     __slots__ = ()
 
@@ -1333,6 +1431,8 @@ class AnonymizedFromClauseImpl(StrictFromClauseImpl):
         return element._anonymous_fromclause(flat=flat)
 
 
+# DML 目标表 Role 实现
+# DML 目标表 Role 实现
 class DMLTableImpl(_SelectIsNotFrom, _NoTextCoercion, RoleImpl):
     __slots__ = ()
 
@@ -1343,6 +1443,8 @@ class DMLTableImpl(_SelectIsNotFrom, _NoTextCoercion, RoleImpl):
             return element
 
 
+# INSERT FROM SELECT 源 Role
+# INSERT FROM SELECT 源 Role
 class DMLSelectImpl(_NoTextCoercion, RoleImpl):
     __slots__ = ()
 
@@ -1365,6 +1467,8 @@ class DMLSelectImpl(_NoTextCoercion, RoleImpl):
             self._raise_for_expected(element, argname, resolved)
 
 
+# UNION/INTERSECT 等复合查询 Role
+# UNION/INTERSECT 等复合查询 Role
 class CompoundElementImpl(_NoTextCoercion, RoleImpl):
     __slots__ = ()
 

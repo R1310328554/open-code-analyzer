@@ -8,6 +8,10 @@
 
 """Foundational utilities common to many sql modules."""
 
+# SQL 基础工具：Executable、Options、ColumnCollection 等公共基类
+
+# SQL 基础工具：Executable、Options、ColumnCollection 等公共基类
+
 from __future__ import annotations
 
 import collections
@@ -103,6 +107,8 @@ if not TYPE_CHECKING:
     type_api = None  # noqa
 
 
+# 哨兵枚举：表示“未传参”的 NO_ARG 占位
+# 哨兵枚举：表示“未传参”的 NO_ARG 占位
 class _NoArg(Enum):
     NO_ARG = 0
 
@@ -113,6 +119,8 @@ class _NoArg(Enum):
 NO_ARG: Final = _NoArg.NO_ARG
 
 
+# 哨兵枚举：延迟命名最终为 None 的 NONE_NAME
+# 哨兵枚举：延迟命名最终为 None 的 NONE_NAME
 class _NoneName(Enum):
     NONE_NAME = 0
     """indicate a 'deferred' name that was ultimately the value None."""
@@ -127,6 +135,8 @@ _Fn = TypeVar("_Fn", bound=Callable[..., Any])
 _AmbiguousTableNameMap = MutableMapping[str, str]
 
 
+# 列默认值描述元组：default/arg/context
+# 列默认值描述元组：default/arg/context
 class _DefaultDescriptionTuple(NamedTuple):
     arg: Any
     is_scalar: Optional[bool]
@@ -158,10 +168,14 @@ _never_select_column: operator.attrgetter[Any] = operator.attrgetter(
 )
 
 
+# 实体命名空间协议：c 属性提供列映射
+# 实体命名空间协议：c 属性提供列映射
 class _EntityNamespace(Protocol):
     def __getattr__(self, key: str) -> SQLCoreOperations[Any]: ...
 
 
+# 拥有 entity_namespace 的对象协议
+# 拥有 entity_namespace 的对象协议
 class _HasEntityNamespace(Protocol):
     @util.ro_non_memoized_property
     def entity_namespace(self) -> _EntityNamespace: ...
@@ -175,6 +189,8 @@ def _is_has_entity_namespace(element: Any) -> TypeGuard[_HasEntityNamespace]:
 _Self = TypeVar("_Self", bound=Any)
 
 
+# 不可变 mixin：禁止 setattr 的只读对象
+# 不可变 mixin：禁止 setattr 的只读对象
 class Immutable:
     """mark a ClauseElement as 'immutable' when expressions are cloned.
 
@@ -207,6 +223,8 @@ class Immutable:
         pass
 
 
+# 单例常量基类：Null/True_/False_ 等 SQL 字面量
+# 单例常量基类：Null/True_/False_ 等 SQL 字面量
 class SingletonConstant(Immutable):
     """Represent SQL constants like NULL, TRUE, FALSE"""
 
@@ -262,6 +280,8 @@ def _select_iterables(
 _SelfGenerativeType = TypeVar("_SelfGenerativeType", bound="_GenerativeType")
 
 
+# Generative 协议：_generate() 返回克隆并应用变更
+# Generative 协议：_generate() 返回克隆并应用变更
 class _GenerativeType(compat_typing.Protocol):
     def _generate(self) -> Self: ...
 
@@ -365,6 +385,8 @@ def _cloned_difference(a: Iterable[_CLE], b: Iterable[_CLE]) -> Set[_CLE]:
     }
 
 
+# 方言参数字典视图：按 dialect 名解析嵌套 kw
+# 方言参数字典视图：按 dialect 名解析嵌套 kw
 class _DialectArgView(MutableMapping[str, Any]):
     """A dictionary view of dialect-level arguments in the form
     <dialectname>_<argument_name>.
@@ -424,6 +446,8 @@ class _DialectArgView(MutableMapping[str, Any]):
         )
 
 
+# 方言参数字典：存储 per-dialect 编译选项
+# 方言参数字典：存储 per-dialect 编译选项
 class _DialectArgDict(MutableMapping[str, Any]):
     """A dictionary view of dialect-level arguments for a specific
     dialect.
@@ -464,6 +488,8 @@ def _kw_reg_for_dialect(dialect_name: str) -> Optional[Dict[Any, Any]]:
     return dict(dialect_cls.construct_arguments)
 
 
+# 方言 kwargs mixin：dialect_options 与 dialect_kwargs
+# 方言 kwargs mixin：dialect_options 与 dialect_kwargs
 class DialectKWArgs:
     """Establish the ability for a class to have dialect-specific arguments
     with defaults and constructor validation.
@@ -712,6 +738,8 @@ class DialectKWArgs:
                     construct_arg_dictionary[arg_name] = kwargs[k]
 
 
+# 编译状态：语句编译前解析 froms/列/ORM 上下文
+# 编译状态：语句编译前解析 froms/列/ORM 上下文
 class CompileState:
     """Produces additional object state necessary for a statement to be
     compiled.
@@ -820,6 +848,8 @@ class CompileState:
         return decorate
 
 
+# Generative 基类：@_generative 装饰器链式 API
+# Generative 基类：@_generative 装饰器链式 API
 class Generative(HasMemoized):
     """Provide a method-chaining pattern in conjunction with the
     @_generative decorator."""
@@ -838,6 +868,8 @@ class Generative(HasMemoized):
         return s
 
 
+# 原地 Generative：mutate 当前对象而非克隆
+# 原地 Generative：mutate 当前对象而非克隆
 class InPlaceGenerative(HasMemoized):
     """Provide a method-chaining pattern in conjunction with the
     @_generative decorator that mutates in place."""
@@ -852,6 +884,8 @@ class InPlaceGenerative(HasMemoized):
         return self
 
 
+# 拥有 CompileState 的语句 mixin
+# 拥有 CompileState 的语句 mixin
 class HasCompileState(Generative):
     """A class that has a :class:`.CompileState` associated with it."""
 
@@ -862,6 +896,8 @@ class HasCompileState(Generative):
     _compile_state_factory = CompileState.create_for_statement
 
 
+# Options 元类：从类属性收集可配置选项
+# Options 元类：从类属性收集可配置选项
 class _MetaOptions(type):
     """metaclass for the Options class.
 
@@ -895,6 +931,8 @@ class _MetaOptions(type):
         def __delattr__(self, key: str) -> None: ...
 
 
+# 编译/执行选项基类：track_on 等 lambda 跟踪开关
+# 编译/执行选项基类：track_on 等 lambda 跟踪开关
 class Options(metaclass=_MetaOptions):
     """A cacheable option dictionary with defaults."""
 
@@ -1057,6 +1095,8 @@ class Options(metaclass=_MetaOptions):
         def __delattr__(self, key: str) -> None: ...
 
 
+# 可缓存 Options：参与 statement cache key
+# 可缓存 Options：参与 statement cache key
 class CacheableOptions(Options, HasCacheKey):
     __slots__ = ()
 
@@ -1077,6 +1117,10 @@ class CacheableOptions(Options, HasCacheKey):
         return HasCacheKey._generate_cache_key_for_object(self)
 
 
+# 可执行选项：INSERT/UPDATE 等语句级 modifier
+# 可执行语句 mixin：execute/compile 与 connection 集成
+# 可执行选项：INSERT/UPDATE 等语句级 modifier
+# 可执行语句 mixin：execute/compile 与 connection 集成
 class ExecutableOption(HasCopyInternals):
     __slots__ = ()
 
@@ -1400,6 +1444,8 @@ class Executable(roles.StatementRole):
         return self._execution_options
 
 
+# Schema 事件目标：Table/Column 等 DDL 监听挂载点
+# Schema 事件目标：Table/Column 等 DDL 监听挂载点
 class SchemaEventTarget(event.EventTarget):
     """Base class for elements that are the targets of :class:`.DDLEvents`
     events.
@@ -1421,6 +1467,8 @@ class SchemaEventTarget(event.EventTarget):
         self.dispatch.after_parent_attach(self, parent)
 
 
+# Schema 访问者目标：SchemaVisitor 遍历节点
+# Schema 访问者目标：SchemaVisitor 遍历节点
 class SchemaVisitable(SchemaEventTarget, visitors.Visitable):
     """Base class for elements that are targets of a :class:`.SchemaVisitor`.
 
@@ -1429,6 +1477,8 @@ class SchemaVisitable(SchemaEventTarget, visitors.Visitable):
     """
 
 
+# Schema 结构访问者：create/drop 遍历专用
+# Schema 结构访问者：create/drop 遍历专用
 class SchemaVisitor(ClauseVisitor):
     """Define the visiting for ``SchemaItem`` and more
     generally ``SchemaVisitable`` objects.
@@ -1438,6 +1488,8 @@ class SchemaVisitor(ClauseVisitor):
     __traverse_options__: Dict[str, Any] = {"schema_visitor": True}
 
 
+# sentinel 列默认值特征枚举
+# sentinel 列默认值特征枚举
 class _SentinelDefaultCharacterization(Enum):
     NONE = "none"
     UNKNOWN = "unknown"
@@ -1448,6 +1500,8 @@ class _SentinelDefaultCharacterization(Enum):
     SEQUENCE = "sequence"
 
 
+# insertmanyvalues sentinel 列特征元组
+# insertmanyvalues sentinel 列特征元组
 class _SentinelColumnCharacterization(NamedTuple):
     columns: Optional[Sequence[Column[Any]]] = None
     is_explicit: bool = False
@@ -1463,6 +1517,8 @@ _COL_co = TypeVar("_COL_co", bound="ColumnElement[Any]", covariant=True)
 _COL = TypeVar("_COL", bound="ColumnElement[Any]")
 
 
+# 列集合内部度量：key/name/label 解析辅助
+# 列集合内部度量：key/name/label 解析辅助
 class _ColumnMetrics(Generic[_COL_co]):
     __slots__ = ("column",)
 
@@ -1507,6 +1563,8 @@ class _ColumnMetrics(Generic[_COL_co]):
         return True
 
 
+# 列集合：Table.c / SELECT 列的键控映射
+# 列集合：Table.c / SELECT 列的键控映射
 class ColumnCollection(Generic[_COLKEY, _COL_co]):
     """Collection of :class:`_expression.ColumnElement` instances,
     typically for
@@ -2024,6 +2082,8 @@ class ColumnCollection(Generic[_COLKEY, _COL_co]):
 _NAMEDCOL = TypeVar("_NAMEDCOL", bound="NamedColumn[Any]")
 
 
+# 去重列集合：同名列仅保留首个
+# 去重列集合：同名列仅保留首个
 class DedupeColumnCollection(ColumnCollection[str, _NAMEDCOL]):
     """A :class:`_expression.ColumnCollection`
     that maintains deduplicating behavior.
@@ -2199,6 +2259,8 @@ class DedupeColumnCollection(ColumnCollection[str, _NAMEDCOL]):
         self._index.update({k: (k, col) for (k, col, _) in self._collection})
 
 
+# 只读列集合视图：禁止增删改
+# 只读列集合视图：禁止增删改
 class ReadOnlyColumnCollection(
     util.ReadOnlyContainer, ColumnCollection[_COLKEY, _COL_co]
 ):
@@ -2228,6 +2290,8 @@ class ReadOnlyColumnCollection(
         self._readonly()
 
 
+# 列集合 Set：OrderedSet 包装的 ColumnClause
+# 列集合 Set：OrderedSet 包装的 ColumnClause
 class ColumnSet(util.OrderedSet["ColumnClause[Any]"]):
     def contains_column(self, col: ColumnClause[Any]) -> bool:
         return col in self
