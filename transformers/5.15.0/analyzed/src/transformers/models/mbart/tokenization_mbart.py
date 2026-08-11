@@ -24,12 +24,15 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# mBART 分词：SentencePiece Unigram + 25 语言 Fairseq 语言代码
+
 VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": "tokenizer.json"}
 
 
 FAIRSEQ_LANGUAGE_CODES = ["ar_AR", "cs_CZ", "de_DE", "en_XX", "es_XX", "et_EE", "fi_FI", "fr_XX", "gu_IN", "hi_IN", "it_IT", "ja_XX", "kk_KZ", "ko_KR", "lt_LT", "lv_LV", "my_MM", "ne_NP", "nl_XX", "ro_RO", "ru_RU", "si_LK", "tr_TR", "vi_VN", "zh_CN"]  # fmt: skip
 
 
+# MBartTokenizer：mBART SentencePiece Unigram 多语言分词器（25 语言代码）
 class MBartTokenizer(TokenizersBackend):
     """
     Construct an MBART tokenizer (backed by HuggingFace's *tokenizers* library). Based on

@@ -44,9 +44,12 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_megatron_bert import MegatronBertConfig
 
 
+# MegatronBERT 建模：NVIDIA 大规模 BERT 编码器与下游任务头
+
 logger = logging.get_logger(__name__)
 
 
+# MegatronBertEmbeddings：MegatronBERT 词/位置/段类型嵌入 + LayerNorm
 class MegatronBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -99,6 +102,7 @@ class MegatronBertEmbeddings(nn.Module):
 
 
 # copied from transformers.models.bert.modeling_bert.BertSelfAttention with Bert->MegatronBert
+# MegatronBertSelfAttention：MegatronBERT 多头自注意力（含相对位置编码选项）
 class MegatronBertSelfAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -191,6 +195,7 @@ class MegatronBertSelfAttention(nn.Module):
 
 
 # Based transformers.models.bert.modeling_bert.BertSelfOutput. Moved LayerNorm to MegatronBertAttention below.
+# MegatronBertSelfOutput：MegatronBERT 自注意力输出投影 + 残差 LayerNorm
 class MegatronBertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -204,6 +209,7 @@ class MegatronBertSelfOutput(nn.Module):
 
 
 # Based transformers.models.bert.modeling_bert.BertAttention. Added LayerNorm.
+# MegatronBertAttention：MegatronBERT 自注意力子层封装
 class MegatronBertAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -234,6 +240,7 @@ class MegatronBertAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->MegatronBert
+# MegatronBertIntermediate：MegatronBERT FFN 中间层（线性扩展 + 激活）
 class MegatronBertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -250,6 +257,7 @@ class MegatronBertIntermediate(nn.Module):
 
 
 # Based on transformers.models.bert.modeling_bert.BertOutput. Moved LayerNorm to MegatronBertLayer below.
+# MegatronBertOutput：MegatronBERT FFN 输出层（线性投影 + 残差 LayerNorm）
 class MegatronBertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -263,6 +271,7 @@ class MegatronBertOutput(nn.Module):
 
 
 # Based on transformers.models.bert.modeling_bert.BertLayer. Added LayerNorm.
+# MegatronBertLayer：MegatronBERT Transformer 编码器单层
 class MegatronBertLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -328,6 +337,7 @@ class MegatronBertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# MegatronBertEncoder：MegatronBERT 多层编码器堆叠
 class MegatronBertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -415,6 +425,7 @@ class MegatronBertEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->MegatronBert
+# MegatronBertPooler：MegatronBERT CLS token 池化（线性 + Tanh）
 class MegatronBertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -431,6 +442,7 @@ class MegatronBertPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->MegatronBert
+# MegatronBertPredictionHeadTransform：MegatronBERT MLM 预测头变换（Dense + 激活 + LayerNorm）
 class MegatronBertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -449,6 +461,7 @@ class MegatronBertPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->MegatronBert
+# MegatronBertLMPredictionHead：MegatronBERT 掩码语言建模预测头
 class MegatronBertLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -466,6 +479,7 @@ class MegatronBertLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->MegatronBert
+# MegatronBertOnlyMLMHead：MegatronBERT 独立 MLM 头封装
 class MegatronBertOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -477,6 +491,7 @@ class MegatronBertOnlyMLMHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyNSPHead with Bert->MegatronBert
+# MegatronBertOnlyNSPHead：MegatronBERT 下一句预测（NSP）头
 class MegatronBertOnlyNSPHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -488,6 +503,7 @@ class MegatronBertOnlyNSPHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPreTrainingHeads with Bert->MegatronBert
+# MegatronBertPreTrainingHeads：MegatronBERT 预训练任务头集合（MLM + NSP）
 class MegatronBertPreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -501,6 +517,7 @@ class MegatronBertPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# MegatronBertPreTrainedModel：MegatronBERT 预训练基类与权重初始化
 class MegatronBertPreTrainedModel(PreTrainedModel):
     config: MegatronBertConfig
     base_model_prefix = "bert"
@@ -523,6 +540,7 @@ class MegatronBertPreTrainedModel(PreTrainedModel):
 )
 @dataclass
 # Copied from transformers.models.bert.modeling_bert.BertForPreTrainingOutput with Bert->MegatronBert
+# MegatronBertForPreTrainingOutput：MegatronBERT 预训练输出 dataclass
 class MegatronBertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -543,6 +561,7 @@ class MegatronBertForPreTrainingOutput(ModelOutput):
 
 
 @auto_docstring
+# MegatronBertModel：MegatronBERT 双向 Transformer 编码器主干
 class MegatronBertModel(MegatronBertPreTrainedModel):
     """
 
@@ -681,6 +700,7 @@ class MegatronBertModel(MegatronBertPreTrainedModel):
     `next sentence prediction (classification)` head.
     """
 )
+# MegatronBertForPreTraining：MegatronBERT 预训练（MLM + NSP）
 class MegatronBertForPreTraining(MegatronBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -790,6 +810,7 @@ class MegatronBertForPreTraining(MegatronBertPreTrainedModel):
     MegatronBert Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# MegatronBertForCausalLM：MegatronBERT 因果语言建模
 class MegatronBertForCausalLM(MegatronBertPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -897,6 +918,7 @@ class MegatronBertForCausalLM(MegatronBertPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# MegatronBertForMaskedLM：MegatronBERT 掩码语言建模
 class MegatronBertForMaskedLM(MegatronBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -988,6 +1010,7 @@ class MegatronBertForMaskedLM(MegatronBertPreTrainedModel):
     MegatronBert Model with a `next sentence prediction (classification)` head on top.
     """
 )
+# MegatronBertForNextSentencePrediction：MegatronBERT 下一句预测
 class MegatronBertForNextSentencePrediction(MegatronBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1078,6 +1101,7 @@ class MegatronBertForNextSentencePrediction(MegatronBertPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# MegatronBertForSequenceClassification：MegatronBERT 序列分类
 class MegatronBertForSequenceClassification(MegatronBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1163,6 +1187,7 @@ class MegatronBertForSequenceClassification(MegatronBertPreTrainedModel):
 
 
 @auto_docstring
+# MegatronBertForMultipleChoice：MegatronBERT 多项选择
 class MegatronBertForMultipleChoice(MegatronBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1266,6 +1291,7 @@ class MegatronBertForMultipleChoice(MegatronBertPreTrainedModel):
 
 
 @auto_docstring
+# MegatronBertForTokenClassification：MegatronBERT  token 级分类
 class MegatronBertForTokenClassification(MegatronBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1332,6 +1358,7 @@ class MegatronBertForTokenClassification(MegatronBertPreTrainedModel):
 
 
 @auto_docstring
+# MegatronBertForQuestionAnswering：MegatronBERT 抽取式问答
 class MegatronBertForQuestionAnswering(MegatronBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

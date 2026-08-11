@@ -41,7 +41,10 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# MaskFormer 图像预处理：Torchvision 后端 resize/归一化与实例分割后处理
+
 # Helper functions for post-processing (PyTorch-based)
+# binary_mask_to_rle：将二值掩码编码为 COCO 风格游程长度（RLE）
 def binary_mask_to_rle(mask: "torch.Tensor | np.ndarray") -> list[int]:
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -65,6 +68,7 @@ def binary_mask_to_rle(mask: "torch.Tensor | np.ndarray") -> list[int]:
     return runs.tolist()
 
 
+# convert_segmentation_to_rle：将语义分割图批量转为 RLE 掩码列表
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -86,6 +90,7 @@ def convert_segmentation_to_rle(segmentation):
     return run_length_encodings
 
 
+# remove_low_and_no_objects：过滤低置信度与空对象预测掩码
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -114,6 +119,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
     return masks[to_keep], scores[to_keep], labels[to_keep]
 
 
+# check_segment_validity：检查候选分割掩码是否满足阈值与重叠约束
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -132,6 +138,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
     return mask_exists, mask_k
 
 
+# compute_segments：从模型输出 logits 组装最终实例分割结果
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -192,6 +199,7 @@ def compute_segments(
     return segmentation, segments
 
 
+# convert_segmentation_map_to_binary_masks_fast：PyTorch 加速版语义图转二值掩码
 def convert_segmentation_map_to_binary_masks_fast(
     segmentation_map: "torch.Tensor",
     instance_id_to_semantic_id: dict[int, int] | None = None,
@@ -227,6 +235,7 @@ def convert_segmentation_map_to_binary_masks_fast(
     return binary_masks.float(), labels.long()
 
 
+# MaskFormerImageProcessorKwargs：MaskFormer 图像处理器可选参数字典类型
 class MaskFormerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ignore_index (`int`, *optional*):
@@ -254,6 +263,7 @@ class MaskFormerImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MaskFormerImageProcessor：MaskFormer Torchvision 后端图像预处理与后处理
 class MaskFormerImageProcessor(TorchvisionBackend):
     valid_kwargs = MaskFormerImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

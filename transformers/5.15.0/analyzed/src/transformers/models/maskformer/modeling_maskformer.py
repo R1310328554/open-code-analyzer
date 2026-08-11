@@ -50,6 +50,8 @@ from .configuration_maskformer import MaskFormerConfig, MaskFormerDetrConfig
 from .configuration_maskformer_swin import MaskFormerSwinConfig
 
 
+# MaskFormer 建模：Swin 骨干 + DETR 解码器的全景/实例分割（由 modular 自动生成）
+
 if is_accelerate_available():
     from accelerate import PartialState
     from accelerate.utils import reduce
@@ -66,6 +68,7 @@ if is_scipy_available():
     """
 )
 @dataclass
+# DetrDecoderOutput：DETR 解码器输出 dataclass（隐状态 + 交叉注意力）
 class DetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -87,6 +90,7 @@ class DetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     """
 )
 @dataclass
+# MaskFormerPixelLevelModuleOutput：像素级模块输出（多尺度特征 + 掩码特征）
 class MaskFormerPixelLevelModuleOutput(ModelOutput):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor` of shape`(batch_size, num_channels, height, width)`):
@@ -116,6 +120,7 @@ class MaskFormerPixelLevelModuleOutput(ModelOutput):
     """
 )
 @dataclass
+# MaskFormerPixelDecoderOutput：像素解码器输出（上采样掩码特征图）
 class MaskFormerPixelDecoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
@@ -133,6 +138,7 @@ class MaskFormerPixelDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# MaskFormerModelOutput：MaskFormer 主干输出 dataclass（queries + 掩码 logits）
 class MaskFormerModelOutput(ModelOutput):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
@@ -179,6 +185,7 @@ class MaskFormerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# MaskFormerForInstanceSegmentationOutput：MaskFormer 实例分割推理输出
 class MaskFormerForInstanceSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -236,6 +243,7 @@ class MaskFormerForInstanceSegmentationOutput(ModelOutput):
     """
 )
 @dataclass
+# MaskFormerDetrDecoderOutput：MaskFormer DETR 解码器专用输出 dataclass
 class MaskFormerDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -246,6 +254,7 @@ class MaskFormerDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     intermediate_hidden_states: torch.FloatTensor | None = None
 
 
+# MaskFormerDetrLearnedPositionEmbedding：MaskFormer DETR 可学习位置编码
 class MaskFormerDetrLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -276,6 +285,7 @@ class MaskFormerDetrLearnedPositionEmbedding(nn.Module):
         return pos
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -304,6 +314,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MaskFormerDetrSelfAttention：MaskFormer DETR 解码器自注意力
 class MaskFormerDetrSelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -370,6 +381,7 @@ class MaskFormerDetrSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MaskFormerDetrCrossAttention：MaskFormer DETR 解码器交叉注意力
 class MaskFormerDetrCrossAttention(nn.Module):
     """
     Multi-headed cross-attention from 'Attention Is All You Need' paper.
@@ -450,6 +462,7 @@ class MaskFormerDetrCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MaskFormerDetrMLP：MaskFormer DETR 解码器前馈 MLP
 class MaskFormerDetrMLP(nn.Module):
     def __init__(self, config: MaskFormerDetrConfig, hidden_size: int, intermediate_size: int):
         super().__init__()
@@ -467,6 +480,7 @@ class MaskFormerDetrMLP(nn.Module):
         return hidden_states
 
 
+# MaskFormerDetrDecoderLayer：MaskFormer DETR 解码器单层（自/交叉注意力 + FFN）
 class MaskFormerDetrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MaskFormerDetrConfig):
         super().__init__()
@@ -559,6 +573,7 @@ class MaskFormerDetrDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MaskFormerDetrConvBlock：MaskFormer DETR 像素解码器卷积块
 class MaskFormerDetrConvBlock(nn.Module):
     """Basic conv block: Conv3x3 -> GroupNorm -> Activation."""
 
@@ -572,6 +587,7 @@ class MaskFormerDetrConvBlock(nn.Module):
         return self.activation(self.norm(self.conv(x)))
 
 
+# MaskFormerDetrFPNFusionStage：MaskFormer DETR FPN 多尺度特征融合阶段
 class MaskFormerDetrFPNFusionStage(nn.Module):
     """Single FPN fusion stage combining low-resolution features with high-resolution FPN features."""
 
@@ -594,6 +610,7 @@ class MaskFormerDetrFPNFusionStage(nn.Module):
         return self.refine(fpn_features + features)
 
 
+# MaskFormerDetrMaskHeadSmallConv：MaskFormer DETR 轻量卷积掩码头
 class MaskFormerDetrMaskHeadSmallConv(nn.Module):
     """
     Segmentation mask head that generates per-query masks using FPN-based progressive upsampling.
@@ -663,6 +680,7 @@ class MaskFormerDetrMaskHeadSmallConv(nn.Module):
         return self.output_conv(hidden_states)
 
 
+# MaskFormerDetrMHAttentionMap：MaskFormer DETR 多头注意力图（掩码引导）
 class MaskFormerDetrMHAttentionMap(nn.Module):
     """This is a 2D attention module, which only returns the attention softmax (no multiplication by value)"""
 
@@ -715,6 +733,7 @@ class MaskFormerDetrMHAttentionMap(nn.Module):
 
 
 @auto_docstring
+# MaskFormerDetrPreTrainedModel：MaskFormer DETR 子模块预训练基类
 class MaskFormerDetrPreTrainedModel(PreTrainedModel):
     config: MaskFormerDetrConfig
     base_model_prefix = "model"
@@ -752,6 +771,7 @@ class MaskFormerDetrPreTrainedModel(PreTrainedModel):
             init.uniform_(module.column_embeddings.weight)
 
 
+# MaskFormerDetrDecoder：MaskFormer DETR Transformer 解码器堆叠
 class MaskFormerDetrDecoder(MaskFormerDetrPreTrainedModel):
     """
     Transformer decoder that refines a set of object queries. It is composed of a stack of [`MaskFormerDetrDecoderLayer`] modules,
@@ -868,6 +888,7 @@ class MaskFormerDetrDecoder(MaskFormerDetrPreTrainedModel):
 
 
 # refactored from original implementation
+# pair_wise_dice_loss：匈牙利匹配前逐对 Dice 损失矩阵
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -891,6 +912,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
 
 
 # refactored from original implementation
+# pair_wise_sigmoid_focal_loss：匈牙利匹配前逐对 sigmoid focal 损失矩阵
 def pair_wise_sigmoid_focal_loss(inputs: Tensor, labels: Tensor, alpha: float = 0.25, gamma: float = 2.0) -> Tensor:
     r"""
     A pair wise version of the focal loss, see `sigmoid_focal_loss` for usage.
@@ -931,6 +953,7 @@ def pair_wise_sigmoid_focal_loss(inputs: Tensor, labels: Tensor, alpha: float = 
 
 
 # refactored from original implementation
+# MaskFormerHungarianMatcher：MaskFormer 预测-真值匈牙利最优匹配器
 class MaskFormerHungarianMatcher(nn.Module):
     """This class computes an assignment between the labels and the predictions of the network.
 
@@ -1029,6 +1052,7 @@ class MaskFormerHungarianMatcher(nn.Module):
 
 
 # refactored from original implementation
+# dice_loss：MaskFormer 掩码 Dice 分割损失
 def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     r"""
     Compute the DICE loss, similar to generalized IOU for masks as follows:
@@ -1060,6 +1084,7 @@ def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
 
 
 # refactored from original implementation
+# sigmoid_focal_loss：MaskFormer 分类 sigmoid focal 损失
 def sigmoid_focal_loss(
     inputs: Tensor, labels: Tensor, num_masks: int, alpha: float = 0.25, gamma: float = 2
 ) -> Tensor:
@@ -1104,6 +1129,7 @@ def sigmoid_focal_loss(
 
 
 # copied and adapted from original implementation
+# MaskFormerLoss：MaskFormer 组合损失（分类 + 掩码 Dice + focal）
 class MaskFormerLoss(nn.Module):
     def __init__(
         self,
@@ -1323,6 +1349,7 @@ class MaskFormerLoss(nn.Module):
         return num_masks
 
 
+# MaskFormerFPNConvLayer：MaskFormer FPN 单层卷积投影
 class MaskFormerFPNConvLayer(nn.Module):
     def __init__(self, in_features: int, out_features: int, kernel_size: int = 3, padding: int = 1):
         """
@@ -1356,6 +1383,7 @@ class MaskFormerFPNConvLayer(nn.Module):
         return hidden_state
 
 
+# MaskFormerFPNLayer：MaskFormer FPN 自顶向下融合层
 class MaskFormerFPNLayer(nn.Module):
     def __init__(self, in_features: int, lateral_features: int):
         """
@@ -1384,6 +1412,7 @@ class MaskFormerFPNLayer(nn.Module):
         return down
 
 
+# MaskFormerFPNModel：MaskFormer 特征金字塔网络（FPN）
 class MaskFormerFPNModel(nn.Module):
     def __init__(self, in_features: int, lateral_widths: list[int], feature_size: int = 256):
         """
@@ -1415,6 +1444,7 @@ class MaskFormerFPNModel(nn.Module):
         return fpn_features
 
 
+# MaskFormerPixelDecoder：MaskFormer 像素解码器（FPN + 掩码特征上采样）
 class MaskFormerPixelDecoder(nn.Module):
     def __init__(self, *args, feature_size: int = 256, mask_feature_size: int = 256, **kwargs):
         r"""
@@ -1448,6 +1478,7 @@ class MaskFormerPixelDecoder(nn.Module):
         )
 
 
+# MaskFormerSinePositionEmbedding：MaskFormer 正弦位置编码（DETR 风格）
 class MaskFormerSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -1525,6 +1556,7 @@ class MaskFormerSinePositionEmbedding(nn.Module):
         )
 
 
+# PredictionBlock：MaskFormer 预测块（LayerNorm + 线性投影）
 class PredictionBlock(nn.Module):
     def __init__(self, in_dim: int, out_dim: int, activation: nn.Module) -> None:
         super().__init__()
@@ -1540,6 +1572,7 @@ class PredictionBlock(nn.Module):
         return hidden_state
 
 
+# MaskformerMLPPredictionHead：MaskFormer MLP 分类/掩码预测头
 class MaskformerMLPPredictionHead(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int = 3):
         """
@@ -1579,6 +1612,7 @@ class MaskformerMLPPredictionHead(nn.Module):
         return hidden_state
 
 
+# MaskFormerPixelLevelModule：MaskFormer 像素级模块（骨干 + 像素解码器）
 class MaskFormerPixelLevelModule(nn.Module):
     def __init__(self, config: MaskFormerConfig):
         """
@@ -1630,6 +1664,7 @@ class MaskFormerPixelLevelModule(nn.Module):
         )
 
 
+# MaskFormerTransformerModule：MaskFormer Transformer 模块（DETR 解码器 + 预测头）
 class MaskFormerTransformerModule(nn.Module):
     """
     The MaskFormer's transformer module.
@@ -1688,6 +1723,7 @@ class MaskFormerTransformerModule(nn.Module):
 
 
 @auto_docstring
+# MaskFormerPreTrainedModel：MaskFormer 预训练基类与权重初始化
 class MaskFormerPreTrainedModel(PreTrainedModel):
     config: MaskFormerConfig
     base_model_prefix = "model"
@@ -1736,6 +1772,7 @@ class MaskFormerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MaskFormerModel：MaskFormer 全景/实例分割主干（像素模块 + Transformer）
 class MaskFormerModel(MaskFormerPreTrainedModel):
     def __init__(self, config: MaskFormerConfig):
         super().__init__(config)
@@ -1835,6 +1872,7 @@ class MaskFormerModel(MaskFormerPreTrainedModel):
         return output
 
 
+# MaskFormerForInstanceSegmentation：MaskFormer 实例分割条件生成模型
 class MaskFormerForInstanceSegmentation(MaskFormerPreTrainedModel):
     def __init__(self, config: MaskFormerConfig):
         super().__init__(config)

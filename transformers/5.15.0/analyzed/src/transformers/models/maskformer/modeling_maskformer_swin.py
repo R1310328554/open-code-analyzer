@@ -34,12 +34,15 @@ from ...utils.generic import can_return_tuple
 from .configuration_maskformer_swin import MaskFormerSwinConfig
 
 
+# MaskFormer Swin 骨干：窗口 Transformer 多尺度视觉特征提取
+
 @auto_docstring(
     custom_intro="""
     Class for MaskFormerSwinModel's outputs that also contains the spatial dimensions of the hidden states.
     """
 )
 @dataclass
+# MaskFormerSwinModelOutputWithPooling：Swin 骨干输出（含池化与空间维度元信息）
 class MaskFormerSwinModelOutputWithPooling(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -63,6 +66,7 @@ class MaskFormerSwinModelOutputWithPooling(ModelOutput):
     """
 )
 @dataclass
+# MaskFormerSwinBaseModelOutput：MaskFormer Swin 骨干基础输出 dataclass
 class MaskFormerSwinBaseModelOutput(ModelOutput):
     r"""
     hidden_states_spatial_dimensions (`tuple(tuple(int, int))`, *optional*):
@@ -78,6 +82,7 @@ class MaskFormerSwinBaseModelOutput(ModelOutput):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_partition
+# window_partition：将特征图划分为固定窗口块（Swin Transformer）
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -91,6 +96,7 @@ def window_partition(input_feature, window_size):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_reverse
+# window_reverse：将窗口块还原为完整特征图布局
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -101,6 +107,7 @@ def window_reverse(windows, window_size, height, width):
     return windows
 
 
+# MaskFormerSwinEmbeddings：MaskFormer Swin patch 嵌入 + 绝对位置编码
 class MaskFormerSwinEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings.
@@ -180,6 +187,7 @@ class MaskFormerSwinEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchEmbeddings with Swin->MaskFormerSwin
+# MaskFormerSwinPatchEmbeddings：MaskFormer Swin 非重叠 patch 投影嵌入
 class MaskFormerSwinPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -223,6 +231,7 @@ class MaskFormerSwinPatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchMerging with Swin->MaskFormerSwin
+# MaskFormerSwinPatchMerging：MaskFormer Swin 相邻 patch 合并下采样
 class MaskFormerSwinPatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -264,6 +273,7 @@ class MaskFormerSwinPatchMerging(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfAttention with Swin->MaskFormerSwin
+# MaskFormerSwinSelfAttention：MaskFormer Swin 窗口多头自注意力（含相对位置偏置）
 class MaskFormerSwinSelfAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -358,6 +368,7 @@ class MaskFormerSwinSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfOutput with Swin->MaskFormerSwin
+# MaskFormerSwinSelfOutput：MaskFormer Swin 自注意力输出投影 + Dropout
 class MaskFormerSwinSelfOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -372,6 +383,7 @@ class MaskFormerSwinSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinAttention with Swin->MaskFormerSwin
+# MaskFormerSwinAttention：MaskFormer Swin 注意力子层（自注意力 + 输出投影）
 class MaskFormerSwinAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -391,6 +403,7 @@ class MaskFormerSwinAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinIntermediate with Swin->MaskFormerSwin
+# MaskFormerSwinIntermediate：MaskFormer Swin FFN 中间层（线性扩展 + GELU）
 class MaskFormerSwinIntermediate(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -407,6 +420,7 @@ class MaskFormerSwinIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinOutput with Swin->MaskFormerSwin
+# MaskFormerSwinOutput：MaskFormer Swin FFN 输出层（线性投影 + Dropout）
 class MaskFormerSwinOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -420,6 +434,7 @@ class MaskFormerSwinOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->MaskFormerDropPath
+# MaskFormerDropPath：MaskFormer Swin 随机深度（DropPath）正则化
 class MaskFormerDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -444,6 +459,7 @@ class MaskFormerDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# MaskFormerSwinLayer：MaskFormer Swin 单层（窗口/移位窗口注意力 + FFN）
 class MaskFormerSwinLayer(nn.Module):
     def __init__(self, config, dim, input_resolution, num_heads, drop_path_rate=0.0, shift_size=0):
         super().__init__()
@@ -549,6 +565,7 @@ class MaskFormerSwinLayer(nn.Module):
         return outputs
 
 
+# MaskFormerSwinStage：MaskFormer Swin 多 block 阶段（含 patch merging）
 class MaskFormerSwinStage(GradientCheckpointingLayer):
     # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinStage.__init__ with Swin->MaskFormerSwin
     def __init__(self, config, dim, input_resolution, depth, num_heads, drop_path, downsample):
@@ -602,6 +619,7 @@ class MaskFormerSwinStage(GradientCheckpointingLayer):
         return hidden_states, output_dimensions, all_hidden_states
 
 
+# MaskFormerSwinEncoder：MaskFormer Swin 多阶段编码器堆叠
 class MaskFormerSwinEncoder(nn.Module):
     # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinEncoder.__init__ with Swin->MaskFormerSwin
     def __init__(self, config, grid_size):
@@ -671,6 +689,7 @@ class MaskFormerSwinEncoder(nn.Module):
 
 
 @auto_docstring
+# MaskFormerSwinPreTrainedModel：MaskFormer Swin 骨干预训练基类
 class MaskFormerSwinPreTrainedModel(PreTrainedModel):
     config: MaskFormerSwinConfig
     base_model_prefix = "model"
@@ -691,6 +710,7 @@ class MaskFormerSwinPreTrainedModel(PreTrainedModel):
             init.copy_(module.relative_position_index, module.create_relative_position_index())
 
 
+# MaskFormerSwinModel：MaskFormer Swin Transformer 视觉骨干
 class MaskFormerSwinModel(MaskFormerSwinPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         super().__init__(config)
@@ -761,6 +781,7 @@ class MaskFormerSwinModel(MaskFormerSwinPreTrainedModel):
         )
 
 
+# MaskFormerSwinBackbone：MaskFormer Swin 骨干封装（BackboneMixin，多尺度特征输出）
 class MaskFormerSwinBackbone(BackboneMixin, MaskFormerSwinPreTrainedModel):
     """
     MaskFormerSwin backbone, designed especially for the MaskFormer framework.

@@ -54,6 +54,8 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_mbart import MBartConfig
 
 
+# mBART 建模：Facebook 多语言编码器-解码器 Transformer 翻译
+
 if is_torch_flex_attn_available():
     pass
 
@@ -61,6 +63,7 @@ if is_torch_flex_attn_available():
 logger = logging.get_logger(__name__)
 
 
+# shift_tokens_right：将 decoder 输入右移一位并插入语言 ID token
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
     """
     Shift input ids one token to the right, and wrap the last non pad token (the <LID> token) Note that MBart does not
@@ -82,6 +85,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartLearnedPositionalEmbedding with Bart->MBart
+# MBartLearnedPositionalEmbedding：mBART 可学习绝对位置编码
 class MBartLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -110,6 +114,7 @@ class MBartLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartScaledWordEmbedding with Bart->MBart
+# MBartScaledWordEmbedding：mBART 带 sqrt(d_model) 缩放的词嵌入
 class MBartScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -124,6 +129,7 @@ class MBartScaledWordEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -153,6 +159,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->MBart
+# MBartAttention：mBART 多头自/交叉注意力（支持 GQA）
 class MBartAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -270,6 +277,7 @@ class MBartAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MBartEncoderLayer：mBART 编码器单层（双向自注意力 + FFN）
 class MBartEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MBartConfig):
         super().__init__()
@@ -326,6 +334,7 @@ class MBartEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MBartDecoderLayer：mBART 解码器单层（因果自注意力 + 交叉注意力 + FFN）
 class MBartDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MBartConfig, layer_idx: int | None = None):
         super().__init__()
@@ -420,6 +429,7 @@ class MBartDecoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartClassificationHead with Bart->MBart
+# MBartClassificationHead：mBART 序列分类池化头
 class MBartClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -445,6 +455,7 @@ class MBartClassificationHead(nn.Module):
 
 
 @auto_docstring
+# MBartPreTrainedModel：mBART 预训练基类与权重初始化
 class MBartPreTrainedModel(PreTrainedModel):
     config: MBartConfig
     base_model_prefix = "model"
@@ -471,6 +482,7 @@ class MBartPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
 
+# MBartEncoder：mBART 双向 Transformer 编码器主干
 class MBartEncoder(MBartPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -588,6 +600,7 @@ class MBartEncoder(MBartPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# MBartDecoder：mBART 因果 Transformer 解码器（带交叉注意力）
 class MBartDecoder(MBartPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`MBartDecoderLayer`]
@@ -760,6 +773,7 @@ class MBartDecoder(MBartPreTrainedModel):
 
 
 @auto_docstring
+# MBartModel：mBART 编码器-解码器 seq2seq 多语言翻译主干
 class MBartModel(MBartPreTrainedModel):
     _tied_weights_keys = {
         "decoder.embed_tokens.weight": "shared.weight",
@@ -880,6 +894,7 @@ class MBartModel(MBartPreTrainedModel):
     The MBART Model with a language modeling head. Can be used for summarization, after fine-tuning the pretrained models.
     """
 )
+# MBartForConditionalGeneration：mBART 多语言条件生成翻译模型
 class MBartForConditionalGeneration(MBartPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -1045,6 +1060,7 @@ class MBartForConditionalGeneration(MBartPreTrainedModel, GenerationMixin):
     tasks.
     """
 )
+# MBartForSequenceClassification：mBART 序列分类
 class MBartForSequenceClassification(MBartPreTrainedModel):
     def __init__(self, config: MBartConfig, **kwargs):
         super().__init__(config, **kwargs)
@@ -1174,6 +1190,7 @@ class MBartForSequenceClassification(MBartPreTrainedModel):
 
 
 @auto_docstring
+# MBartForQuestionAnswering：mBART 抽取式问答
 class MBartForQuestionAnswering(MBartPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1281,6 +1298,7 @@ class MBartForQuestionAnswering(MBartPreTrainedModel):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderWrapper with Bart->MBart
+# MBartDecoderWrapper：mBART 独立解码器封装（用于 CausalLM）
 class MBartDecoderWrapper(MBartPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -1297,6 +1315,7 @@ class MBartDecoderWrapper(MBartPreTrainedModel):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartForCausalLM with Bart->MBart, facebook/bart-base->facebook/mbart-large-cc25
+# MBartForCausalLM：mBART 解码器因果语言建模
 class MBartForCausalLM(MBartPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",

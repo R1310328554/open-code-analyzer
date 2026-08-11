@@ -46,6 +46,9 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# MaskFormer 图像预处理：PIL 后端 resize/归一化与实例分割后处理
+
+# convert_segmentation_map_to_binary_masks：语义分割图转 per-class 二值掩码数组
 def convert_segmentation_map_to_binary_masks(
     segmentation_map: np.ndarray,
     instance_id_to_semantic_id: dict[int, int] | None = None,
@@ -83,6 +86,7 @@ def convert_segmentation_map_to_binary_masks(
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.MaskFormerImageProcessorKwargs
+# MaskFormerImageProcessorKwargs：MaskFormer 图像处理器可选参数字典类型
 class MaskFormerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ignore_index (`int`, *optional*):
@@ -110,6 +114,7 @@ class MaskFormerImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.binary_mask_to_rle
+# binary_mask_to_rle：将二值掩码编码为 COCO 风格游程长度（RLE）
 def binary_mask_to_rle(mask):
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -135,6 +140,7 @@ def binary_mask_to_rle(mask):
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.check_segment_validity
+# check_segment_validity：检查候选分割掩码是否满足阈值与重叠约束
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -154,6 +160,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.compute_segments
+# compute_segments：从模型输出 logits 组装最终实例分割结果
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -215,6 +222,7 @@ def compute_segments(
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.convert_segmentation_to_rle
+# convert_segmentation_to_rle：将语义分割图批量转为 RLE 掩码列表
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -237,6 +245,7 @@ def convert_segmentation_to_rle(segmentation):
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.remove_low_and_no_objects
+# remove_low_and_no_objects：过滤低置信度与空对象预测掩码
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -267,6 +276,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
 
 @auto_docstring
 @requires(backends=("torch",))
+# MaskFormerImageProcessorPil：MaskFormer PIL 后端图像预处理与后处理
 class MaskFormerImageProcessorPil(PilBackend):
     valid_kwargs = MaskFormerImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

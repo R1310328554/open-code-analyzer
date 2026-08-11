@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MegatronBERT 配置：NVIDIA 大规模并行 BERT 预训练超参
+
+# MegatronBertConfig：nvidia/megatron-bert-uncased-345m 大规模 BERT 预训练默认超参
 @auto_docstring(checkpoint="nvidia/megatron-bert-uncased-345m")
 @strict
+# MegatronBertConfig：nvidia/megatron-bert-uncased-345m 大规模 BERT 预训练默认超参
 class MegatronBertConfig(PreTrainedConfig):
     r"""
     Examples:

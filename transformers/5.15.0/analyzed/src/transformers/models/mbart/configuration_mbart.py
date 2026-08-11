@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# mBART 配置：facebook/mbart-large-cc25 多语言 seq2seq 翻译超参
+
+# MBartConfig：facebook/mbart-large-cc25 多语言 seq2seq 翻译默认超参
 @auto_docstring(checkpoint="facebook/mbart-large-cc25")
 @strict
+# MBartConfig：facebook/mbart-large-cc25 多语言 seq2seq 翻译默认超参
 class MBartConfig(PreTrainedConfig):
     r"""
     Example:
