@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:57:56Z",
-  "files": [
-    "src/transformers/models/xlnet/configuration_xlnet.py",
-    "src/transformers/models/xlnet/modeling_xlnet.py",
-    "src/transformers/models/xlnet/tokenization_xlnet.py",
-    "src/transformers/models/xlstm/__init__.py",
-    "src/transformers/models/xlstm/configuration_xlstm.py",
-    "src/transformers/models/xlstm/modeling_xlstm.py",
-    "src/transformers/models/xmod/__init__.py",
-    "src/transformers/models/xmod/configuration_xmod.py",
-    "src/transformers/models/xmod/modeling_xmod.py",
-    "src/transformers/models/yolos/__init__.py",
-    "src/transformers/models/yolos/configuration_yolos.py",
-    "src/transformers/models/yolos/image_processing_pil_yolos.py",
-    "src/transformers/models/yolos/image_processing_yolos.py",
-    "src/transformers/models/yolos/modeling_yolos.py",
-    "src/transformers/models/yolos/modular_yolos.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 219,
-  "done": 2445
+  "done": 2460
 }
