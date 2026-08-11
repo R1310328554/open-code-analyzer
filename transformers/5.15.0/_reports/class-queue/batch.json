@@ -15,23 +15,8 @@
     "utils/notification_service_doc_tests.py",
     "utils/patch_helper.py",
     "utils/post_mlinter_review.py",
-    "utils/pr_slow_ci_models.py",
-    "utils/print_env.py",
-    "utils/process_bad_commit_report.py",
-    "utils/process_circleci_workflow_test_reports.py",
-    "utils/process_test_artifacts.py",
-    "utils/release.py",
-    "utils/scan_skipped_tests.py",
-    "utils/set_cuda_devices_for_ci.py",
-    "utils/sort_auto_mappings.py",
-    "utils/split_doctest_jobs.py",
-    "utils/split_model_tests.py",
-    "utils/test_module/__init__.py",
-    "utils/test_module/custom_configuration.py",
-    "utils/test_module/custom_feature_extraction.py",
-    "utils/test_module/custom_image_processing.py",
-    "utils/test_module/custom_modeling.py"
+    "utils/pr_slow_ci_models.py"
   ],
   "remaining_pending": 9,
-  "done": 2640
+  "done": 2655
 }
