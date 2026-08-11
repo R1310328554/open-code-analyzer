@@ -25,6 +25,8 @@ from ...tokenization_utils_base import BatchEncoding, TextInput
 from ...utils import auto_docstring
 
 
+# KOSMOS-2 Processor：图像预处理与分词器联合 grounding bbox 输入组装
+
 BboxInput = (
     list[tuple[int, int]]
     | list[tuple[float, float, float, float]]
@@ -36,6 +38,7 @@ BboxInput = (
 NestedList = list[tuple | None | list[tuple | None | list[tuple | None | list[tuple | None]]]]
 
 
+# Kosmos2ImagesKwargs：KOSMOS-2 图像处理可选参数字典类型
 class Kosmos2ImagesKwargs(ImagesKwargs, total=False):
     """
     bboxes (`Union[list[tuple[int]], list[tuple[float]], list[list[tuple[int]]], list[list[tuple[float]]]]`, *optional*):
@@ -53,6 +56,7 @@ class Kosmos2ImagesKwargs(ImagesKwargs, total=False):
     first_image_token_id: int | None
 
 
+# Kosmos2TextKwargs：KOSMOS-2 文本处理可选参数字典类型
 class Kosmos2TextKwargs(TextKwargs, total=False):
     """
     add_eos_token (`bool`, defaults to `False`):
@@ -62,6 +66,7 @@ class Kosmos2TextKwargs(TextKwargs, total=False):
     add_eos_token: bool
 
 
+# Kosmos2ProcessorKwargs：KOSMOS-2 Processor 可选参数字典类型
 class Kosmos2ProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: Kosmos2TextKwargs
     images_kwargs: Kosmos2ImagesKwargs
@@ -84,6 +89,7 @@ class Kosmos2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Kosmos2Processor：封装图像预处理与分词器的 grounding bbox 输入管线
 class Kosmos2Processor(ProcessorMixin):
     valid_processor_kwargs = Kosmos2ProcessorKwargs
 
@@ -482,6 +488,7 @@ class Kosmos2Processor(ProcessorMixin):
         return token_1, token_2
 
 
+# coordinate_to_patch_index：将归一化 bbox 坐标映射为 patch 索引
 def coordinate_to_patch_index(bbox: tuple[float, float, float, float], num_patches_per_side: int) -> tuple[int, int]:
     """Convert a bounding box to a pair of patch indices.
 
@@ -513,6 +520,7 @@ def coordinate_to_patch_index(bbox: tuple[float, float, float, float], num_patch
 
 # copied from https://github.com/microsoft/unilm/blob/97e4923e97d3ee10b57e97013556e3fd0d207a9b/kosmos-2/demo/decode_string.py#L35C1-L75C38
 # (with format modifications)
+# patch_index_to_coordinate：将 patch 索引还原为归一化 bbox 坐标
 def patch_index_to_coordinate(ul_idx: int, lr_idx: int, num_patches_per_side: int):
     """
     Given a grid of length `num_patches_per_side` and the indices of the upper-left and lower-right corners of a
@@ -558,6 +566,7 @@ def patch_index_to_coordinate(ul_idx: int, lr_idx: int, num_patches_per_side: in
 
 # copied from https://github.com/microsoft/unilm/blob/97e4923e97d3ee10b57e97013556e3fd0d207a9b/kosmos-2/demo/decode_string.py#L4-L33
 # (with format modifications)
+# extract_entities_with_patch_indices：从文本中提取实体及其 patch 索引
 def extract_entities_with_patch_indices(text):
     """Extract entities contained in `text`. The bounding bboxes is given in the form of patch indices.
 
@@ -616,6 +625,7 @@ def extract_entities_with_patch_indices(text):
     return entities_with_patch_indices
 
 
+# adjust_entity_positions：调整实体在文本中的字符位置偏移
 def adjust_entity_positions(entity, text):
     """Adjust the positions of the entities in `text` to be relative to the text with special fields removed."""
     entity_name, (start, end) = entity
@@ -626,6 +636,7 @@ def adjust_entity_positions(entity, text):
     return adjusted_entity
 
 
+# _cleanup_spaces：清理文本空格并同步更新实体位置
 def _cleanup_spaces(text, entities):
     """Remove the spaces around the text and the entities in it."""
     new_text = text.strip()
@@ -647,6 +658,7 @@ def _cleanup_spaces(text, entities):
 
 # copied from https://github.com/microsoft/unilm/blob/97e4923e97d3ee10b57e97013556e3fd0d207a9b/kosmos-2/demo/decode_string.py#L77-L87
 # (with format modifications)
+# clean_text_and_extract_entities_with_bboxes：清洗文本并提取带 bbox 的 grounding 实体
 def clean_text_and_extract_entities_with_bboxes(text, num_patches_per_side=32):
     """Remove the tag tokens from `text`, extract entities in it with some cleaning up of white characters.
 

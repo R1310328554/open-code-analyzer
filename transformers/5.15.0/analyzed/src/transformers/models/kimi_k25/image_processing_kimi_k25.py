@@ -32,6 +32,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# Kimi K2.5 图像预处理：NaViT resize、patch 对齐与 ImageNet 归一化
+
+# Kimi_K25ImageProcessorKwargs：Kimi K2.5 图像处理器初始化可选参数字典类型
 class Kimi_K25ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_patches (`int`, *optional*, defaults to `16384`):
@@ -47,6 +50,7 @@ class Kimi_K25ImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# navit_resize：NaViT 风格按 patch 预算缩放并计算填充尺寸
 def navit_resize(
     height: int,
     width: int,
@@ -83,6 +87,7 @@ def navit_resize(
 
 
 @auto_docstring
+# Kimi_K25ImageProcessor：Kimi K2.5 图像 NaViT resize/归一化预处理
 class Kimi_K25ImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

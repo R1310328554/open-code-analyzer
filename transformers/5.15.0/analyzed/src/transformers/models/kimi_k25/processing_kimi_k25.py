@@ -28,6 +28,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Kimi K2.5 Processor：图像/视频 NaViT 预处理与分词器联合多模态输入组装
+
+# Kimi_K25ProcessorKwargs：Kimi K2.5 Processor 可选参数字典类型
 class Kimi_K25ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,6 +42,7 @@ class Kimi_K25ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Kimi_K25Processor：封装图像/视频 NaViT 预处理与分词器的多模态输入管线
 class Kimi_K25Processor(ProcessorMixin):
     valid_processor_kwargs = Kimi_K25ProcessorKwargs
 

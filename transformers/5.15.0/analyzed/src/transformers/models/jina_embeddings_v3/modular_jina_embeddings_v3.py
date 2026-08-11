@@ -53,8 +53,12 @@ from ..xlm_roberta.modeling_xlm_roberta import (
 logger = logging.get_logger(__name__)
 
 
+# Jina Embeddings V3 modular 源：复用 XLM-RoBERTa/Llama/GPT-NeoX 组件并替换为 RoPE 注意力
+
+# JinaEmbeddingsV3Config：jinaai/jina-embeddings-v3-hf 多任务嵌入模型默认超参
 @auto_docstring(checkpoint="jinaai/jina-embeddings-v3-hf")
 @strict
+# JinaEmbeddingsV3Config：Jina Embeddings V3 多任务嵌入模型超参（XLM-RoBERTa + RoPE）
 class JinaEmbeddingsV3Config(XLMRobertaConfig):
     r"""
     Examples:
@@ -89,6 +93,7 @@ class JinaEmbeddingsV3Config(XLMRobertaConfig):
     is_decoder = AttributeError()
 
 
+# JinaEmbeddingsV3Embeddings：词嵌入 + token 类型嵌入 + LayerNorm（无绝对位置编码）
 class JinaEmbeddingsV3Embeddings(XLMRobertaEmbeddings):
     def __init__(self, config: JinaEmbeddingsV3Config):
         super().__init__(config)
@@ -134,11 +139,13 @@ class JinaEmbeddingsV3Embeddings(XLMRobertaEmbeddings):
         return embeddings
 
 
+# JinaEmbeddingsV3RotaryEmbedding：Jina Embeddings V3 旋转位置编码（RoPE）
 class JinaEmbeddingsV3RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# JinaEmbeddingsV3Attention：Jina Embeddings V3 双向多头自注意力（RoPE + 非因果）
 class JinaEmbeddingsV3Attention(LlamaAttention):
     def __init__(self, config: JinaEmbeddingsV3Config):
         super().__init__(config)
@@ -189,10 +196,12 @@ class JinaEmbeddingsV3Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# JinaEmbeddingsV3MLP：Jina Embeddings V3 前馈 MLP（GELU 激活）
 class JinaEmbeddingsV3MLP(CLIPMLP):
     pass
 
 
+# JinaEmbeddingsV3Layer：Jina Embeddings V3 Transformer 编码器单层
 class JinaEmbeddingsV3Layer(GPTNeoXLayer):
     def __init__(self, config: JinaEmbeddingsV3Config):
         super().__init__(config)
@@ -230,10 +239,12 @@ class JinaEmbeddingsV3Layer(GPTNeoXLayer):
         return hidden_states
 
 
+# JinaEmbeddingsV3Pooler：Jina Embeddings V3 [CLS] 池化层
 class JinaEmbeddingsV3Pooler(XLMRobertaPooler):
     pass
 
 
+# JinaEmbeddingsV3PreTrainedModel：Jina Embeddings V3 预训练基类与权重初始化
 class JinaEmbeddingsV3PreTrainedModel(XLMRobertaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": JinaEmbeddingsV3Layer,
@@ -242,6 +253,7 @@ class JinaEmbeddingsV3PreTrainedModel(XLMRobertaPreTrainedModel):
 
 
 @auto_docstring
+# JinaEmbeddingsV3Model：Jina Embeddings V3 双向编码器主干（嵌入输出）
 class JinaEmbeddingsV3Model(XLMRobertaModel):
     def __init__(self, config: JinaEmbeddingsV3Config, add_pooling_layer=True):
         super().__init__(config)
@@ -313,10 +325,12 @@ class JinaEmbeddingsV3Model(XLMRobertaModel):
         raise AttributeError("Not needed for JinaEmbeddingsV3")
 
 
+# JinaEmbeddingsV3LMHead：Jina Embeddings V3 掩码语言建模头
 class JinaEmbeddingsV3LMHead(XLMRobertaLMHead):
     pass
 
 
+# JinaEmbeddingsV3ForMaskedLM：Jina Embeddings V3 掩码语言建模
 class JinaEmbeddingsV3ForMaskedLM(XLMRobertaForMaskedLM):
     def __init__(self, config):
         JinaEmbeddingsV3PreTrainedModel.__init__(self, config=config)
@@ -382,14 +396,17 @@ class JinaEmbeddingsV3ForMaskedLM(XLMRobertaForMaskedLM):
         )
 
 
+# JinaEmbeddingsV3ForSequenceClassification：Jina Embeddings V3 序列分类
 class JinaEmbeddingsV3ForSequenceClassification(XLMRobertaForSequenceClassification):
     pass
 
 
+# JinaEmbeddingsV3ForTokenClassification：Jina Embeddings V3 词元分类
 class JinaEmbeddingsV3ForTokenClassification(XLMRobertaForTokenClassification):
     pass
 
 
+# JinaEmbeddingsV3ForQuestionAnswering：Jina Embeddings V3 抽取式问答
 class JinaEmbeddingsV3ForQuestionAnswering(XLMRobertaForQuestionAnswering):
     pass
 

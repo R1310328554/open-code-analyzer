@@ -44,9 +44,13 @@ from ...utils import TransformersKwargs, auto_docstring
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import can_return_tuple, maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_jina_embeddings_v3 由 modular_jina_embeddings_v3.py 自动生成
 from .configuration_jina_embeddings_v3 import JinaEmbeddingsV3Config
 
 
+# Jina Embeddings V3 建模：双向 XLM-RoBERTa + RoPE 多任务嵌入（由 modular 自动生成）
+
+# JinaEmbeddingsV3Embeddings：词嵌入 + token 类型嵌入 + LayerNorm（无绝对位置编码）
 class JinaEmbeddingsV3Embeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -93,6 +97,7 @@ class JinaEmbeddingsV3Embeddings(nn.Module):
         return embeddings
 
 
+# JinaEmbeddingsV3RotaryEmbedding：Jina Embeddings V3 旋转位置编码（RoPE）
 class JinaEmbeddingsV3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: JinaEmbeddingsV3Config, device=None):
@@ -152,6 +157,7 @@ class JinaEmbeddingsV3RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -160,6 +166,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -185,6 +192,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -214,6 +222,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# JinaEmbeddingsV3Attention：Jina Embeddings V3 双向多头自注意力（RoPE + 非因果）
 class JinaEmbeddingsV3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -266,6 +275,7 @@ class JinaEmbeddingsV3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# JinaEmbeddingsV3MLP：Jina Embeddings V3 前馈 MLP（GELU 激活）
 class JinaEmbeddingsV3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -281,6 +291,7 @@ class JinaEmbeddingsV3MLP(nn.Module):
         return hidden_states
 
 
+# JinaEmbeddingsV3Layer：Jina Embeddings V3 Transformer 编码器单层
 class JinaEmbeddingsV3Layer(GradientCheckpointingLayer):
     def __init__(self, config: JinaEmbeddingsV3Config):
         super().__init__()
@@ -316,6 +327,7 @@ class JinaEmbeddingsV3Layer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# JinaEmbeddingsV3Pooler：Jina Embeddings V3 [CLS] 池化层
 class JinaEmbeddingsV3Pooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -332,6 +344,7 @@ class JinaEmbeddingsV3Pooler(nn.Module):
 
 
 @auto_docstring
+# JinaEmbeddingsV3PreTrainedModel：Jina Embeddings V3 预训练基类与权重初始化
 class JinaEmbeddingsV3PreTrainedModel(PreTrainedModel):
     config_class = JinaEmbeddingsV3Config
     base_model_prefix = "roberta"
@@ -357,6 +370,7 @@ class JinaEmbeddingsV3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# JinaEmbeddingsV3Model：Jina Embeddings V3 双向编码器主干（嵌入输出）
 class JinaEmbeddingsV3Model(JinaEmbeddingsV3PreTrainedModel):
     _no_split_modules = ["JinaEmbeddingsV3Embeddings", "JinaEmbeddingsV3Layer"]
 
@@ -442,6 +456,7 @@ class JinaEmbeddingsV3Model(JinaEmbeddingsV3PreTrainedModel):
         )
 
 
+# JinaEmbeddingsV3LMHead：Jina Embeddings V3 掩码语言建模头
 class JinaEmbeddingsV3LMHead(nn.Module):
     """JinaEmbeddingsV3 Head for masked language modeling."""
 
@@ -465,6 +480,7 @@ class JinaEmbeddingsV3LMHead(nn.Module):
 
 
 @auto_docstring
+# JinaEmbeddingsV3ForMaskedLM：Jina Embeddings V3 掩码语言建模
 class JinaEmbeddingsV3ForMaskedLM(JinaEmbeddingsV3PreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -541,6 +557,7 @@ class JinaEmbeddingsV3ForMaskedLM(JinaEmbeddingsV3PreTrainedModel):
         )
 
 
+# JinaEmbeddingsV3ClassificationHead：Jina Embeddings V3 序列分类头
 class JinaEmbeddingsV3ClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -569,6 +586,7 @@ class JinaEmbeddingsV3ClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# JinaEmbeddingsV3ForSequenceClassification：Jina Embeddings V3 序列分类
 class JinaEmbeddingsV3ForSequenceClassification(JinaEmbeddingsV3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -654,6 +672,7 @@ class JinaEmbeddingsV3ForSequenceClassification(JinaEmbeddingsV3PreTrainedModel)
 
 
 @auto_docstring
+# JinaEmbeddingsV3ForTokenClassification：Jina Embeddings V3 词元分类
 class JinaEmbeddingsV3ForTokenClassification(JinaEmbeddingsV3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -725,6 +744,7 @@ class JinaEmbeddingsV3ForTokenClassification(JinaEmbeddingsV3PreTrainedModel):
 
 
 @auto_docstring
+# JinaEmbeddingsV3ForQuestionAnswering：Jina Embeddings V3 抽取式问答
 class JinaEmbeddingsV3ForQuestionAnswering(JinaEmbeddingsV3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

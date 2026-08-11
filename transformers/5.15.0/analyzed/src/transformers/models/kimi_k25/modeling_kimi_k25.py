@@ -49,6 +49,7 @@ from ...vision_utils import (
     get_vision_position_ids,
 )
 from ..auto import AutoModel
+# modeling_kimi_k25 由 modular_kimi_k25.py 自动生成
 from .configuration_kimi_k25 import Kimi_K25Config, Kimi_K25VisionConfig
 
 
@@ -58,6 +59,7 @@ from .configuration_kimi_k25 import Kimi_K25Config, Kimi_K25VisionConfig
     """
 )
 @dataclass
+# Kimi_K25ModelOutputWithPast：Kimi K2.5 多模态输出 dataclass（含 past_key_values）
 class Kimi_K25ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -79,6 +81,7 @@ class Kimi_K25ModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Kimi_K25CausalLMOutputWithPast：Kimi K2.5 因果 LM 输出 dataclass（含 logits 与 past）
 class Kimi_K25CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -103,6 +106,7 @@ class Kimi_K25CausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# get_vision_frame_index：根据 grid_thw 计算视频帧在视觉序列中的索引
 def get_vision_frame_index(grid_thw: torch.Tensor, kwargs: dict | None = None) -> torch.Tensor:
     """Per-patch index into a temporal embedding table whose row `0` is a zero pad, or pop
     `"frame_index"` from `kwargs`.
@@ -122,6 +126,7 @@ def get_vision_frame_index(grid_thw: torch.Tensor, kwargs: dict | None = None) -
     return torch.cat(parts)
 
 
+# Kimi_K25VisionPositionEmbeddings：Kimi K2.5 视觉 3D 位置嵌入（高/宽/时间）
 class Kimi_K25VisionPositionEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -167,6 +172,7 @@ class Kimi_K25VisionPositionEmbeddings(nn.Module):
         return hidden_states + pos.to(hidden_states.dtype)
 
 
+# Kimi_K25VisionPatchEmbed：Kimi K2.5 视觉 patch 卷积嵌入
 class Kimi_K25VisionPatchEmbed(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -182,6 +188,7 @@ class Kimi_K25VisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Kimi_K25VisionRotaryEmbedding：Kimi K2.5 视觉塔旋转位置编码（RoPE）
 class Kimi_K25VisionRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Kimi_K25VisionConfig, device=None):
@@ -245,6 +252,7 @@ class Kimi_K25VisionRotaryEmbedding(nn.Module):
         return cos, sin
 
 
+# Kimi_K25VisionMLP：Kimi K2.5 视觉塔前馈 MLP
 class Kimi_K25VisionMLP(nn.Module):
     def __init__(self, dim: int, hidden_dim: int, hidden_act: str) -> None:
         super().__init__()
@@ -256,6 +264,7 @@ class Kimi_K25VisionMLP(nn.Module):
         return self.fc2(self.act(self.fc1(x)))
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -263,6 +272,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：对视觉 Q/K 应用 2D RoPE
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -277,6 +287,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -289,6 +300,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -314,6 +326,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Kimi_K25VisionAttention：Kimi K2.5 视觉塔多头自注意力
 class Kimi_K25VisionAttention(nn.Module):
     def __init__(self, config: Kimi_K25VisionConfig) -> None:
         super().__init__()
@@ -401,6 +414,7 @@ class Kimi_K25VisionAttention(nn.Module):
         return attn_output
 
 
+# Kimi_K25VisionEncoderLayer：Kimi K2.5 视觉 Transformer 编码器单层
 class Kimi_K25VisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -427,6 +441,7 @@ class Kimi_K25VisionEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Kimi_K25PreTrainedModel：Kimi K2.5 多模态预训练基类与权重初始化
 class Kimi_K25PreTrainedModel(PreTrainedModel):
     config: Kimi_K25Config
     base_model_prefix = "model"
@@ -448,6 +463,7 @@ class Kimi_K25PreTrainedModel(PreTrainedModel):
             init.trunc_normal_(module.position_embeddings, mean=0.0)
 
 
+# get_vision_temporal_merge_index：计算视频时序合并后的帧索引
 def get_vision_temporal_merge_index(
     grid_thw: torch.Tensor, kernel_height: int, kernel_width: int, kwargs: dict | None = None
 ) -> torch.Tensor:
@@ -475,6 +491,7 @@ def get_vision_temporal_merge_index(
     return torch.cat(rows, dim=0)
 
 
+# Kimi_K25VisionModel：Kimi K2.5 NaViT 视觉编码塔
 class Kimi_K25VisionModel(Kimi_K25PreTrainedModel):
     config: Kimi_K25VisionConfig
     input_modalities = ("image", "video")
@@ -561,6 +578,7 @@ class Kimi_K25VisionModel(Kimi_K25PreTrainedModel):
         )
 
 
+# Kimi_K25MultimodalProjection：Kimi K2.5 视觉特征到 LLM 维度的 MLP 投影器
 class Kimi_K25MultimodalProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -582,6 +600,7 @@ class Kimi_K25MultimodalProjection(nn.Module):
         return hidden_states
 
 
+# Kimi_K25Model：Kimi K2.5 视觉+文本多模态联合主干
 class Kimi_K25Model(Kimi_K25PreTrainedModel):
     def __init__(self, config: Kimi_K25Config):
         super().__init__(config)
@@ -721,6 +740,7 @@ class Kimi_K25Model(Kimi_K25PreTrainedModel):
         )
 
 
+# Kimi_K25ForConditionalGeneration：Kimi K2.5 图文/视频条件生成
 class Kimi_K25ForConditionalGeneration(Kimi_K25PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208

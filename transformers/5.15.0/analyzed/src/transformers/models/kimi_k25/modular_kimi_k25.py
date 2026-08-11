@@ -58,6 +58,9 @@ from ..qwen2_vl.processing_qwen2_vl import Qwen2VLProcessor
 logger = logging.get_logger(__name__)
 
 
+# Kimi K2.5 modular 源：复用 Qwen2-VL/Gemma4/GLM4V 组件构建 NaViT 多模态
+
+# get_vision_frame_index：根据 grid_thw 计算视频帧在视觉序列中的索引
 def get_vision_frame_index(grid_thw: torch.Tensor, kwargs: dict | None = None) -> torch.Tensor:
     """Per-patch index into a temporal embedding table whose row `0` is a zero pad, or pop
     `"frame_index"` from `kwargs`.
@@ -77,6 +80,7 @@ def get_vision_frame_index(grid_thw: torch.Tensor, kwargs: dict | None = None) -
     return torch.cat(parts)
 
 
+# get_vision_temporal_merge_index：计算视频时序合并后的帧索引
 def get_vision_temporal_merge_index(
     grid_thw: torch.Tensor, kernel_height: int, kernel_width: int, kwargs: dict | None = None
 ) -> torch.Tensor:
@@ -104,8 +108,10 @@ def get_vision_temporal_merge_index(
     return torch.cat(rows, dim=0)
 
 
+# Kimi_K25VisionConfig：moonshotai/Kimi-K2.6 视觉塔默认超参
 @auto_docstring(checkpoint="moonshotai/Kimi-K2.6")
 @strict
+# Kimi_K25VisionConfig：Kimi K2.5 视觉塔超参（NaViT 风格 patch 编码）
 class Kimi_K25VisionConfig(PreTrainedConfig):
     r"""
     pos_emb_height (`int`, *optional*):
@@ -134,8 +140,10 @@ class Kimi_K25VisionConfig(PreTrainedConfig):
     max_position_embeddings: int | None = None
 
 
+# Kimi_K25Config：moonshotai/Kimi-K2.6 图文/视频多模态顶层默认超参
 @auto_docstring(checkpoint="moonshotai/Kimi-K2.6")
 @strict
+# Kimi_K25Config：Kimi K2.5 图文/视频多模态顶层配置（DeepSeek V3 文本 + 视觉塔）
 class Kimi_K25Config(PreTrainedConfig):
     r"""
     projection_hidden_size (`int`, *optional*, defaults to `1152`):
@@ -178,14 +186,17 @@ class Kimi_K25Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Kimi_K25ModelOutputWithPast：Kimi K2.5 多模态输出 dataclass（含 past_key_values）
 class Kimi_K25ModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# Kimi_K25CausalLMOutputWithPast：Kimi K2.5 因果 LM 输出 dataclass（含 logits 与 past）
 class Kimi_K25CausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# Kimi_K25VisionPositionEmbeddings：Kimi K2.5 视觉 3D 位置嵌入（高/宽/时间）
 class Kimi_K25VisionPositionEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -231,6 +242,7 @@ class Kimi_K25VisionPositionEmbeddings(nn.Module):
         return hidden_states + pos.to(hidden_states.dtype)
 
 
+# Kimi_K25VisionPatchEmbed：Kimi K2.5 视觉 patch 卷积嵌入
 class Kimi_K25VisionPatchEmbed(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -248,6 +260,7 @@ class Kimi_K25VisionPatchEmbed(nn.Module):
 
 # Similarly to gemma4, applies the same freq to H and W grids
 # The difference is that gemma4 stacks H/W embeds on `dim`, while Kimi interleaves them
+# Kimi_K25VisionRotaryEmbedding：Kimi K2.5 视觉塔旋转位置编码（RoPE）
 class Kimi_K25VisionRotaryEmbedding(Gemma4VisionRotaryEmbedding):
     def forward(self, x, position_ids):
         position_ids_expanded = position_ids.transpose(0, 1)[..., None].float()  # (positions, 2, 1)
@@ -265,11 +278,13 @@ class Kimi_K25VisionRotaryEmbedding(Gemma4VisionRotaryEmbedding):
         return cos, sin
 
 
+# Kimi_K25VisionMLP：Kimi K2.5 视觉塔前馈 MLP
 class Kimi_K25VisionMLP(VisionMlp):
     pass
 
 
 # Difference from Qwen: unfused qkv as we chunk and permute qk proj when converting!
+# Kimi_K25VisionAttention：Kimi K2.5 视觉塔多头自注意力
 class Kimi_K25VisionAttention(VisionAttention):
     def __init__(self, config: Kimi_K25VisionConfig) -> None:
         super().__init__()
@@ -352,6 +367,7 @@ class Kimi_K25VisionAttention(VisionAttention):
 
 
 # Don't copy `init` from Qwen-VL due to non-standard config naming in Qwen
+# Kimi_K25VisionEncoderLayer：Kimi K2.5 视觉 Transformer 编码器单层
 class Kimi_K25VisionEncoderLayer(Qwen2VLVisionBlock):
     def __init__(self, config):
         nn.Module.__init__()
@@ -361,6 +377,7 @@ class Kimi_K25VisionEncoderLayer(Qwen2VLVisionBlock):
         self.mlp = Kimi_K25VisionMLP(config.hidden_size, config.intermediate_size, config.hidden_act)
 
 
+# Kimi_K25PreTrainedModel：Kimi K2.5 多模态预训练基类与权重初始化
 class Kimi_K25PreTrainedModel(Qwen2VLPreTrainedModel):
     _no_split_modules = ["Kimi_K25VisionEncoderLayer"]
 
@@ -372,6 +389,7 @@ class Kimi_K25PreTrainedModel(Qwen2VLPreTrainedModel):
             init.trunc_normal_(module.position_embeddings, mean=0.0)
 
 
+# Kimi_K25VisionModel：Kimi K2.5 NaViT 视觉编码塔
 class Kimi_K25VisionModel(Kimi_K25PreTrainedModel):
     config: Kimi_K25VisionConfig
     input_modalities = ("image", "video")
@@ -458,6 +476,7 @@ class Kimi_K25VisionModel(Kimi_K25PreTrainedModel):
         )
 
 
+# Kimi_K25MultimodalProjection：Kimi K2.5 视觉特征到 LLM 维度的 MLP 投影器
 class Kimi_K25MultimodalProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -479,6 +498,7 @@ class Kimi_K25MultimodalProjection(nn.Module):
         return hidden_states
 
 
+# Kimi_K25Model：Kimi K2.5 视觉+文本多模态联合主干
 class Kimi_K25Model(Kimi_K25PreTrainedModel):
     def __init__(self, config: Kimi_K25Config):
         super().__init__(config)
@@ -618,6 +638,7 @@ class Kimi_K25Model(Kimi_K25PreTrainedModel):
         )
 
 
+# Kimi_K25ForConditionalGeneration：Kimi K2.5 图文/视频条件生成
 class Kimi_K25ForConditionalGeneration(Glm4vForConditionalGeneration):
     @can_return_tuple
     @auto_docstring
@@ -718,6 +739,7 @@ class Kimi_K25ForConditionalGeneration(Glm4vForConditionalGeneration):
         raise AttributeError("Uses normal super call")
 
 
+# Kimi_K25ProcessorKwargs：Kimi K2.5 Processor 可选参数字典类型
 class Kimi_K25ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -729,6 +751,7 @@ class Kimi_K25ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Kimi_K25Processor：Kimi K2.5 图像/视频预处理与分词器联合输入管线
 class Kimi_K25Processor(Qwen2VLProcessor):
     def __init__(
         self,

@@ -33,7 +33,10 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import group_videos_by_shape, reorder_videos
 
 
+# Kimi K2.5 视频预处理：NaViT 帧 resize、时序 patch 与 ImageNet 归一化
+
 # Same resize as in image processing
+# navit_resize：NaViT 风格按 patch 预算缩放并计算填充尺寸
 def navit_resize(
     height: int,
     width: int,
@@ -69,6 +72,7 @@ def navit_resize(
     return (new_height, new_width), (pad_height, pad_width)
 
 
+# Kimi_K25VideoProcessorInitKwargs：Kimi K2.5 视频处理器初始化可选参数字典类型
 class Kimi_K25VideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     max_patches (`int`, *optional*, defaults to `16384`):
@@ -87,6 +91,7 @@ class Kimi_K25VideoProcessorInitKwargs(VideosKwargs, total=False):
     temporal_patch_size: int
 
 
+# Kimi_K25VideoProcessor：Kimi K2.5 视频帧 NaViT resize/归一化预处理
 class Kimi_K25VideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"max_height": 512, "max_width": 512}

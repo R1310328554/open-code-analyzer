@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Jina Embeddings V3 配置：jinaai/jina-embeddings-v3-hf 多任务嵌入（XLM-RoBERTa + RoPE）超参
+
+# JinaEmbeddingsV3Config：jinaai/jina-embeddings-v3-hf 多任务嵌入模型默认超参
 @auto_docstring(checkpoint="jinaai/jina-embeddings-v3-hf")
 @strict
+# JinaEmbeddingsV3Config：Jina Embeddings V3 多任务嵌入模型超参（XLM-RoBERTa + RoPE）
 class JinaEmbeddingsV3Config(PreTrainedConfig):
     r"""
     Examples:

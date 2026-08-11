@@ -24,8 +24,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Kimi K2.5 配置：moonshotai/Kimi-K2.6 视觉塔 + DeepSeek V3 文本骨干多模态超参
+
+# Kimi_K25VisionConfig：moonshotai/Kimi-K2.6 视觉塔默认超参
 @auto_docstring(checkpoint="moonshotai/Kimi-K2.6")
 @strict
+# Kimi_K25VisionConfig：Kimi K2.5 视觉塔超参（NaViT 风格 patch 编码）
 class Kimi_K25VisionConfig(PreTrainedConfig):
     r"""
     pos_emb_height (`int`, *optional*):
@@ -54,8 +58,10 @@ class Kimi_K25VisionConfig(PreTrainedConfig):
     max_position_embeddings: int | None = None
 
 
+# Kimi_K25Config：moonshotai/Kimi-K2.6 图文/视频多模态顶层默认超参
 @auto_docstring(checkpoint="moonshotai/Kimi-K2.6")
 @strict
+# Kimi_K25Config：Kimi K2.5 图文/视频多模态顶层配置（DeepSeek V3 文本 + 视觉塔）
 class Kimi_K25Config(PreTrainedConfig):
     r"""
     projection_hidden_size (`int`, *optional*, defaults to `1152`):
