@@ -31,10 +31,13 @@ from ...utils import (
 from ...utils.import_utils import requires
 
 
+# OmDet-Turbo 处理器：开放词汇检测图像+任务/类别文本联合编码与 NMS 后处理
+
 if TYPE_CHECKING:
     from .modeling_omdet_turbo import OmDetTurboObjectDetectionOutput
 
 
+# OmDetTurboTextKwargs：OmDet-Turbo 文本编码可选参数（含检测任务描述 task）
 class OmDetTurboTextKwargs(TextKwargs, total=False):
     """
     task (`str`, `list[str]`, `TextInput`, or `PreTokenizedInput`, *optional*):
@@ -54,6 +57,7 @@ if is_torchvision_available():
     from torchvision.ops.boxes import batched_nms
 
 
+# OmDetTurboProcessorKwargs：OmDet-Turbo 联合处理器默认 text/images 参数
 class OmDetTurboProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: OmDetTurboTextKwargs
     _defaults = {
@@ -74,6 +78,7 @@ class OmDetTurboProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# clip_boxes：将预测框坐标裁剪到图像 [0, width/height] 范围
 def clip_boxes(box, box_size: tuple[int, int]):
     """
     Clip the boxes by limiting x coordinates to the range [0, width]
@@ -94,6 +99,7 @@ def clip_boxes(box, box_size: tuple[int, int]):
     return box
 
 
+# compute_score：对 decoder 类别 logits 做 sigmoid 并展开类别索引
 def compute_score(boxes):
     """
     Compute logit scores per class for each box (proposal) and an array of class indices
@@ -108,6 +114,7 @@ def compute_score(boxes):
     return scores, classes
 
 
+# _post_process_boxes_for_image：单图检测后处理（topk→阈值→NMS→裁剪）
 def _post_process_boxes_for_image(
     boxes: "torch.Tensor",
     scores: "torch.Tensor",
@@ -187,13 +194,16 @@ def _post_process_boxes_for_image(
 
 @requires(backends=("vision", "torchvision"))
 @auto_docstring
+# OmDetTurboProcessor：OmDet-Turbo 图像处理器与 CLIP tokenizer 联合封装
 class OmDetTurboProcessor(ProcessorMixin):
     valid_processor_kwargs = OmDetTurboProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合编码图像、任务描述与类别名文本
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -239,6 +249,7 @@ class OmDetTurboProcessor(ProcessorMixin):
         return encoding
 
     @property
+    # model_input_names：模型 forward 所需的 processor 输出键名
     def model_input_names(self):
         image_processor_input_names = self.image_processor.model_input_names
         tokenizer_input_names = [
@@ -250,6 +261,7 @@ class OmDetTurboProcessor(ProcessorMixin):
         ]
         return tokenizer_input_names + image_processor_input_names
 
+    # _get_default_image_size：从 image_processor.size 推断默认高宽
     def _get_default_image_size(self) -> tuple[int, int]:
         height = (
             self.image_processor.size["height"]
@@ -263,6 +275,7 @@ class OmDetTurboProcessor(ProcessorMixin):
         )
         return height, width
 
+    # post_process_grounded_object_detection：将模型输出转为最终框与文本类别
     def post_process_grounded_object_detection(
         self,
         outputs: "OmDetTurboObjectDetectionOutput",

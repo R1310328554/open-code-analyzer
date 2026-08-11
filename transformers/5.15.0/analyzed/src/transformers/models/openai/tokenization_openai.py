@@ -22,9 +22,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# OpenAI GPT 分词：BPE + BERT BasicTokenizer 小写预分词
+
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# OpenAIGPTTokenizer：openai-community/openai-gpt BPE 分词器（小写+BERT 预分词）
 class OpenAIGPTTokenizer(TokenizersBackend):
     """
     Construct a GPT Tokenizer (backed by HuggingFace's *tokenizers* library). Based on Byte-Pair-Encoding with
@@ -56,6 +59,7 @@ class OpenAIGPTTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -91,6 +95,7 @@ class OpenAIGPTTokenizer(TokenizersBackend):
         )
 
     @property
+    # do_lower_case：标识 tokenizer 是否强制小写输入
     def do_lower_case(self):
         return True
 

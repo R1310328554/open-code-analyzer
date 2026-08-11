@@ -23,8 +23,12 @@ if is_torch_available():
     import torch
 
 
+# OneFormer 处理器：图像与 tokenizer 联合封装（任务/类别文本编码）
+
 @auto_docstring
+# OneFormerProcessor：OneFormer 图像处理器与 tokenizer 联合封装
 class OneFormerProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, image_processor=None, tokenizer=None, max_seq_length: int = 77, task_seq_length: int = 77, **kwargs
     ):
@@ -42,6 +46,7 @@ class OneFormerProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer)
 
+    # _preprocess_text：按 max_length 对文本列表做 padding 分词
     def _preprocess_text(self, text_list=None, max_length=77):
         if text_list is None:
             raise ValueError("tokens cannot be None.")
@@ -59,6 +64,7 @@ class OneFormerProcessor(ProcessorMixin):
         return token_inputs
 
     @auto_docstring
+    # __call__：联合编码图像、任务描述与类别名文本
     def __call__(self, images=None, task_inputs=None, segmentation_maps=None, **kwargs):
         r"""
         task_inputs (`str` or `list[str]`, *required*):
@@ -116,6 +122,7 @@ class OneFormerProcessor(ProcessorMixin):
 
         return encoded_inputs
 
+    # encode_inputs：编码图像、任务 token 与分割标注为模型 batch 输入
     def encode_inputs(self, images=None, task_inputs=None, segmentation_maps=None, **kwargs):
         """
         This method forwards all its arguments to [`OneFormerImageProcessor.encode_inputs`] and then tokenizes the
@@ -156,6 +163,7 @@ class OneFormerProcessor(ProcessorMixin):
 
         return encoded_inputs
 
+    # post_process_semantic_segmentation：语义分割预测后处理
     def post_process_semantic_segmentation(self, *args, **kwargs):
         """
         This method forwards all its arguments to [`OneFormerImageProcessor.post_process_semantic_segmentation`].
@@ -163,6 +171,7 @@ class OneFormerProcessor(ProcessorMixin):
         """
         return self.image_processor.post_process_semantic_segmentation(*args, **kwargs)
 
+    # post_process_instance_segmentation：实例分割预测后处理
     def post_process_instance_segmentation(self, *args, **kwargs):
         """
         This method forwards all its arguments to [`OneFormerImageProcessor.post_process_instance_segmentation`].
@@ -170,6 +179,7 @@ class OneFormerProcessor(ProcessorMixin):
         """
         return self.image_processor.post_process_instance_segmentation(*args, **kwargs)
 
+    # post_process_panoptic_segmentation：全景分割预测后处理
     def post_process_panoptic_segmentation(self, *args, **kwargs):
         """
         This method forwards all its arguments to [`OneFormerImageProcessor.post_process_panoptic_segmentation`].

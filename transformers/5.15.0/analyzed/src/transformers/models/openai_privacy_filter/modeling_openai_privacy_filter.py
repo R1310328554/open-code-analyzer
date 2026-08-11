@@ -39,8 +39,12 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_openai_privacy_filter import OpenAIPrivacyFilterConfig
 
 
+# Privacy Filter 建模：双向滑动窗口 MoE 编码器与 token 分类头
+
 @use_kernel_forward_from_hub("RMSNorm")
+# OpenAIPrivacyFilterRMSNorm：Privacy Filter RMS 层归一化
 class OpenAIPrivacyFilterRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         OpenAIPrivacyFilterRMSNorm is equivalent to T5LayerNorm
@@ -49,6 +53,7 @@ class OpenAIPrivacyFilterRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -60,8 +65,10 @@ class OpenAIPrivacyFilterRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# OpenAIPrivacyFilterRotaryEmbedding：Privacy Filter RoPE 旋转位置编码
 class OpenAIPrivacyFilterRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -102,6 +109,7 @@ class OpenAIPrivacyFilterRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -116,6 +124,7 @@ class OpenAIPrivacyFilterRotaryEmbedding(nn.Module):
         return cos.to(x.dtype), sin.to(x.dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -129,6 +138,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
@@ -137,6 +147,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# _apply_rotary_emb：Privacy Filter 专用 RoPE 应用（含 partial rotary）
 def _apply_rotary_emb(
     x: torch.Tensor,
     cos: torch.Tensor,
@@ -149,6 +160,7 @@ def _apply_rotary_emb(
     return torch.stack((first_, second_), dim=-1).flatten(-2)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -181,9 +193,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# OpenAIPrivacyFilterAttention：Privacy Filter GQA 滑动窗口自注意力
 class OpenAIPrivacyFilterAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__()
         self.config = config
@@ -207,6 +221,7 @@ class OpenAIPrivacyFilterAttention(nn.Module):
         self.sliding_window = config.sliding_window + 1  # Account for FA symmetry using -1
         self.sinks = nn.Parameter(torch.empty(config.num_attention_heads))
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -251,7 +266,9 @@ class OpenAIPrivacyFilterAttention(nn.Module):
 
 
 @use_experts_implementation(is_transposed=True, has_bias=True)
+# OpenAIPrivacyFilterExperts：Privacy Filter MoE 本地专家 FFN 组
 class OpenAIPrivacyFilterExperts(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.intermediate_size = config.intermediate_size
@@ -273,6 +290,7 @@ class OpenAIPrivacyFilterExperts(nn.Module):
         gated_output = (up + 1) * glu
         return gated_output
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, router_indices=None, routing_weights=None) -> torch.Tensor:
         original_dtype = hidden_states.dtype
 
@@ -308,7 +326,9 @@ class OpenAIPrivacyFilterExperts(nn.Module):
         return next_states.to(original_dtype)
 
 
+# OpenAIPrivacyFilterTopKRouter：Privacy Filter Top-K 路由门控
 class OpenAIPrivacyFilterTopKRouter(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -317,6 +337,7 @@ class OpenAIPrivacyFilterTopKRouter(nn.Module):
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
         self.bias = nn.Parameter(torch.zeros(self.num_experts))
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         # Force fp32
         router_logits = F.linear(
@@ -329,15 +350,18 @@ class OpenAIPrivacyFilterTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# OpenAIPrivacyFilterMLP：Privacy Filter 稠密或 MoE 前馈 MLP
 class OpenAIPrivacyFilterMLP(nn.Module):
     """Similar to GPT Oss but with FP32 focus + added experts scaling"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.router = OpenAIPrivacyFilterTopKRouter(config)
         self.num_experts = config.num_experts_per_tok
         self.experts = OpenAIPrivacyFilterExperts(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.reshape(-1, hidden_dim)
@@ -349,7 +373,9 @@ class OpenAIPrivacyFilterMLP(nn.Module):
         return hidden_states, router_scores
 
 
+# OpenAIPrivacyFilterEncoderLayer：Privacy Filter 编码器单层（Attn+MLP）
 class OpenAIPrivacyFilterEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -358,6 +384,7 @@ class OpenAIPrivacyFilterEncoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = OpenAIPrivacyFilterRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = OpenAIPrivacyFilterRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -386,6 +413,7 @@ class OpenAIPrivacyFilterEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# OpenAIPrivacyFilterPreTrainedModel：Privacy Filter 预训练基类
 class OpenAIPrivacyFilterPreTrainedModel(PreTrainedModel):
     config: OpenAIPrivacyFilterConfig
     base_model_prefix = "model"
@@ -415,6 +443,7 @@ class OpenAIPrivacyFilterPreTrainedModel(PreTrainedModel):
     _keep_in_fp32_modules_strict = ["sinks"]
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         std = self.config.initializer_range
@@ -436,7 +465,9 @@ class OpenAIPrivacyFilterPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# OpenAIPrivacyFilterModel：Privacy Filter 双向滑动窗口 MoE 编码器主干
 class OpenAIPrivacyFilterModel(OpenAIPrivacyFilterPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -454,6 +485,7 @@ class OpenAIPrivacyFilterModel(OpenAIPrivacyFilterPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -494,6 +526,7 @@ class OpenAIPrivacyFilterModel(OpenAIPrivacyFilterPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# OpenAIPrivacyFilterForTokenClassification：Privacy Filter token 级隐私实体分类头
 class OpenAIPrivacyFilterForTokenClassification(GenericForTokenClassification, OpenAIPrivacyFilterPreTrainedModel): ...
 
 

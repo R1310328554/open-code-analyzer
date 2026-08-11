@@ -42,6 +42,9 @@ from ...utils import TensorType, auto_docstring, hf_api, logging
 logger = logging.get_logger(__name__)
 
 
+# OneFormer 图像预处理：Torchvision 后端缩放/归一化/分割标注编码
+
+# OneFormerImageProcessorKwargs：OneFormer 图像预处理可选参数字典
 class OneFormerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     repo_path (`str`, *optional*, defaults to `shi-labs/oneformer_demo`):
@@ -66,6 +69,7 @@ class OneFormerImageProcessorKwargs(ImagesKwargs, total=False):
     do_reduce_labels: bool
 
 
+# prepare_metadata：将 class_info JSON 转为 id→name 元数据字典
 def prepare_metadata(class_info):
     metadata = {}
     class_names = []
@@ -80,6 +84,7 @@ def prepare_metadata(class_info):
     return metadata
 
 
+# load_metadata：从 Hub 或本地加载 OneFormer 类别元数据
 def load_metadata(repo_id, class_info_file):
     fname = os.path.join("" if repo_id is None else repo_id, class_info_file)
 
@@ -98,6 +103,7 @@ def load_metadata(repo_id, class_info_file):
     return class_info
 
 
+# make_pixel_mask：生成有效像素区域 mask（padding 处为 0）
 def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "torch.Tensor":
     """
     Make a pixel mask for the image, where 1 indicates a valid pixel and 0 indicates padding.
@@ -115,6 +121,7 @@ def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "tor
     return mask
 
 
+# binary_mask_to_rle：二值 mask 转 COCO RLE 编码
 def binary_mask_to_rle(mask):
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -146,6 +153,7 @@ def binary_mask_to_rle(mask):
     return list(runs)
 
 
+# convert_segmentation_to_rle：实例分割结果批量转 RLE
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -167,6 +175,7 @@ def convert_segmentation_to_rle(segmentation):
     return run_length_encodings
 
 
+# remove_low_and_no_objects：过滤低置信度与空实例预测
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -195,6 +204,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
     return masks[to_keep], scores[to_keep], labels[to_keep]
 
 
+# check_segment_validity：检查 mask 阈值与重叠面积是否有效
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -213,6 +223,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
     return mask_exists, mask_k
 
 
+# compute_segments：由 mask/score 计算最终分割片段列表
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -272,6 +283,7 @@ def compute_segments(
 
 
 @auto_docstring
+# OneFormerImageProcessor：OneFormer Torchvision 后端图像预处理器
 class OneFormerImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -292,12 +304,14 @@ class OneFormerImageProcessor(TorchvisionBackend):
     valid_kwargs = OneFormerImageProcessorKwargs
     model_input_names = ["pixel_values", "pixel_mask", "task_inputs"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[OneFormerImageProcessorKwargs]):
         super().__init__(**kwargs)
         if self.class_info_file:
             self.metadata = prepare_metadata(load_metadata(self.repo_path, self.class_info_file))
 
     @auto_docstring
+    # preprocess：批量预处理图像并返回 pixel_values 等张量
     def preprocess(
         self,
         images: ImageInput,
@@ -316,6 +330,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         """
         return super().preprocess(images, task_inputs, segmentation_maps, instance_id_to_semantic_id, **kwargs)
 
+    # _preprocess_image_like_inputs：统一处理单张/批量图像输入
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -345,6 +360,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
             )
         return self._preprocess(images, task_inputs, segmentation_maps, instance_id_to_semantic_id, **kwargs)
 
+    # _preprocess：OneFormer 图像预处理流水线（缩放/归一化/填充）
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -406,6 +422,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
 
         return encoded_inputs
 
+    # _pad_image：将图像填充至 batch 内最大尺寸
     def _pad_image(
         self,
         image: "torch.Tensor",
@@ -436,6 +453,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
 
         return padded_image
 
+    # pad：对图像 batch 做 bottom-right 填充对齐
     def pad(
         self,
         images: list["torch.Tensor"],
@@ -471,6 +489,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # convert_segmentation_map_to_binary_masks：分割图转 per-class 二值 mask
     def convert_segmentation_map_to_binary_masks(
         self,
         segmentation_map: "torch.Tensor",
@@ -511,6 +530,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
             labels.long(),
         )
 
+    # get_semantic_annotations：构造语义分割训练标注
     def get_semantic_annotations(self, label, num_class_obj):
         annotation_classes = label["classes"]
         annotation_masks = label["masks"]
@@ -546,6 +566,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         masks = torch.stack(masks)
         return classes, masks, texts
 
+    # get_instance_annotations：构造实例分割训练标注
     def get_instance_annotations(self, label, num_class_obj):
         annotation_classes = label["classes"]
         annotation_masks = label["masks"]
@@ -578,6 +599,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         masks = torch.stack(masks)
         return classes, masks, texts
 
+    # get_panoptic_annotations：构造全景分割训练标注
     def get_panoptic_annotations(self, label, num_class_obj):
         annotation_classes = label["classes"]
         annotation_masks = label["masks"]
@@ -607,6 +629,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         masks = torch.stack(masks)
         return classes, masks, texts
 
+    # encode_inputs：编码图像、任务 token 与分割标注为模型 batch 输入
     def encode_inputs(
         self,
         pixel_values_list: list["ImageInput"],
@@ -687,6 +710,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         encoded_inputs["task_inputs"] = [f"the task is {task_input}" for task_input in task_inputs]
         return encoded_inputs
 
+    # post_process_semantic_segmentation：语义分割预测后处理
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -763,6 +787,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
 
         return semantic_segmentation
 
+    # post_process_instance_segmentation：实例分割预测后处理
     def post_process_instance_segmentation(
         self,
         outputs,
@@ -883,6 +908,7 @@ class OneFormerImageProcessor(TorchvisionBackend):
         return results
 
     # Copied from transformers.models.maskformer.image_processing_maskformer.MaskFormerImageProcessor.post_process_panoptic_segmentation
+    # post_process_panoptic_segmentation：全景分割预测后处理
     def post_process_panoptic_segmentation(
         self,
         outputs,

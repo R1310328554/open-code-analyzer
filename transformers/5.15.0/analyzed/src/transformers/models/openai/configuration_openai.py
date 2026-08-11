@@ -14,14 +14,18 @@
 # limitations under the License.
 """OpenAI GPT configuration"""
 
+# OpenAI GPT 配置：原始 GPT-1 因果语言模型超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# OpenAIGPTConfig：openai-community/openai-gpt 原始 GPT 因果 LM 超参
 @auto_docstring(checkpoint="openai-community/openai-gpt")
 @strict
+# OpenAIGPTConfig：openai-community/openai-gpt 原始 GPT 因果 LM 超参
 class OpenAIGPTConfig(PreTrainedConfig):
     r"""
     afn (`str` or `Callable`, *optional*, defaults to `"gelu"`):

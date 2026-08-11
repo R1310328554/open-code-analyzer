@@ -43,7 +43,11 @@ logger = logging.get_logger(__name__)
 ACT_FNS = {"relu": nn.ReLU(), "silu": silu, "gelu": gelu_new, "swish": silu}
 
 
+# OpenAI GPT 建模：Conv1D Transformer 因果 LM 与分类/双头任务
+
+# Attention：OpenAI GPT 多头因果自注意力（Conv1D QKV）
 class Attention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, nx, n_positions, config, scale=False):
         super().__init__()
         self.n_positions = n_positions
@@ -62,6 +66,7 @@ class Attention(nn.Module):
         self.attn_dropout = nn.Dropout(config.attn_pdrop)
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
 
+    # _attn：缩放点积注意力核心计算
     def _attn(self, q, k, v, attention_mask=None, output_attentions=False):
         w = torch.matmul(q, k)
         if self.scale:
@@ -82,11 +87,13 @@ class Attention(nn.Module):
             outputs.append(w)
         return outputs
 
+    # merge_heads：将多头注意力输出合并回 hidden 维
     def merge_heads(self, x):
         x = x.permute(0, 2, 1, 3).contiguous()
         new_x_shape = x.size()[:-2] + (x.size(-2) * x.size(-1),)
         return x.view(*new_x_shape)
 
+    # split_heads：将 hidden 状态拆分为多头 Q/K/V
     def split_heads(self, x, k=False):
         new_x_shape = x.size()[:-1] + (self.n_head, x.size(-1) // self.n_head)
         x = x.view(*new_x_shape)
@@ -95,6 +102,7 @@ class Attention(nn.Module):
         else:
             return x.permute(0, 2, 1, 3)
 
+    # forward：模块前向计算
     def forward(self, x, attention_mask=None, output_attentions=False):
         x = self.c_attn(x)
         query, key, value = x.split(self.split_size, dim=2)
@@ -113,7 +121,9 @@ class Attention(nn.Module):
         return outputs  # a, (attentions)
 
 
+# MLP：OpenAI GPT 前馈 MLP（Conv1D 扩展+投影）
 class MLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, n_state, config):  # in MLP: n_state=3072 (4 * n_embd)
         super().__init__()
         nx = config.n_embd
@@ -122,13 +132,16 @@ class MLP(nn.Module):
         self.act = ACT_FNS[config.afn]
         self.dropout = nn.Dropout(config.resid_pdrop)
 
+    # forward：模块前向计算
     def forward(self, x):
         h = self.act(self.c_fc(x))
         h2 = self.c_proj(h)
         return self.dropout(h2)
 
 
+# Block：OpenAI GPT Transformer 块（Attention+MLP+残差）
 class Block(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, n_positions, config, scale=False):
         super().__init__()
         nx = config.n_embd
@@ -137,6 +150,7 @@ class Block(nn.Module):
         self.mlp = MLP(4 * nx, config)
         self.ln_2 = nn.LayerNorm(nx, eps=config.layer_norm_epsilon)
 
+    # forward：模块前向计算
     def forward(self, x, attention_mask=None, output_attentions=False):
         attn_outputs = self.attn(
             x,
@@ -154,6 +168,7 @@ class Block(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->OpenAIGPT
+# OpenAIGPTSequenceSummary：序列级池化摘要头（cls/mean/last 等）
 class OpenAIGPTSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -180,6 +195,7 @@ class OpenAIGPTSequenceSummary(nn.Module):
             - **summary_last_dropout** (`float`)-- Optional dropout probability after the projection and activation.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIGPTConfig):
         super().__init__()
 
@@ -209,6 +225,7 @@ class OpenAIGPTSequenceSummary(nn.Module):
         if hasattr(config, "summary_last_dropout") and config.summary_last_dropout > 0:
             self.last_dropout = nn.Dropout(config.summary_last_dropout)
 
+    # forward：模块前向计算
     def forward(
         self, hidden_states: torch.FloatTensor, cls_index: torch.LongTensor | None = None
     ) -> torch.FloatTensor:
@@ -254,10 +271,12 @@ class OpenAIGPTSequenceSummary(nn.Module):
 
 
 @auto_docstring
+# OpenAIGPTPreTrainedModel：OpenAI GPT 预训练基类
 class OpenAIGPTPreTrainedModel(PreTrainedModel):
     config: OpenAIGPTConfig
     base_model_prefix = "transformer"
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Attention):
@@ -275,6 +294,7 @@ class OpenAIGPTPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# OpenAIGPTDoubleHeadsModelOutput：双头 LM+multiple-choice 输出 dataclass
 class OpenAIGPTDoubleHeadsModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -296,7 +316,9 @@ class OpenAIGPTDoubleHeadsModelOutput(ModelOutput):
 
 
 @auto_docstring
+# OpenAIGPTModel：OpenAI GPT 因果 Transformer 主干
 class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -309,13 +331,16 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token embedding 层
     def get_input_embeddings(self):
         return self.tokens_embed
 
+    # set_input_embeddings：替换 token embedding 层
     def set_input_embeddings(self, new_embeddings):
         self.tokens_embed = new_embeddings
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -411,9 +436,11 @@ class OpenAIGPTModel(OpenAIGPTPreTrainedModel):
     embeddings).
     """
 )
+# OpenAIGPTLMHeadModel：OpenAI GPT 因果语言建模头
 class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.tokens_embed.weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.transformer = OpenAIGPTModel(config)
@@ -423,6 +450,7 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel, GenerationMixin):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -476,6 +504,7 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel, GenerationMixin):
             attentions=transformer_outputs.attentions,
         )
 
+    # prepare_inputs_for_generation：生成步裁剪 input_ids 与 position_ids
     def prepare_inputs_for_generation(self, input_ids: torch.LongTensor, **kwargs) -> dict[str, Any]:
         # Overwritten -- old model with reduced inputs
         model_inputs = {"input_ids": input_ids}
@@ -496,9 +525,11 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel, GenerationMixin):
     input sequence).
     """
 )
+# OpenAIGPTDoubleHeadsModel：OpenAI GPT 双头 LM+multiple-choice 模型
 class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
     _tied_weights_keys = {"transformer.tokens_embed.weight": "lm_head.weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -511,6 +542,7 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -613,7 +645,9 @@ class OpenAIGPTDoubleHeadsModel(OpenAIGPTPreTrainedModel):
     the last value in each row of the batch).
     """
 )
+# OpenAIGPTForSequenceClassification：OpenAI GPT 序列分类头
 class OpenAIGPTForSequenceClassification(OpenAIGPTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -624,6 +658,7 @@ class OpenAIGPTForSequenceClassification(OpenAIGPTPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -48,6 +48,8 @@ from ..gpt_oss.modeling_gpt_oss import (
 logger = logging.get_logger(__name__)
 
 
+# Privacy Filter modular 源：基于 GptOss 的隐私实体检测编码器
+
 OPENAI_PRIVACY_FILTER_SPAN_LABELS = (
     "O",
     "account_number",
@@ -68,8 +70,10 @@ OPENAI_PRIVACY_FILTER_NER_LABELS = ("O",) + tuple(
 )
 
 
+# OpenAIPrivacyFilterConfig：openai/privacy-filter 隐私实体 MoE 编码器超参
 @auto_docstring(checkpoint="openai/privacy-filter")
 @strict
+# OpenAIPrivacyFilterConfig：openai/privacy-filter 隐私实体 MoE 编码器超参
 class OpenAIPrivacyFilterConfig(GptOssConfig):
     model_type = "openai_privacy_filter"
     vocab_size: int = 200064
@@ -111,14 +115,17 @@ class OpenAIPrivacyFilterConfig(GptOssConfig):
         PreTrainedConfig.__post_init__(self, **kwargs)
 
 
+# OpenAIPrivacyFilterRMSNorm：Privacy Filter RMS 层归一化
 class OpenAIPrivacyFilterRMSNorm(GptOssRMSNorm):
     pass
 
 
+# OpenAIPrivacyFilterRotaryEmbedding：Privacy Filter RoPE 旋转位置编码
 class OpenAIPrivacyFilterRotaryEmbedding(GptOssRotaryEmbedding):
     pass
 
 
+# _apply_rotary_emb：Privacy Filter 专用 RoPE 应用（含 partial rotary）
 def _apply_rotary_emb(
     x: torch.Tensor,
     cos: torch.Tensor,
@@ -131,6 +138,7 @@ def _apply_rotary_emb(
     return torch.stack((first_, second_), dim=-1).flatten(-2)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -162,7 +170,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# OpenAIPrivacyFilterAttention：Privacy Filter GQA 滑动窗口自注意力
 class OpenAIPrivacyFilterAttention(GptOssAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__(config)
         del self.layer_idx  # Only for caching
@@ -171,6 +181,7 @@ class OpenAIPrivacyFilterAttention(GptOssAttention):
         self.sliding_window = config.sliding_window + 1  # Account for FA symmetry using -1
         self.scaling = config.head_dim**-0.25
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -215,6 +226,7 @@ class OpenAIPrivacyFilterAttention(GptOssAttention):
 
 
 @use_experts_implementation(is_transposed=True, has_bias=True)
+# OpenAIPrivacyFilterExperts：Privacy Filter MoE 本地专家 FFN 组
 class OpenAIPrivacyFilterExperts(GptOssExperts):
     def _apply_gate(self, gate_up: torch.Tensor) -> torch.Tensor:
         # Concatenated layout instead of interleaving
@@ -225,6 +237,7 @@ class OpenAIPrivacyFilterExperts(GptOssExperts):
         gated_output = (up + 1) * glu
         return gated_output
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, router_indices=None, routing_weights=None) -> torch.Tensor:
         original_dtype = hidden_states.dtype
 
@@ -260,7 +273,9 @@ class OpenAIPrivacyFilterExperts(GptOssExperts):
         return next_states.to(original_dtype)
 
 
+# OpenAIPrivacyFilterTopKRouter：Privacy Filter Top-K 路由门控
 class OpenAIPrivacyFilterTopKRouter(GptOssTopKRouter):
+    # forward：模块前向计算
     def forward(self, hidden_states):
         # Force fp32
         router_logits = F.linear(
@@ -273,15 +288,18 @@ class OpenAIPrivacyFilterTopKRouter(GptOssTopKRouter):
         return router_logits, router_scores, router_indices
 
 
+# OpenAIPrivacyFilterMLP：Privacy Filter 稠密或 MoE 前馈 MLP
 class OpenAIPrivacyFilterMLP(nn.Module):
     """Similar to GPT Oss but with FP32 focus + added experts scaling"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.router = OpenAIPrivacyFilterTopKRouter(config)
         self.num_experts = config.num_experts_per_tok
         self.experts = OpenAIPrivacyFilterExperts(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.reshape(-1, hidden_dim)
@@ -293,11 +311,14 @@ class OpenAIPrivacyFilterMLP(nn.Module):
         return hidden_states, router_scores
 
 
+# OpenAIPrivacyFilterEncoderLayer：Privacy Filter 编码器单层（Attn+MLP）
 class OpenAIPrivacyFilterEncoderLayer(GptOssDecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__(config)
         self.self_attn = OpenAIPrivacyFilterAttention(config)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -325,6 +346,7 @@ class OpenAIPrivacyFilterEncoderLayer(GptOssDecoderLayer):
         return hidden_states
 
 
+# OpenAIPrivacyFilterPreTrainedModel：Privacy Filter 预训练基类
 class OpenAIPrivacyFilterPreTrainedModel(GptOssPreTrainedModel):
     config: OpenAIPrivacyFilterConfig
     _no_split_modules = ["OpenAIPrivacyFilterEncoderLayer"]
@@ -352,7 +374,9 @@ class OpenAIPrivacyFilterPreTrainedModel(GptOssPreTrainedModel):
 
 
 @auto_docstring
+# OpenAIPrivacyFilterModel：Privacy Filter 双向滑动窗口 MoE 编码器主干
 class OpenAIPrivacyFilterModel(GptOssModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OpenAIPrivacyFilterConfig):
         super().__init__(config)
         self.layers = nn.ModuleList([OpenAIPrivacyFilterEncoderLayer(config) for _ in range(config.num_hidden_layers)])
@@ -360,6 +384,7 @@ class OpenAIPrivacyFilterModel(GptOssModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -400,6 +425,7 @@ class OpenAIPrivacyFilterModel(GptOssModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# OpenAIPrivacyFilterForTokenClassification：Privacy Filter token 级隐私实体分类头
 class OpenAIPrivacyFilterForTokenClassification(GenericForTokenClassification, OpenAIPrivacyFilterPreTrainedModel): ...
 
 

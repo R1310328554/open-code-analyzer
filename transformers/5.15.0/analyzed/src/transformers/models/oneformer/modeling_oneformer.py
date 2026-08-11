@@ -49,14 +49,18 @@ if is_accelerate_available():
 logger = logging.get_logger(__name__)
 
 
+# OneFormer 建模：任务条件 Mask2Former 风格通用分割 Transformer
+
 if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
 
+# _get_clones：深拷贝模块 N 次组成 ModuleList
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
+# multi_scale_deformable_attention：多尺度可变形注意力前向
 def multi_scale_deformable_attention(
     value: Tensor,
     value_spatial_shapes: Tensor | list[tuple],
@@ -100,6 +104,7 @@ def multi_scale_deformable_attention(
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.dice_loss
+# dice_loss：mask 预测 Dice 损失（归一化）
 def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     r"""
     Compute the DICE loss, similar to generalized IOU for masks as follows:
@@ -131,6 +136,7 @@ def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.sigmoid_cross_entropy_loss
+# sigmoid_cross_entropy_loss：mask 预测 sigmoid 交叉熵损失
 def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_masks: int) -> torch.Tensor:
     r"""
     Args:
@@ -151,6 +157,7 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.pair_wise_dice_loss
+# pair_wise_dice_loss：匈牙利匹配用的 pairwise Dice 损失
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -174,6 +181,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.pair_wise_sigmoid_cross_entropy_loss
+# pair_wise_sigmoid_cross_entropy_loss：匈牙利匹配用的 pairwise BCE 损失
 def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     r"""
     A pair wise version of the cross entropy loss, see `sigmoid_cross_entropy_loss` for usage.
@@ -202,6 +210,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.sample_point
+# sample_point：在 mask 上随机/重要性采样点用于损失计算
 def sample_point(
     input_features: torch.Tensor, point_coordinates: torch.Tensor, add_dim=False, **kwargs
 ) -> torch.Tensor:
@@ -235,7 +244,9 @@ def sample_point(
 
 
 # Refactored from https://github.com/SHI-Labs/OneFormer/blob/33ebb56ed34f970a30ae103e786c0cb64c653d9a/oneformer/modeling/matcher.py#L93
+# OneFormerHungarianMatcher：OneFormer 预测与 GT 的匈牙利匹配器
 class OneFormerHungarianMatcher(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, cost_class: float = 1.0, cost_mask: float = 1.0, cost_dice: float = 1.0, num_points: int = 12544
     ):
@@ -264,6 +275,7 @@ class OneFormerHungarianMatcher(nn.Module):
         self.num_points = num_points
 
     @torch.no_grad()
+    # forward：模块前向计算
     def forward(self, masks_queries_logits, class_queries_logits, mask_labels, class_labels) -> list[tuple[Tensor]]:
         """Performs the matching
 
@@ -344,7 +356,9 @@ class OneFormerHungarianMatcher(nn.Module):
         return matched_indices
 
 
+# OneFormerLoss：OneFormer 分类/mask/对比/Dice 复合损失
 class OneFormerLoss(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         num_classes: int,
@@ -640,6 +654,7 @@ class OneFormerLoss(nn.Module):
         target_indices = torch.cat([tgt for (_, tgt) in indices])
         return batch_indices, target_indices
 
+    # forward：模块前向计算
     def forward(
         self,
         masks_queries_logits: Tensor,
@@ -738,6 +753,7 @@ class OneFormerLoss(nn.Module):
     """
 )
 @dataclass
+# OneFormerTransformerDecoderOutput：Transformer 解码器中间输出 dataclass
 class OneFormerTransformerDecoderOutput(BaseModelOutput):
     r"""
     object_queries (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_dim)`):
@@ -767,6 +783,7 @@ class OneFormerTransformerDecoderOutput(BaseModelOutput):
 )
 @dataclass
 # Copied from transformers.models.mask2former.modeling_mask2former.Mask2FormerPixelDecoderOutput with Mask2->One
+# OneFormerPixelDecoderOutput：像素解码器多尺度特征输出
 class OneFormerPixelDecoderOutput(ModelOutput):
     r"""
     multi_scale_features (`tuple(torch.FloatTensor)`):
@@ -794,6 +811,7 @@ class OneFormerPixelDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# OneFormerPixelLevelModuleOutput：像素级模块 mask 特征输出
 class OneFormerPixelLevelModuleOutput(ModelOutput):
     r"""
     encoder_features (List of `(torch.FloatTensor)`):
@@ -817,6 +835,7 @@ class OneFormerPixelLevelModuleOutput(ModelOutput):
     """
 )
 @dataclass
+# OneFormerModelOutput：OneFormer 主干前向输出
 class OneFormerModelOutput(ModelOutput):
     r"""
     encoder_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -874,6 +893,7 @@ class OneFormerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# OneFormerForUniversalSegmentationOutput：通用分割任务前向输出
 class OneFormerForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -935,11 +955,13 @@ class OneFormerForUniversalSegmentationOutput(ModelOutput):
 
 
 # Modified from transformers.models.detr.modeling_deformable_detr.DeformableDetrMultiscaleDeformableAttention with DeformableDetr->OneFormerPixelDecoderEncoder
+# OneFormerPixelDecoderEncoderMultiscaleDeformableAttention：像素解码器多尺度可变形自注意力
 class OneFormerPixelDecoderEncoderMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, embed_dim: int, num_heads: int, n_levels: int, n_points: int):
         super().__init__()
         if embed_dim % num_heads != 0:
@@ -970,6 +992,7 @@ class OneFormerPixelDecoderEncoderMultiscaleDeformableAttention(nn.Module):
     def with_pos_embed(self, tensor: torch.Tensor, position_embeddings: Tensor | None):
         return tensor if position_embeddings is None else tensor + position_embeddings
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1028,7 +1051,9 @@ class OneFormerPixelDecoderEncoderMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# OneFormerPixelDecoderEncoderLayer：像素解码器编码器层（自注意力+FFN）
 class OneFormerPixelDecoderEncoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__()
         self.embed_dim = config.conv_dim
@@ -1049,6 +1074,7 @@ class OneFormerPixelDecoderEncoderLayer(nn.Module):
 
         self.is_training = config.is_training
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1120,6 +1146,7 @@ class OneFormerPixelDecoderEncoderLayer(nn.Module):
 
 
 # Modified from from transformers.models.detr.modeling_deformable_detr.DeformableDetrEncoder with DeformableDetrEncoder->OneFormerPixelDecoderEncoderOnly
+# OneFormerPixelDecoderEncoderOnly：仅编码器的像素解码器骨干
 class OneFormerPixelDecoderEncoderOnly(nn.Module):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -1131,6 +1158,7 @@ class OneFormerPixelDecoderEncoderOnly(nn.Module):
         config: OneFormerConfig
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__()
 
@@ -1168,6 +1196,7 @@ class OneFormerPixelDecoderEncoderOnly(nn.Module):
         reference_points = reference_points[:, :, None] * valid_ratios[:, None]
         return reference_points
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds=None,
@@ -1244,7 +1273,9 @@ class OneFormerPixelDecoderEncoderOnly(nn.Module):
 
 
 # Modified from from transformers.models.mask2former.modeling_mask2former.Mask2FormerPixelDecoder with Mask2->One
+# OneFormerPixelDecoder：OneFormer 像素解码器（FPN+可变形编码器）
 class OneFormerPixelDecoder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig, feature_channels):
         super().__init__()
 
@@ -1343,6 +1374,7 @@ class OneFormerPixelDecoder(nn.Module):
         valid_ratio = torch.stack([valid_ratio_width, valid_ratio_height], -1)
         return valid_ratio
 
+    # forward：模块前向计算
     def forward(
         self,
         features,
@@ -1446,7 +1478,9 @@ class OneFormerPixelDecoder(nn.Module):
 
 
 # Modified from from transformers.models.mask2former.modeling_mask2former.Mask2FormerPixelLevelModule with Mask2->One
+# OneFormerPixelLevelModule：像素级 mask 特征生成模块
 class OneFormerPixelLevelModule(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         """
         Pixel Level Module proposed in [Masked-attention Mask Transformer for Universal Image
@@ -1461,6 +1495,7 @@ class OneFormerPixelLevelModule(nn.Module):
         self.encoder = load_backbone(config)
         self.decoder = OneFormerPixelDecoder(config, feature_channels=self.encoder.channels)
 
+    # forward：模块前向计算
     def forward(self, pixel_values: Tensor, output_hidden_states: bool = False) -> OneFormerPixelLevelModuleOutput:
         features: list[Tensor] = self.encoder(pixel_values).feature_maps
         decoder_output: OneFormerPixelDecoderOutput = self.decoder(features, output_hidden_states=output_hidden_states)
@@ -1472,12 +1507,14 @@ class OneFormerPixelLevelModule(nn.Module):
 
 
 # Modified from transformers.models.detr.modeling_detr.DetrAttention with Detr->OneFormer
+# OneFormerAttention：OneFormer 多头自注意力（含 task token）
 class OneFormerAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper. Here, we add position embeddings to the queries and
     keys (as explained in the DETR paper).
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -1509,6 +1546,7 @@ class OneFormerAttention(nn.Module):
     def with_pos_embed(self, tensor: torch.Tensor, position_embeddings: Tensor | None):
         return tensor if position_embeddings is None else tensor + position_embeddings
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1608,7 +1646,9 @@ class OneFormerAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# OneFormerTransformerDecoderSelfAttentionLayer：解码器自注意力子层
 class OneFormerTransformerDecoderSelfAttentionLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, embed_dim, num_heads, dropout=0.0, activation="relu", normalize_before=False, layer_norm_eps=1e-05
     ):
@@ -1654,6 +1694,7 @@ class OneFormerTransformerDecoderSelfAttentionLayer(nn.Module):
 
         return output, attention_weights
 
+    # forward：模块前向计算
     def forward(
         self,
         output,
@@ -1666,7 +1707,9 @@ class OneFormerTransformerDecoderSelfAttentionLayer(nn.Module):
         return self.forward_post(output, output_mask, output_key_padding_mask, query_pos)
 
 
+# OneFormerTransformerDecoderCrossAttentionLayer：解码器交叉注意力子层
 class OneFormerTransformerDecoderCrossAttentionLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, embed_dim, num_heads, dropout=0.0, activation="relu", normalize_before=False, layer_norm_eps=1e-05
     ):
@@ -1724,6 +1767,7 @@ class OneFormerTransformerDecoderCrossAttentionLayer(nn.Module):
 
         return output, attention_weights
 
+    # forward：模块前向计算
     def forward(
         self,
         output,
@@ -1738,7 +1782,9 @@ class OneFormerTransformerDecoderCrossAttentionLayer(nn.Module):
         return self.forward_post(output, memory, memory_mask, memory_key_padding_mask, pos, query_pos)
 
 
+# OneFormerTransformerDecoderFFNLayer：解码器前馈网络子层
 class OneFormerTransformerDecoderFFNLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         d_model,
@@ -1774,13 +1820,16 @@ class OneFormerTransformerDecoderFFNLayer(nn.Module):
         output = output + self.dropout(output2)
         return output
 
+    # forward：模块前向计算
     def forward(self, output):
         if self.normalize_before:
             return self.forward_pre(output)
         return self.forward_post(output)
 
 
+# OneFormerMLPPredictionHead：mask/class 预测 MLP 头
 class OneFormerMLPPredictionHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int = 3):
         """
         A classic Multi Layer Perceptron (MLP).
@@ -1807,12 +1856,15 @@ class OneFormerMLPPredictionHead(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
+    # forward：模块前向计算
     def forward(self, input: Tensor) -> Tensor:
         return self.layers(input)
 
 
 # refactored from original implementation
+# OneFormerTransformerDecoderLayer：OneFormer 解码器单层
 class OneFormerTransformerDecoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__()
         self.embed_dim = config.hidden_dim
@@ -1842,6 +1894,7 @@ class OneFormerTransformerDecoderLayer(nn.Module):
             layer_norm_eps=config.layer_norm_eps,
         )
 
+    # forward：模块前向计算
     def forward(
         self,
         index: int,
@@ -1899,7 +1952,9 @@ class OneFormerTransformerDecoderLayer(nn.Module):
         return outputs
 
 
+# OneFormerTransformerDecoderQueryTransformerDecoder：query transformer 解码器堆叠
 class OneFormerTransformerDecoderQueryTransformerDecoder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, decoder_layer, num_layers, norm=None, return_intermediate=False):
         super().__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
@@ -1907,6 +1962,7 @@ class OneFormerTransformerDecoderQueryTransformerDecoder(nn.Module):
         self.norm = norm
         self.return_intermediate = return_intermediate
 
+    # forward：模块前向计算
     def forward(
         self,
         output,
@@ -1946,7 +2002,9 @@ class OneFormerTransformerDecoderQueryTransformerDecoder(nn.Module):
         return output.unsqueeze(0)
 
 
+# OneFormerTransformerDecoderQueryTransformerDecoderLayer：query transformer 解码器单层
 class OneFormerTransformerDecoderQueryTransformerDecoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         d_model,
@@ -2040,6 +2098,7 @@ class OneFormerTransformerDecoderQueryTransformerDecoderLayer(nn.Module):
         output = output + self.dropout3(output2)
         return output
 
+    # forward：模块前向计算
     def forward(
         self,
         output,
@@ -2074,7 +2133,9 @@ class OneFormerTransformerDecoderQueryTransformerDecoderLayer(nn.Module):
         )
 
 
+# OneFormerTransformerDecoderQueryTransformer：object query 预变换 transformer
 class OneFormerTransformerDecoderQueryTransformer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         d_model=512,
@@ -2103,6 +2164,7 @@ class OneFormerTransformerDecoderQueryTransformer(nn.Module):
         self.d_model = d_model
         self.nhead = nhead
 
+    # forward：模块前向计算
     def forward(self, src, mask, query_embed, pos_embed, task_token=None):
         batch_size = src.shape[0]
         # flatten NxCxHxW to HWxNxC
@@ -2121,11 +2183,13 @@ class OneFormerTransformerDecoderQueryTransformer(nn.Module):
         return queries.transpose(1, 2)
 
 
+# OneFormerTransformerDecoder：OneFormer 主 transformer 解码器
 class OneFormerTransformerDecoder(nn.Module):
     """
     Transformer decoder
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels: int, config: OneFormerConfig):
         super().__init__()
         self.config = config
@@ -2165,6 +2229,7 @@ class OneFormerTransformerDecoder(nn.Module):
             3,
         )
 
+    # forward：模块前向计算
     def forward(
         self,
         task_token=None,
@@ -2277,11 +2342,13 @@ class OneFormerTransformerDecoder(nn.Module):
         return tuple(aux_list)
 
 
+# OneFormerTransformerModule：像素解码器+transformer 解码器组合模块
 class OneFormerTransformerModule(nn.Module):
     """
     The OneFormer's transformer module.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_features: int, config: OneFormerConfig):
         super().__init__()
         hidden_dim = config.hidden_dim
@@ -2299,6 +2366,7 @@ class OneFormerTransformerModule(nn.Module):
         self.decoder = OneFormerTransformerDecoder(in_channels=in_features, config=config)
         self.level_embed = nn.Embedding(self.num_feature_levels, hidden_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         multi_scale_features: list[Tensor],
@@ -2353,12 +2421,14 @@ class OneFormerTransformerModule(nn.Module):
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.MaskFormerSinePositionEmbedding with Mask->One
+# OneFormerSinePositionEmbedding：正弦位置编码（mask/坐标）
 class OneFormerSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
     need paper, generalized to work on images.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         num_position_features: int = 64,
@@ -2418,6 +2488,7 @@ class OneFormerSinePositionEmbedding(nn.Module):
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 
+    # forward：模块前向计算
     def forward(
         self,
         shape: torch.Size,
@@ -2431,7 +2502,9 @@ class OneFormerSinePositionEmbedding(nn.Module):
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.PredictionBlock
+# PredictionBlock：预测头前的线性+LayerNorm 块
 class PredictionBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_dim: int, out_dim: int, activation: nn.Module) -> None:
         super().__init__()
         self.layers = [nn.Linear(in_dim, out_dim), activation]
@@ -2439,6 +2512,7 @@ class PredictionBlock(nn.Module):
         for i, layer in enumerate(self.layers):
             self.add_module(str(i), layer)
 
+    # forward：模块前向计算
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = input
         for layer in self.layers:
@@ -2446,7 +2520,9 @@ class PredictionBlock(nn.Module):
         return hidden_state
 
 
+# OneFormerTextMapperAttention：文本 mapper 交叉注意力
 class OneFormerTextMapperAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0.0, proj_drop=0.0):
         super().__init__()
         self.num_heads = num_heads
@@ -2462,6 +2538,7 @@ class OneFormerTextMapperAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
+    # forward：模块前向计算
     def forward(self, q, k, v):
         batch_size, q_sequence_length, num_channels = q.shape
         if not k.shape == v.shape:
@@ -2482,7 +2559,9 @@ class OneFormerTextMapperAttention(nn.Module):
         return output
 
 
+# OneFormerTextTransformerDecoderLayer：文本 transformer 解码器层
 class OneFormerTextTransformerDecoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         d_model,
@@ -2503,6 +2582,7 @@ class OneFormerTextTransformerDecoderLayer(nn.Module):
             nn.Linear(d_model, d_model * 4), nn.GELU(), nn.Dropout(dropout), nn.Linear(d_model * 4, d_model)
         )
 
+    # forward：模块前向计算
     def forward(self, hidden_state, mem):
         q = k = v = self.norm1(hidden_state)
         hidden_state = hidden_state + self.self_attn(q, k, v)
@@ -2512,7 +2592,9 @@ class OneFormerTextTransformerDecoderLayer(nn.Module):
         return hidden_state
 
 
+# OneFormerTextContextDecoder：文本上下文 query 解码器
 class OneFormerTextContextDecoder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         transformer_width=256,
@@ -2547,6 +2629,7 @@ class OneFormerTextContextDecoder(nn.Module):
             nn.LayerNorm(transformer_width, eps=layer_norm_eps), nn.Linear(transformer_width, visual_dim)
         )
 
+    # forward：模块前向计算
     def forward(self, text, visual):
         visual = self.memory_proj(visual)
         hidden_state = self.text_proj(text)
@@ -2557,7 +2640,9 @@ class OneFormerTextContextDecoder(nn.Module):
         return self.out_proj(hidden_state)
 
 
+# OneFormerTextMLP：文本 encoder MLP 子层
 class OneFormerTextMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         hidden_size: int | None = None,
@@ -2569,6 +2654,7 @@ class OneFormerTextMLP(nn.Module):
         self.fc1 = nn.Linear(hidden_size, intermediate_size)
         self.fc2 = nn.Linear(intermediate_size, output_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -2576,7 +2662,9 @@ class OneFormerTextMLP(nn.Module):
         return hidden_states
 
 
+# OneFormerTextTransformerLayer：文本 transformer 编码层
 class OneFormerTextTransformerLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, width: int, heads: int, attn_mask: torch.Tensor, layer_norm_eps=1e-05):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(width, heads)
@@ -2585,6 +2673,7 @@ class OneFormerTextTransformerLayer(GradientCheckpointingLayer):
         self.layer_norm2 = nn.LayerNorm(width, eps=layer_norm_eps)
         self.attn_mask = attn_mask
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2610,7 +2699,9 @@ class OneFormerTextTransformerLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# OneFormerTextTransformer：文本 transformer 编码器堆叠
 class OneFormerTextTransformer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         width: int,
@@ -2628,13 +2719,16 @@ class OneFormerTextTransformer(nn.Module):
         )
         self.use_checkpoint = use_checkpoint
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor):
         for layer in self.layers:
             hidden_states = layer(hidden_states)
         return hidden_states
 
 
+# OneFormerTextEncoder：CLIP 风格文本编码器
 class OneFormerTextEncoder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         context_length: int,
@@ -2669,6 +2763,7 @@ class OneFormerTextEncoder(nn.Module):
         mask.triu_(1)  # zero out the lower diagonal
         return mask
 
+    # forward：模块前向计算
     def forward(self, text):
         hidden_state = self.token_embedding(text)
         hidden_state = hidden_state + self.positional_embedding
@@ -2681,7 +2776,9 @@ class OneFormerTextEncoder(nn.Module):
         return hidden_state
 
 
+# OneFormerTextMapper：将文本 token 映射为 task/class query
 class OneFormerTextMapper(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__()
         self.text_encoder = OneFormerTextEncoder(
@@ -2706,6 +2803,7 @@ class OneFormerTextMapper(nn.Module):
         else:
             self.prompt_ctx = None
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs: Tensor,
@@ -2742,7 +2840,9 @@ class OneFormerTextMapper(nn.Module):
         return text_queries
 
 
+# OneFormerTaskModel：任务 token 嵌入与归一化
 class OneFormerTaskModel(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__()
         self.task_mlp = OneFormerMLPPredictionHead(
@@ -2752,12 +2852,14 @@ class OneFormerTaskModel(nn.Module):
             2,
         )
 
+    # forward：模块前向计算
     def forward(self, inputs: Tensor) -> Tensor:
         task_tokens = self.task_mlp(inputs)
         return task_tokens
 
 
 @auto_docstring
+# OneFormerPreTrainedModel：OneFormer 预训练基类与权重初始化
 class OneFormerPreTrainedModel(PreTrainedModel):
     config: OneFormerConfig
     base_model_prefix = "model"
@@ -2765,6 +2867,7 @@ class OneFormerPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module: nn.Module):
         super()._init_weights(module)
         xavier_std = self.config.init_xavier_std
@@ -2842,9 +2945,11 @@ class OneFormerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# OneFormerModel：OneFormer 通用分割主干（backbone+pixel+transformer）
 class OneFormerModel(OneFormerPreTrainedModel):
     main_input_name = ["pixel_values", "task_inputs"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__(config)
         self.pixel_level_module = OneFormerPixelLevelModule(config)
@@ -2860,6 +2965,7 @@ class OneFormerModel(OneFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: Tensor,
@@ -2978,9 +3084,11 @@ class OneFormerModel(OneFormerPreTrainedModel):
     OneFormer Model for instance, semantic and panoptic image segmentation.
     """
 )
+# OneFormerForUniversalSegmentation：OneFormer 语义/实例/全景统一分割头
 class OneFormerForUniversalSegmentation(OneFormerPreTrainedModel):
     main_input_name = ["pixel_values", "task_inputs"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OneFormerConfig):
         super().__init__(config)
         self.model = OneFormerModel(config)
@@ -3046,6 +3154,7 @@ class OneFormerForUniversalSegmentation(OneFormerPreTrainedModel):
         return sum(loss_dict.values())
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: Tensor,

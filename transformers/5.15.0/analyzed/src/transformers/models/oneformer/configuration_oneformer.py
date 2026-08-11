@@ -13,6 +13,8 @@
 # limitations under the License.
 """OneFormer model configuration"""
 
+# OneFormer 配置：任务条件通用分割（语义/实例/全景）Transformer 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
@@ -21,8 +23,10 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# OneFormerConfig：shi-labs/oneformer_ade20k_swin_tiny 通用分割 Transformer 超参
 @auto_docstring(checkpoint="shi-labs/oneformer_ade20k_swin_tiny")
 @strict
+# OneFormerConfig：shi-labs/oneformer_ade20k_swin_tiny 通用分割 Transformer 超参
 class OneFormerConfig(PreTrainedConfig):
     r"""
     ignore_value (`int`, *optional*, defaults to 255):

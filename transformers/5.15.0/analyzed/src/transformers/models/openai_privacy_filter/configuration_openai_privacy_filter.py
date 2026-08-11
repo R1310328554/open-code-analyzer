@@ -23,6 +23,8 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Privacy Filter 配置：MoE 滑动窗口编码器隐私实体 NER 超参
+
 OPENAI_PRIVACY_FILTER_SPAN_LABELS = (
     "O",
     "account_number",
@@ -43,8 +45,10 @@ OPENAI_PRIVACY_FILTER_NER_LABELS = ("O",) + tuple(
 )
 
 
+# OpenAIPrivacyFilterConfig：openai/privacy-filter 隐私实体 MoE 编码器超参
 @auto_docstring(checkpoint="openai/privacy-filter")
 @strict
+# OpenAIPrivacyFilterConfig：openai/privacy-filter 隐私实体 MoE 编码器超参
 class OpenAIPrivacyFilterConfig(PreTrainedConfig):
     model_type = "openai_privacy_filter"
     attribute_map = {
