@@ -44,8 +44,11 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_granite4_vision 由 modular_granite4_vision.py 自动生成
 from .configuration_granite4_vision import Granite4VisionConfig, Granite4VisionTextConfig
 
+
+# Granite4-Vision 建模：Window Q-Former 投影 + DeepStack 视觉注入多模态 VLM
 
 @auto_docstring(
     custom_intro="""
@@ -53,6 +56,7 @@ from .configuration_granite4_vision import Granite4VisionConfig, Granite4VisionT
     """
 )
 @dataclass
+# Granite4VisionModelOutputWithPast：Granite4-Vision 多模态主干输出 dataclass
 class Granite4VisionModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     deepstack_features (`list[tuple[int, list[torch.Tensor]]]`, *optional*):
@@ -72,6 +76,7 @@ class Granite4VisionModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Granite4VisionCausalLMOutputWithPast：Granite4-Vision 因果 LM 输出 dataclass
 class Granite4VisionCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -100,6 +105,7 @@ class Granite4VisionCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# Granite4VisionImageFeaturesOutput：Granite4-Vision 视觉特征输出 dataclass
 class Granite4VisionImageFeaturesOutput(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`list[tuple[int, list[torch.Tensor]]]`, *optional*):
@@ -114,6 +120,7 @@ class Granite4VisionImageFeaturesOutput(BaseModelOutputWithPooling):
 # ── Downsampling helpers ─────────────────────────────────────────────────────
 
 
+# interpolate_downsample：双线性插值下采样视觉 patch 特征图
 def interpolate_downsample(image_features: torch.Tensor, orig_side: int, new_side: int) -> torch.Tensor:
     """Spatial downsampling via area interpolation."""
     batch, _, channels = image_features.size()
@@ -122,6 +129,7 @@ def interpolate_downsample(image_features: torch.Tensor, orig_side: int, new_sid
     return spatial.permute(0, 2, 3, 1).flatten(1, 2)
 
 
+# spatial_offset_downsample：空间偏移下采样视觉 patch 特征（四象限采样）
 def spatial_offset_downsample(image_features: torch.Tensor, orig_side: int, offset: int = 0) -> torch.Tensor:
     """Sample one position from each 2x2 block; offset selects which corner (0=TL,1=TR,2=BL,3=BR)."""
     offset_h, offset_w = [(0, 0), (0, 1), (1, 0), (1, 1)][offset]
@@ -132,6 +140,7 @@ def spatial_offset_downsample(image_features: torch.Tensor, orig_side: int, offs
     return grid[:, :, offset_h, :, offset_w, :].reshape(batch, -1, channels)
 
 
+# Granite4VisionWindowQFormerDownsampler：Window Q-Former 视觉 token 下采样投影器
 class Granite4VisionWindowQFormerDownsampler(nn.Module):
     """Window-based QFormer downsampler that processes image patches in windows."""
 
@@ -210,6 +219,7 @@ class Granite4VisionWindowQFormerDownsampler(nn.Module):
         return self.out_linear(out)
 
 
+# Granite4VisionTextRotaryEmbedding：Granite4-Vision 文本 RoPE 旋转位置编码
 class Granite4VisionTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Granite4VisionTextConfig, device=None):
@@ -269,6 +279,7 @@ class Granite4VisionTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -277,6 +288,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -302,6 +314,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -314,6 +327,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -340,6 +354,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Granite4VisionTextAttention：Granite4-Vision 文本多头自注意力（GQA + RoPE）
 class Granite4VisionTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -408,6 +423,7 @@ class Granite4VisionTextAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Granite4VisionTextRMSNorm：Granite4-Vision 文本 RMS LayerNorm
 class Granite4VisionTextRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -428,6 +444,7 @@ class Granite4VisionTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Granite4VisionTextMLP：Granite4-Vision 文本前馈 MLP
 class Granite4VisionTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -444,6 +461,7 @@ class Granite4VisionTextMLP(nn.Module):
         return down_proj
 
 
+# Granite4VisionTextDecoderLayer：Granite4-Vision 文本解码器单层
 class Granite4VisionTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Granite4VisionTextConfig, layer_idx: int):
         super().__init__()
@@ -509,6 +527,7 @@ class Granite4VisionTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Granite4VisionPreTrainedModel：Granite4-Vision 预训练基类与权重初始化
 class Granite4VisionPreTrainedModel(PreTrainedModel):
     config: Granite4VisionConfig
     base_model_prefix = "model"
@@ -541,6 +560,7 @@ class Granite4VisionPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Granite4VisionTextModel：Granite4-Vision 纯文本解码器主干
 class Granite4VisionTextModel(Granite4VisionPreTrainedModel):
     """Granite LLM backbone with deepstack feature injection support."""
 
@@ -636,6 +656,7 @@ class Granite4VisionTextModel(Granite4VisionPreTrainedModel):
         )
 
 
+# get_anyres_image_grid_shape：AnyRes 高分辨率图像网格形状计算
 def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     """
     Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
@@ -667,6 +688,7 @@ def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     return height // patch_size, width // patch_size
 
 
+# image_size_to_num_patches：按 grid pinpoints 计算图像 patch 数量
 def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     """
     Calculate the number of patches after the preprocessing for images of any resolution.
@@ -704,6 +726,7 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     return num_patches
 
 
+# unpad_image：去除 AnyRes padding 恢复原始宽高比视觉特征
 def unpad_image(tensor, original_size):
     """
     Unpads a PyTorch tensor of a padded and resized image.
@@ -748,6 +771,7 @@ def unpad_image(tensor, original_size):
     The Llava-Next model which consists of a vision backbone and a language model without language modeling head.
     """
 )
+# Granite4VisionModel：Granite4-Vision 视觉编码器+文本解码器联合多模态主干
 class Granite4VisionModel(Granite4VisionPreTrainedModel):
     base_model_prefix = "model"
     config_class = Granite4VisionConfig
@@ -1030,6 +1054,7 @@ class Granite4VisionModel(Granite4VisionPreTrainedModel):
     The LLAVA-NeXT model which consists of a vision backbone and a language model.
     """
 )
+# Granite4VisionForConditionalGeneration：Granite4-Vision 视觉-语言条件生成
 class Granite4VisionForConditionalGeneration(Granite4VisionPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

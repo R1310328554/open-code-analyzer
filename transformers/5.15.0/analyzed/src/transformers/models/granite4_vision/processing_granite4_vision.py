@@ -26,6 +26,9 @@ from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Granite4-Vision Processor：AnyRes 图像预处理与 chat template 组装
+
+# Granite4VisionProcessorKwargs：Granite4-Vision Processor 可选参数字典类型
 class Granite4VisionProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,6 +42,7 @@ class Granite4VisionProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Granite4VisionProcessor：封装 AnyRes 图像切分与多模态 chat template
 class Granite4VisionProcessor(ProcessorMixin):
     valid_processor_kwargs = Granite4VisionProcessorKwargs
 

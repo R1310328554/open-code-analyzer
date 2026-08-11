@@ -28,8 +28,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Granite4-Vision 配置：Granite 文本解码器 + SigLIP 视觉编码器多模态超参
+
+# Granite4VisionTextConfig：ibm-granite4_vision_text 文本解码器默认超参
 @auto_docstring(checkpoint="ibm-granite4_vision_text/granite4_vision_text-3.0-8b-base")
 @strict
+# Granite4VisionTextConfig：Granite4-Vision 文本解码器超参（继承 Granite）
 class Granite4VisionTextConfig(PreTrainedConfig):
     r"""
     ```python
@@ -96,8 +100,10 @@ class Granite4VisionTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Granite4VisionConfig：Granite4-Vision 视觉+文本多模态联合默认超参
 @auto_docstring(checkpoint="llava-hf/llava-v1.6-mistral-7b-hf")
 @strict
+# Granite4VisionConfig：Granite4-Vision 视觉+文本多模态联合配置
 class Granite4VisionConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`list`, *optional*):

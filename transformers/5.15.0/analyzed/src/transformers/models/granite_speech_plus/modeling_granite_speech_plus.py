@@ -42,13 +42,17 @@ from ...utils import (
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_granite_speech_plus 由 modular_granite_speech_plus.py 自动生成
 from .configuration_granite_speech_plus import GraniteSpeechPlusConfig, GraniteSpeechPlusEncoderConfig
 
 
 logger = logging.get_logger(__name__)
 
 
+# Granite Speech Plus 建模：增强 Conformer 编码器 + 文本解码器语音识别
+
 ### Projector
+# GraniteSpeechPlusEncoderProjector：Speech Plus 多层 Conformer 特征投影到 LLM 维度
 class GraniteSpeechPlusEncoderProjector(nn.Module):
     def __init__(self, config: GraniteSpeechPlusConfig):
         super().__init__()
@@ -84,6 +88,7 @@ class GraniteSpeechPlusEncoderProjector(nn.Module):
 
 
 @auto_docstring
+# GraniteSpeechPlusPreTrainedModel：Granite Speech Plus 预训练基类与权重初始化
 class GraniteSpeechPlusPreTrainedModel(PreTrainedModel):
     config: GraniteSpeechPlusConfig
     input_modalities = ("audio", "text")
@@ -113,6 +118,7 @@ class GraniteSpeechPlusPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# GraniteSpeechPlusModelOutputWithPast：Granite Speech Plus 多模态主干输出 dataclass
 class GraniteSpeechPlusModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -128,6 +134,7 @@ class GraniteSpeechPlusModelOutputWithPast(BaseModelOutputWithPast):
     without a language modeling head.
     """
 )
+# GraniteSpeechPlusModel：Granite Speech Plus 音频编码器+文本解码器联合主干
 class GraniteSpeechPlusModel(GraniteSpeechPlusPreTrainedModel):
     def __init__(self, config: GraniteSpeechPlusConfig):
         super().__init__(config)
@@ -269,6 +276,7 @@ class GraniteSpeechPlusModel(GraniteSpeechPlusPreTrainedModel):
 
 
 ### Encoder - conformer is adapted from: https://github.com/lucidrains/conformer.git
+# GraniteSpeechPlusConformerFeedForward：Speech Plus Conformer 前馈子层
 class GraniteSpeechPlusConformerFeedForward(nn.Module):
     """Feedforward module for conformer encoder blocks."""
 
@@ -289,6 +297,7 @@ class GraniteSpeechPlusConformerFeedForward(nn.Module):
         return hidden_states
 
 
+# GraniteSpeechPlusConformerAttention：Speech Plus Conformer 相对位置自注意力
 class GraniteSpeechPlusConformerAttention(nn.Module):
     """Attention for conformer blocks using Shaw's relative positional embeddings.
     See the following [paper](https://huggingface.co/papers/1803.02155) for more details.
@@ -356,6 +365,7 @@ class GraniteSpeechPlusConformerAttention(nn.Module):
         return self.dropout(out)
 
 
+# GraniteSpeechPlusConformerDepthWiseConv1d：Speech Plus 深度可分离 1D 卷积
 class GraniteSpeechPlusConformerDepthWiseConv1d(nn.Module):
     """Wrapper for padded 1D pointwise convolution."""
 
@@ -373,6 +383,7 @@ class GraniteSpeechPlusConformerDepthWiseConv1d(nn.Module):
         return self.conv(hidden_states)
 
 
+# GraniteSpeechPlusConformerConvModule：Speech Plus Conformer 卷积模块
 class GraniteSpeechPlusConformerConvModule(nn.Module):
     """Conformer conv module consisting of several 1D/depthwise 1D convolutional layers."""
 
@@ -404,6 +415,7 @@ class GraniteSpeechPlusConformerConvModule(nn.Module):
         return hidden_states
 
 
+# GraniteSpeechPlusConformerBlock：Speech Plus Conformer 编码器单层
 class GraniteSpeechPlusConformerBlock(nn.Module):
     """Conformer block, consisting largely of linear layers, attention, and convolutional layers."""
 
@@ -424,6 +436,7 @@ class GraniteSpeechPlusConformerBlock(nn.Module):
         return hidden_states
 
 
+# GraniteSpeechPlusCTCEncoder：Speech Plus CTC Conformer 音频编码器（多层拼接输出）
 class GraniteSpeechPlusCTCEncoder(GraniteSpeechPlusPreTrainedModel):
     config: GraniteSpeechPlusEncoderConfig
     input_modalities = "audio"
@@ -485,6 +498,7 @@ class GraniteSpeechPlusCTCEncoder(GraniteSpeechPlusPreTrainedModel):
     """
 )
 @dataclass
+# GraniteSpeechPlusCausalLMOutputWithPast：Granite Speech Plus 因果 LM 输出 dataclass
 class GraniteSpeechPlusCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -514,6 +528,7 @@ class GraniteSpeechPlusCausalLMOutputWithPast(ModelOutput):
     encoder's final hidden states with an arbitrary subset of its intermediate hidden states.
     """
 )
+# GraniteSpeechPlusForConditionalGeneration：Granite Speech Plus 语音识别条件生成
 class GraniteSpeechPlusForConditionalGeneration(GraniteSpeechPlusPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

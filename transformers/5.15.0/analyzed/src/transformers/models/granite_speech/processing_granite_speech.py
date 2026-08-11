@@ -20,6 +20,9 @@ from ...tokenization_python import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Granite Speech Processor：Mel 频谱特征提取与分词器联合 prompt 组装
+
+# GraniteSpeechProcessorKwargs：Granite Speech Processor 可选参数字典类型
 class GraniteSpeechProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -32,6 +35,7 @@ class GraniteSpeechProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# GraniteSpeechProcessor：封装音频 Mel 频谱与 chat template 组装
 class GraniteSpeechProcessor(ProcessorMixin):
     valid_processor_kwargs = GraniteSpeechProcessorKwargs
 

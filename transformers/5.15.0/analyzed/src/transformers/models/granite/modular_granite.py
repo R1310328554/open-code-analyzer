@@ -36,6 +36,9 @@ from .configuration_granite import GraniteConfig
 logger = logging.get_logger(__name__)
 
 
+# Granite modular 源：基于 Llama 复用解码器并注入 Granite 缩放系数
+
+# GraniteAttention：IBM Granite 多头自注意力（缩放 attention_multiplier）
 class GraniteAttention(LlamaAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -44,6 +47,7 @@ class GraniteAttention(LlamaAttention):
         self.scaling = config.attention_multiplier
 
 
+# GraniteDecoderLayer：Granite 解码器单层（残差缩放 residual_multiplier）
 class GraniteDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: GraniteConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -103,6 +107,7 @@ class GraniteDecoderLayer(LlamaDecoderLayer):
         return hidden_states
 
 
+# GranitePreTrainedModel：Granite 预训练基类与权重初始化
 class GranitePreTrainedModel(LlamaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": GraniteDecoderLayer,
@@ -110,6 +115,7 @@ class GranitePreTrainedModel(LlamaPreTrainedModel):
     }
 
 
+# GraniteModel：Granite 纯文本解码器主干
 class GraniteModel(LlamaModel):
     def __init__(self, config: GraniteConfig):
         super().__init__(config)
@@ -177,6 +183,7 @@ class GraniteModel(LlamaModel):
         )
 
 
+# GraniteForCausalLM：Granite 因果语言建模与文本生成
 class GraniteForCausalLM(LlamaForCausalLM):
     @can_return_tuple
     @auto_docstring

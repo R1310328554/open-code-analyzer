@@ -42,12 +42,15 @@ from .configuration_granite_speech import GraniteSpeechConfig, GraniteSpeechEnco
 logger = logging.get_logger(__name__)
 
 
+# Granite Speech 建模：Conformer CTC 音频编码器 + 文本解码器语音识别
+
 @auto_docstring(
     custom_intro="""
     Base class for Granite Speech outputs, with hidden states and attentions.
     """
 )
 @dataclass
+# GraniteSpeechModelOutputWithPast：Granite Speech 多模态主干输出 dataclass
 class GraniteSpeechModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -63,6 +66,7 @@ class GraniteSpeechModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# GraniteSpeechCausalLMOutputWithPast：Granite Speech 因果 LM 输出 dataclass
 class GraniteSpeechCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -87,6 +91,7 @@ class GraniteSpeechCausalLMOutputWithPast(ModelOutput):
 
 
 ### Projector
+# GraniteSpeechEncoderProjector：音频 Conformer 特征到 LLM 隐藏维投影层
 class GraniteSpeechEncoderProjector(nn.Module):
     def __init__(self, config: GraniteSpeechConfig):
         super().__init__()
@@ -122,6 +127,7 @@ class GraniteSpeechEncoderProjector(nn.Module):
 
 
 ### Encoder - conformer is adapted from: https://github.com/lucidrains/conformer.git
+# GraniteSpeechConformerFeedForward：Conformer 前馈子层（扩展+激活+投影）
 class GraniteSpeechConformerFeedForward(nn.Module):
     """Feedforward module for conformer encoder blocks."""
 
@@ -142,6 +148,7 @@ class GraniteSpeechConformerFeedForward(nn.Module):
         return hidden_states
 
 
+# GraniteSpeechConformerAttention：Conformer 相对位置自注意力
 class GraniteSpeechConformerAttention(nn.Module):
     """Attention for conformer blocks using Shaw's relative positional embeddings.
     See the following [paper](https://huggingface.co/papers/1803.02155) for more details.
@@ -209,6 +216,7 @@ class GraniteSpeechConformerAttention(nn.Module):
         return self.dropout(out)
 
 
+# GraniteSpeechConformerDepthWiseConv1d：Conformer 深度可分离 1D 卷积
 class GraniteSpeechConformerDepthWiseConv1d(nn.Module):
     """Wrapper for padded 1D pointwise convolution."""
 
@@ -226,6 +234,7 @@ class GraniteSpeechConformerDepthWiseConv1d(nn.Module):
         return self.conv(hidden_states)
 
 
+# GraniteSpeechConformerConvModule：Conformer 卷积模块（GLU + 深度卷积）
 class GraniteSpeechConformerConvModule(nn.Module):
     """Conformer conv module consisting of several 1D/depthwise 1D convolutional layers."""
 
@@ -257,6 +266,7 @@ class GraniteSpeechConformerConvModule(nn.Module):
         return hidden_states
 
 
+# GraniteSpeechConformerBlock：Conformer 编码器单层（FFN+Attn+Conv）
 class GraniteSpeechConformerBlock(nn.Module):
     """Conformer block, consisting largely of linear layers, attention, and convolutional layers."""
 
@@ -278,6 +288,7 @@ class GraniteSpeechConformerBlock(nn.Module):
 
 
 @auto_docstring
+# GraniteSpeechPreTrainedModel：Granite Speech 预训练基类与权重初始化
 class GraniteSpeechPreTrainedModel(PreTrainedModel):
     config: GraniteSpeechConfig
     input_modalities = ("audio", "text")
@@ -301,6 +312,7 @@ class GraniteSpeechPreTrainedModel(PreTrainedModel):
             init.copy_(module.attention_dists, attention_dists)
 
 
+# GraniteSpeechCTCEncoder：Granite Speech CTC Conformer 音频编码器
 class GraniteSpeechCTCEncoder(GraniteSpeechPreTrainedModel):
     config: GraniteSpeechEncoderConfig
     input_modalities = "audio"
@@ -348,6 +360,7 @@ class GraniteSpeechCTCEncoder(GraniteSpeechPreTrainedModel):
     without a language modeling head.
     """
 )
+# GraniteSpeechModel：Granite Speech 音频编码器+文本解码器联合主干
 class GraniteSpeechModel(GraniteSpeechPreTrainedModel):
     def __init__(self, config: GraniteSpeechConfig):
         super().__init__(config)
@@ -493,6 +506,7 @@ class GraniteSpeechModel(GraniteSpeechPreTrainedModel):
     The Granite Speech model, which consists of an audio encoder, projector, and language model.
     """
 )
+# GraniteSpeechForConditionalGeneration：Granite Speech 语音识别条件生成
 class GraniteSpeechForConditionalGeneration(GraniteSpeechPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

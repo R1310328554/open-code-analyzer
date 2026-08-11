@@ -27,6 +27,8 @@ from ...utils.import_utils import requires_backends
 
 logger = logging.get_logger(__name__)
 
+
+# Granite Speech 特征提取：Mel 频谱计算与窗口化音频预处理
 if is_torch_available():
     import torch
 
@@ -34,6 +36,7 @@ if is_torchaudio_available():
     import torchaudio
 
 
+# GraniteSpeechFeatureExtractor：80 维 Mel 频谱 + 滑动窗口音频特征
 class GraniteSpeechFeatureExtractor(SequenceFeatureExtractor):
     model_input_names = ["input_features"]
 

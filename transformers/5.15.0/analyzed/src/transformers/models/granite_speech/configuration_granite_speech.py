@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Granite Speech 配置：Conformer 音频编码器 + 文本解码器联合超参
+
+# GraniteSpeechEncoderConfig：ibm-granite-speech-3.3 Conformer 音频编码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-3.3-2b")
 @strict
+# GraniteSpeechEncoderConfig：Granite Speech Conformer 音频编码器超参
 class GraniteSpeechEncoderConfig(PreTrainedConfig):
     r"""
     feedforward_mult (`int`, *optional*, defaults to 4):
@@ -79,8 +83,10 @@ class GraniteSpeechEncoderConfig(PreTrainedConfig):
             self.dim_head = self.hidden_dim // self.num_heads
 
 
+# GraniteSpeechConfig：ibm-granite-speech-3.3 音频+文本联合默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-3.3-2b")
 @strict
+# GraniteSpeechConfig：Granite Speech 音频编码器+文本解码器联合配置
 class GraniteSpeechConfig(PreTrainedConfig):
     r"""
     projector_config (`Union[AutoConfig, dict]`, *optional*, defaults to `Blip2QFormerConfig`):

@@ -46,9 +46,12 @@ from ..llava_next.modeling_llava_next import (
 from ..llava_next.processing_llava_next import LlavaNextProcessor
 
 
+# Granite4-Vision modular 源：基于 LlavaNext/Granite 组合视觉-语言多模态实现
+
 # ── Output classes ──────────────────────────────────────────────────────────
 
 
+# Granite4VisionModelOutputWithPast：Granite4-Vision 多模态主干输出 dataclass
 class Granite4VisionModelOutputWithPast(LlavaNextModelOutputWithPast):
     r"""
     deepstack_features (`list[tuple[int, list[torch.Tensor]]]`, *optional*):
@@ -60,6 +63,7 @@ class Granite4VisionModelOutputWithPast(LlavaNextModelOutputWithPast):
     deepstack_features: list | None = None
 
 
+# Granite4VisionCausalLMOutputWithPast：Granite4-Vision 因果 LM 输出 dataclass
 class Granite4VisionCausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -81,6 +85,7 @@ class Granite4VisionCausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     """
 )
 @dataclass
+# Granite4VisionImageFeaturesOutput：Granite4-Vision 视觉特征输出 dataclass
 class Granite4VisionImageFeaturesOutput(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`list[tuple[int, list[torch.Tensor]]]`, *optional*):
@@ -95,11 +100,13 @@ class Granite4VisionImageFeaturesOutput(BaseModelOutputWithPooling):
 # ── Config ──────────────────────────────────────────────────────────────────
 
 
+# Granite4VisionTextConfig：Granite4-Vision 文本解码器超参（继承 Granite）
 class Granite4VisionTextConfig(GraniteConfig):
     model_type = "granite4_vision_text"
     base_config_key = "text_config"
 
 
+# Granite4VisionConfig：Granite4-Vision 视觉+文本多模态联合配置
 class Granite4VisionConfig(LlavaNextConfig):
     r"""
     image_grid_pinpoints (`list`, *optional*):
@@ -181,6 +188,7 @@ class Granite4VisionConfig(LlavaNextConfig):
 # ── Processor ───────────────────────────────────────────────────────────────
 
 
+# Granite4VisionProcessor：Granite4-Vision 图像预处理与分词器联合输入管线
 class Granite4VisionProcessor(LlavaNextProcessor):
     def __init__(
         self,
@@ -256,6 +264,7 @@ class Granite4VisionProcessor(LlavaNextProcessor):
 # ── Downsampling helpers ─────────────────────────────────────────────────────
 
 
+# interpolate_downsample：双线性插值下采样视觉 patch 特征图
 def interpolate_downsample(image_features: torch.Tensor, orig_side: int, new_side: int) -> torch.Tensor:
     """Spatial downsampling via area interpolation."""
     batch, _, channels = image_features.size()
@@ -264,6 +273,7 @@ def interpolate_downsample(image_features: torch.Tensor, orig_side: int, new_sid
     return spatial.permute(0, 2, 3, 1).flatten(1, 2)
 
 
+# spatial_offset_downsample：空间偏移下采样视觉 patch 特征（四象限采样）
 def spatial_offset_downsample(image_features: torch.Tensor, orig_side: int, offset: int = 0) -> torch.Tensor:
     """Sample one position from each 2x2 block; offset selects which corner (0=TL,1=TR,2=BL,3=BR)."""
     offset_h, offset_w = [(0, 0), (0, 1), (1, 0), (1, 1)][offset]
@@ -274,6 +284,7 @@ def spatial_offset_downsample(image_features: torch.Tensor, orig_side: int, offs
     return grid[:, :, offset_h, :, offset_w, :].reshape(batch, -1, channels)
 
 
+# Granite4VisionWindowQFormerDownsampler：Window Q-Former 视觉 token 下采样投影器
 class Granite4VisionWindowQFormerDownsampler(nn.Module):
     """Window-based QFormer downsampler that processes image patches in windows."""
 
@@ -355,18 +366,22 @@ class Granite4VisionWindowQFormerDownsampler(nn.Module):
 # ── Model ───────────────────────────────────────────────────────────────────
 
 
+# Granite4VisionTextRotaryEmbedding：Granite4-Vision 文本 RoPE 旋转位置编码
 class Granite4VisionTextRotaryEmbedding(GraniteRotaryEmbedding):
     pass
 
 
+# Granite4VisionTextAttention：Granite4-Vision 文本多头自注意力（GQA + RoPE）
 class Granite4VisionTextAttention(GraniteAttention):
     pass
 
 
+# Granite4VisionTextDecoderLayer：Granite4-Vision 文本解码器单层
 class Granite4VisionTextDecoderLayer(GraniteDecoderLayer):
     pass
 
 
+# Granite4VisionPreTrainedModel：Granite4-Vision 预训练基类与权重初始化
 class Granite4VisionPreTrainedModel(LlavaNextPreTrainedModel):
     _no_split_modules = ["Granite4VisionTextDecoderLayer", "Granite4VisionWindowQFormerDownsampler"]
     _can_record_outputs = {
@@ -382,6 +397,7 @@ class Granite4VisionPreTrainedModel(LlavaNextPreTrainedModel):
             init.normal_(module.image_positions, mean=0.0, std=embed_std)
 
 
+# Granite4VisionTextModel：Granite4-Vision 纯文本解码器主干
 class Granite4VisionTextModel(Granite4VisionPreTrainedModel, GraniteModel):
     """Granite LLM backbone with deepstack feature injection support."""
 
@@ -460,6 +476,7 @@ class Granite4VisionTextModel(Granite4VisionPreTrainedModel, GraniteModel):
         )
 
 
+# Granite4VisionModel：Granite4-Vision 视觉编码器+文本解码器联合多模态主干
 class Granite4VisionModel(LlavaNextModel):
     config_class = Granite4VisionConfig
 
@@ -704,6 +721,7 @@ class Granite4VisionModel(LlavaNextModel):
 # ── ForConditionalGeneration ────────────────────────────────────────────────
 
 
+# Granite4VisionForConditionalGeneration：Granite4-Vision 视觉-语言条件生成
 class Granite4VisionForConditionalGeneration(LlavaNextForConditionalGeneration):
     def forward(
         self,

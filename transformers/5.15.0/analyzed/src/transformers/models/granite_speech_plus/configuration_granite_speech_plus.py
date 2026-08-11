@@ -21,11 +21,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# configuration_granite_speech_plus 由 modular_granite_speech_plus.py 自动生成
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Granite Speech Plus 配置：多层 Conformer 拼接 + 文本解码器联合超参
+
+# GraniteSpeechPlusEncoderConfig：ibm-granite-speech-4.1-plus Conformer 编码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-4.1-2b-plus")
 @strict
+# GraniteSpeechPlusEncoderConfig：Granite Speech Plus Conformer 编码器超参（多层拼接）
 class GraniteSpeechPlusEncoderConfig(PreTrainedConfig):
     r"""
     feedforward_mult (`int`, *optional*, defaults to 4):
@@ -90,8 +95,10 @@ class GraniteSpeechPlusEncoderConfig(PreTrainedConfig):
             self.dim_head = self.hidden_dim // self.num_heads
 
 
+# GraniteSpeechPlusConfig：ibm-granite-speech-4.1-plus 音频+文本联合默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-4.1-2b-plus")
 @strict
+# GraniteSpeechPlusConfig：Granite Speech Plus 音频+文本联合配置
 class GraniteSpeechPlusConfig(PreTrainedConfig):
     r"""
     projector_config (`Union[AutoConfig, dict]`, *optional*, defaults to `Blip2QFormerConfig`):
