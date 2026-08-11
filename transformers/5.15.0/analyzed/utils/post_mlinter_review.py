@@ -20,6 +20,7 @@ check_code_quality job. Never checks out or executes PR code.
 
 Usage:
     GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo python utils/post_mlinter_review.py
+# mlinter PR 行内评论：读取 findings JSON 并发布/更新 GitHub review
 """
 
 import hashlib
@@ -43,6 +44,7 @@ _STATE_START = "<!-- mlinter-state-start -->"
 _STATE_END = "<!-- mlinter-state-end -->"
 
 
+# _findings_hash：对 findings 内容计算短 SHA-256 哈希
 def _findings_hash(findings):
     """Short SHA-256 hash of findings content, excluding parse-error sentinels (rule=None)."""
     key = json.dumps(
@@ -51,6 +53,7 @@ def _findings_hash(findings):
     return hashlib.sha256(key).hexdigest()[:8]
 
 
+# _read_pr_state：从 PR 描述提取 mlinter 状态块 hash
 def _read_pr_state(pr_body):
     """Extract the mlinter hash from the PR description state block. Returns hash string or None."""
     m = re.search(
@@ -61,6 +64,7 @@ def _read_pr_state(pr_body):
     return m.group(1) if m else None
 
 
+# _update_pr_description：写入/更新 PR 描述中的 mlinter 状态块
 def _update_pr_description(pr_body, findings_hash, commit_sha, review_url):
     """Add or replace the mlinter state block in the PR description."""
     block = "\n".join(
@@ -87,6 +91,7 @@ def _update_pr_description(pr_body, findings_hash, commit_sha, review_url):
     return (pr_body or "").rstrip() + "\n\n" + block
 
 
+# _paginate：分页拉取 GitHub API 列表资源
 def _paginate(url, token):
     items = []
     page = 1
@@ -102,6 +107,7 @@ def _paginate(url, token):
     return items
 
 
+# _commentable_lines：从 diff patch 解析可评论的行号
 def _commentable_lines(patch):
     """Return line numbers on the head side that GitHub accepts as comment anchors."""
     lines = set()
@@ -121,6 +127,7 @@ def _commentable_lines(patch):
     return lines
 
 
+# _comment_body：单条 finding 的行内评论 Markdown
 def _comment_body(finding, rules):
     rule = finding["rule"]
     spec = rules.get(rule, {})
@@ -137,6 +144,7 @@ def _comment_body(finding, rules):
     return "\n".join(lines)
 
 
+# _review_body：组装完整 PR review 正文与 inline comments
 def _review_body(findings, rules, skipped):
     counts = Counter(f["rule"] for f in findings)
     lines = [
@@ -165,6 +173,7 @@ def _review_body(findings, rules, skipped):
     return "\n".join(lines)
 
 
+# main：去重后发布 mlinter review 并更新 PR 描述
 def main():
     token = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY")

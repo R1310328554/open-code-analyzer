@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Doc-test CI Slack 通知：解析 doctest 作业结果并推送 Slack 摘要
 
 import json
 import os
@@ -24,6 +25,7 @@ from slack_sdk import WebClient
 client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
 
+# handle_test_results：解析 doctest pytest 摘要中的通过/失败数
 def handle_test_results(test_results):
     expressions = test_results.split(" ")
 
@@ -43,6 +45,7 @@ def handle_test_results(test_results):
     return failed, success, time_spent
 
 
+# extract_first_line_failure：提取每个 doctest 文件的首行失败信息
 def extract_first_line_failure(failures_short_lines):
     failures = {}
     file = None
@@ -58,6 +61,7 @@ def extract_first_line_failure(failures_short_lines):
     return failures
 
 
+# Message：doctest Slack 消息：统计成功/失败并生成 Block Kit 块
 class Message:
     def __init__(self, title: str, doc_test_results: dict):
         self.title = title
@@ -273,6 +277,7 @@ class Message:
                 time.sleep(1)
 
 
+# retrieve_artifact：下载指定 doctest CI artifact
 def retrieve_artifact(name: str):
     _artifact = {}
 
@@ -288,6 +293,7 @@ def retrieve_artifact(name: str):
     return _artifact
 
 
+# retrieve_available_artifacts：获取 workflow 中可用 artifact 列表
 def retrieve_available_artifacts():
     class Artifact:
         def __init__(self, name: str):

@@ -27,6 +27,7 @@ are handled identically everywhere. Two hard rules the whole repo relies on live
 
 This module is intentionally **standard-library only** (``urllib``, not ``requests``): it is
 imported by GitHub Actions steps that run a bare Python with no third-party packages installed.
+# GitHub REST API 统一封装：限流重试、token 校验、失败即抛错
 """
 
 import json
@@ -48,6 +49,7 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 
+# build_github_headers：构造 GitHub API 请求头（含可选 Bearer token）
 def build_github_headers(token=None):
     """Build request headers for the GitHub REST API, adding the auth header only when a token is set."""
     headers = {
@@ -60,6 +62,7 @@ def build_github_headers(token=None):
     return headers
 
 
+# _log_rate_limit_headers：记录 X-RateLimit-* 响应头便于诊断
 def _log_rate_limit_headers(response_headers, prefix=""):
     """Log all GitHub rate-limit response headers for diagnostics."""
     limit = response_headers.get("X-RateLimit-Limit", "n/a")
@@ -92,6 +95,7 @@ def _log_rate_limit_headers(response_headers, prefix=""):
 _token_status_logged = False
 
 
+# _log_token_status：调用 /rate_limit 校验 token 与剩余配额
 def _log_token_status(token=None):
     """Call GET /rate_limit once to confirm token validity and log quota.
 
@@ -164,6 +168,7 @@ def _log_token_status(token=None):
         raise RuntimeError(msg)
 
 
+# _rate_limit_wait：计算 primary/secondary 限流后的等待秒数
 def _rate_limit_wait(status, response_headers, body, attempt):
     """Return how many seconds to wait before retrying a rate-limited GitHub response, or ``None``.
 
@@ -208,6 +213,7 @@ def _rate_limit_wait(status, response_headers, body, attempt):
     return min(max(wait, 30), 300)
 
 
+# _request：单次 HTTP 请求，返回 status/headers/body
 def _request(url, headers, method="GET", data=None):
     """Perform a single HTTP request and return ``(status, headers, body_text)``.
 
@@ -224,6 +230,7 @@ def _request(url, headers, method="GET", data=None):
         return error.code, error.headers, error.read().decode("utf-8", errors="replace")
 
 
+# github_request：带限流重试的 GitHub API 调用，解析 JSON 响应
 def github_request(url, token=None, method="GET", payload=None, max_retries=8):
     """Call a GitHub REST API URL and return the parsed JSON (or ``None`` for an empty body, e.g. a 204).
 
@@ -285,6 +292,7 @@ def github_request(url, token=None, method="GET", payload=None, max_retries=8):
     raise RuntimeError(f"GitHub API still rate limited on {method} {url} after {max_retries} attempt(s)")
 
 
+# get_github_json：GET 快捷方式，语义同 github_request
 def get_github_json(url, token=None, max_retries=8):
     """GET a GitHub REST API URL and return the parsed JSON. See :func:`github_request` for semantics."""
     return github_request(url, token=token, method="GET", max_retries=max_retries)

@@ -14,6 +14,7 @@
 """
 Script to find a candidate list of models to deprecate based on the number of downloads and the date of the last
 commit.
+# 模型弃用候选：按 Hub 下载量与首次提交日期筛选低活跃模型
 """
 
 import argparse
@@ -131,6 +132,7 @@ EXTRA_TAGS_MAPPING = {
 DEPRECATED_MODELS_TAGS = {"gptsan-japanese", "open-llama", "transfo-xl", "xlm-prophetnet"}
 
 
+# HubModelLister：按 tag 迭代 Hub 模型列表，遇错不中断
 class HubModelLister:
     """
     Utility for getting models from the hub based on tags. Handles errors without crashing the script.
@@ -148,6 +150,7 @@ class HubModelLister:
             return
 
 
+# _extract_commit_hash：从 git log 输出解析首次 commit hash
 def _extract_commit_hash(commits):
     for commit in commits:
         if commit.startswith("commit "):
@@ -155,6 +158,7 @@ def _extract_commit_hash(commits):
     return ""
 
 
+# get_list_of_repo_model_paths：枚举库内非 deprecated 的 modeling_*.py
 def get_list_of_repo_model_paths(models_dir):
     # Get list of all models in the library
     models = glob.glob(os.path.join(models_dir, "*/modeling_*.py"))
@@ -172,6 +176,7 @@ def get_list_of_repo_model_paths(models_dir):
     return models
 
 
+# get_list_of_models_to_deprecate：汇总低于下载/日期阈值的模型
 def get_list_of_models_to_deprecate(
     thresh_num_downloads=5_000,
     thresh_date=None,

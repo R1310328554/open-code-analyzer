@@ -24,6 +24,7 @@ Usage:
 ```bash
 python utils/pr_slow_ci_models.py
 ```
+# 慢速 CI 模型列表：合并 PR 新增模型与 run-slow 评论指定的测试目录
 """
 
 import argparse
@@ -39,6 +40,7 @@ from git import Repo
 PATH_TO_REPO = Path(__file__).parent.parent.resolve()
 
 
+# get_new_python_files_between_commits：commits 间新增的 .py 文件
 def get_new_python_files_between_commits(base_commit: str, commits: list[str]) -> list[str]:
     """
     Get the list of added python files between a base commit and one or several commits.
@@ -64,6 +66,7 @@ def get_new_python_files_between_commits(base_commit: str, commits: list[str]) -
     return code_diff
 
 
+# get_new_python_files：相对 main merge-base 的新增 Python 文件
 def get_new_python_files(diff_with_last_commit=False) -> list[str]:
     """
     Return a list of python files that have been added between the current head and the main branch.
@@ -96,6 +99,7 @@ def get_new_python_files(diff_with_last_commit=False) -> list[str]:
     return get_new_python_files_between_commits(repo.head.commit, commits)
 
 
+# get_new_model：从新增 modeling_*.py 推断 PR 引入的新模型名
 def get_new_model(diff_with_last_commit=False):
     new_files = get_new_python_files(diff_with_last_commit)
     reg = re.compile(r"src/transformers/models/(.*)/modeling_.*\.py")
@@ -110,6 +114,7 @@ def get_new_model(diff_with_last_commit=False):
     return new_model
 
 
+# parse_message：解析评论中 run-slow/run_slow 前缀后的模型列表
 def parse_message(message: str) -> str:
     """
     Parses a GitHub pull request's comment to find the models specified in it to run slow CI.
@@ -137,11 +142,13 @@ def parse_message(message: str) -> str:
     return message
 
 
+# get_models：将 parse_message 结果拆分为模型名
 def get_models(message: str):
     models = parse_message(message)
     return models.replace(",", " ").split()
 
 
+# check_model_names：校验模型名合法字符与首尾下划线
 def check_model_names(model_name: str):
     allowed = string.ascii_letters + string.digits + "_"
     return not (model_name.startswith("_") or model_name.endswith("_")) and all(c in allowed for c in model_name)

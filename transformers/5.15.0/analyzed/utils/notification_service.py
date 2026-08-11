@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CI Slack 通知：汇总 daily/PR 测试结果、artifact 与失败堆栈并推送 Slack
 
 import ast
 import collections
@@ -71,6 +72,7 @@ NON_MODEL_TEST_MODULES = [
 ]
 
 
+# handle_test_results：解析 pytest 摘要行中的 passed/failed/skipped 计数
 def handle_test_results(test_results):
     expressions = test_results.split(" ")
 
@@ -102,6 +104,7 @@ def handle_test_results(test_results):
     return failed, errors, success, skipped, time_spent
 
 
+# handle_stacktraces：压缩 FAILURES 段为行号+错误信息列表
 def handle_stacktraces(test_results):
     # These files should follow the following architecture:
     # === FAILURES ===
@@ -123,6 +126,7 @@ def handle_stacktraces(test_results):
     return stacktraces
 
 
+# dicts_to_sum：对多个 job 结果字典按 key 累加数值字段
 def dicts_to_sum(objects: dict[str, dict] | list[dict]):
     if isinstance(objects, dict):
         lists = objects.values()
@@ -135,6 +139,7 @@ def dicts_to_sum(objects: dict[str, dict] | list[dict]):
     return functools.reduce(operator.add, counters)
 
 
+# Message：Slack 消息构建器：汇总多 job 测试结果与 Block 布局
 class Message:
     def __init__(
         self,
@@ -930,6 +935,7 @@ class Message:
                     time.sleep(1)
 
 
+# retrieve_artifact：下载并解压指定 CI artifact
 def retrieve_artifact(artifact_path: str, gpu: str | None):
     if gpu not in [None, "single", "multi"]:
         raise ValueError(f"Invalid GPU for artifact. Passed GPU: `{gpu}`.")
@@ -948,6 +954,7 @@ def retrieve_artifact(artifact_path: str, gpu: str | None):
     return _artifact
 
 
+# retrieve_available_artifacts：列出当前 workflow run 可用 artifact
 def retrieve_available_artifacts():
     class Artifact:
         def __init__(self, name: str, single_gpu: bool = False, multi_gpu: bool = False):
@@ -1000,6 +1007,7 @@ def retrieve_available_artifacts():
     return _available_artifacts
 
 
+# prepare_reports：组装 Slack Block Kit 报告消息
 def prepare_reports(title, header, reports, to_truncate=True):
     report = ""
 
@@ -1023,6 +1031,7 @@ def prepare_reports(title, header, reports, to_truncate=True):
     return report
 
 
+# pop_default：带默认值的 list.pop 安全封装
 def pop_default(l: list[Any], i: int, default: Any) -> Any:
     try:
         return l.pop(i)

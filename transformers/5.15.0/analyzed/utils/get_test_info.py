@@ -20,6 +20,7 @@ import unittest
 
 # This is required to make the module import works (when the python process is running from the root of the repo)
 sys.path.append(".")
+# 模型测试内省：从 tests/models/*/test_modeling_*.py 提取 ModelTester 与测试类映射
 
 
 r"""
@@ -28,6 +29,7 @@ The argument `test_file` in this file refers to a model test file. This should b
 """
 
 
+# get_module_path：将模型测试文件路径转为 Python 模块路径
 def get_module_path(test_file):
     """Return the module path of a model test file."""
     components = test_file.split(os.path.sep)
@@ -50,6 +52,7 @@ def get_module_path(test_file):
     return test_module_path
 
 
+# get_test_module：动态 import 模型测试模块
 def get_test_module(test_file):
     """Get the module of a model test file."""
     test_module_path = get_module_path(test_file)
@@ -66,6 +69,7 @@ def get_test_module(test_file):
     return test_module
 
 
+# get_tester_classes：收集以 ModelTester 结尾的测试辅助类
 def get_tester_classes(test_file):
     """Get all classes in a model test file whose names ends with `ModelTester`."""
     tester_classes = []
@@ -78,6 +82,7 @@ def get_tester_classes(test_file):
     return sorted(tester_classes, key=lambda x: x.__name__)
 
 
+# get_test_classes：收集含非空 all_model_classes 的 TestCase 子类
 def get_test_classes(test_file):
     """Get all [test] classes in a model test file with attribute `all_model_classes` that are non-empty.
 
@@ -106,6 +111,7 @@ def get_test_classes(test_file):
     return sorted(test_classes, key=lambda x: x.__name__)
 
 
+# get_model_classes：汇总测试文件中出现的全部 model 类
 def get_model_classes(test_file):
     """Get all model classes that appear in `all_model_classes` attributes in a model test file."""
     test_classes = get_test_classes(test_file)
@@ -122,6 +128,7 @@ def get_model_classes(test_file):
     return sorted(model_classes, key=lambda x: x.__name__)
 
 
+# get_model_tester_from_test_class：从测试类实例提取 model_tester 类
 def get_model_tester_from_test_class(test_class):
     """Get the model tester class of a model test class."""
     test = test_class()
@@ -137,6 +144,7 @@ def get_model_tester_from_test_class(test_class):
     return model_tester
 
 
+# get_test_classes_for_model：筛选覆盖指定 model 类的测试类
 def get_test_classes_for_model(test_file, model_class):
     """Get all [test] classes in `test_file` that have `model_class` in their `all_model_classes`."""
     test_classes = get_test_classes(test_file)
@@ -157,6 +165,7 @@ def get_test_classes_for_model(test_file, model_class):
     return sorted(target_test_classes, key=lambda x: x.__name__)
 
 
+# get_tester_classes_for_model：获取与指定 model 关联的 ModelTester 类
 def get_tester_classes_for_model(test_file, model_class):
     """Get all model tester classes in `test_file` that are associated to `model_class`."""
     test_classes = get_test_classes_for_model(test_file, model_class)
@@ -171,6 +180,7 @@ def get_tester_classes_for_model(test_file, model_class):
     return sorted(tester_classes, key=lambda x: x.__name__)
 
 
+# get_test_to_tester_mapping：测试类到 ModelTester 类的映射
 def get_test_to_tester_mapping(test_file):
     """Get a mapping from [test] classes to model tester classes in `test_file`.
 
@@ -181,6 +191,7 @@ def get_test_to_tester_mapping(test_file):
     return test_tester_mapping
 
 
+# get_model_to_test_mapping：model 类到测试类的映射
 def get_model_to_test_mapping(test_file):
     """Get a mapping from model classes to test classes in `test_file`."""
     model_classes = get_model_classes(test_file)
@@ -190,6 +201,7 @@ def get_model_to_test_mapping(test_file):
     return model_test_mapping
 
 
+# get_model_to_tester_mapping：model 类到 ModelTester 类的映射
 def get_model_to_tester_mapping(test_file):
     """Get a mapping from model classes to model tester classes in `test_file`."""
     model_classes = get_model_classes(test_file)
@@ -199,6 +211,7 @@ def get_model_to_tester_mapping(test_file):
     return model_to_tester_mapping
 
 
+# to_json：将 type/容器递归转为可读 JSON（类名而非完整 repr）
 def to_json(o):
     """Make the information succinct and easy to read.
 

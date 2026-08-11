@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# modular 模型转换器：modular_*.py 生成 modeling_*/configuration_* 等派生文件
 import argparse
 import glob
 import importlib
@@ -52,6 +53,7 @@ AUTO_GENERATED_MESSAGE = """#                🚨🚨🚨🚨🚨🚨🚨🚨�
 _MODULE_SOURCE_CACHE = {}
 
 
+# get_module_source_and_tree_from_name：按模块名加载源码与 CST
 def get_module_source_and_tree_from_name(module_name: str) -> tuple[str, cst.Module]:
     spec = importlib.util.find_spec(module_name)
     if spec is None or spec.origin is None:
@@ -91,6 +93,7 @@ NAMES_TO_NEVER_REPLACE = (
 )
 
 
+# preserve_case_replace：按大小写规则替换模型名引用
 def preserve_case_replace(text, patterns: dict, default_name: str):
     if text in NAMES_TO_NEVER_REPLACE:
         return text
@@ -119,6 +122,7 @@ def preserve_case_replace(text, patterns: dict, default_name: str):
     return compiled_regex.sub(replace, text)
 
 
+# get_cased_name：小写模型名转 CamelCase 类名
 def get_cased_name(lowercase_name: str) -> str:
     """From a model name in lowercase in the format `my_model`, return the cased name in the format `MyModel`."""
     alt_lowercase_name = lowercase_name.replace("_", "-")
@@ -130,6 +134,7 @@ def get_cased_name(lowercase_name: str) -> str:
         return "".join(x.title() for x in lowercase_name.split("_"))
 
 
+# get_lowercase_name：CamelCase 类名转小写模型名
 def get_lowercase_name(cased_name: str) -> str:
     """From a model name in Camelcase in the format `MyModel`, return the lowercase name in the format `my_model`."""
     inverse_mapping = {value: key for key, value in CONFIG_MAPPING_NAMES.items()}
@@ -139,6 +144,7 @@ def get_lowercase_name(cased_name: str) -> str:
         return "_".join([s.lower() for s in re.findall(r"[A-Z][^A-Z]*", cased_name)])
 
 
+# ReplaceNameTransformer：在注释/字符串/标识符中批量替换模型名
 class ReplaceNameTransformer(m.MatcherDecoratableTransformer):
     """A transformer that replaces `old_name` with `new_name` in comments, string and any references.
     It should take into account name like `MyNewModel`, or `my_new_model`. Without using the AUTO_MAPPING.
@@ -232,6 +238,7 @@ def get_full_attribute_name(node: cst.Attribute | cst.Name) -> str | None:
     return None
 
 
+# ReplaceParentClassCallTransformer：重写父类方法调用为 super 形式
 class ReplaceParentClassCallTransformer(cst.CSTTransformer):
     """
     This Transformer is used to replace all calls of the form `module.Class.func(...)` by a call of the form
@@ -271,6 +278,7 @@ class ReplaceParentClassCallTransformer(cst.CSTTransformer):
         return updated_node
 
 
+# ReplaceSuperCallTransformer：调整 super() 调用以匹配新类层次
 class ReplaceSuperCallTransformer(cst.CSTTransformer):
     """
     This Transformer is used to unravel all calls to `super().func(...)` in class methods by the explicit parent's
@@ -410,6 +418,7 @@ class ReplaceSuperCallTransformer(cst.CSTTransformer):
         return updated_node
 
 
+# find_all_dependencies：递归收集类/函数依赖闭包
 def find_all_dependencies(
     dependency_mapping: dict[str, set],
     start_entity: str | None = None,
@@ -504,6 +513,7 @@ ASSIGNMENTS_REGEX_TO_KEEP = [r"_CHECKPOINT", r"_EXPECTED", r"_FOR_DOC", r"_HIDDE
 ASSIGNMENTS_REGEX_TO_KEEP_IF_NOT_NONE = [r"_DOCSTRING"]
 
 
+# ClassDependencyMapper：CST 访问器：收集类定义内引用的全局名
 class ClassDependencyMapper(CSTVisitor):
     """A visitor which is designed to analyze a single class node to get all its dependencies that are shared with the set of
     `global_names`.
@@ -562,6 +572,7 @@ ALL_FILE_TYPES = (
 )
 
 
+# ModuleMapper：抽象基类：遍历 modular 文件并映射类到目标模块
 class ModuleMapper(CSTVisitor, ABC):
     """An abstract visitor class which analyses a module, creating a mapping of dependencies for classes, functions and assignments.
     Class dependencies are computed with `compute_class_dependencies()`, while function and assignment dependencies are stored in
@@ -763,6 +774,7 @@ class ModuleMapper(CSTVisitor, ABC):
         raise NotImplementedError
 
 
+# ModelFileMapper：解析现有 modeling 文件结构与 import
 class ModelFileMapper(ModuleMapper):
     """A mapper designed to parse modeling files (like `modeling_llama.py`). When encountering such a file
     in the `modular_xxx.py` file, we need to correctly visit it and merge the dependencies of the modular and current file.
@@ -968,6 +980,7 @@ def get_decorators_to_keep(
     return original_node.decorators if original_node is not None else []
 
 
+# replace_class_node：将 modular 类节点合并进目标 modeling 文件
 def replace_class_node(
     mapper: ModelFileMapper, modular_class_node: cst.ClassDef, renamed_super_class: str, original_super_class: str
 ) -> cst.ClassDef:
@@ -1452,6 +1465,7 @@ def split_all_assignment(node: cst.CSTNode, model_name: str) -> dict[str, cst.CS
     return all_all_per_file
 
 
+# ModularFileMapper：解析 modular 源文件并规划输出文件
 class ModularFileMapper(ModuleMapper):
     """This is a Mapper to visit a modular file (like `modular_llama.py`). It visits the whole file, recording dependency,
     then visits all imported modeling files (like `modeling_llama.py`), and manages their mutual dependencies.
@@ -2008,6 +2022,7 @@ def run_ruff(file: str):
     subprocess.run(["ruff", "format", file], stdout=subprocess.DEVNULL)
 
 
+# convert_modular_file：转换单个 modular 文件为各类型派生文件
 def convert_modular_file(modular_file: str, source_library: str | None = "transformers") -> dict[str, str]:
     """Convert a `modular_file` into all the different model-specific files it depicts."""
     pattern = re.search(r"modular_(.*)(?=\.py$)", modular_file)
@@ -2079,6 +2094,7 @@ def count_loc(file_path: str) -> int:
     return len([line for line in comment_less_code.split("\n") if line.strip()])
 
 
+# run_converter：CLI 入口：转换 modular 文件并 ruff 格式化
 def run_converter(modular_file: str, source_library: str | None = "transformers"):
     """Convert a modular file, and save resulting files."""
     print(f"Converting {modular_file} to a single model single file format")

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 变更文件探测：基于 merge-base 列出指定顶层目录下已修改的 .py 文件
 
 # this script reports modified .py files under the desired list of top-level sub-dirs passed as a list of arguments, e.g.:
 #   python ./utils/get_modified_files.py utils src tests examples

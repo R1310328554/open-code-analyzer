@@ -21,6 +21,7 @@ Functionalities:
 - GPU/CPU test filtering and slow tests filter
 - Temporary cache management for isolated test runs
 - Resume functionality for interrupted test runs
+# 本地 CI 测试运行器：按 suite 并行/断点续跑 pytest 并生成报告
 - Important models subset testing
 
 Example usages are below.
@@ -38,11 +39,13 @@ import torch
 from .important_files import IMPORTANT_MODELS
 
 
+# is_valid_test_dir：判断子目录是否为有效测试目录
 def is_valid_test_dir(path: Path) -> bool:
     """Check if a given path represents a valid test dir: the path must point to a dir, not start with '__' or '.'"""
     return path.is_dir() and not path.name.startswith("__") and not path.name.startswith(".")
 
 
+# run_pytest：对单个子目录执行 pytest 并可选临时 Hub 缓存
 def run_pytest(
     suite: str, subdir: Path, root_test_dir: Path, machine_type: str, dry_run: bool, tmp_cache: str, cpu_tests: bool
 ) -> None:
@@ -77,6 +80,7 @@ def run_pytest(
             subprocess.run(cmd, check=False, env=env)
 
 
+# handle_suite：调度整个 test suite：过滤/分进程/断点续跑
 def handle_suite(
     suite: str,
     test_root: Path,

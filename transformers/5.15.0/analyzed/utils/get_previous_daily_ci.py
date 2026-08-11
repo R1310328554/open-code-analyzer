@@ -1,9 +1,11 @@
+# 每日 CI 查询：获取 schedule 触发的 workflow run 及其 artifact 报告
 import os
 import zipfile
 
 from get_ci_error_statistics import download_artifact, get_artifacts_links, get_github_json
 
 
+# get_daily_ci_runs：列出 main 分支 schedule 事件的最近 workflow runs
 def get_daily_ci_runs(token, num_runs=7, workflow_id=None):
     """Get the workflow runs of the scheduled (daily) CI.
 
@@ -34,6 +36,7 @@ def get_daily_ci_runs(token, num_runs=7, workflow_id=None):
     return workflow_runs
 
 
+# get_last_daily_ci_run：获取最近一次已完成的 daily CI run
 def get_last_daily_ci_run(token, workflow_run_id=None, workflow_id=None, commit_sha=None):
     """Get the last completed workflow run id of the scheduled (daily) CI."""
     workflow_run = None
@@ -61,6 +64,7 @@ def get_last_daily_ci_run(token, workflow_run_id=None, workflow_id=None, commit_
     return workflow_run
 
 
+# get_last_daily_ci_workflow_run_id：返回最近 daily CI 的 run id
 def get_last_daily_ci_workflow_run_id(token, workflow_run_id=None, workflow_id=None, commit_sha=None):
     """Get the last completed workflow run id of the scheduled (daily) CI."""
     if workflow_run_id is not None and workflow_run_id != "":
@@ -74,6 +78,7 @@ def get_last_daily_ci_workflow_run_id(token, workflow_run_id=None, workflow_id=N
     return workflow_run_id
 
 
+# get_last_daily_ci_run_commit：返回最近 daily CI 的 head commit sha
 def get_last_daily_ci_run_commit(token, workflow_run_id=None, workflow_id=None, commit_sha=None):
     """Get the commit sha of the last completed scheduled daily CI workflow run."""
     workflow_run = get_last_daily_ci_run(
@@ -86,6 +91,7 @@ def get_last_daily_ci_run_commit(token, workflow_run_id=None, workflow_id=None, 
     return workflow_run_head_sha
 
 
+# get_last_daily_ci_artifacts：下载最近 daily CI 的指定 artifact
 def get_last_daily_ci_artifacts(
     output_dir,
     token,
@@ -116,6 +122,7 @@ def get_last_daily_ci_artifacts(
         return downloaded_artifact_names
 
 
+# get_last_daily_ci_reports：解压并读取 daily CI artifact 文本内容
 def get_last_daily_ci_reports(
     output_dir,
     token,

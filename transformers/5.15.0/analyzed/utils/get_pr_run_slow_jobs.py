@@ -1,3 +1,4 @@
+# PR 慢速 CI 任务推断：从 PR 变更文件或评论解析需运行的模型/量化测试目录
 import argparse
 import json
 import re
@@ -7,6 +8,7 @@ import string
 MAX_NUM_JOBS_TO_SUGGEST = 16
 
 
+# get_jobs_to_run：从 pr_files.txt 推断需运行的 models/quantization 测试目录
 def get_jobs_to_run():
     # The file `pr_files.txt` contains the information about the files changed in a pull request, and it is prepared by
     # the caller (using GitHub api).
@@ -46,6 +48,7 @@ def get_jobs_to_run():
     return jobs_to_run
 
 
+# parse_message：解析 PR 评论中 run-slow/run_slow 后的模型列表
 def parse_message(message: str) -> str:
     """
     Parses a GitHub pull request's comment to find the models specified in it to run slow CI.
@@ -73,11 +76,13 @@ def parse_message(message: str) -> str:
     return message
 
 
+# get_jobs：将 parse_message 结果拆分为模型名列表
 def get_jobs(message: str):
     models = parse_message(message)
     return models.replace(",", " ").split()
 
 
+# check_name：校验模型目录名仅含字母数字且不以 _ 首尾
 def check_name(model_name: str):
     allowed = string.ascii_letters + string.digits + "_"
     return not (model_name.startswith("_") or model_name.endswith("_")) and all(c in allowed for c in model_name)

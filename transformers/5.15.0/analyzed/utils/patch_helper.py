@@ -32,6 +32,7 @@ git cherry-pick 84c4b72ee99e8e65a8a5754a5f9d6265b45cf67e #2024-05-27 10:34:14+02
 git cherry-pick 936ab7bae5e040ec58994cb722dd587b9ab26581 #2024-05-28 11:56:05+02:00
 git cherry-pick 0bef4a273825d2cfc52ddfe62ba486ee61cc116f #2024-05-29 13:33:26+01:00
 ```
+# 补丁分支辅助：按 label 收集 PR merge commit 并按时间序 cherry-pick
 """
 
 import json
@@ -44,6 +45,7 @@ LABEL = "for patch"  # Replace with your label
 REPO = "huggingface/transformers"  # Optional if already in correct repo
 
 
+# get_release_branch_name：由 transformers 版本推导 vX.Y-release 分支名
 def get_release_branch_name():
     """Derive branch name from transformers version."""
     major, minor, *_ = transformers.__version__.split(".")
@@ -59,6 +61,7 @@ def get_release_branch_name():
     return f"v{major}.{minor}-release"
 
 
+# checkout_branch：切换到目标 release 分支
 def checkout_branch(branch):
     """Checkout the target branch."""
     try:
@@ -69,6 +72,7 @@ def checkout_branch(branch):
         exit(1)
 
 
+# get_prs_by_label：gh CLI 获取带指定 label 的已合并 PR
 def get_prs_by_label(label):
     """Call gh CLI to get PRs with a specific label."""
     cmd = [
@@ -94,6 +98,7 @@ def get_prs_by_label(label):
     return prs
 
 
+# get_commit_timestamp：读取 commit 的 UNIX 时间戳
 def get_commit_timestamp(commit_sha):
     """Get UNIX timestamp of a commit using git."""
     result = subprocess.run(
@@ -103,6 +108,7 @@ def get_commit_timestamp(commit_sha):
     return int(result.stdout.strip())
 
 
+# cherry_pick_commit：执行 git cherry-pick 单个 commit
 def cherry_pick_commit(sha):
     """Cherry-pick a given commit SHA."""
     try:
@@ -112,6 +118,7 @@ def cherry_pick_commit(sha):
         print(f"[WARNING] Failed to cherry-pick {sha}. Manual intervention required.")
 
 
+# commit_in_history：判断 commit 是否已在当前分支历史中
 def commit_in_history(commit_sha, base_branch="HEAD"):
     """Return True if commit is already part of base_branch history."""
     result = subprocess.run(
@@ -123,6 +130,7 @@ def commit_in_history(commit_sha, base_branch="HEAD"):
     return result.returncode == 0
 
 
+# main：按时间序 cherry-pick 尚未入历史的 for-patch PR
 def main(verbose=False):
     branch = get_release_branch_name()
     checkout_branch(branch)

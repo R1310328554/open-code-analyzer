@@ -1,4 +1,5 @@
 # List here the models to always test.
+# CI 必测模型子集：get_test_reports --only-in IMPORTANT_MODELS 时使用
 IMPORTANT_MODELS = [
     "auto",
     "bert",

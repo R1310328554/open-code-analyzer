@@ -5,11 +5,13 @@ import libcst as cst
 
 # Files from external libraries that should not be tracked
 # E.g. for habana, we don't want to track the dependencies from `modeling_all_models.py` as it is not part of the transformers library
+# modular 集成辅助：libcst 相对/绝对 import 互转与 CST 变换器
 EXCLUDED_EXTERNAL_FILES = {
     "habana": [{"name": "modeling_all_models", "type": "modeling"}],
 }
 
 
+# convert_relative_import_to_absolute：相对 import 转绝对路径
 def convert_relative_import_to_absolute(
     import_node: cst.ImportFrom,
     file_path: str,
@@ -84,6 +86,7 @@ def convert_relative_import_to_absolute(
     return import_node.with_changes(module=dotted_module, relative=[])
 
 
+# convert_to_relative_import：包内绝对 import 转相对 import
 def convert_to_relative_import(import_node: cst.ImportFrom, file_path: str, package_name: str) -> cst.ImportFrom:
     """
     Convert an absolute import to a relative one if it belongs to `package_name`.
@@ -162,6 +165,7 @@ def convert_to_relative_import(import_node: cst.ImportFrom, file_path: str, pack
     return import_node.with_changes(module=new_module, relative=relative)
 
 
+# AbsoluteImportTransformer：CST 访问器：将所有 ImportFrom 转为绝对 import
 class AbsoluteImportTransformer(cst.CSTTransformer):
     def __init__(self, relative_path: str, source_library: str):
         super().__init__()
@@ -174,6 +178,7 @@ class AbsoluteImportTransformer(cst.CSTTransformer):
         )
 
 
+# RelativeImportTransformer：CST 访问器：将包内 import 转为相对 import
 class RelativeImportTransformer(cst.CSTTransformer):
     def __init__(self, relative_path: str, source_library: str):
         super().__init__()
