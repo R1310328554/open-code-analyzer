@@ -12,6 +12,8 @@
 # limitations under the License.
 """Pixtral model configuration"""
 
+# Pixtral 配置：Mistral Pixtral-12B 多模态视觉塔超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -19,8 +21,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# PixtralVisionConfig：Mistral Pixtral-12B 视觉塔超参
 @auto_docstring(checkpoint="mistral-labs/pixtral-12b")
 @strict
+# PixtralVisionConfig：Mistral Pixtral-12B 视觉塔超参
 class PixtralVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -52,6 +56,7 @@ class PixtralVisionConfig(PreTrainedConfig):
     rope_parameters: RopeParameters | dict | None = None
     initializer_range: float = 0.02
 
+    # __post_init__：初始化后解析 stage 名称与输出层索引
     def __post_init__(self, **kwargs):
         self.head_dim = self.hidden_size // self.num_attention_heads
         super().__post_init__(**kwargs)

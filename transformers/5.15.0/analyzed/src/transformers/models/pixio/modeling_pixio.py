@@ -37,6 +37,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_pixio import PixioConfig
 
 
+# Pixio 建模：ViT 风格视觉 Transformer 编码器与多尺度骨干（自动生成）
+
+# PixioPatchEmbeddings：Pixio 图像 patch 卷积嵌入层
 class PixioPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -44,6 +47,7 @@ class PixioPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__()
         image_size = config.image_size
@@ -57,6 +61,7 @@ class PixioPatchEmbeddings(nn.Module):
         self.num_channels = config.num_channels
         self.projection = nn.Conv2d(config.num_channels, config.hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -67,11 +72,13 @@ class PixioPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# PixioEmbeddings：Pixio CLS token + 位置编码 + patch 嵌入
 class PixioEmbeddings(nn.Module):
     """
     Construct the CLS tokens, position and patch embeddings.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig) -> None:
         super().__init__()
 
@@ -85,6 +92,7 @@ class PixioEmbeddings(nn.Module):
         self.patch_size = config.patch_size
         self.config = config
 
+    # interpolate_pos_encoding：双三次插值扩展位置编码以适配高分辨率
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher
@@ -123,6 +131,7 @@ class PixioEmbeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         batch_size, _, height, width = pixel_values.shape
         target_dtype = self.patch_embeddings.projection.weight.dtype
@@ -138,6 +147,7 @@ class PixioEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -166,7 +176,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PixioAttention：Pixio 多头自注意力（ViT 风格）
 class PixioAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__()
         self.config = config
@@ -181,6 +193,7 @@ class PixioAttention(nn.Module):
         self.v_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=config.qkv_bias)
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=True)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -215,7 +228,9 @@ class PixioAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PixioMLP：Pixio GELU 前馈 MLP
 class PixioMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -227,6 +242,7 @@ class PixioMLP(nn.Module):
             self.activation = config.hidden_act
         self.fc2 = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：模块前向计算
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -234,6 +250,7 @@ class PixioMLP(nn.Module):
         return hidden_state
 
 
+# PixioDropPath：Pixio 随机深度 DropPath 正则化
 class PixioDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -241,10 +258,12 @@ class PixioDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -254,11 +273,14 @@ class PixioDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块 extra_repr 调试信息
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
+# PixioLayer：Pixio Transformer 编码层（Attn + MLP + 残差）
 class PixioLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__()
         self.attention = PixioAttention(config)
@@ -268,6 +290,7 @@ class PixioLayer(GradientCheckpointingLayer):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.drop_path = PixioDropPath(config.drop_path_rate) if config.drop_path_rate > 0.0 else nn.Identity()
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -290,6 +313,7 @@ class PixioLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PixioPreTrainedModel：Pixio 预训练基类与权重初始化
 class PixioPreTrainedModel(PreTrainedModel):
     config: PixioConfig
     base_model_prefix = "pixio"
@@ -309,6 +333,7 @@ class PixioPreTrainedModel(PreTrainedModel):
     _input_embed_layer = "patch_embeddings"
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -321,7 +346,9 @@ class PixioPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PixioModel：Pixio 视觉 Transformer 完整编码器
 class PixioModel(PixioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__(config)
         self.config = config
@@ -336,6 +363,7 @@ class PixioModel(PixioPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -368,7 +396,9 @@ class PixioModel(PixioPreTrainedModel):
     Pixio backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# PixioBackbone：Pixio 多尺度特征骨干网络（BackboneMixin）
 class PixioBackbone(BackboneMixin, PixioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__(config)
 
@@ -381,6 +411,7 @@ class PixioBackbone(BackboneMixin, PixioPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor,

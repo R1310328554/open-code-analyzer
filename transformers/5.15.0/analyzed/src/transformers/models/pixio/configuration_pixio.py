@@ -24,8 +24,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PixioConfig：Meta Pixio 视觉 Transformer 骨干网络超参
 @auto_docstring(checkpoint="facebook/pixio-huge")
 @strict
+# PixioConfig：Meta Pixio 视觉 Transformer 骨干网络超参
 class PixioConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     apply_layernorm (`bool`, *optional*, defaults to `True`):
@@ -74,6 +76,7 @@ class PixioConfig(BackboneConfigMixin, PreTrainedConfig):
     reshape_hidden_states: bool = True
     n_cls_tokens: int = 8
 
+    # __post_init__：初始化后解析 stage 名称与输出层索引
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(

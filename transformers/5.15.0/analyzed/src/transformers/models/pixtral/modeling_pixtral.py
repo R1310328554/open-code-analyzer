@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Pixtral model."""
 
+# Pixtral 建模：2D RoPE 视觉 Transformer 编码器（Mistral 多模态视觉塔）
+
 from collections.abc import Callable
 
 import torch
@@ -34,6 +36,7 @@ from .configuration_pixtral import PixtralVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# position_ids_in_meshgrid：按 patch 网格计算 2D 位置 id
 def position_ids_in_meshgrid(patch_embeds_list, max_width):
     positions = []
     for patch in patch_embeds_list:
@@ -45,6 +48,7 @@ def position_ids_in_meshgrid(patch_embeds_list, max_width):
     return torch.cat(positions)
 
 
+# PixtralRotaryEmbedding：Pixtral 视觉塔 2D RoPE 旋转位置编码
 class PixtralRotaryEmbedding(nn.Module):
     """
     The key with pixtral embedding is just that you have a frequency for each pixel positions.
@@ -58,6 +62,7 @@ class PixtralRotaryEmbedding(nn.Module):
     """
 
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixtralVisionConfig, device=None):
         super().__init__()
 
@@ -75,6 +80,7 @@ class PixtralRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(
         config: PixtralVisionConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -115,6 +121,7 @@ class PixtralRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         freqs = self.inv_freq[position_ids]
         device_type = x.device.type if isinstance(x.device.type, str) and x.device.type != "mps" else "cpu"
@@ -127,6 +134,7 @@ class PixtralRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -134,6 +142,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -160,6 +169,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -183,11 +193,13 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PixtralAttention：Pixtral 视觉塔多头自注意力（2D RoPE）
 class PixtralAttention(nn.Module):
     """
     Multi-headed attention compatible with ALL_ATTENTION_FUNCTIONS.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -206,6 +218,7 @@ class PixtralAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.o_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -250,7 +263,9 @@ class PixtralAttention(nn.Module):
 
 
 # Copied from transformers.models.mistral.modeling_mistral.MistralMLP with Mistral->Pixtral
+# PixtralMLP：Pixtral 视觉塔 GELU 前馈 MLP
 class PixtralMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -261,13 +276,16 @@ class PixtralMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Pixtral
+# PixtralRMSNorm：Pixtral 视觉塔 RMS 层归一化
 class PixtralRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         PixtralRMSNorm is equivalent to T5LayerNorm
@@ -276,6 +294,7 @@ class PixtralRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -283,11 +302,14 @@ class PixtralRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块 extra_repr 调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# PixtralAttentionLayer：Pixtral 视觉塔单层（Attn + MLP + 残差）
 class PixtralAttentionLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.attention_norm = PixtralRMSNorm(config.hidden_size, eps=1e-5)
@@ -295,6 +317,7 @@ class PixtralAttentionLayer(GradientCheckpointingLayer):
         self.attention = PixtralAttention(config)
         self.ffn_norm = PixtralRMSNorm(config.hidden_size, eps=1e-5)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -328,7 +351,9 @@ class PixtralAttentionLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PixtralTransformer：Pixtral 视觉 Transformer 编码器堆叠
 class PixtralTransformer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -337,6 +362,7 @@ class PixtralTransformer(nn.Module):
             self.layers.append(PixtralAttentionLayer(config))
         self.gradient_checkpointing = False
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds,
@@ -369,6 +395,7 @@ class PixtralTransformer(nn.Module):
 
 
 @auto_docstring
+# PixtralPreTrainedModel：Pixtral 视觉塔预训练基类
 class PixtralPreTrainedModel(PreTrainedModel):
     config: PixtralVisionConfig
     base_model_prefix = "model"
@@ -386,6 +413,7 @@ class PixtralPreTrainedModel(PreTrainedModel):
     }
 
 
+# generate_block_attention_mask：为变长 patch 序列生成块对角 attention mask
 def generate_block_attention_mask(patch_embeds_list, tensor):
     dtype = tensor.dtype
     device = tensor.device
@@ -403,9 +431,11 @@ def generate_block_attention_mask(patch_embeds_list, tensor):
 
 
 @auto_docstring
+# PixtralVisionModel：Pixtral 视觉编码器完整模型
 class PixtralVisionModel(PixtralPreTrainedModel):
     base_model_prefix = "vision_encoder"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -423,12 +453,14 @@ class PixtralVisionModel(PixtralPreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.patch_conv
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor,

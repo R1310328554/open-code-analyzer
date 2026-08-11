@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Pixtral."""
 
+# Pixtral Torchvision 图像处理：自适应 resize 与变长 patch padding
+
 import math
 
 import torch
@@ -26,6 +28,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# _num_image_tokens：按图像尺寸与 patch 大小计算视觉 token 数
 def _num_image_tokens(image_size: tuple[int, int], patch_size: tuple[int, int]) -> int:
     """
     Calculate the number of image tokens given the image size and patch size.
@@ -46,6 +49,7 @@ def _num_image_tokens(image_size: tuple[int, int], patch_size: tuple[int, int]) 
     return num_height_tokens, num_width_tokens
 
 
+# get_resize_output_image_size：Pixtral 自适应 resize 目标尺寸计算
 def get_resize_output_image_size(
     input_image: ImageInput,
     size: int | tuple[int, int] | list[int] | tuple[int],
@@ -86,6 +90,7 @@ def get_resize_output_image_size(
     return num_height_tokens * patch_height, num_width_tokens * patch_width
 
 
+# PixtralImageProcessorKwargs：Pixtral 图像预处理 kwargs 类型
 class PixtralImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`Union[dict[str, int], int]` *optional*, defaults to `{"height": 16, "width": 16}`):
@@ -96,6 +101,7 @@ class PixtralImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# PixtralImageProcessor：Pixtral Torchvision 后端图像预处理器
 class PixtralImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = [0.48145466, 0.4578275, 0.40821073]
@@ -111,13 +117,16 @@ class PixtralImageProcessor(TorchvisionBackend):
 
     model_input_names = ["pixel_values", "image_sizes"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PixtralImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像预处理入口（自适应 resize + patch 化）
     def preprocess(self, images: ImageInput, **kwargs: Unpack[PixtralImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # resize：按 Pixtral 策略计算目标尺寸并缩放图像
     def resize(
         self,
         image: "torch.Tensor",
@@ -157,6 +166,7 @@ class PixtralImageProcessor(TorchvisionBackend):
             image, size=SizeDict(height=output_size[0], width=output_size[1]), resample=resample, **kwargs
         )
 
+    # _pad_for_batching：将变长 patch 序列 padding 为 batch
     def _pad_for_batching(
         self,
         pixel_values: list["torch.Tensor"],
@@ -181,6 +191,7 @@ class PixtralImageProcessor(TorchvisionBackend):
         ]
         return torch.stack(padded)
 
+    # _preprocess：图像预处理流水线（resize→归一化→padding）
     def _preprocess(
         self,
         images: list["torch.Tensor"],

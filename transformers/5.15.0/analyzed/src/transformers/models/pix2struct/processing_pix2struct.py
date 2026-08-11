@@ -15,12 +15,15 @@
 Processor class for Pix2Struct.
 """
 
+# Pix2Struct 处理器：图表/文档图像与文本联合预处理
+
 from ...feature_extraction_utils import BatchFeature
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import BatchEncoding, PreTokenizedInput, TextInput
 from ...utils import auto_docstring, logging
 
 
+# Pix2StructProcessorKwargs：Pix2Struct 联合处理器 kwargs 类型
 class Pix2StructProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -44,12 +47,15 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# Pix2StructProcessor：Pix2Struct 图像-文本联合处理器（图表/文档理解）
 class Pix2StructProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor, tokenizer):
         tokenizer.return_token_type_ids = False
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合编码多模态/图像输入为模型 batch
     def __call__(
         self,
         images=None,
@@ -100,6 +106,7 @@ class Pix2StructProcessor(ProcessorMixin):
         return encoding_image_processor
 
     @property
+    # model_input_names：返回模型期望的输入字段名列表
     def model_input_names(self):
         image_processor_input_names = self.image_processor.model_input_names
         decoder_ids = ["decoder_attention_mask", "decoder_input_ids"]

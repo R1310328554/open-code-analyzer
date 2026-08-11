@@ -13,14 +13,18 @@
 # limitations under the License.
 """PLBART model configuration"""
 
+# PLBART 配置：UCLA 编程语言 BART seq2seq 预训练超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PLBartConfig：UCLA PLBART 编程语言 seq2seq 预训练超参
 @auto_docstring(checkpoint="uclanlp/plbart-base")
 @strict
+# PLBartConfig：UCLA PLBART 编程语言 seq2seq 预训练超参
 class PLBartConfig(PreTrainedConfig):
     r"""
     Example:

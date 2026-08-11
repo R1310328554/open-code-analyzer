@@ -15,6 +15,8 @@
 Processor class for Pixtral.
 """
 
+# Pixtral 处理器：图像 patch 与文本 token 多模态联合预处理
+
 import numpy as np
 
 from ...processing_utils import (
@@ -33,6 +35,7 @@ if is_vision_available():
 logger = logging.get_logger(__name__)
 
 
+# PixtralProcessorKwargs：Pixtral 联合处理器 kwargs 类型
 class PixtralProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -47,9 +50,11 @@ class PixtralProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torchvision", "torch"))
+# PixtralProcessor：Pixtral 图像-文本多模态联合处理器
 class PixtralProcessor(ProcessorMixin):
     valid_processor_kwargs = PixtralProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         image_processor=None,
@@ -87,13 +92,16 @@ class PixtralProcessor(ProcessorMixin):
         self.image_end_token_id = tokenizer.convert_tokens_to_ids(self.image_end_token)
 
     @property
+    # image_token_ids：返回图像占位 token 的 id 列表
     def image_token_ids(self) -> list[int]:
         return [self.image_token_id, self.image_break_token_id, self.image_end_token_id]
 
+    # _process_images：预处理图像并计算 patch 网格尺寸
     def _process_images(self, images, **images_kwargs):
         images_kwargs["patch_size"] = self.patch_size * self.spatial_merge_size
         return super()._process_images(images, **images_kwargs)
 
+    # replace_image_token：将 [IMG] 占位符替换为实际图像 token 序列
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         patch_size = self.patch_size * self.spatial_merge_size
         height, width = image_inputs["image_sizes"][image_idx]
@@ -104,6 +112,7 @@ class PixtralProcessor(ProcessorMixin):
         replace_tokens[-1] = self.image_end_token
         return "".join(replace_tokens)
 
+    # _get_num_multimodal_tokens：估算多模态输入的视觉 token 总数
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -141,6 +150,7 @@ class PixtralProcessor(ProcessorMixin):
         return MultiModalData(**vision_data)
 
     @property
+    # model_input_names：返回模型期望的输入字段名列表
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         image_processor_input_names = self.image_processor.model_input_names

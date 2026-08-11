@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Pixio model."""
 
+# Pixio modular 源：继承 DINOv2/ViT/Swin 组件实现视觉骨干
+
 import torch
 from huggingface_hub.dataclasses import strict
 from torch import nn
@@ -32,6 +34,7 @@ from ..vit.modeling_vit import ViTAttention, ViTLayer, ViTPatchEmbeddings, ViTPr
 
 @auto_docstring(checkpoint="facebook/pixio-huge")
 @strict
+# PixioConfig：Meta Pixio 视觉 Transformer 骨干网络超参
 class PixioConfig(Dinov2Config):
     r"""
     apply_layernorm (`bool`, *optional*, defaults to `True`):
@@ -72,15 +75,18 @@ class PixioConfig(Dinov2Config):
     use_mask_token = AttributeError()
 
 
+# PixioPatchEmbeddings：Pixio 图像 patch 卷积嵌入层
 class PixioPatchEmbeddings(ViTPatchEmbeddings):
     pass
 
 
+# PixioEmbeddings：Pixio CLS token + 位置编码 + patch 嵌入
 class PixioEmbeddings(nn.Module):
     """
     Construct the CLS tokens, position and patch embeddings.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig) -> None:
         super().__init__()
 
@@ -94,6 +100,7 @@ class PixioEmbeddings(nn.Module):
         self.patch_size = config.patch_size
         self.config = config
 
+    # interpolate_pos_encoding：双三次插值扩展位置编码以适配高分辨率
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher
@@ -132,6 +139,7 @@ class PixioEmbeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         batch_size, _, height, width = pixel_values.shape
         target_dtype = self.patch_embeddings.projection.weight.dtype
@@ -147,23 +155,29 @@ class PixioEmbeddings(nn.Module):
         return embeddings
 
 
+# PixioAttention：Pixio 多头自注意力（ViT 风格）
 class PixioAttention(ViTAttention):
     pass
 
 
+# PixioMLP：Pixio GELU 前馈 MLP
 class PixioMLP(Dinov2MLP):
     pass
 
 
+# PixioDropPath：Pixio 随机深度 DropPath 正则化
 class PixioDropPath(SwinDropPath):
     pass
 
 
+# PixioLayer：Pixio Transformer 编码层（Attn + MLP + 残差）
 class PixioLayer(ViTLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__(config)
         self.drop_path = PixioDropPath(config.drop_path_rate) if config.drop_path_rate > 0.0 else nn.Identity()
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -185,12 +199,15 @@ class PixioLayer(ViTLayer):
         return hidden_states
 
 
+# PixioPreTrainedModel：Pixio 预训练基类与权重初始化
 class PixioPreTrainedModel(ViTPreTrainedModel):
     pass
 
 
 @auto_docstring
+# PixioModel：Pixio 视觉 Transformer 完整编码器
 class PixioModel(PixioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__(config)
         self.config = config
@@ -205,6 +222,7 @@ class PixioModel(PixioPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -237,7 +255,9 @@ class PixioModel(PixioPreTrainedModel):
     Pixio backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# PixioBackbone：Pixio 多尺度特征骨干网络（BackboneMixin）
 class PixioBackbone(BackboneMixin, PixioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PixioConfig):
         super().__init__(config)
 
@@ -250,6 +270,7 @@ class PixioBackbone(BackboneMixin, PixioPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor,

@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch PLBART model."""
 
+# PLBART modular 源：继承 BART/mBART 组件实现编程语言 seq2seq
+
 import math
 
 import torch
@@ -44,11 +46,13 @@ from ..mbart.modeling_mbart import shift_tokens_right
 from .configuration_plbart import PLBartConfig
 
 
+# PLBartScaledWordEmbedding：PLBART 带缩放因子的词嵌入层
 class PLBartScaledWordEmbedding(BartScaledWordEmbedding):
     pass
 
 
 @auto_docstring
+# PLBartPreTrainedModel：PLBART 预训练基类与权重初始化
 class PLBartPreTrainedModel(PreTrainedModel):
     config: PLBartConfig
     base_model_prefix = "model"
@@ -58,27 +62,32 @@ class PLBartPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
     _supports_flex_attn = True
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PLBartForConditionalGeneration):
             init.zeros_(module.final_logits_bias)
 
 
+# PLBartEncoder：PLBART Transformer 编码器堆叠
 class PLBartEncoder(BartEncoder):
     pass
 
 
+# PLBartDecoder：PLBART Transformer 解码器堆叠
 class PLBartDecoder(BartDecoder):
     pass
 
 
 @auto_docstring
+# PLBartModel：PLBART 编码器-解码器 seq2seq 主干
 class PLBartModel(PLBartPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
 
@@ -91,6 +100,7 @@ class PLBartModel(PLBartPreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.shared
 
@@ -102,6 +112,7 @@ class PLBartModel(PLBartPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -184,6 +195,7 @@ class PLBartModel(PLBartPreTrainedModel):
     The PLBART Model with a language modeling head. Can be used for code-to-text, text-to-code and code-to-code.
     """
 )
+# PLBartForConditionalGeneration：PLBART 条件文本生成（代码翻译等）
 class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -191,6 +203,7 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
         "lm_head.weight": "model.shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
         self.model = PLBartModel(config)
@@ -218,6 +231,7 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -319,11 +333,14 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
         return shift_tokens_right(labels, self.config.pad_token_id)
 
 
+# PLBartClassificationHead：PLBART 序列分类投影头
 class PLBartClassificationHead(BartClassificationHead):
     pass
 
 
+# PLBartForSequenceClassification：PLBART 序列分类
 class PLBartForSequenceClassification(BigBirdPegasusForSequenceClassification):
+    # forward：模块前向计算
     def forward(**super_kwargs):
         r"""
         decoder_input_ids (`torch.LongTensor` of shape `(batch_size, target_sequence_length)`, *optional*):
@@ -353,9 +370,11 @@ class PLBartForSequenceClassification(BigBirdPegasusForSequenceClassification):
         super().forward(**super_kwargs)
 
 
+# PLBartForCausalLM：PLBART 解码器因果语言建模
 class PLBartForCausalLM(BartForCausalLM):
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(**super_kwargs):
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):

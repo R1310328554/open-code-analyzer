@@ -55,23 +55,29 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_plbart import PLBartConfig
 
 
+# PLBART 建模：编程语言 seq2seq 编码器-解码器 Transformer（自动生成）
+
 logger = logging.get_logger(__name__)
 
 
+# PLBartScaledWordEmbedding：PLBART 带缩放因子的词嵌入层
 class PLBartScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float | None = 1.0):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
         self.embed_scale = embed_scale
 
+    # forward：模块前向计算
     def forward(self, input_ids: torch.Tensor):
         return super().forward(input_ids) * self.embed_scale
 
 
 @auto_docstring
+# PLBartPreTrainedModel：PLBART 预训练基类与权重初始化
 class PLBartPreTrainedModel(PreTrainedModel):
     config: PLBartConfig
     base_model_prefix = "model"
@@ -81,23 +87,27 @@ class PLBartPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
     _supports_flex_attn = True
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PLBartForConditionalGeneration):
             init.zeros_(module.final_logits_bias)
 
 
+# PLBartLearnedPositionalEmbedding：PLBART 可学习位置编码（支持截断）
 class PLBartLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_embeddings: int, embedding_dim: int):
         # PLBart is set up so that if padding_idx is specified then offset the embedding ids by 2
         # and adjust num_embeddings appropriately. Other models don't have this hack
         self.offset = 2
         super().__init__(num_embeddings + self.offset, embedding_dim)
 
+    # forward：模块前向计算
     def forward(
         self, input_ids: torch.Tensor, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ):
@@ -114,6 +124,7 @@ class PLBartLearnedPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids + self.offset)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -142,9 +153,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PLBartAttention：PLBART 多头自/交叉注意力
 class PLBartAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -184,6 +197,7 @@ class PLBartAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -259,7 +273,9 @@ class PLBartAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PLBartEncoderLayer：PLBART 编码器单层（自注意力 + FFN）
 class PLBartEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -279,6 +295,7 @@ class PLBartEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -310,6 +327,7 @@ class PLBartEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PLBartEncoder：PLBART Transformer 编码器堆叠
 class PLBartEncoder(PLBartPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -325,6 +343,7 @@ class PLBartEncoder(PLBartPreTrainedModel):
         "attentions": PLBartAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
 
@@ -354,6 +373,7 @@ class PLBartEncoder(PLBartPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -399,7 +419,9 @@ class PLBartEncoder(PLBartPreTrainedModel):
         )
 
 
+# PLBartDecoderLayer：PLBART 解码器单层（自注意力 + 交叉注意力 + FFN）
 class PLBartDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -431,6 +453,7 @@ class PLBartDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -481,6 +504,7 @@ class PLBartDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PLBartDecoder：PLBART Transformer 解码器堆叠
 class PLBartDecoder(PLBartPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`PLBartDecoderLayer`]
@@ -496,6 +520,7 @@ class PLBartDecoder(PLBartPreTrainedModel):
         "cross_attentions": OutputRecorder(PLBartAttention, index=1, layer_name="encoder_attn"),
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -523,6 +548,7 @@ class PLBartDecoder(PLBartPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -608,6 +634,7 @@ class PLBartDecoder(PLBartPreTrainedModel):
         )
 
 
+# shift_tokens_right：decoder 输入右移一位（BART 风格 teacher forcing）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
     """
     Shift input ids one token to the right, and wrap the last non pad token (the <LID> token) Note that PLBart does not
@@ -629,12 +656,14 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
 
 
 @auto_docstring
+# PLBartModel：PLBART 编码器-解码器 seq2seq 主干
 class PLBartModel(PLBartPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
 
@@ -647,6 +676,7 @@ class PLBartModel(PLBartPreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.shared
 
@@ -658,6 +688,7 @@ class PLBartModel(PLBartPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -740,6 +771,7 @@ class PLBartModel(PLBartPreTrainedModel):
     The PLBART Model with a language modeling head. Can be used for code-to-text, text-to-code and code-to-code.
     """
 )
+# PLBartForConditionalGeneration：PLBART 条件文本生成（代码翻译等）
 class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -747,6 +779,7 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
         "lm_head.weight": "model.shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig):
         super().__init__(config)
         self.model = PLBartModel(config)
@@ -774,6 +807,7 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -875,9 +909,11 @@ class PLBartForConditionalGeneration(PLBartPreTrainedModel, GenerationMixin):
         return shift_tokens_right(labels, self.config.pad_token_id)
 
 
+# PLBartClassificationHead：PLBART 序列分类投影头
 class PLBartClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         input_dim: int,
@@ -890,6 +926,7 @@ class PLBartClassificationHead(nn.Module):
         self.dropout = nn.Dropout(p=pooler_dropout)
         self.out_proj = nn.Linear(inner_dim, num_classes)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.dense(hidden_states)
@@ -905,7 +942,9 @@ class PLBartClassificationHead(nn.Module):
     for GLUE tasks.
     """
 )
+# PLBartForSequenceClassification：PLBART 序列分类
 class PLBartForSequenceClassification(PLBartPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PLBartConfig, **kwargs):
         super().__init__(config, **kwargs)
         self.model = PLBartModel(config)
@@ -921,6 +960,7 @@ class PLBartForSequenceClassification(PLBartPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1031,17 +1071,20 @@ class PLBartForSequenceClassification(PLBartPreTrainedModel):
         )
 
 
+# PLBartDecoderWrapper：PLBART 解码器封装（供生成管线调用）
 class PLBartDecoderWrapper(PLBartPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
     used in combination with the [`EncoderDecoderModel`] framework.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.decoder = PLBartDecoder(config)
         self.post_init()
 
+    # forward：模块前向计算
     def forward(self, *args, **kwargs):
         return self.decoder(*args, **kwargs)
 
@@ -1051,11 +1094,13 @@ class PLBartDecoderWrapper(PLBartPreTrainedModel):
     PLBART decoder with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# PLBartForCausalLM：PLBART 解码器因果语言建模
 class PLBartForCausalLM(PLBartPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         config.is_decoder = True
         config.is_encoder_decoder = False
@@ -1067,6 +1112,7 @@ class PLBartForCausalLM(PLBartPreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.model.decoder.embed_tokens
 
@@ -1075,6 +1121,7 @@ class PLBartForCausalLM(PLBartPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
