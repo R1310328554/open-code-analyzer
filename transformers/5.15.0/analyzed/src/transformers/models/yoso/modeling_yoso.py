@@ -45,6 +45,9 @@ from .configuration_yoso import YosoConfig
 logger = logging.get_logger(__name__)
 
 
+# YOSO 建模：线性复杂度 BERT 式编码器，LSH/期望近似自注意力
+
+
 lsh_cumulation = None
 
 
@@ -101,6 +104,8 @@ def hashing(query, key, num_hash, hash_len):
     return query_hash.int(), query_hash.int()
 
 
+# YosoCumulation：期望近似注意力聚合，自定义 autograd 前向/反向
+# YosoCumulation：期望近似注意力聚合，自定义 autograd 前向/反向
 class YosoCumulation(torch.autograd.Function):
     @staticmethod
     def forward(ctx, query_mask, key_mask, query, key, value, config):
@@ -132,6 +137,8 @@ class YosoCumulation(torch.autograd.Function):
         return None, None, grad_query, grad_key, grad_value, None
 
 
+# YosoLSHCumulation：LSH 哈希表累加注意力，支持 CUDA 快速哈希核
+# YosoLSHCumulation：LSH 哈希表累加注意力，支持 CUDA 快速哈希核
 class YosoLSHCumulation(torch.autograd.Function):
     @staticmethod
     def forward(ctx, query_mask, key_mask, query, key, value, config):
@@ -222,6 +229,7 @@ class YosoLSHCumulation(torch.autograd.Function):
 
 
 # Copied from transformers.models.nystromformer.modeling_nystromformer.NystromformerEmbeddings
+# YosoEmbeddings：词/位置/类型嵌入求和并 LayerNorm
 class YosoEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -277,6 +285,8 @@ class YosoEmbeddings(nn.Module):
         return embeddings
 
 
+# YosoSelfAttention：YOSO 自注意力，期望或 LSH 累积替代全量点积
+# YosoSelfAttention：YOSO 自注意力，期望或 LSH 累积替代全量点积
 class YosoSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -422,6 +432,7 @@ class YosoSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# YosoSelfOutput：注意力输出线性投影 + dropout + 残差 LayerNorm
 class YosoSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -436,6 +447,8 @@ class YosoSelfOutput(nn.Module):
         return hidden_states
 
 
+# YosoAttention：封装 YosoSelfAttention 与 YosoSelfOutput
+# YosoAttention：封装 YosoSelfAttention 与 YosoSelfOutput
 class YosoAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -450,6 +463,7 @@ class YosoAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# YosoIntermediate：FFN 第一层线性 + 激活
 class YosoIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -466,6 +480,7 @@ class YosoIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# YosoOutput：FFN 第二层线性 + dropout + 残差 LayerNorm
 class YosoOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -480,6 +495,8 @@ class YosoOutput(nn.Module):
         return hidden_states
 
 
+# YosoLayer：Transformer 层，自注意力 + 分块前馈
+# YosoLayer：Transformer 层，自注意力 + 分块前馈
 class YosoLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -509,6 +526,8 @@ class YosoLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# YosoEncoder：堆叠 YosoLayer 编码器
+# YosoEncoder：堆叠 YosoLayer 编码器
 class YosoEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -550,6 +569,7 @@ class YosoEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform
+# YosoPredictionHeadTransform：MLM 预测头 Dense + 激活 + LayerNorm
 class YosoPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -568,6 +588,7 @@ class YosoPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->Yoso
+# YosoLMPredictionHead：MLM 词表解码器，含输出偏置
 class YosoLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -585,6 +606,7 @@ class YosoLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->Yoso
+# YosoOnlyMLMHead：仅 MLM 预测头封装
 class YosoOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -596,6 +618,7 @@ class YosoOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# YosoPreTrainedModel：YOSO 预训练基类与嵌入/MLM 头权重初始化
 class YosoPreTrainedModel(PreTrainedModel):
     config: YosoConfig
     base_model_prefix = "yoso"
@@ -613,6 +636,7 @@ class YosoPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# YosoModel：嵌入 + YosoEncoder 骨干编码器
 class YosoModel(YosoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -700,6 +724,7 @@ class YosoModel(YosoPreTrainedModel):
 
 
 @auto_docstring
+# YosoForMaskedLM：掩码语言建模头，嵌入与输出权重绑定
 class YosoForMaskedLM(YosoPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -775,6 +800,8 @@ class YosoForMaskedLM(YosoPreTrainedModel):
         )
 
 
+# YosoClassificationHead：序列级分类 Dense + 线性输出（CLS 池化）
+# YosoClassificationHead：序列级分类 Dense + 线性输出（CLS 池化）
 class YosoClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -802,6 +829,7 @@ class YosoClassificationHead(nn.Module):
     the pooled output) e.g. for GLUE tasks.
     """
 )
+# YosoForSequenceClassification：序列级分类/回归（如 GLUE）
 class YosoForSequenceClassification(YosoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -883,6 +911,7 @@ class YosoForSequenceClassification(YosoPreTrainedModel):
 
 
 @auto_docstring
+# YosoForMultipleChoice：多选阅读理解，展平选项 batch 后打分
 class YosoForMultipleChoice(YosoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -988,6 +1017,7 @@ class YosoForMultipleChoice(YosoPreTrainedModel):
 
 
 @auto_docstring
+# YosoForTokenClassification：逐 token 序列标注（如 NER）
 class YosoForTokenClassification(YosoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1063,6 +1093,7 @@ class YosoForTokenClassification(YosoPreTrainedModel):
 
 
 @auto_docstring
+# YosoForQuestionAnswering：抽取式 QA，span 起止 logits
 class YosoForQuestionAnswering(YosoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

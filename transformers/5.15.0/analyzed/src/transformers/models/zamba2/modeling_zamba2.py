@@ -48,6 +48,10 @@ from .configuration_zamba2 import Zamba2Config
 logger = logging.get_logger(__name__)
 
 
+# Zamba2 建模：Mamba2-Transformer 混合解码器，共享注意力与门控 RMSNorm
+
+
+# Zamba2RMSNormGated：门控 RMS 归一化，可选 SiLU 门控
 class Zamba2RMSNormGated(torch.nn.Module):
     def __init__(self, hidden_size, group_size, eps=1e-6):
         super().__init__()
@@ -69,6 +73,8 @@ class Zamba2RMSNormGated(torch.nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+# Zamba2RMSNorm：标准 RMS 层归一化
+# Zamba2RMSNorm：标准 RMS 层归一化
 class Zamba2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -89,6 +95,8 @@ class Zamba2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Zamba2RotaryEmbedding：共享注意力层 RoPE 旋转位置编码
+# Zamba2RotaryEmbedding：共享注意力层 RoPE 旋转位置编码
 class Zamba2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Zamba2Config, device=None):
@@ -216,6 +224,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Zamba2Attention：共享 Transformer 注意力，可选 Q/K/V 适配器与 mem RoPE
+# Zamba2Attention：共享 Transformer 注意力，可选 Q/K/V 适配器与 mem RoPE
 class Zamba2Attention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -643,6 +653,8 @@ def mamba2_chunk_scan(
         mamba2_chunk_scan,
     ]
 )
+# Zamba2MambaMixer：Mamba2 选择性状态空间混合器，分块扫描与卷积
+# Zamba2MambaMixer：Mamba2 选择性状态空间混合器，分块扫描与卷积
 class Zamba2MambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -860,6 +872,8 @@ class Zamba2MambaMixer(nn.Module):
         return contextualized_states
 
 
+# Zamba2MLP：共享 Transformer MLP，gate/up 适配器增强表达力
+# Zamba2MLP：共享 Transformer MLP，gate/up 适配器增强表达力
 class Zamba2MLP(nn.Module):
     def __init__(self, config: Zamba2Config, num_fwd_mem_blocks=None, block_id: int | None = None):
         """
@@ -902,6 +916,8 @@ class Zamba2MLP(nn.Module):
         return output
 
 
+# Zamba2AttentionDecoderLayer：共享注意力解码层
+# Zamba2AttentionDecoderLayer：共享注意力解码层
 class Zamba2AttentionDecoderLayer(nn.Module):
     def __init__(self, config: Zamba2Config, block_id: int | None = None, layer_idx: int | None = None):
         super().__init__()
@@ -956,6 +972,8 @@ class Zamba2AttentionDecoderLayer(nn.Module):
         return hidden_states
 
 
+# Zamba2MambaDecoderLayer：Mamba2 解码层
+# Zamba2MambaDecoderLayer：Mamba2 解码层
 class Zamba2MambaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Zamba2Config, layer_idx: int):
         super().__init__()
@@ -1008,6 +1026,8 @@ class Zamba2MambaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Zamba2HybridLayer：共享 Transformer + 线性 + Mamba2 混合层
+# Zamba2HybridLayer：共享 Transformer + 线性 + Mamba2 混合层
 class Zamba2HybridLayer(GradientCheckpointingLayer):
     def __init__(
         self, shared_transformer: Zamba2AttentionDecoderLayer, linear: nn.Linear, mamba: Zamba2MambaDecoderLayer
@@ -1073,6 +1093,7 @@ class Zamba2HybridLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Zamba2PreTrainedModel：Zamba2 预训练基类，Mamba2 混合器初始化
 class Zamba2PreTrainedModel(PreTrainedModel):
     config: Zamba2Config
     base_model_prefix = "model"
@@ -1107,6 +1128,7 @@ class Zamba2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Zamba2Model：词嵌入 + 混合层堆叠，可选 mem RoPE
 class Zamba2Model(Zamba2PreTrainedModel):
     """
     Model consisting of *config.num_hidden_layers* layers.
@@ -1248,6 +1270,7 @@ class Zamba2Model(Zamba2PreTrainedModel):
 
 
 # Adapted from transformers.models.jamba.modeling_jamba.JambaForCausalLM with Jamba->Zamba2, JAMBA->ZAMBA2
+# Zamba2ForCausalLM：因果语言建模头
 class Zamba2ForCausalLM(Zamba2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
@@ -1348,6 +1371,8 @@ class Zamba2ForCausalLM(Zamba2PreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# Zamba2ForSequenceClassification：序列级分类/回归，末 token 池化
+# Zamba2ForSequenceClassification：序列级分类/回归，末 token 池化
 class Zamba2ForSequenceClassification(Zamba2PreTrainedModel):
     def __init__(self, config: Zamba2Config):
         super().__init__(config)

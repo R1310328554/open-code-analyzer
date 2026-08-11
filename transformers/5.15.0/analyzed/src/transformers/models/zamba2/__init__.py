@@ -23,5 +23,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # zamba2 包：延迟加载 Zamba2 Mamba2-Attention 混合配置与建模子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

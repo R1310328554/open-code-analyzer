@@ -51,7 +51,11 @@ from .configuration_zamba import ZambaConfig
 logger = logging.get_logger(__name__)
 
 
+# Zamba 建模：Mamba-Transformer 混合解码器，共享注意力 + 选择性状态空间
+
+
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Zamba
+# ZambaRMSNorm：RMS 层归一化
 class ZambaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -110,6 +114,8 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ZambaAttention：共享 Transformer 注意力，输入为 Mamba 输出与词嵌入拼接
+# ZambaAttention：共享 Transformer 注意力，输入为 Mamba 输出与词嵌入拼接
 class ZambaAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper. Modified to use sliding window attention: Longformer
@@ -391,6 +397,7 @@ def mamba_selective_scan(
 
 
 @use_kernelized_func([mamba_selective_scan, mamba_selective_state_update, causal_conv1d_fn, causal_conv1d_update])
+# ZambaMambaMixer：多头选择性状态空间 Mamba 混合器
 class ZambaMambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -602,6 +609,7 @@ class ZambaMambaMixer(nn.Module):
 
 
 # Copied from transformers.models.mistral.modeling_mistral.MistralMLP with Mistral->Zamba
+# ZambaMLP：SwiGLU 前馈网络
 class ZambaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -618,6 +626,8 @@ class ZambaMLP(nn.Module):
         return down_proj
 
 
+# ZambaAttentionDecoderLayer：共享注意力解码层，拼接 hidden 与嵌入后自注意力
+# ZambaAttentionDecoderLayer：共享注意力解码层，拼接 hidden 与嵌入后自注意力
 class ZambaAttentionDecoderLayer(nn.Module):
     def __init__(self, config: ZambaConfig, layer_idx: int | None = None):
         super().__init__()
@@ -669,6 +679,8 @@ class ZambaAttentionDecoderLayer(nn.Module):
         return hidden_states
 
 
+# ZambaMambaDecoderLayer：Mamba 解码层，可选叠加 Transformer 线性输出
+# ZambaMambaDecoderLayer：Mamba 解码层，可选叠加 Transformer 线性输出
 class ZambaMambaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ZambaConfig, layer_idx: int):
         super().__init__()
@@ -721,6 +733,8 @@ class ZambaMambaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ZambaHybridLayer：混合层，共享 Transformer + 线性 + Mamba 串联
+# ZambaHybridLayer：混合层，共享 Transformer + 线性 + Mamba 串联
 class ZambaHybridLayer(GradientCheckpointingLayer):
     def __init__(self, shared_transf: ZambaAttentionDecoderLayer, linear: nn.Linear, mamba: ZambaMambaDecoderLayer):
         super().__init__()
@@ -777,6 +791,7 @@ class ZambaHybridLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ZambaPreTrainedModel：Zamba 预训练基类，Mamba 混合器特殊初始化
 class ZambaPreTrainedModel(PreTrainedModel):
     config: ZambaConfig
     base_model_prefix = "model"
@@ -817,6 +832,7 @@ class ZambaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ZambaModel：词嵌入 + 混合层堆叠解码器骨干
 class ZambaModel(ZambaPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`ZambaDecoderLayer`]
@@ -921,6 +937,7 @@ class ZambaModel(ZambaPreTrainedModel):
 
 
 # Adapted from transformers.models.jamba.modeling_jamba.JambaForCausalLM with Jamba->Zamba, JAMBA->ZAMBA
+# ZambaForCausalLM：因果语言建模头，支持 past KV cache 生成
 class ZambaForCausalLM(ZambaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
@@ -1021,6 +1038,8 @@ class ZambaForCausalLM(ZambaPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# ZambaForSequenceClassification：序列级分类/回归，取末 token 表示
+# ZambaForSequenceClassification：序列级分类/回归，取末 token 表示
 class ZambaForSequenceClassification(ZambaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

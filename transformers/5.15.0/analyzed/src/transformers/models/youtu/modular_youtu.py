@@ -41,8 +41,12 @@ from ..qwen3.modeling_qwen3 import Qwen3MLP
 logger = logging.get_logger(__name__)
 
 
+# Youtu 模块化实现：复用 Llama/DeepSeek/Qwen3 组件并定制配置
+
+
 @auto_docstring(checkpoint="tencent/Youtu-LLM-2B")
 @strict
+# YoutuConfig：继承 DeepseekV3 配置，移除 MoE 相关未用属性
 class YoutuConfig(DeepseekV3Config):
     r"""
     rope_interleave (`bool`, *optional*, defaults to `True`):
@@ -104,26 +108,38 @@ class YoutuConfig(DeepseekV3Config):
         super().__post_init__(**kwargs)
 
 
+# YoutuRMSNorm：复用 Llama RMSNorm
+# YoutuRMSNorm：复用 Llama RMSNorm
 class YoutuRMSNorm(LlamaRMSNorm):
     pass
 
 
+# YoutuRotaryEmbedding：复用 Llama RoPE 嵌入
+# YoutuRotaryEmbedding：复用 Llama RoPE 嵌入
 class YoutuRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# YoutuMLP：复用 Qwen3 SwiGLU MLP
+# YoutuMLP：复用 Qwen3 SwiGLU MLP
 class YoutuMLP(Qwen3MLP):
     pass
 
 
+# YoutuAttention：复用 DeepSeek V3 MLA 注意力
+# YoutuAttention：复用 DeepSeek V3 MLA 注意力
 class YoutuAttention(DeepseekV3Attention):
     pass
 
 
+# YoutuDecoderLayer：复用 Llama 解码层
+# YoutuDecoderLayer：复用 Llama 解码层
 class YoutuDecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# YoutuPreTrainedModel：Llama 与 PreTrainedModel 双基类，定制嵌入初始化
+# YoutuPreTrainedModel：Llama 与 PreTrainedModel 双基类，定制嵌入初始化
 class YoutuPreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -136,10 +152,14 @@ class YoutuPreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
                 init.zeros_(module.weight.data[module.padding_idx])
 
 
+# YoutuModel：复用 Llama 骨干模型
+# YoutuModel：复用 Llama 骨干模型
 class YoutuModel(LlamaModel):
     pass
 
 
+# YoutuForCausalLM：复用 Llama 因果语言建模头
+# YoutuForCausalLM：复用 Llama 因果语言建模头
 class YoutuForCausalLM(LlamaForCausalLM):
     pass
 

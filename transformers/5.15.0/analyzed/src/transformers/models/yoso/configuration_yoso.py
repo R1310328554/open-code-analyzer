@@ -13,6 +13,8 @@
 # limitations under the License.
 """YOSO model configuration"""
 
+# YOSO 配置：You Only Sample Once 线性复杂度注意力，含 LSH 与期望近似参数
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="uw-madison/yoso-4096")
 @strict
+# YosoConfig：主配置，hidden_size/层数、哈希长度、期望模式与卷积窗口
 class YosoConfig(PreTrainedConfig):
     r"""
     use_expectation (`bool`, *optional*, defaults to `True`):

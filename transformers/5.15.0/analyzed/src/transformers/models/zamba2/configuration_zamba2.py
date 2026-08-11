@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Zamba2 配置：Mamba2 + 共享 Transformer，含适配器秩与长上下文 RoPE
+
+
 @auto_docstring(checkpoint="Zyphra/Zamba2-2.7B")
 @strict
+# Zamba2Config：主配置，Mamba2 分组/头数、共享注意力适配器与 mem RoPE
 class Zamba2Config(PreTrainedConfig):
     r"""
     mamba_ngroups (`int`, *optional*, defaults to 1):

@@ -48,6 +48,10 @@ from .configuration_zamba2 import Zamba2Config
 logger = logging.get_logger(__name__)
 
 
+# Zamba2 模块化实现：复用 Zamba/Bamba/Llama 组件并扩展 Mamba2 与适配器
+
+
+# Zamba2RMSNormGated：门控 RMS 归一化
 class Zamba2RMSNormGated(torch.nn.Module):
     def __init__(self, hidden_size, group_size, eps=1e-6):
         super().__init__()
@@ -69,14 +73,20 @@ class Zamba2RMSNormGated(torch.nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+# Zamba2RMSNorm：复用 Zamba RMSNorm
+# Zamba2RMSNorm：复用 Zamba RMSNorm
 class Zamba2RMSNorm(ZambaRMSNorm):
     pass
 
 
+# Zamba2RotaryEmbedding：复用 Llama RoPE
+# Zamba2RotaryEmbedding：复用 Llama RoPE
 class Zamba2RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# Zamba2Attention：继承 Zamba 注意力并添加 Q/K/V 适配器
+# Zamba2Attention：继承 Zamba 注意力并添加 Q/K/V 适配器
 class Zamba2Attention(ZambaAttention):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -186,6 +196,8 @@ class Zamba2Attention(ZambaAttention):
         return attn_output, attn_weights
 
 
+# Zamba2MambaMixer：基于 Bamba Mamba2 混合器，门控 RMSNorm 输出
+# Zamba2MambaMixer：基于 Bamba Mamba2 混合器，门控 RMSNorm 输出
 class Zamba2MambaMixer(BambaMixer):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -231,6 +243,8 @@ class Zamba2MambaMixer(BambaMixer):
         del self.use_bias
 
 
+# Zamba2MLP：共享 Transformer MLP，含 gate/up 适配器
+# Zamba2MLP：共享 Transformer MLP，含 gate/up 适配器
 class Zamba2MLP(nn.Module):
     def __init__(self, config: Zamba2Config, num_fwd_mem_blocks=None, block_id: int | None = None):
         """
@@ -273,6 +287,8 @@ class Zamba2MLP(nn.Module):
         return output
 
 
+# Zamba2AttentionDecoderLayer：复用 Zamba 注意力层并替换为 Zamba2 子模块
+# Zamba2AttentionDecoderLayer：复用 Zamba 注意力层并替换为 Zamba2 子模块
 class Zamba2AttentionDecoderLayer(ZambaAttentionDecoderLayer):
     def __init__(self, config: Zamba2Config, block_id: int | None = None, layer_idx: int | None = None):
         self.block_id = block_id
@@ -325,6 +341,8 @@ class Zamba2AttentionDecoderLayer(ZambaAttentionDecoderLayer):
         return hidden_states
 
 
+# Zamba2MambaDecoderLayer：复用 Zamba Mamba 层并替换 Zamba2MambaMixer
+# Zamba2MambaDecoderLayer：复用 Zamba Mamba 层并替换 Zamba2MambaMixer
 class Zamba2MambaDecoderLayer(ZambaMambaDecoderLayer):
     def __init__(self, config: Zamba2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -332,6 +350,8 @@ class Zamba2MambaDecoderLayer(ZambaMambaDecoderLayer):
         self.input_layernorm = Zamba2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# Zamba2HybridLayer：复用 Zamba 混合层并替换共享 Transformer 引用
+# Zamba2HybridLayer：复用 Zamba 混合层并替换共享 Transformer 引用
 class Zamba2HybridLayer(ZambaHybridLayer):
     def __init__(
         self, shared_transformer: Zamba2AttentionDecoderLayer, linear: nn.Linear, mamba: Zamba2MambaDecoderLayer
@@ -396,6 +416,7 @@ class Zamba2HybridLayer(ZambaHybridLayer):
 
 
 @auto_docstring
+# Zamba2PreTrainedModel：Zamba2 预训练基类
 class Zamba2PreTrainedModel(PreTrainedModel):
     config: Zamba2Config
     base_model_prefix = "model"
@@ -429,6 +450,8 @@ class Zamba2PreTrainedModel(PreTrainedModel):
             init.ones_(module.D)
 
 
+# Zamba2Model：多继承 Zamba 骨干与 Zamba2 预训练基类
+# Zamba2Model：多继承 Zamba 骨干与 Zamba2 预训练基类
 class Zamba2Model(ZambaModel, Zamba2PreTrainedModel):
     """
     Model consisting of *config.num_hidden_layers* layers.
@@ -569,10 +592,14 @@ class Zamba2Model(ZambaModel, Zamba2PreTrainedModel):
         )
 
 
+# Zamba2ForCausalLM：复用 Zamba 因果 LM 头
+# Zamba2ForCausalLM：复用 Zamba 因果 LM 头
 class Zamba2ForCausalLM(ZambaForCausalLM):
     pass
 
 
+# Zamba2ForSequenceClassification：复用 Zamba 序列分类头并替换 Zamba2Model
+# Zamba2ForSequenceClassification：复用 Zamba 序列分类头并替换 Zamba2Model
 class Zamba2ForSequenceClassification(ZambaForSequenceClassification):
     def __init__(self, config: Zamba2Config):
         super().__init__(config)

@@ -49,7 +49,11 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_youtu import YoutuConfig
 
 
+# Youtu 建模：腾讯 Youtu-LLM 因果解码器，MLA 压缩 KV 与 RoPE
+
+
 @use_kernel_forward_from_hub("RMSNorm")
+# YoutuRMSNorm：RMS 层归一化，等价 T5LayerNorm
 class YoutuRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -70,6 +74,8 @@ class YoutuRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# YoutuRotaryEmbedding：RoPE 旋转位置编码，支持动态/高级 RoPE 类型
+# YoutuRotaryEmbedding：RoPE 旋转位置编码，支持动态/高级 RoPE 类型
 class YoutuRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: YoutuConfig, device=None):
@@ -127,6 +133,8 @@ class YoutuRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# YoutuMLP：SwiGLU 前馈，gate/up/down 三线性投影
+# YoutuMLP：SwiGLU 前馈，gate/up/down 三线性投影
 class YoutuMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -268,6 +276,8 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# YoutuAttention：多头潜注意力 MLA，LoRA 压缩 Q/KV 与 RoPE
+# YoutuAttention：多头潜注意力 MLA，LoRA 压缩 Q/KV 与 RoPE
 class YoutuAttention(nn.Module):
     """Multi-headed Latent Attention (MLA) from Deepseek V2"""
 
@@ -394,6 +404,8 @@ class YoutuAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# YoutuDecoderLayer：Pre-LN 解码层，自注意力 + MLP 残差
+# YoutuDecoderLayer：Pre-LN 解码层，自注意力 + MLP 残差
 class YoutuDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: YoutuConfig, layer_idx: int):
         super().__init__()
@@ -438,6 +450,7 @@ class YoutuDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# YoutuPreTrainedModel：Youtu 预训练基类与嵌入权重初始化
 class YoutuPreTrainedModel(PreTrainedModel):
     config: YoutuConfig
     base_model_prefix = "model"
@@ -467,6 +480,7 @@ class YoutuPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# YoutuModel：词嵌入 + 解码层堆叠 + RMSNorm 骨干
 class YoutuModel(YoutuPreTrainedModel):
     def __init__(self, config: YoutuConfig):
         super().__init__(config)
@@ -541,6 +555,7 @@ class YoutuModel(YoutuPreTrainedModel):
 
 
 @auto_docstring
+# YoutuForCausalLM：因果语言建模头，支持 KV cache 生成
 class YoutuForCausalLM(YoutuPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

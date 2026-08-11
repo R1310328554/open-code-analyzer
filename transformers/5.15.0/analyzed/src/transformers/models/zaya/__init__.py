@@ -24,5 +24,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # zaya 包：延迟加载 Zyphra Zaya 配置与建模子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Zamba model configuration"""
 
+# Zamba 配置：Mamba 与共享 Transformer 混合架构，含层周期与 Mamba 头数
+
 import math
 
 from huggingface_hub.dataclasses import strict
@@ -23,6 +25,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="Zyphra/Zamba-7B-v1")
 @strict
+# ZambaConfig：主配置，attention_hidden_size、Mamba 头数与共享注意力周期
 class ZambaConfig(PreTrainedConfig):
     r"""
     attention_hidden_size (`int`, *optional*):

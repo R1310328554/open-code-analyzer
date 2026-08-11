@@ -24,6 +24,8 @@
 # limitations under the License.
 
 
+# Youtu 配置：腾讯 Youtu-LLM，DeepSeek 风格 MLA 与 RoPE 参数
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -33,6 +35,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="tencent/Youtu-LLM-2B")
 @strict
+# YoutuConfig：主配置，LoRA 秩、RoPE 维度与长上下文位置嵌入
 class YoutuConfig(PreTrainedConfig):
     r"""
     rope_interleave (`bool`, *optional*, defaults to `True`):
