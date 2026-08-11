@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.checks import Tags, Warning, register
 
 
+# 为会话 cookie 安全警告追加 Secure 说明
 def add_session_cookie_message(message):
     return message + (
         " Using a secure-only session cookie makes it more difficult for "
@@ -32,6 +33,7 @@ W012 = Warning(
 )
 
 
+# 为会话 cookie 警告追加 HttpOnly 说明
 def add_httponly_message(message):
     return message + (
         " Using an HttpOnly session cookie makes it more difficult for "
@@ -62,6 +64,7 @@ W015 = Warning(
 )
 
 
+# 部署检查：SESSION_COOKIE_SECURE 应为 True
 @register(Tags.security, deploy=True)
 def check_session_cookie_secure(app_configs, **kwargs):
     if settings.SESSION_COOKIE_SECURE is True:
@@ -76,6 +79,7 @@ def check_session_cookie_secure(app_configs, **kwargs):
     return errors
 
 
+# 部署检查：SESSION_COOKIE_HTTPONLY 应为 True
 @register(Tags.security, deploy=True)
 def check_session_cookie_httponly(app_configs, **kwargs):
     if settings.SESSION_COOKIE_HTTPONLY is True:
@@ -90,9 +94,11 @@ def check_session_cookie_httponly(app_configs, **kwargs):
     return errors
 
 
+# 判断是否启用 SessionMiddleware
 def _session_middleware():
     return "django.contrib.sessions.middleware.SessionMiddleware" in settings.MIDDLEWARE
 
 
+# 判断 INSTALLED_APPS 是否包含 django.contrib.sessions
 def _session_app():
     return "django.contrib.sessions" in settings.INSTALLED_APPS

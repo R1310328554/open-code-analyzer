@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.checks import Error, Tags, register
 
 
+# Django 4.0+ 校验 CSRF_TRUSTED_ORIGINS 条目须含协议前缀
 @register(Tags.compatibility)
 def check_csrf_trusted_origins(app_configs, **kwargs):
     errors = []

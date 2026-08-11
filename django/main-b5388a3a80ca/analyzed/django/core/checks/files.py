@@ -5,6 +5,7 @@ from django.conf import settings
 from . import Error, Tags, register
 
 
+# 校验 FILE_UPLOAD_TEMP_DIR 指向的目录是否存在
 @register(Tags.files)
 def check_setting_file_upload_temp_dir(app_configs, **kwargs):
     setting = getattr(settings, "FILE_UPLOAD_TEMP_DIR", None)

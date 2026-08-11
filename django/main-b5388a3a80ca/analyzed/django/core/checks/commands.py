@@ -1,6 +1,7 @@
 from django.core.checks import Error, Tags, register
 
 
+# 校验 migrate 与 makemigrations 命令使用相同的 autodetector
 @register(Tags.commands)
 def migrate_and_makemigrations_autodetector(**kwargs):
     from django.core.management import get_commands, load_command_class

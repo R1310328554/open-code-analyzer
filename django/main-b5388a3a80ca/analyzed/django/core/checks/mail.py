@@ -3,6 +3,7 @@ from django.core.checks import Error, Tags, Warning, register
 from django.core.mail import DEFAULT_MAILER_ALIAS
 
 
+# 自定义 MAILERS 时须包含 default 别名条目
 @register(Tags.mail)
 def check_mailers_default_alias(app_configs, **kwargs):
     if not settings.is_overridden("MAILERS"):
@@ -29,6 +30,7 @@ def check_mailers_default_alias(app_configs, **kwargs):
     ]
 
 
+# 仅用于开发/测试的非生产邮件后端类路径集合
 NON_PRODUCTION_EMAIL_BACKENDS = {
     "django.core.mail.backends.console.EmailBackend",
     "django.core.mail.backends.dummy.EmailBackend",
@@ -37,6 +39,7 @@ NON_PRODUCTION_EMAIL_BACKENDS = {
 }
 
 
+# 部署检查：default mailer 不得使用开发专用后端
 @register(Tags.mail, deploy=True)
 def check_mailers_production_backend(app_configs, **kwargs):
     try:

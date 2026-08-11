@@ -20,16 +20,19 @@ W016 = Warning(
 )
 
 
+# 判断是否启用 CsrfViewMiddleware
 def _csrf_middleware():
     return "django.middleware.csrf.CsrfViewMiddleware" in settings.MIDDLEWARE
 
 
+# 部署检查：建议启用 CSRF 中间件
 @register(Tags.security, deploy=True)
 def check_csrf_middleware(app_configs, **kwargs):
     passed_check = _csrf_middleware()
     return [] if passed_check else [W003]
 
 
+# 部署检查：CSRF_COOKIE_SECURE 应为 True（非 session 模式）
 @register(Tags.security, deploy=True)
 def check_csrf_cookie_secure(app_configs, **kwargs):
     passed_check = (
@@ -40,6 +43,7 @@ def check_csrf_cookie_secure(app_configs, **kwargs):
     return [] if passed_check else [W016]
 
 
+# 校验 CSRF_FAILURE_VIEW 可导入且签名正确
 @register(Tags.security)
 def check_csrf_failure_view(app_configs, **kwargs):
     from django.middleware.csrf import _get_failure_view

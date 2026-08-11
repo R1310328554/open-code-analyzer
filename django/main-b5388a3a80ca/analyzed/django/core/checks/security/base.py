@@ -3,11 +3,13 @@ from django.core.checks import Error, Tags, Warning, register
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.csp import CSP
 
+# SECURE_CROSS_ORIGIN_OPENER_POLICY 合法取值
 CROSS_ORIGIN_OPENER_POLICY_VALUES = {
     "same-origin",
     "same-origin-allow-popups",
     "unsafe-none",
 }
+# SECURE_REFERRER_POLICY 合法取值
 REFERRER_POLICY_VALUES = {
     "no-referrer",
     "no-referrer-when-downgrade",
@@ -19,6 +21,7 @@ REFERRER_POLICY_VALUES = {
     "unsafe-url",
 }
 
+# 自动生成 SECRET_KEY 的不安全前缀
 SECRET_KEY_INSECURE_PREFIX = "django-insecure-"
 SECRET_KEY_MIN_LENGTH = 50
 SECRET_KEY_MIN_UNIQUE_CHARACTERS = 5
@@ -160,22 +163,26 @@ W027 = Warning(
 )
 
 
+# 判断是否启用 SecurityMiddleware
 def _security_middleware():
     return "django.middleware.security.SecurityMiddleware" in settings.MIDDLEWARE
 
 
+# 判断是否启用 XFrameOptionsMiddleware
 def _xframe_middleware():
     return (
         "django.middleware.clickjacking.XFrameOptionsMiddleware" in settings.MIDDLEWARE
     )
 
 
+# 判断是否启用 ContentSecurityPolicyMiddleware
 def _csp_middleware():
     return (
         "django.middleware.csp.ContentSecurityPolicyMiddleware" in settings.MIDDLEWARE
     )
 
 
+# CSP 策略字典是否包含 CSP.NONCE
 def _csp_policy_contains_nonce(policy):
     try:
         policy_values = policy.values()
@@ -190,6 +197,7 @@ def _csp_policy_contains_nonce(policy):
     return False
 
 
+# TEMPLATES 是否配置了 csp context processor
 def _csp_context_processor_configured():
     context_processor = "django.template.context_processors.csp"
     return any(
@@ -200,24 +208,28 @@ def _csp_context_processor_configured():
     )
 
 
+# 部署检查：须启用 SecurityMiddleware 否则多项 SECURE_* 无效
 @register(Tags.security, deploy=True)
 def check_security_middleware(app_configs, **kwargs):
     passed_check = _security_middleware()
     return [] if passed_check else [W001]
 
 
+# 部署检查：建议启用 XFrameOptionsMiddleware 防点击劫持
 @register(Tags.security, deploy=True)
 def check_xframe_options_middleware(app_configs, **kwargs):
     passed_check = _xframe_middleware()
     return [] if passed_check else [W002]
 
 
+# 部署检查：启用 SecurityMiddleware 时应配置 SECURE_HSTS_SECONDS
 @register(Tags.security, deploy=True)
 def check_sts(app_configs, **kwargs):
     passed_check = not _security_middleware() or settings.SECURE_HSTS_SECONDS
     return [] if passed_check else [W004]
 
 
+# 部署检查：HSTS 是否包含子域
 @register(Tags.security, deploy=True)
 def check_sts_include_subdomains(app_configs, **kwargs):
     passed_check = (
@@ -228,6 +240,7 @@ def check_sts_include_subdomains(app_configs, **kwargs):
     return [] if passed_check else [W005]
 
 
+# 部署检查：是否启用 HSTS preload
 @register(Tags.security, deploy=True)
 def check_sts_preload(app_configs, **kwargs):
     passed_check = (
@@ -238,6 +251,7 @@ def check_sts_preload(app_configs, **kwargs):
     return [] if passed_check else [W021]
 
 
+# 部署检查：SECURE_CONTENT_TYPE_NOSNIFF 应为 True
 @register(Tags.security, deploy=True)
 def check_content_type_nosniff(app_configs, **kwargs):
     passed_check = (
@@ -246,12 +260,14 @@ def check_content_type_nosniff(app_configs, **kwargs):
     return [] if passed_check else [W006]
 
 
+# 部署检查：建议 SECURE_SSL_REDIRECT 强制 HTTPS
 @register(Tags.security, deploy=True)
 def check_ssl_redirect(app_configs, **kwargs):
     passed_check = not _security_middleware() or settings.SECURE_SSL_REDIRECT is True
     return [] if passed_check else [W008]
 
 
+# 校验密钥长度、唯一字符数及非 django-insecure- 前缀
 def _check_secret_key(secret_key):
     return (
         len(set(secret_key)) >= SECRET_KEY_MIN_UNIQUE_CHARACTERS
@@ -260,6 +276,7 @@ def _check_secret_key(secret_key):
     )
 
 
+# 部署检查：SECRET_KEY 强度
 @register(Tags.security, deploy=True)
 def check_secret_key(app_configs, **kwargs):
     try:
@@ -271,6 +288,7 @@ def check_secret_key(app_configs, **kwargs):
     return [] if passed_check else [W009]
 
 
+# 部署检查：SECRET_KEY_FALLBACKS 各条目强度
 @register(Tags.security, deploy=True)
 def check_secret_key_fallbacks(app_configs, **kwargs):
     warnings = []
@@ -287,23 +305,27 @@ def check_secret_key_fallbacks(app_configs, **kwargs):
     return warnings
 
 
+# 部署检查：生产环境 DEBUG 须为 False
 @register(Tags.security, deploy=True)
 def check_debug(app_configs, **kwargs):
     passed_check = not settings.DEBUG
     return [] if passed_check else [W018]
 
 
+# 部署检查：启用 XFrame 中间件时 X_FRAME_OPTIONS 应为 DENY
 @register(Tags.security, deploy=True)
 def check_xframe_deny(app_configs, **kwargs):
     passed_check = not _xframe_middleware() or settings.X_FRAME_OPTIONS == "DENY"
     return [] if passed_check else [W019]
 
 
+# 部署检查：ALLOWED_HOSTS 不得为空
 @register(Tags.security, deploy=True)
 def check_allowed_hosts(app_configs, **kwargs):
     return [] if settings.ALLOWED_HOSTS else [W020]
 
 
+# 部署检查：Referrer-Policy 配置有效性与取值
 @register(Tags.security, deploy=True)
 def check_referrer_policy(app_configs, **kwargs):
     if _security_middleware():
@@ -320,6 +342,7 @@ def check_referrer_policy(app_configs, **kwargs):
     return []
 
 
+# 部署检查：Cross-Origin-Opener-Policy 取值合法
 @register(Tags.security, deploy=True)
 def check_cross_origin_opener_policy(app_configs, **kwargs):
     if (
@@ -332,6 +355,7 @@ def check_cross_origin_opener_policy(app_configs, **kwargs):
     return []
 
 
+# 校验 SECURE_CSP 与 SECURE_CSP_REPORT_ONLY 为 dict 或 None
 @register(Tags.security)
 def check_csp_settings(app_configs, **kwargs):
     """
@@ -348,6 +372,7 @@ def check_csp_settings(app_configs, **kwargs):
     ]
 
 
+# CSP 含 nonce 时须配置 csp context processor
 @register(Tags.security)
 def check_csp_nonce_context_processor(app_configs, **kwargs):
     if (

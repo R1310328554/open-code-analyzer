@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.checks import Error, Tags, Warning, register
 
 
+# 遍历全部模型：执行 model.check、检测 db_table/index/constraint 重名
 @register(Tags.models)
 def check_all_models(app_configs, **kwargs):
     db_table_models = defaultdict(list)
@@ -90,6 +91,7 @@ def check_all_models(app_configs, **kwargs):
     return errors
 
 
+# 解析未完成的字符串模型引用并生成针对性 Error
 def _check_lazy_references(apps, ignore=None):
     """
     Ensure all lazy (i.e. string) model references have been resolved.
@@ -115,6 +117,7 @@ def _check_lazy_references(apps, ignore=None):
         if isinstance(signal, signals.ModelSignal)
     }
 
+    # 从 lazy_model_operation 回调中提取原始函数与参数
     def extract_operation(obj):
         """
         Take a callable found in Apps._pending_operations and identify the
@@ -132,6 +135,7 @@ def _check_lazy_references(apps, ignore=None):
             operation = operation.func
         return operation, args, keywords
 
+    # 根据 app/model 键生成「未安装或无此模型」描述
     def app_model_error(model_key):
         try:
             apps.get_app_config(model_key[0])
@@ -146,6 +150,7 @@ def _check_lazy_references(apps, ignore=None):
     # pair, the original lazy function, and its positional and keyword args as
     # determined by extract_operation().
 
+    # 字段 lazy 引用失败时的错误消息
     def field_error(model_key, func, args, keywords):
         error_msg = (
             "The field %(field)s was declared with a lazy reference "
@@ -158,6 +163,7 @@ def _check_lazy_references(apps, ignore=None):
         }
         return Error(error_msg % params, obj=keywords["field"], id="fields.E307")
 
+    # 信号 connect lazy sender 失败时的错误消息
     def signal_connect_error(model_key, func, args, keywords):
         error_msg = (
             "%(receiver)s was connected to the '%(signal)s' signal with a "
@@ -184,6 +190,7 @@ def _check_lazy_references(apps, ignore=None):
         }
         return Error(error_msg % params, obj=receiver.__module__, id="signals.E001")
 
+    # 其他 lazy 操作未解析时的通用错误
     def default_error(model_key, func, args, keywords):
         error_msg = (
             "%(op)s contains a lazy reference to %(model)s, but %(model_error)s."
@@ -204,6 +211,7 @@ def _check_lazy_references(apps, ignore=None):
         ("django.dispatch.dispatcher", "connect"): signal_connect_error,
     }
 
+    # 按 known_lazy 映射选择对应 error 构建函数
     def build_error(model_key, func, args, keywords):
         key = (func.__module__, func.__name__)
         error_fn = known_lazy.get(key, default_error)
@@ -222,6 +230,7 @@ def _check_lazy_references(apps, ignore=None):
     )
 
 
+# 注册检查：全局 apps 中 pending lazy 模型引用
 @register(Tags.models)
 def check_lazy_references(app_configs, **kwargs):
     return _check_lazy_references(apps)
