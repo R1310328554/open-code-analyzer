@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:46:31Z",
-  "files": [
-    "src/transformers/models/lasr/__init__.py",
-    "src/transformers/models/lasr/configuration_lasr.py",
-    "src/transformers/models/lasr/feature_extraction_lasr.py",
-    "src/transformers/models/lasr/modeling_lasr.py",
-    "src/transformers/models/lasr/modular_lasr.py",
-    "src/transformers/models/lasr/processing_lasr.py",
-    "src/transformers/models/lasr/tokenization_lasr.py",
-    "src/transformers/models/layoutlm/__init__.py",
-    "src/transformers/models/layoutlm/configuration_layoutlm.py",
-    "src/transformers/models/layoutlm/modeling_layoutlm.py",
-    "src/transformers/models/layoutlmv2/__init__.py",
-    "src/transformers/models/layoutlmv2/configuration_layoutlmv2.py",
-    "src/transformers/models/layoutlmv2/image_processing_layoutlmv2.py",
-    "src/transformers/models/layoutlmv2/image_processing_pil_layoutlmv2.py",
-    "src/transformers/models/layoutlmv2/modeling_layoutlmv2.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1479,
-  "done": 1185
+  "done": 1200
 }
