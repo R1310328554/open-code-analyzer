@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T07:22:32Z",
-  "files": [
-    "ppocr/modeling/necks/rf_adaptor.py",
-    "ppocr/modeling/necks/rnn.py",
-    "ppocr/modeling/necks/sast_fpn.py",
-    "ppocr/modeling/necks/table_fpn.py",
-    "ppocr/modeling/transforms/__init__.py",
-    "ppocr/modeling/transforms/gaspin_transformer.py",
-    "ppocr/modeling/transforms/stn.py",
-    "ppocr/modeling/transforms/tbsrn.py",
-    "ppocr/modeling/transforms/tps.py",
-    "ppocr/modeling/transforms/tps_spatial_transformer.py",
-    "ppocr/modeling/transforms/tsrn.py",
-    "ppocr/optimizer/__init__.py",
-    "ppocr/optimizer/learning_rate.py",
-    "ppocr/optimizer/lr_scheduler.py",
-    "ppocr/optimizer/optimizer.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 122,
-  "done": 465
+  "done": 480
 }
