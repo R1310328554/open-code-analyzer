@@ -29,6 +29,7 @@ from ..auto import AutoConfig
 # as well as super() call parsing because otherwise we cannot re-write args after initialization
 @auto_docstring(checkpoint="ustc-community/dfine-xlarge-coco")
 @strict
+# DFineConfig：编码器-解码器检测配置，含去噪训练与 FGL/DDF 损失权重
 class DFineConfig(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -215,6 +216,7 @@ class DFineConfig(PreTrainedConfig):
     tie_word_embeddings: bool = True
     is_encoder_decoder: bool = True
 
+# __post_init__：合并 HGNet-V2 骨干配置并计算 head_dim
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -225,6 +227,7 @@ class DFineConfig(PreTrainedConfig):
         self.head_dim = self.d_model // self.decoder_attention_heads
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 decoder_n_points 与 d_model 可整除性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if isinstance(self.decoder_n_points, list):

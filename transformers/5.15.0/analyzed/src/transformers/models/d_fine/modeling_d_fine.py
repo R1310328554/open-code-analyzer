@@ -49,6 +49,7 @@ from .configuration_d_fine import DFineConfig
     """
 )
 @dataclass
+# DFineDecoderOutput：含中间隐状态、logits、参考点与角点预测
 class DFineDecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -78,6 +79,7 @@ class DFineDecoderOutput(ModelOutput):
     cross_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# DFineMLP：ReLU 激活的多层线性网络
 class DFineMLP(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, act: str = "relu"):
         super().__init__()
@@ -94,6 +96,7 @@ class DFineMLP(nn.Module):
         return stat_features
 
 
+# DFineGate：LayerNorm 门控融合双路残差
 class DFineGate(nn.Module):
     def __init__(self, d_model: int):
         super().__init__()
@@ -108,6 +111,7 @@ class DFineGate(nn.Module):
         return hidden_states
 
 
+# DFineFrozenBatchNorm2d：固定仿射参数的 BatchNorm2d
 class DFineFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -147,6 +151,7 @@ class DFineFrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# multi_scale_deformable_attention_v2：多尺度可变形注意力核心算子
 def multi_scale_deformable_attention_v2(
     value: Tensor,
     value_spatial_shapes: Tensor,
@@ -221,6 +226,7 @@ def multi_scale_deformable_attention_v2(
     return output.transpose(1, 2).contiguous()
 
 
+# DFineMultiscaleDeformableAttention：采样偏移 + 注意力权重聚合
 class DFineMultiscaleDeformableAttention(nn.Module):
     def __init__(self, config: DFineConfig):
         """
@@ -313,6 +319,7 @@ class DFineMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# DFineConvNormLayer：Conv2d + BatchNorm + 激活
 class DFineConvNormLayer(nn.Module):
     def __init__(
         self,
@@ -345,6 +352,7 @@ class DFineConvNormLayer(nn.Module):
         return hidden_state
 
 
+# DFineRepVggBlock：训练多分支、推理可融合的 RepVGG 块
 class DFineRepVggBlock(nn.Module):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
@@ -364,6 +372,7 @@ class DFineRepVggBlock(nn.Module):
         return self.activation(y)
 
 
+# DFineCSPRepLayer：Cross Stage Partial Rep 层
 class DFineCSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
@@ -395,6 +404,7 @@ class DFineCSPRepLayer(nn.Module):
         return hidden_state_3
 
 
+# DFineRepNCSPELAN4：ELAN 风格 Rep 特征提取
 class DFineRepNCSPELAN4(nn.Module):
     def __init__(self, config: DFineConfig, act: str = "silu", numb_blocks: int = 3):
         super().__init__()
@@ -426,6 +436,7 @@ class DFineRepNCSPELAN4(nn.Module):
         return merged_features
 
 
+# DFineSCDown：stride 卷积下采样
 class DFineSCDown(nn.Module):
     def __init__(self, config: DFineConfig, kernel_size: int, stride: int):
         super().__init__()
@@ -445,6 +456,7 @@ class DFineSCDown(nn.Module):
         return input_features
 
 
+# eager_attention_forward：缩放点积自注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -473,6 +485,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DFineSelfAttention：编码器多头自注意力
 class DFineSelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -539,6 +552,7 @@ class DFineSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DFineEncoderLayer：Pre/Post-LN 自注意力 + FFN
 class DFineEncoderLayer(nn.Module):
     def __init__(self, config: DFineConfig):
         super().__init__()
@@ -610,6 +624,7 @@ class DFineEncoderLayer(nn.Module):
         return hidden_states
 
 
+# build_2d_sinusoidal_position_embedding：2D 正弦位置编码构建
 def build_2d_sinusoidal_position_embedding(
     height: int,
     width: int,
@@ -658,6 +673,7 @@ def build_2d_sinusoidal_position_embedding(
     return pos_embed.to(dtype)
 
 
+# DFineSinePositionEmbedding：可学习尺度的正弦位置嵌入
 class DFineSinePositionEmbedding(nn.Module):
     """
     2D sinusoidal position embedding used in RT-DETR hybrid encoder.
@@ -696,6 +712,7 @@ class DFineSinePositionEmbedding(nn.Module):
         ).unsqueeze(0)
 
 
+# DFineAIFILayer：单尺度 Transformer 编码 AIFI 模块
 class DFineAIFILayer(nn.Module):
     """
     AIFI (Attention-based Intra-scale Feature Interaction) layer used in RT-DETR hybrid encoder.
@@ -753,6 +770,7 @@ class DFineAIFILayer(nn.Module):
         return hidden_states
 
 
+# DFineIntegral：Softmax 加权积分得到框坐标
 class DFineIntegral(nn.Module):
     """
     A static layer that calculates integral results from a distribution.
@@ -778,6 +796,7 @@ class DFineIntegral(nn.Module):
         return pred_corners
 
 
+# DFineLQE：基于 top-k 角点概率的位置质量 MLP
 class DFineLQE(nn.Module):
     def __init__(self, config: DFineConfig):
         super().__init__()
@@ -795,6 +814,7 @@ class DFineLQE(nn.Module):
         return scores
 
 
+# DFineDecoderLayer：自注意力 + 可变形交叉注意力 + Gate FFN
 class DFineDecoderLayer(nn.Module):
     def __init__(self, config: DFineConfig):
         super().__init__()
@@ -887,6 +907,7 @@ class DFineDecoderLayer(nn.Module):
         return hidden_states
 
 
+# DFineMLPPredictionHead：隐藏层 MLP 分类/回归头
 class DFineMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -907,6 +928,7 @@ class DFineMLPPredictionHead(nn.Module):
 
 
 @auto_docstring
+# DFinePreTrainedModel：检测模型基类与权重初始化
 class DFinePreTrainedModel(PreTrainedModel):
     config: DFineConfig
     base_model_prefix = "d_fine"
@@ -982,6 +1004,7 @@ class DFinePreTrainedModel(PreTrainedModel):
             init.xavier_uniform_(module.denoising_class_embed.weight)
 
 
+# DFineHybridEncoder：多尺度 CNN 特征经 Transformer 编码融合
 class DFineHybridEncoder(DFinePreTrainedModel):
     """
     Hybrid encoder consisting of AIFI (Attention-based Intra-scale Feature Interaction) layers,
@@ -1081,6 +1104,7 @@ class DFineHybridEncoder(DFinePreTrainedModel):
         return BaseModelOutput(last_hidden_state=pan_feature_maps)
 
 
+# inverse_sigmoid：sigmoid 逆变换，用于参考点参数化
 def inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
@@ -1088,6 +1112,7 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# weighting_function：框回归离散 bin 的非均匀权重序列
 def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> torch.Tensor:
     """
     Generates the non-uniform Weighting Function W(n) for bounding box regression.
@@ -1112,6 +1137,7 @@ def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> t
     return values
 
 
+# distance2bbox：四边距离解码为 center-format 框
 def distance2bbox(points, distance: torch.Tensor, reg_scale: float) -> torch.Tensor:
     """
     Decodes edge-distances into bounding box coordinates.
@@ -1137,6 +1163,7 @@ def distance2bbox(points, distance: torch.Tensor, reg_scale: float) -> torch.Ten
     return corners_to_center_format(bboxes)
 
 
+# DFineDecoder：多层解码 + 对比去噪 query + 迭代框 refine
 class DFineDecoder(DFinePreTrainedModel):
     """
     D-FINE Decoder implementing Fine-grained Distribution Refinement (FDR).
@@ -1299,6 +1326,7 @@ class DFineDecoder(DFinePreTrainedModel):
     """
 )
 @dataclass
+# DFineModelOutput：编码器/解码器中间输出与最终检测 logits
 class DFineModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -1351,6 +1379,7 @@ class DFineModelOutput(ModelOutput):
     denoising_meta_values: dict | None = None
 
 
+# replace_batch_norm：将 BatchNorm2d 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `DFineFrozenBatchNorm2d`.
@@ -1375,6 +1404,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# DFineConvEncoder：ResNet 骨干卷积编码器包装
 class DFineConvEncoder(nn.Module):
     """
     Convolutional backbone using the modeling_d_fine_resnet.py.
@@ -1407,6 +1437,7 @@ class DFineConvEncoder(nn.Module):
         return out
 
 
+# get_contrastive_denoising_training_group：构造对比去噪训练 query 组
 def get_contrastive_denoising_training_group(
     targets,
     num_classes,
@@ -1535,6 +1566,7 @@ def get_contrastive_denoising_training_group(
     RT-DETR Model (consisting of a backbone and encoder-decoder) outputting raw hidden states without any head on top.
     """
 )
+# DFineModel：骨干 + HybridEncoder + Decoder 端到端检测
 class DFineModel(DFinePreTrainedModel):
     def __init__(self, config: DFineConfig):
         super().__init__(config)
@@ -1867,6 +1899,7 @@ class DFineModel(DFinePreTrainedModel):
     """
 )
 @dataclass
+# DFineObjectDetectionOutput：loss、logits、pred_boxes 与辅助输出
 class DFineObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -1945,6 +1978,7 @@ class DFineObjectDetectionOutput(ModelOutput):
     decoded into scores and classes.
     """
 )
+# DFineForObjectDetection：匈牙利匹配 + VFL/GIoU/FGL 联合损失
 class DFineForObjectDetection(DFinePreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization

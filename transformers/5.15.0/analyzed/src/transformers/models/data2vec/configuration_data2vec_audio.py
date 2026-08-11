@@ -23,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/data2vec-audio-base-960h")
 @strict
+# Data2VecAudioConfig：7 层 Conv 前端 + 12 层 Transformer，支持 CTC/XVector
 class Data2VecAudioConfig(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):
@@ -170,11 +171,13 @@ class Data2VecAudioConfig(PreTrainedConfig):
     num_adapter_layers: int = 3
     output_hidden_size: int | None = None
 
+# __post_init__：设置 num_feat_extract_layers 与 output_hidden_size
     def __post_init__(self, **kwargs):
         self.output_hidden_size = self.output_hidden_size or self.hidden_size
         self.num_feat_extract_layers = len(self.conv_dim)
         super().__post_init__(**kwargs)
 
+# validate_architecture：conv_dim/stride/kernel 长度必须一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (
@@ -190,6 +193,7 @@ class Data2VecAudioConfig(PreTrainedConfig):
             )
 
     @property
+# inputs_to_logits_ratio：Conv stride 连乘得帧下采样倍率
     def inputs_to_logits_ratio(self):
         return math.prod(self.conv_stride)
 

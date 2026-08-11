@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/data2vec-text-base")
 @strict
+# Data2VecTextConfig：768 维 12 层，tie_word_embeddings 默认 True
 class Data2VecTextConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -63,3 +64,5 @@ class Data2VecTextConfig(PreTrainedConfig):
 
 
 __all__ = ["Data2VecTextConfig"]
+# 模块 src/transformers/models/data2vec/configuration_data2vec_text.py：Transformers 5.15.0 wave17b 中文文档注释。
+

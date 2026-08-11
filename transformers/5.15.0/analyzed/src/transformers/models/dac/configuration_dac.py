@@ -24,6 +24,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="descript/dac_16khz")
 @strict
+# DacConfig：9 码本 RVQ、16kHz 采样与 downsampling_ratios 链
 class DacConfig(PreTrainedConfig):
     r"""
     downsampling_ratios (`list[int]`, *optional*, defaults to `[2, 4, 8, 8]`):
@@ -63,6 +64,7 @@ class DacConfig(PreTrainedConfig):
     codebook_loss_weight: float = 1.0
     sampling_rate: int = 16000
 
+# __post_init__：逆序 upsampling_ratios 并计算 hidden_size/hop_length
     def __post_init__(self, **kwargs):
         self.upsampling_ratios = self.downsampling_ratios[::-1]
         self.hidden_size = self.encoder_hidden_size * (2 ** len(self.downsampling_ratios))
@@ -70,6 +72,7 @@ class DacConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @property
+# frame_rate：每秒离散帧率 = sampling_rate / hop_length
     def frame_rate(self) -> int:
         hop_length = np.prod(self.upsampling_ratios)
         return math.ceil(self.sampling_rate / hop_length)

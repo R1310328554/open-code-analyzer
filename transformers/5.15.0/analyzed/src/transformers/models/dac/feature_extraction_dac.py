@@ -23,6 +23,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# DacFeatureExtractor：单声道 float32 波形转 input_values 批次
 class DacFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs an Dac feature extractor.
@@ -54,6 +55,7 @@ class DacFeatureExtractor(SequenceFeatureExtractor):
         super().__init__(feature_size=feature_size, sampling_rate=sampling_rate, padding_value=padding_value, **kwargs)
         self.hop_length = hop_length
 
+# __call__：校验采样率、填充至 hop_length 倍数并生成 padding_mask
     def __call__(
         self,
         raw_audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

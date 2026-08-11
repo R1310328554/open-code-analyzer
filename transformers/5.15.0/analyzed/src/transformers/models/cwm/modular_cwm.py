@@ -34,8 +34,10 @@ from ..qwen2.modeling_qwen2 import Qwen2Attention, Qwen2RotaryEmbedding
 logger = logging.get_logger(__name__)
 
 
+# CwmConfig：131K 长上下文因果 LM，继承 LlamaConfig 并扩展 RoPE 与层类型
 @auto_docstring(checkpoint="facebook/cwm")
 @strict
+# CwmConfig：默认每 4 层 full_attention，其余 sliding_attention（窗口 8192）
 class CwmConfig(LlamaConfig):
     model_type = "cwm"
     default_theta = 1_000_000.0
@@ -65,6 +67,7 @@ class CwmConfig(LlamaConfig):
 
     attention_bias = AttributeError()
 
+# __post_init__：初始化 llama3 RoPE 参数、layer_types 模式与 eos_token 列表
     def __post_init__(self, **kwargs):
         if self.rope_parameters is None:
             self.rope_parameters = {
@@ -90,10 +93,12 @@ class CwmConfig(LlamaConfig):
         super().__post_init__(**kwargs)
 
 
+# CwmRotaryEmbedding：复用 Qwen2 动态 RoPE 实现
 class CwmRotaryEmbedding(Qwen2RotaryEmbedding):
     pass
 
 
+# CwmAttention：GQA 注意力，无 bias 的 Q/K/V 线性投影
 class CwmAttention(Qwen2Attention):
     def __init__(self, config: CwmConfig, layer_idx: int):
         super().__init__(config=config, layer_idx=layer_idx)
@@ -102,20 +107,24 @@ class CwmAttention(Qwen2Attention):
         self.v_proj = torch.nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=False)
 
 
+# CwmDecoderLayer：替换为 CwmAttention 的 Llama 解码层
 class CwmDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: CwmConfig, layer_idx: int):
         super().__init__(config=config, layer_idx=layer_idx)
         self.self_attn = CwmAttention(config=config, layer_idx=layer_idx)
 
 
+# CwmPreTrainedModel：CWM 预训练基类，继承 Llama 权重初始化
 class CwmPreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# CwmModelOutputWithPast：CwmModel 前向输出类型别名
 class CwmModelOutputWithPast(BaseModelOutputWithPast):
     pass
 
 
+# CwmModel：按 layer_types 为每层选择 full 或 sliding 因果掩码
 class CwmModel(LlamaModel):
     config_class = CwmConfig
 
@@ -125,6 +134,7 @@ class CwmModel(LlamaModel):
             [CwmDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
 
+# forward：构建混合因果掩码映射，逐层解码并返回 last_hidden_state
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -184,6 +194,7 @@ class CwmModel(LlamaModel):
         )
 
 
+# CwmForCausalLM：因果语言建模头，用于代码/文本生成
 class CwmForCausalLM(LlamaForCausalLM):
     pass
 

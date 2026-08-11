@@ -53,6 +53,7 @@ logger = logging.get_logger(__name__)
 # as well as super() call parsing because otherwise we cannot re-write args after initialization
 @auto_docstring(checkpoint="ustc-community/dfine-xlarge-coco")
 @strict
+# DFineConfig：检测超参，含 max_num_bins、reg_scale 与 contrastive denoising
 class DFineConfig(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -263,10 +264,12 @@ class DFineConfig(PreTrainedConfig):
             )
 
 
+# DFineDecoderOutput：解码器中间隐状态/参考点/角点预测输出
 class DFineDecoderOutput(RTDetrDecoderOutput):
     pass
 
 
+# weighting_function：非均匀权重函数 W(n)，控制框回归离散 bin 曲率
 def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> torch.Tensor:
     """
     Generates the non-uniform Weighting Function W(n) for bounding box regression.
@@ -291,6 +294,7 @@ def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> t
     return values
 
 
+# distance2bbox：边距距离解码为中心点+宽高格式框
 def distance2bbox(points, distance: torch.Tensor, reg_scale: float) -> torch.Tensor:
     """
     Decodes edge-distances into bounding box coordinates.
@@ -316,6 +320,7 @@ def distance2bbox(points, distance: torch.Tensor, reg_scale: float) -> torch.Ten
     return corners_to_center_format(bboxes)
 
 
+# DFineMLP：多层感知机，用于统计特征与框回归头
 class DFineMLP(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, act: str = "relu"):
         super().__init__()
@@ -332,6 +337,7 @@ class DFineMLP(nn.Module):
         return stat_features
 
 
+# DFineGate：双路 sigmoid 门控融合第二残差与隐状态
 class DFineGate(nn.Module):
     def __init__(self, d_model: int):
         super().__init__()
@@ -346,10 +352,12 @@ class DFineGate(nn.Module):
         return hidden_states
 
 
+# DFineFrozenBatchNorm2d：冻结 BN，推理时固定 running 统计量
 class DFineFrozenBatchNorm2d(RTDetrFrozenBatchNorm2d):
     pass
 
 
+# DFineMultiscaleDeformableAttention：多尺度可变形交叉注意力 v2
 class DFineMultiscaleDeformableAttention(nn.Module):
     def __init__(self, config: DFineConfig):
         """
@@ -442,6 +450,7 @@ class DFineMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# DFineConvNormLayer：Conv+BN+激活 卷积规范层
 class DFineConvNormLayer(RTDetrConvNormLayer):
     def __init__(
         self,
@@ -466,6 +475,7 @@ class DFineConvNormLayer(RTDetrConvNormLayer):
         )
 
 
+# DFineRepVggBlock：RepVGG 重参数化卷积块
 class DFineRepVggBlock(RTDetrRepVggBlock):
     def __init__(self, config: DFineConfig, in_channels: int, out_channels: int):
         super().__init__(config)
@@ -474,6 +484,7 @@ class DFineRepVggBlock(RTDetrRepVggBlock):
         self.conv2 = DFineConvNormLayer(config, hidden_channels, out_channels, 1, 1, padding=0)
 
 
+# DFineCSPRepLayer：CSP 结构的 Rep 层，通道分裂再融合
 class DFineCSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
@@ -505,6 +516,7 @@ class DFineCSPRepLayer(nn.Module):
         return hidden_state_3
 
 
+# DFineRepNCSPELAN4：RepNCSPELAN4 特征提取模块
 class DFineRepNCSPELAN4(nn.Module):
     def __init__(self, config: DFineConfig, act: str = "silu", numb_blocks: int = 3):
         super().__init__()
@@ -536,6 +548,7 @@ class DFineRepNCSPELAN4(nn.Module):
         return merged_features
 
 
+# DFineSCDown：空间-通道下采样模块
 class DFineSCDown(nn.Module):
     def __init__(self, config: DFineConfig, kernel_size: int, stride: int):
         super().__init__()
@@ -555,6 +568,7 @@ class DFineSCDown(nn.Module):
         return input_features
 
 
+# DFineEncoderLayer：HybridEncoder 中的 Transformer 编码层
 class DFineEncoderLayer(RTDetrEncoderLayer):
     def __init__(self, config: DFineConfig):
         super().__init__(config)
@@ -563,10 +577,12 @@ class DFineEncoderLayer(RTDetrEncoderLayer):
         )
 
 
+# DFineAIFILayer：注意力特征交互 AIFI 层
 class DFineAIFILayer(RTDetrAIFILayer):
     pass
 
 
+# DFineIntegral：分布积分将离散 bin 概率转为连续框偏移
 class DFineIntegral(nn.Module):
     """
     A static layer that calculates integral results from a distribution.
@@ -592,6 +608,7 @@ class DFineIntegral(nn.Module):
         return pred_corners
 
 
+# DFineLQE：位置质量估计器，评估角点定位置信度
 class DFineLQE(nn.Module):
     def __init__(self, config: DFineConfig):
         super().__init__()
@@ -609,6 +626,7 @@ class DFineLQE(nn.Module):
         return scores
 
 
+# DFineDecoderLayer：含 Gate 与 Integral 的 D-FINE 解码层
 class DFineDecoderLayer(RTDetrDecoderLayer):
     def __init__(self, config: DFineConfig):
         super().__init__(config)
@@ -671,10 +689,12 @@ class DFineDecoderLayer(RTDetrDecoderLayer):
         return hidden_states
 
 
+# DFineMLPPredictionHead：MLP 预测头基类
 class DFineMLPPredictionHead(RTDetrMLPPredictionHead):
     pass
 
 
+# DFinePreTrainedModel：D-FINE 权重初始化与 no_split 模块定义
 class DFinePreTrainedModel(RTDetrPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -740,6 +760,7 @@ class DFinePreTrainedModel(RTDetrPreTrainedModel):
             init.xavier_uniform_(module.denoising_class_embed.weight)
 
 
+# DFineHybridEncoder：CNN 骨干 + Transformer 编码的多尺度特征融合
 class DFineHybridEncoder(RTDetrHybridEncoder):
     def __init__(self, config: DFineConfig):
         DFinePreTrainedModel.__init__(config)
@@ -778,6 +799,7 @@ class DFineHybridEncoder(RTDetrHybridEncoder):
         self.post_init()
 
 
+# DFineDecoder：迭代框 refine + 分布引导角点回归
 class DFineDecoder(RTDetrDecoder):
     """
     D-FINE Decoder implementing Fine-grained Distribution Refinement (FDR).
@@ -897,6 +919,7 @@ class DFineDecoder(RTDetrDecoder):
         )
 
 
+# DFineModel：编码器-解码器主体，替换 HybridEncoder 与 DFineDecoder
 class DFineModel(RTDetrModel):
     def __init__(self, config: DFineConfig):
         super().__init__(config)
@@ -923,6 +946,7 @@ class DFineModel(RTDetrModel):
         self.decoder = DFineDecoder(config)
 
 
+# DFineForObjectDetection：目标检测头，class_embed + bbox_embed 多层预测
 class DFineForObjectDetection(RTDetrForObjectDetection):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization

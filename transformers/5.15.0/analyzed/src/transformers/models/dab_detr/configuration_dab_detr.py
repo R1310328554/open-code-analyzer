@@ -23,6 +23,7 @@ from ..auto import AutoConfig
 
 @auto_docstring(checkpoint="IDEA-Research/dab-detr-resnet-50")
 @strict
+# DabDetrConfig：300 query、ResNet 骨干、温度调制的正弦位置编码
 class DabDetrConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 300):
@@ -109,6 +110,7 @@ class DabDetrConfig(PreTrainedConfig):
     initializer_bias_prior_prob: float | None = None
     tie_word_embeddings: bool = True
 
+# __post_init__：合并 timm/resnet 骨干并设置 dilation 步幅
     def __post_init__(self, **kwargs):
         # Init timm backbone with hardcoded values for BC
         timm_default_kwargs = {
@@ -131,6 +133,7 @@ class DabDetrConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：query_dim 必须为 4（x,y,w,h）
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.query_dim != 4:

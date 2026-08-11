@@ -30,6 +30,7 @@ from .configuration_dac import DacConfig
 
 @auto_docstring
 @dataclass
+# DacOutput：编解码联合输出含 loss、audio_codes 与重建波形
 class DacOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`):
@@ -53,6 +54,7 @@ class DacOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# DacEncoderOutput：编码阶段量化表示与码本索引
 class DacEncoderOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`):
@@ -74,6 +76,7 @@ class DacEncoderOutput(ModelOutput):
 @auto_docstring
 @dataclass
 # Copied from transformers.models.encodec.modeling_encodec.EncodecDecoderOutput with Encodec->Dac, segment_length->input_length
+# DacDecoderOutput：解码重建的 audio_values
 class DacDecoderOutput(ModelOutput):
     r"""
     audio_values (`torch.FloatTensor`  of shape `(batch_size, input_length)`, *optional*):
@@ -83,6 +86,7 @@ class DacDecoderOutput(ModelOutput):
     audio_values: torch.FloatTensor | None = None
 
 
+# Snake1d：可学习 alpha 的一维 Snake 周期激活
 class Snake1d(nn.Module):
     """
     A 1-dimensional Snake activation function module.
@@ -100,6 +104,7 @@ class Snake1d(nn.Module):
         return hidden_states
 
 
+# DacVectorQuantize：因子化 + L2 归一化 VQ 码本查找
 class DacVectorQuantize(nn.Module):
     """
     Implementation of VQ similar to Karpathy's repo (https://github.com/karpathy/deep-vector-quantization)
@@ -172,6 +177,7 @@ class DacVectorQuantize(nn.Module):
         return quantized_representation, indices
 
 
+# DacResidualUnit：膨胀卷积残差单元
 class DacResidualUnit(nn.Module):
     """
     A residual unit composed of Snake1d and weight-normalized Conv1d layers with dilations.
@@ -209,6 +215,7 @@ class DacResidualUnit(nn.Module):
         return output_tensor
 
 
+# DacEncoderBlock：stride 下采样 + 三组残差单元
 class DacEncoderBlock(nn.Module):
     """Encoder block used in DAC encoder."""
 
@@ -233,6 +240,7 @@ class DacEncoderBlock(nn.Module):
         return hidden_state
 
 
+# DacDecoderBlock：转置卷积上采样 + 残差单元
 class DacDecoderBlock(nn.Module):
     """Decoder block used in DAC decoder."""
 
@@ -264,6 +272,7 @@ class DacDecoderBlock(nn.Module):
         return hidden_state
 
 
+# DacResidualVectorQuantizer：多级残差 VQ，支持 quantizer dropout
 class DacResidualVectorQuantizer(nn.Module):
     """
     ResidualVectorQuantize block - Introduced in SoundStream: An end2end neural audio codec (https://huggingface.co/papers/2107.03312)
@@ -404,6 +413,7 @@ class DacResidualVectorQuantizer(nn.Module):
         return quantized_representation, torch.cat(quantized_latents, dim=1)
 
 
+# DacDecoder：Conv1d + 上采样块 + Tanh 输出单声道波形
 class DacDecoder(nn.Module):
     """DAC Decoder"""
 
@@ -441,6 +451,7 @@ class DacDecoder(nn.Module):
         return hidden_state
 
 
+# DacEncoder：逐层 stride 下采样至 latent 维度
 class DacEncoder(nn.Module):
     """DAC Encoder"""
 
@@ -474,6 +485,7 @@ class DacEncoder(nn.Module):
 
 
 @auto_docstring
+# DacPreTrainedModel：音频 tokenizer 基类，含 weight_norm 工具
 class DacPreTrainedModel(PreTrainedAudioTokenizerBase):
     config: DacConfig
     base_model_prefix = "dac"
@@ -492,6 +504,7 @@ class DacPreTrainedModel(PreTrainedAudioTokenizerBase):
         elif isinstance(module, nn.Embedding):
             init.normal_(module.weight, mean=0.0, std=0.02)
 
+# apply_weight_norm：对卷积与 VQ 投影层应用 weight norm
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -525,6 +538,7 @@ class DacPreTrainedModel(PreTrainedAudioTokenizerBase):
             weight_norm(layer.res_unit3.conv1)
             weight_norm(layer.res_unit3.conv2)
 
+# remove_weight_norm：推理前移除 weight norm 加速
     def remove_weight_norm(self):
         for layer in self.quantizer.quantizers:
             nn.utils.remove_weight_norm(layer.in_proj)
@@ -560,6 +574,7 @@ class DacPreTrainedModel(PreTrainedAudioTokenizerBase):
     The DAC (Descript Audio Codec) model.
     """
 )
+# DacModel：encode/decode 端到端 RVQ 音频编解码
 class DacModel(DacPreTrainedModel):
     input_modalities = "audio"
 
@@ -580,6 +595,7 @@ class DacModel(DacPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+# encode：波形 → 量化 latent + 多级 audio_codes
     def encode(
         self,
         input_values: torch.Tensor,
@@ -607,6 +623,7 @@ class DacModel(DacPreTrainedModel):
         return DacEncoderOutput(loss, quantized_representation, audio_codes, projected_latents)
 
     @auto_docstring
+# decode：audio_codes → 重建波形
     def decode(
         self,
         quantized_representation: torch.Tensor | None = None,
