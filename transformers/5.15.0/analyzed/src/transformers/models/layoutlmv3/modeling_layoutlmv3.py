@@ -48,6 +48,9 @@ from .configuration_layoutlmv3 import LayoutLMv3Config
 logger = logging.get_logger(__name__)
 
 
+# LayoutLMv3 建模：文本+视觉 patch 融合 Transformer 文档理解
+
+# LayoutLMv3PatchEmbeddings：LayoutLMv3 视觉 patch 嵌入与可插值位置编码
 class LayoutLMv3PatchEmbeddings(nn.Module):
     """LayoutLMv3 image (patch) embeddings. This class also automatically interpolates the position embeddings for varying
     image sizes."""
@@ -83,6 +86,7 @@ class LayoutLMv3PatchEmbeddings(nn.Module):
         return embeddings
 
 
+# LayoutLMv3TextEmbeddings：LayoutLMv3 文本 token + 1D/2D 位置 + 视觉类型嵌入
 class LayoutLMv3TextEmbeddings(nn.Module):
     """
     LayoutLMv3 text embeddings. Same as `RobertaEmbeddings` but with added spatial (layout) embeddings.
@@ -199,6 +203,7 @@ class LayoutLMv3TextEmbeddings(nn.Module):
         return embeddings
 
 
+# LayoutLMv3SelfAttention：LayoutLMv3 带相对/空间偏置的多头自注意力
 class LayoutLMv3SelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -289,6 +294,7 @@ class LayoutLMv3SelfAttention(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaSelfOutput
+# LayoutLMv3SelfOutput：LayoutLMv3 自注意力输出投影与残差 dropout
 class LayoutLMv3SelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -304,6 +310,7 @@ class LayoutLMv3SelfOutput(nn.Module):
 
 
 # Copied from transformers.models.layoutlmv2.modeling_layoutlmv2.LayoutLMv2Attention with LayoutLMv2->LayoutLMv3
+# LayoutLMv3Attention：LayoutLMv3 自注意力子层封装（注意力 + 输出投影）
 class LayoutLMv3Attention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -331,6 +338,7 @@ class LayoutLMv3Attention(nn.Module):
 
 
 # Copied from transformers.models.layoutlmv2.modeling_layoutlmv2.LayoutLMv2Layer with LayoutLMv2->LayoutLMv3
+# LayoutLMv3Layer：LayoutLMv3 Transformer 编码器单层（注意力 + FFN）
 class LayoutLMv3Layer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -368,6 +376,7 @@ class LayoutLMv3Layer(GradientCheckpointingLayer):
         return layer_output
 
 
+# LayoutLMv3Encoder：LayoutLMv3 多层 Transformer 编码器堆叠
 class LayoutLMv3Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -482,6 +491,7 @@ class LayoutLMv3Encoder(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaIntermediate
+# LayoutLMv3Intermediate：LayoutLMv3 前馈中间线性层
 class LayoutLMv3Intermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -498,6 +508,7 @@ class LayoutLMv3Intermediate(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaOutput
+# LayoutLMv3Output：LayoutLMv3 前馈输出投影与残差 dropout
 class LayoutLMv3Output(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -513,6 +524,7 @@ class LayoutLMv3Output(nn.Module):
 
 
 @auto_docstring
+# LayoutLMv3PreTrainedModel：LayoutLMv3 预训练基类与权重初始化
 class LayoutLMv3PreTrainedModel(PreTrainedModel):
     config: LayoutLMv3Config
     base_model_prefix = "layoutlmv3"
@@ -534,6 +546,7 @@ class LayoutLMv3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMv3Model：LayoutLMv3 文本+视觉 patch 多模态编码主干
 class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -796,6 +809,7 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
         )
 
 
+# LayoutLMv3ClassificationHead：LayoutLMv3 序列级分类头（池化 + 线性）
 class LayoutLMv3ClassificationHead(nn.Module):
     """
     Head for sentence-level classification tasks. Reference: RobertaClassificationHead
@@ -831,6 +845,7 @@ class LayoutLMv3ClassificationHead(nn.Module):
     [Kleister-NDA](https://github.com/applicaai/kleister-nda).
     """
 )
+# LayoutLMv3ForTokenClassification：LayoutLMv3 词级序列标注（NER 等）
 class LayoutLMv3ForTokenClassification(LayoutLMv3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -931,6 +946,7 @@ class LayoutLMv3ForTokenClassification(LayoutLMv3PreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMv3ForQuestionAnswering：LayoutLMv3 文档视觉问答（span 预测）
 class LayoutLMv3ForQuestionAnswering(LayoutLMv3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1046,6 +1062,7 @@ class LayoutLMv3ForQuestionAnswering(LayoutLMv3PreTrainedModel):
     [RVL-CDIP](https://www.cs.cmu.edu/~aharley/rvl-cdip/) dataset.
     """
 )
+# LayoutLMv3ForSequenceClassification：LayoutLMv3 文档序列分类
 class LayoutLMv3ForSequenceClassification(LayoutLMv3PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

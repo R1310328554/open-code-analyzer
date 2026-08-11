@@ -42,6 +42,7 @@ except ImportError:
 
 
 # Adapted from transformers.models.layoutlmv3.image_processing_layoutlmv3.LayoutLMv3ImageProcessorKwargs
+# LayoutLMv3ImageProcessorKwargs：LayoutLMv3 图像处理器可选参数字典类型
 class LayoutLMv3ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     apply_ocr (`bool`, *optional*, defaults to `True`):
@@ -62,6 +63,7 @@ class LayoutLMv3ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.layoutlmv3.image_processing_layoutlmv3.normalize_box
+# normalize_box：将像素坐标边界框归一化到 0–1000 尺度
 def normalize_box(box, width, height):
     return [
         int(1000 * (box[0] / width)),
@@ -72,6 +74,7 @@ def normalize_box(box, width, height):
 
 
 # Adapted from transformers.models.layoutlmv3.image_processing_layoutlmv3.apply_tesseract
+# apply_tesseract：调用 Tesseract OCR 提取词级文本与边界框
 def apply_tesseract(
     image: "np.ndarray | torch.Tensor",
     lang: str | None,
@@ -120,6 +123,7 @@ def apply_tesseract(
 
 
 @auto_docstring
+# LayoutLMv3ImageProcessorPil：LayoutLMv3 PIL 后端图像 resize/OCR/归一化预处理
 class LayoutLMv3ImageProcessorPil(PilBackend):
     valid_kwargs = LayoutLMv3ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

@@ -19,8 +19,12 @@ from ...utils import auto_docstring
 from ..layoutlmv2.configuration_layoutlmv2 import LayoutLMv2Config
 
 
+# LayoutXLM modular 源：复用 LayoutLMv2 配置扩展多语言文档理解
+
+# LayoutXLMConfig：microsoft/layoutxlm-base 多语言文档理解默认超参
 @auto_docstring(checkpoint="microsoft/layoutxlm-base")
 @strict
+# LayoutXLMConfig：LayoutXLM 多语言文档理解超参（继承 LayoutLMv2 并扩展 XLM-R 分词）
 class LayoutXLMConfig(LayoutLMv2Config):
     r"""
     max_2d_position_embeddings (`int`, *optional*, defaults to 1024):

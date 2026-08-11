@@ -20,7 +20,10 @@ from ...tokenization_utils_base import BatchEncoding, PaddingStrategy, PreTokeni
 from ...utils import TensorType, auto_docstring
 
 
+# LayoutXLM Processor：图像预处理与多语言分词器联合输入组装
+
 @auto_docstring
+# LayoutXLMProcessor：封装图像预处理与多语言分词器的输入管线
 class LayoutXLMProcessor(ProcessorMixin):
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)

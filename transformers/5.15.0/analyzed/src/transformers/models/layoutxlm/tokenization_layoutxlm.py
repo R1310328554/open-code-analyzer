@@ -32,6 +32,8 @@ from ...utils import PaddingStrategy, TensorType, add_end_docstrings, logging
 
 logger = logging.get_logger(__name__)
 
+
+# LayoutXLM 分词：SentencePiece 多语言分词并附加词级边界框坐标
 VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": "tokenizer.json"}
 
 LAYOUTXLM_ENCODE_KWARGS_DOCSTRING = r"""
@@ -137,6 +139,7 @@ LAYOUTXLM_ENCODE_KWARGS_DOCSTRING = r"""
 """
 
 
+# LayoutXLMTokenizer：LayoutXLM 多语言快速分词器（SentencePiece + 边界框坐标）
 class LayoutXLMTokenizer(TokenizersBackend):
     """
     Construct a "fast" LayoutXLM tokenizer (backed by HuggingFace's *tokenizers* library). Adapted from

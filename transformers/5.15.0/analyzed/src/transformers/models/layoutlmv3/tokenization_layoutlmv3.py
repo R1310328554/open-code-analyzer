@@ -31,6 +31,8 @@ from ...utils import add_end_docstrings, logging
 
 logger = logging.get_logger(__name__)
 
+
+# LayoutLMv3 分词：WordPiece 分词并附加词级边界框坐标
 VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",
     "merges_file": "merges.txt",
@@ -111,6 +113,7 @@ LAYOUTLMV3_ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
 """
 
 
+# LayoutLMv3Tokenizer：LayoutLMv3 快速分词器（WordPiece + 词级边界框坐标）
 class LayoutLMv3Tokenizer(TokenizersBackend):
     r"""
     Construct a LayoutLMv3 tokenizer (backed by HuggingFace's *tokenizers* library). Based on byte-level BPE.

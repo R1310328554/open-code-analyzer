@@ -26,12 +26,17 @@ from ...utils import auto_docstring, is_detectron2_available
 
 
 # soft dependency
+# configuration_layoutxlm 由 modular_layoutxlm.py 自动生成
 if is_detectron2_available():
     import detectron2
 
 
+# LayoutXLM 配置：microsoft/layoutxlm-base 多语言文档理解超参（由 modular 自动生成）
+
+# LayoutXLMConfig：microsoft/layoutxlm-base 多语言文档理解默认超参
 @auto_docstring(checkpoint="microsoft/layoutxlm-base")
 @strict
+# LayoutXLMConfig：LayoutXLM 多语言文档理解超参（继承 LayoutLMv2 并扩展 XLM-R 分词）
 class LayoutXLMConfig(PreTrainedConfig):
     r"""
     max_2d_position_embeddings (`int`, *optional*, defaults to 1024):

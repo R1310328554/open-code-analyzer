@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LayoutLMv3 配置：microsoft/layoutlmv3-base 文本+视觉 patch 多模态超参
+
+# LayoutLMv3Config：microsoft/layoutlmv3-base 多模态文档理解默认超参
 @auto_docstring(checkpoint="microsoft/layoutlmv3-base")
 @strict
+# LayoutLMv3Config：LayoutLMv3 多模态文档理解超参（文本+视觉 patch + 2D 位置编码）
 class LayoutLMv3Config(PreTrainedConfig):
     r"""
     max_2d_position_embeddings (`int`, *optional*, defaults to 1024):

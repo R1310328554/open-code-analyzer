@@ -20,7 +20,10 @@ from ...tokenization_utils_base import BatchEncoding, PaddingStrategy, PreTokeni
 from ...utils import TensorType, auto_docstring
 
 
+# LayoutLMv3 Processor：图像预处理与分词器联合多模态输入组装
+
 @auto_docstring
+# LayoutLMv3Processor：封装图像预处理与分词器的多模态输入管线
 class LayoutLMv3Processor(ProcessorMixin):
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
