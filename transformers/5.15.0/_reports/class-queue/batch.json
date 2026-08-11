@@ -15,23 +15,8 @@
     "src/transformers/models/siglip2/processing_siglip2.py",
     "src/transformers/models/siglip2/tokenization_siglip2.py",
     "src/transformers/models/slanet/__init__.py",
-    "src/transformers/models/slanet/configuration_slanet.py",
-    "src/transformers/models/slanet/modeling_slanet.py",
-    "src/transformers/models/slanet/modular_slanet.py",
-    "src/transformers/models/slanext/__init__.py",
-    "src/transformers/models/slanext/configuration_slanext.py",
-    "src/transformers/models/slanext/image_processing_slanext.py",
-    "src/transformers/models/slanext/modeling_slanext.py",
-    "src/transformers/models/slanext/modular_slanext.py",
-    "src/transformers/models/smollm3/__init__.py",
-    "src/transformers/models/smollm3/configuration_smollm3.py",
-    "src/transformers/models/smollm3/modeling_smollm3.py",
-    "src/transformers/models/smollm3/modular_smollm3.py",
-    "src/transformers/models/smolvlm/__init__.py",
-    "src/transformers/models/smolvlm/configuration_smolvlm.py",
-    "src/transformers/models/smolvlm/image_processing_pil_smolvlm.py",
-    "src/transformers/models/smolvlm/image_processing_smolvlm.py"
+    "src/transformers/models/slanet/configuration_slanet.py"
   ],
   "remaining_pending": 579,
-  "done": 2070
+  "done": 2085
 }
