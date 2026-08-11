@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 将目录下 GT 图像批量渲染为 HTML 表格，便于可视化对比
 import os
 import argparse
 
 
+# 将命令行布尔字符串解析为 Python bool
 def str2bool(v):
     return v.lower() in ("true", "t", "1")
 
 
+# 定义 image_dir、save_html_path、缩略图 width 参数
 def init_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_dir", type=str, default="")
@@ -28,11 +31,13 @@ def init_args():
     return parser
 
 
+# 解析命令行并返回 args
 def parse_args():
     parser = init_args()
     return parser.parse_args()
 
 
+# 遍历 image_dir 生成带 GT 缩略图的 HTML 调试页
 def draw_debug_img(args):
     html_path = args.save_html_path
 

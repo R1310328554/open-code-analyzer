@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# 方向分类推理：加载 PP-LCNet 系列 cls 模型，批量预测并校正倒置文本
 import cv2
 import copy
 import numpy as np
@@ -35,7 +36,9 @@ from ppocr.utils.utility import get_image_file_list, check_and_read
 logger = get_logger()
 
 
+# 文本行方向分类器：判断 0°/180° 并在超阈值时旋转图像
 class TextClassifier(object):
+    # 校验 inference.yml 模型名，构建 ClsPostProcess 与 Predictor
     def __init__(self, args):
         if os.path.exists(f"{args.cls_model_dir}/inference.yml"):
             model_config = utility.load_config(f"{args.cls_model_dir}/inference.yml")
@@ -64,6 +67,7 @@ class TextClassifier(object):
         ) = utility.create_predictor(args, "cls", logger)
         self.use_onnx = args.use_onnx
 
+    # 按 cls_image_shape 等比缩放、归一化并右侧零填充
     def resize_norm_img(self, img):
         imgC, imgH, imgW = self.cls_image_shape
         h = img.shape[0]
@@ -86,6 +90,7 @@ class TextClassifier(object):
         padding_im[:, :, 0:resized_w] = resized_image
         return padding_im
 
+    # 按宽高比排序后分批推理，180° 且超阈值则 cv2.rotate 校正
     def __call__(self, img_list):
         img_list = copy.deepcopy(img_list)
         img_num = len(img_list)
@@ -137,6 +142,7 @@ class TextClassifier(object):
         return img_list, cls_res, elapse
 
 
+# CLI：遍历 image_dir，输出每张图的方向标签与置信度
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     text_classifier = TextClassifier(args)

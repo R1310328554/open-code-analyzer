@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 将 PaddleOCR JSON 标注转为端到端评测所需的 tab 分隔 txt 格式
 import numpy as np
 import json
 import os
 
 
+# 四边形坐标展平为 x1\ty1\t...\tx4\ty4 字符串
 def poly_to_string(poly):
     if len(poly.shape) > 1:
         poly = np.array(poly).flatten()
@@ -24,6 +26,7 @@ def poly_to_string(poly):
     return string
 
 
+# 批量转换标注：gt 模式含 ignore 标记，pred 模式仅坐标+文本
 def convert_label(label_dir, mode="gt", save_dir="./save_results/"):
     if not os.path.exists(label_dir):
         raise ValueError(f"The file {label_dir} does not exist!")
@@ -87,6 +90,7 @@ def convert_label(label_dir, mode="gt", save_dir="./save_results/"):
     print("The convert label saved in {}".format(save_dir))
 
 
+# 解析 --label_path、--save_folder、--mode 命令行参数
 def parse_args():
     import argparse
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# test_tipc 辅助工具：日志初始化、字典可视化与 checkpoint/预训练权重加载
 import os
 import sys
 import logging
@@ -21,6 +22,7 @@ import paddle.distributed as dist
 logger_initialized = {}
 
 
+# 递归打印嵌套 dict/list，按层级缩进便于调试配置
 def print_dict(d, logger, delimiter=0):
     """
     Recursively visualize a dict and
@@ -39,6 +41,7 @@ def print_dict(d, logger, delimiter=0):
 
 
 @functools.lru_cache()
+# 按名称获取 logger；rank0 写文件/设级别，其他 rank 静默 ERROR
 def get_logger(name="root", log_file=None, log_level=logging.DEBUG):
     """Initialize and get a logger by name.
     If the logger has not been initialized, this method will initialize the
@@ -83,6 +86,7 @@ def get_logger(name="root", log_file=None, log_level=logging.DEBUG):
     return logger
 
 
+# 从 checkpoints 或 pretrained_model 恢复权重，可选加载优化器与 best 指标
 def load_model(config, model, optimizer=None):
     """
     load model from checkpoint or pretrained_model
@@ -144,6 +148,7 @@ def load_model(config, model, optimizer=None):
     return best_model_dict
 
 
+# 仅加载预训练 .pdparams，按 shape 匹配过滤不兼容参数
 def load_pretrained_params(model, path):
     logger = get_logger()
     if path.endswith(".pdparams"):

@@ -1,7 +1,9 @@
+// Jest 单元测试配置：配合 jest-puppeteer 运行 web 端 OCR 推理测试
 // For a detailed explanation regarding each configuration property and type check, visit:
 // https://jestjs.io/docs/en/configuration.html
 
 module.exports = {
+    // 使用 jest-puppeteer 预设，自动管理浏览器生命周期
     preset: 'jest-puppeteer',
     // All imported modules in your tests should be mocked automatically
     // automock: false,
@@ -13,6 +15,7 @@ module.exports = {
     // coverageThreshold: undefined,
 
     // A set of global variables that need to be available in all test environments
+    // 全局变量：测试页 URL，与 puppeteer server 端口一致
     globals: {
         PATH: 'http://localhost:9811'
     },
@@ -71,6 +74,7 @@ module.exports = {
     ],
 
     // The regexp pattern or array of patterns that Jest uses to detect test files
+    // 匹配 *.test.js/ts 作为测试入口
     testRegex: '.(.+)\\.test\\.(js|ts)$',
 
     // This option allows the use of a custom results processor
@@ -107,5 +111,6 @@ module.exports = {
 
     // Whether to use watchman for file crawling
     // watchman: true,
+    // OCR 模型加载与推理较慢，延长单测超时
     testTimeout: 50000
 };

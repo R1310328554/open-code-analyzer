@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 导出识别特征中心：在训练集上统计各字符 embedding 均值并序列化
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -32,6 +33,7 @@ from ppocr.utils.utility import print_dict
 import tools.program as program
 
 
+# 复用 Train 数据配置，开启 return_feats 后调用 get_center 写 train_center.pkl
 def main():
     global_config = config["Global"]
     # build dataloader

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# OCR 端到端评测：IoU 匹配检测框后计算字符准确率与编辑距离
 import os
 import re
 import sys
@@ -23,6 +24,7 @@ import operator
 import editdistance
 
 
+# 全角字符转半角，统一 GT/预测文本比较
 def strQ2B(ustring):
     rstring = ""
     for uchar in ustring:
@@ -35,6 +37,7 @@ def strQ2B(ustring):
     return rstring
 
 
+# 8 点坐标 reshape 为 shapely 凸包多边形
 def polygon_from_str(polygon_points):
     """
     Create a shapely polygon object from gt or dt line.
@@ -44,6 +47,7 @@ def polygon_from_str(polygon_points):
     return polygon
 
 
+# 两多边形交并比，拓扑异常时返回 0
 def polygon_iou(poly1, poly2):
     """
     Intersection over union between two shapely polygons.
@@ -63,10 +67,12 @@ def polygon_iou(poly1, poly2):
     return iou
 
 
+# 两字符串编辑距离（Levenshtein）
 def ed(str1, str2):
     return editdistance.eval(str1, str2)
 
 
+# 逐图 IoU 贪心匹配后汇总 precision/recall/fmeasure 与字符准确率
 def e2e_eval(gt_dir, res_dir, ignore_blank=False):
     print("start testing...")
     iou_thresh = 0.5

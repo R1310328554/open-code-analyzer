@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 验证集评测入口：构建 dataloader/model/metric 并调用 program.eval
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -32,6 +33,7 @@ from ppocr.utils.save_load import load_model
 import tools.program as program
 
 
+# 按算法调整 Head out_channels，加载 checkpoint 后在 Eval 集上计算指标
 def main():
     global_config = config["Global"]
     # build dataloader

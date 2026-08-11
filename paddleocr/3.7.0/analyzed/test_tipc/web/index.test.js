@@ -1,11 +1,15 @@
+// Paddle.js OCR 浏览器端到端测试：加载 PP-OCRv2 模型并对比识别结果
 const expectData = require('./expect.json');
 
+// 测试套件：在本地 HTTP 服务页面中运行 paddlejs OCR 推理
 describe('e2e test ocr model', () => {
 
+    // 测试前打开 jest-puppeteer 配置的静态页面
     beforeAll(async () => {
         await page.goto(PATH);
     });
 
+    // 初始化 det/rec 模型，逐行比对识别文本与 expect.json
     it('ocr infer and diff test', async () => {
         page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
@@ -47,6 +51,7 @@ describe('e2e test ocr model', () => {
 
         expect(similarity).toBeGreaterThanOrEqual(expecteSimilarity);
 
+        // 基于编辑距离的字符串相似度，用于评估识别质量
         function similar(string, expect) {
             if (!string || !expect) {
                 return 0;

@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# 文本检测推理：按 det_algorithm 配置预处理/后处理，输出四边形框
 import cv2
 import numpy as np
 import time
@@ -33,7 +34,9 @@ from ppocr.postprocess import build_post_process
 import json
 
 
+# 文本检测器：支持 DB/DB++/EAST/SAST/PSE/FCE/CT 等算法与后处理
 class TextDetector(object):
+    # 校验模型名，按算法构建 DetResize/Normalize 与 DBPostProcess 等
     def __init__(self, args, logger=None):
         if os.path.exists(f"{args.det_model_dir}/inference.yml"):
             model_config = utility.load_config(f"{args.det_model_dir}/inference.yml")
@@ -182,6 +185,7 @@ class TextDetector(object):
                 logger=logger,
             )
 
+    # 四点坐标按左上、右上、右下、左下顺时针排序
     def order_points_clockwise(self, pts):
         rect = np.zeros((4, 2), dtype="float32")
         s = pts.sum(axis=1)
@@ -193,6 +197,7 @@ class TextDetector(object):
         rect[3] = tmp[np.argmax(diff)]
         return rect
 
+    # 多边形点数不足时用末点填充至 max_points
     def pad_polygons(self, polygon, max_points):
         padding_size = max_points - len(polygon)
         if padding_size == 0:
@@ -201,12 +206,14 @@ class TextDetector(object):
         padding = np.repeat([last_point], padding_size, axis=0)
         return np.vstack([polygon, padding])
 
+    # 检测框坐标裁剪到图像边界内
     def clip_det_res(self, points, img_height, img_width):
         for pno in range(points.shape[0]):
             points[pno, 0] = int(min(max(points[pno, 0], 0), img_width - 1))
             points[pno, 1] = int(min(max(points[pno, 1], 0), img_height - 1))
         return points
 
+    # 过滤过小框并顺时针排序、裁剪
     def filter_tag_det_res(self, dt_boxes, image_shape):
         img_height, img_width = image_shape[0:2]
         dt_boxes_new = []
@@ -223,6 +230,7 @@ class TextDetector(object):
         dt_boxes = np.array(dt_boxes_new)
         return dt_boxes
 
+    # 仅裁剪不滤小框，poly 模式统一 padding 后堆叠
     def filter_tag_det_res_only_clip(self, dt_boxes, image_shape):
         img_height, img_width = image_shape[0:2]
         dt_boxes_new = []
@@ -241,6 +249,7 @@ class TextDetector(object):
         dt_boxes = np.array(dt_boxes_new)
         return dt_boxes
 
+    # 单图检测：预处理→推理→后处理→过滤，返回 dt_boxes 与耗时
     def predict(self, img):
         ori_im = img.copy()
         data = {"image": img}
@@ -307,6 +316,7 @@ class TextDetector(object):
         et = time.time()
         return dt_boxes, et - st
 
+    # 超长/超宽图分片滑动窗口检测，合并偏移后的框
     def __call__(self, img, use_slice=False):
         # For image like poster with one side much greater than the other side,
         # splitting recursively and processing with overlap to enhance performance.

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 推理模型导出 CLI：加载 YAML 配置并调用 ppocr.utils.export_model.export
 import os
 import sys
 
@@ -25,6 +26,7 @@ from tools.program import load_config, merge_config, ArgsParser
 from ppocr.utils.export_model import export
 
 
+# 解析 --config/--opt，merge 配置后执行静态图导出
 def main():
     FLAGS = ArgsParser().parse_args()
     config = load_config(FLAGS.config)

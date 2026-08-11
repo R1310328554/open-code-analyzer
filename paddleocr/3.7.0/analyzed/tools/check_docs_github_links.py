@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+# 扫描 Markdown 文档，拒绝指向不稳定 GitHub 分支/标签的源码链接
+#!/usr/bin/env python3
 import argparse
 import re
 from pathlib import Path
 from typing import NamedTuple
 
 
+# 文档链接违规记录：文件路径、行号、Git ref 与完整 URL
 class Violation(NamedTuple):
     path: Path
     line_number: int
@@ -12,6 +15,7 @@ class Violation(NamedTuple):
     url: str
 
 
+# 编译匹配 github.com/{repo}/blob|tree/{ref} 的正则
 def _compile_link_pattern(repo_slug):
     escaped_repo = re.escape(repo_slug)
     return re.compile(
@@ -20,6 +24,7 @@ def _compile_link_pattern(repo_slug):
     )
 
 
+# 递归扫描 root 下 *.md，收集 ref 落在 forbidden_refs 的链接
 def find_forbidden_links(root, repo_slug, forbidden_refs):
     root = Path(root)
     forbidden_refs = set(forbidden_refs)
@@ -46,6 +51,7 @@ def find_forbidden_links(root, repo_slug, forbidden_refs):
     return violations
 
 
+# CLI 入口：--root、--repo-slug、--forbidden-ref，有违规则 exit 1
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Reject docs links that point to moving GitHub source refs."

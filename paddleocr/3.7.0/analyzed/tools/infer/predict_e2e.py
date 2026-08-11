@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# PGNet 端到端推理：一次前向同时得到检测点集与识别文本
 import cv2
 import numpy as np
 import time
@@ -34,7 +35,9 @@ from ppocr.postprocess import build_post_process
 logger = get_logger()
 
 
+# 端到端 PGNet 推理：同时输出文本框坐标与识别字符串
 class TextE2E(object):
+    # 配置 E2EResizeForTest 与 PGPostProcess，创建 e2e Predictor
     def __init__(self, args):
         if os.path.exists(f"{args.e2e_model_dir}/inference.yml"):
             model_config = utility.load_config(f"{args.e2e_model_dir}/inference.yml")
@@ -89,12 +92,14 @@ class TextE2E(object):
         )  # paddle.jit.load(args.det_model_dir)
         # self.predictor.eval()
 
+    # 将检测点坐标限制在图像宽高范围内
     def clip_det_res(self, points, img_height, img_width):
         for pno in range(points.shape[0]):
             points[pno, 0] = int(min(max(points[pno, 0], 0), img_width - 1))
             points[pno, 1] = int(min(max(points[pno, 1], 0), img_height - 1))
         return points
 
+    # 逐框裁剪后转为 numpy 数组
     def filter_tag_det_res_only_clip(self, dt_boxes, image_shape):
         img_height, img_width = image_shape[0:2]
         dt_boxes_new = []
@@ -104,6 +109,7 @@ class TextE2E(object):
         dt_boxes = np.array(dt_boxes_new)
         return dt_boxes
 
+    # 预处理→推理四路输出→后处理，返回 points、texts 与耗时
     def __call__(self, img):
         ori_im = img.copy()
         data = {"image": img}
