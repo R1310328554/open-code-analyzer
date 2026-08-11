@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:29:08Z",
   "files": [
-    "src/transformers/models/textnet/image_processing_textnet.py",
-    "src/transformers/models/textnet/modeling_textnet.py",
-    "src/transformers/models/time_series_transformer/__init__.py",
-    "src/transformers/models/time_series_transformer/configuration_time_series_transformer.py",
-    "src/transformers/models/time_series_transformer/modeling_time_series_transformer.py",
-    "src/transformers/models/timesfm/__init__.py",
-    "src/transformers/models/timesfm/configuration_timesfm.py",
-    "src/transformers/models/timesfm/modeling_timesfm.py",
-    "src/transformers/models/timesfm/modular_timesfm.py",
-    "src/transformers/models/timesfm2_5/__init__.py",
-    "src/transformers/models/timesfm2_5/configuration_timesfm2_5.py",
-    "src/transformers/models/timesfm2_5/modeling_timesfm2_5.py",
-    "src/transformers/models/timesfm2_5/modular_timesfm2_5.py",
-    "src/transformers/models/timesformer/__init__.py",
-    "src/transformers/models/timesformer/configuration_timesformer.py",
     "src/transformers/models/timesformer/modeling_timesformer.py",
     "src/transformers/models/timesformer/video_processing_timesformer.py",
     "src/transformers/models/timm_backbone/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/tipsv2/processing_tipsv2.py"
   ],
   "remaining_pending": 459,
-  "done": 2190
+  "done": 2205
 }
