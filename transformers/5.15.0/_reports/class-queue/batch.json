@@ -1,6 +1,16 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 9,
+  "claimed_at": "2026-08-11T04:22:08Z",
+  "files": [
+    "utils/test_module/custom_pipeline.py",
+    "utils/test_module/custom_processing.py",
+    "utils/test_module/custom_tokenization.py",
+    "utils/test_module/custom_tokenization_fast.py",
+    "utils/test_module/custom_video_processing.py",
+    "utils/tests_fetcher.py",
+    "utils/update_metadata.py",
+    "utils/update_pr_ci_dashboard_recap.py",
+    "utils/update_tiny_models.py"
+  ],
+  "remaining_pending": 0,
   "done": 2670
 }
