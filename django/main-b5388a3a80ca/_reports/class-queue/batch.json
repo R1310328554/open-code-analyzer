@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:40:52Z",
-  "files": [
-    "django/middleware/csp.py",
-    "django/middleware/csrf.py",
-    "django/middleware/gzip.py",
-    "django/middleware/http.py",
-    "django/middleware/locale.py",
-    "django/middleware/security.py",
-    "django/shortcuts.py",
-    "django/tasks/__init__.py",
-    "django/tasks/backends/__init__.py",
-    "django/tasks/backends/base.py",
-    "django/tasks/backends/dummy.py",
-    "django/tasks/backends/immediate.py",
-    "django/tasks/base.py",
-    "django/tasks/checks.py",
-    "django/tasks/exceptions.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 132,
-  "done": 795
+  "done": 810
 }
