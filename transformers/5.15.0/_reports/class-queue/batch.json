@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:32:02Z",
   "files": [
-    "src/transformers/models/groupvit/modeling_groupvit.py",
-    "src/transformers/models/helium/__init__.py",
-    "src/transformers/models/helium/configuration_helium.py",
-    "src/transformers/models/helium/modeling_helium.py",
-    "src/transformers/models/helium/modular_helium.py",
-    "src/transformers/models/herbert/__init__.py",
-    "src/transformers/models/herbert/tokenization_herbert.py",
-    "src/transformers/models/hgnet_v2/__init__.py",
-    "src/transformers/models/hgnet_v2/configuration_hgnet_v2.py",
-    "src/transformers/models/hgnet_v2/modeling_hgnet_v2.py",
-    "src/transformers/models/hgnet_v2/modular_hgnet_v2.py",
-    "src/transformers/models/hiera/__init__.py",
-    "src/transformers/models/hiera/configuration_hiera.py",
-    "src/transformers/models/hiera/modeling_hiera.py",
-    "src/transformers/models/higgs_audio_v2/__init__.py",
     "src/transformers/models/higgs_audio_v2/configuration_higgs_audio_v2.py",
     "src/transformers/models/higgs_audio_v2/generation_higgs_audio_v2.py",
     "src/transformers/models/higgs_audio_v2/modeling_higgs_audio_v2.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/hubert/configuration_hubert.py"
   ],
   "remaining_pending": 1629,
-  "done": 1020
+  "done": 1035
 }
