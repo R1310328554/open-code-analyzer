@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch XGLM model."""
 
+# XGLM 建模：正弦位置编码 + Pre-LN 解码器，支持跨注意力
 import math
 
 import torch
@@ -37,6 +38,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.BartScaledWordEmbedding with Bart->XGLM
+# XGLMScaledWordEmbedding：缩放词嵌入：Embedding 输出乘以 embed_scale
 class XGLMScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -50,6 +52,7 @@ class XGLMScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale
 
 
+# XGLMSinusoidalPositionalEmbedding：正弦位置嵌入：任意长度序列
 class XGLMSinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -102,6 +105,7 @@ class XGLMSinusoidalPositionalEmbedding(nn.Module):
         return self.weights.index_select(0, position_ids.view(-1)).view(bsz, seq_len, self.weights.shape[-1]).detach()
 
 
+# XGLMAttention：多头自/交叉注意力：支持 KV cache
 class XGLMAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -245,6 +249,7 @@ class XGLMAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# XGLMDecoderLayer：Pre-LN 解码层：自注意力 + 交叉注意力 + FFN
 class XGLMDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: XGLMConfig, layer_idx=None):
         super().__init__()
@@ -339,6 +344,7 @@ class XGLMDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# XGLMPreTrainedModel：预训练基类：解码器组件权重初始化
 class XGLMPreTrainedModel(PreTrainedModel):
     config: XGLMConfig
     base_model_prefix = "model"
@@ -355,6 +361,7 @@ class XGLMPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# XGLMModel：基模型：词嵌入 + 正弦位置 + 堆叠解码层
 class XGLMModel(XGLMPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": XGLMDecoderLayer,
@@ -491,6 +498,7 @@ class XGLMModel(XGLMPreTrainedModel):
     embeddings).
     """
 )
+# XGLMForCausalLM：因果语言建模头：线性投影 + 自回归生成
 class XGLMForCausalLM(XGLMPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Xcodec2 模块化建模：复用 Llama/Qwen2.5-Omni/DAC 组件的编解码器变体
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -55,6 +56,7 @@ from ..voxtral.modeling_voxtral import VoxtralPreTrainedModel
 
 @auto_docstring(checkpoint="HKUSTAudio/xcodec2-hf")
 @strict
+# Xcodec2Config：继承 LlamaConfig 的 Xcodec2 配置
 class Xcodec2Config(LlamaConfig):
     r"""
     downsampling_ratios (`list[int]`, *optional*, defaults to `[2, 2, 4, 4, 5]`):
@@ -129,6 +131,7 @@ class Xcodec2Config(LlamaConfig):
 
 @auto_docstring
 @dataclass
+# Xcodec2Output：编解码输出：离散 audio_codes 与重建 audio_values
 class Xcodec2Output(ModelOutput):
     r"""
     audio_values (`torch.FloatTensor` of shape `(batch_size, 1, sequence_length)`, *optional*):
@@ -151,6 +154,7 @@ class Xcodec2Output(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Xcodec2EncoderOutput：编码输出：离散 audio_codes
 class Xcodec2EncoderOutput(ModelOutput):
     r"""
     audio_codes (`torch.LongTensor` of shape `(batch_size, 1, codes_length)`, *optional*):
@@ -170,6 +174,7 @@ class Xcodec2EncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Xcodec2DecoderOutput：解码输出：重建 audio_values
 class Xcodec2DecoderOutput(ModelOutput):
     r"""
     audio_values (`torch.FloatTensor` of shape `(batch_size, 1, segment_length)`, *optional*):
@@ -181,10 +186,12 @@ class Xcodec2DecoderOutput(ModelOutput):
     audio_values: torch.FloatTensor | None = None
 
 
+# Xcodec2RotaryEmbedding：继承 LlamaRotaryEmbedding 的 RoPE
 class Xcodec2RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# Xcodec2MLP：继承 CLIPMLP 的两层 MLP 前馈
 class Xcodec2MLP(CLIPMLP):
     def __init__(self, config: Xcodec2Config):
         super().__init__(config)
@@ -192,6 +199,7 @@ class Xcodec2MLP(CLIPMLP):
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
 
+# Xcodec2Attention：继承 LlamaAttention 的多头自注意力
 class Xcodec2Attention(LlamaAttention):
     def __init__(self, config: Xcodec2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -241,14 +249,17 @@ class Xcodec2Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# Xcodec2DecoderLayer：继承 LlamaDecoderLayer 的解码层
 class Xcodec2DecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# Xcodec2SnakeBeta：继承 Qwen2_5OmniSnakeBeta 的 SnakeBeta 激活
 class Xcodec2SnakeBeta(Qwen2_5OmniSnakeBeta):
     pass
 
 
+# Xcodec2DownSample1d：继承 Qwen2_5OmniDownSample1d 的 1D 下采样
 class Xcodec2DownSample1d(Qwen2_5OmniDownSample1d):
     def forward(self, hidden_states):
         channels = hidden_states.shape[1]
@@ -263,6 +274,7 @@ class Xcodec2DownSample1d(Qwen2_5OmniDownSample1d):
         return out
 
 
+# Xcodec2UpSample1d：继承 Qwen2_5OmniUpSample1d 的 1D 上采样
 class Xcodec2UpSample1d(Qwen2_5OmniUpSample1d):
     def forward(self, hidden_states):
         channels = hidden_states.shape[1]
@@ -278,6 +290,7 @@ class Xcodec2UpSample1d(Qwen2_5OmniUpSample1d):
         return hidden_states
 
 
+# Xcodec2AntiAliasedActivation1d：继承 Qwen2_5Omni 抗混叠 1D 激活
 class Xcodec2AntiAliasedActivation1d(Qwen2_5OmniAntiAliasedActivation1d):
     def __init__(
         self,
@@ -298,6 +311,7 @@ class Xcodec2AntiAliasedActivation1d(Qwen2_5OmniAntiAliasedActivation1d):
         self.downsample = Xcodec2DownSample1d(down_ratio, down_kernel_size)
 
 
+# Xcodec2ResidualUnit：继承 DacResidualUnit 的编码器残差单元
 class Xcodec2ResidualUnit(DacResidualUnit):
     def __init__(self, dimension, dilation):
         super().__init__(dimension, dilation)
@@ -305,6 +319,7 @@ class Xcodec2ResidualUnit(DacResidualUnit):
         self.snake2 = Xcodec2AntiAliasedActivation1d(activation=Xcodec2SnakeBeta(dimension))
 
 
+# Xcodec2EncoderBlock：继承 DacEncoderBlock 的编码块
 class Xcodec2EncoderBlock(DacEncoderBlock):
     def __init__(self, config: Xcodec2Config, stride: int = 1, stride_index: int = 1):
         super().__init__(config, stride, stride_index)
@@ -312,6 +327,7 @@ class Xcodec2EncoderBlock(DacEncoderBlock):
         self.snake1 = Xcodec2AntiAliasedActivation1d(activation=Xcodec2SnakeBeta(dimension // 2))
 
 
+# Xcodec2Encoder：继承 DacEncoder 的声学编码器
 class Xcodec2Encoder(DacEncoder):
     def __init__(self, config: Xcodec2Config):
         super().__init__(config)
@@ -319,6 +335,7 @@ class Xcodec2Encoder(DacEncoder):
         self.snake1 = Xcodec2AntiAliasedActivation1d(activation=Xcodec2SnakeBeta(d_model))
 
 
+# Xcodec2ResNetBlock：ResNet 块：GroupNorm + SiLU + Conv1d 残差
 class Xcodec2ResNetBlock(nn.Module):
     def __init__(self, config: Xcodec2Config):
         super().__init__()
@@ -343,6 +360,7 @@ class Xcodec2ResNetBlock(nn.Module):
         return (hidden_states + residual).transpose(1, 2)
 
 
+# Xcodec2FiniteScalarQuantization：有限标量量化（FSQ）
 class Xcodec2FiniteScalarQuantization(nn.Module):
     """
     Finite Scalar Quantization (FSQ) module that quantizes continuous latent representations into discrete codes.
@@ -426,6 +444,7 @@ class Xcodec2FiniteScalarQuantization(nn.Module):
         return codes.to(original_dtype), indices
 
 
+# Xcodec2ISTFTHead：ISTFT 输出头：STFT 投影与逆变换
 class Xcodec2ISTFTHead(nn.Module):
     """
     Head for converting decoder outputs to waveform via STFT projection and ISTFT.
@@ -479,6 +498,7 @@ class Xcodec2ISTFTHead(nn.Module):
         return audio.unsqueeze(1)
 
 
+# Xcodec2Quantizer：量化器：线性投影 + FSQ + 反投影
 class Xcodec2Quantizer(nn.Module):
     def __init__(self, config: Xcodec2Config):
         super().__init__()
@@ -501,6 +521,7 @@ class Xcodec2Quantizer(nn.Module):
         return quantized_out, indices
 
 
+# Xcodec2Decoder：Vocos 解码器：ResNet + Transformer + ISTFT
 class Xcodec2Decoder(nn.Module):
     """Vocos-based decoder with ResNet, Transformer, and ISTFT head for audio reconstruction."""
 
@@ -545,6 +566,7 @@ class Xcodec2Decoder(nn.Module):
         return self.head(self.norm(hidden_states))
 
 
+# Xcodec2SemanticAdapter：语义适配器：Wav2Vec2-BERT 特征融合
 class Xcodec2SemanticAdapter(nn.Module):
     def __init__(self, config: Xcodec2Config):
         super().__init__()
@@ -591,6 +613,7 @@ class Xcodec2SemanticAdapter(nn.Module):
         return hidden_states
 
 
+# Xcodec2PreTrainedModel：继承 VoxtralPreTrainedModel 的预训练基类
 class Xcodec2PreTrainedModel(VoxtralPreTrainedModel):
     base_model_prefix = "xcodec2"
     main_input_name = "input_values"
@@ -622,6 +645,7 @@ class Xcodec2PreTrainedModel(VoxtralPreTrainedModel):
 
 
 @auto_docstring(custom_intro="Xcodec2 neural audio codec model.")
+# Xcodec2Model：完整 Xcodec2 神经音频编解码器
 class Xcodec2Model(Xcodec2PreTrainedModel):
     config_class = Xcodec2Config
 

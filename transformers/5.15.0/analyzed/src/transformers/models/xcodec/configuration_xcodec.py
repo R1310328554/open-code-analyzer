@@ -13,6 +13,7 @@
 # limitations under the License.
 """Xcodec model configuration"""
 
+# Xcodec 配置：语义/声学双路径编解码器与 RVQ 量化超参数
 import math
 
 import numpy as np
@@ -25,6 +26,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="Manel/X-Codec")
 @strict
+# XcodecConfig：Xcodec 主配置：带宽、语义/声学子模型与 RVQ 量化参数
 class XcodecConfig(PreTrainedConfig):
     r"""
     target_bandwidths (`List[float]`, *optional*, defaults to `[0.5, 1, 1.5, 2, 4]`):

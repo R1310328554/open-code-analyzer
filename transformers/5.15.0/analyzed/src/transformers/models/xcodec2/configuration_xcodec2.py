@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Xcodec2 配置：FSQ 量化、Vocos 解码器与 Wav2Vec2-BERT 语义模型参数
 import numpy as np
 from huggingface_hub.dataclasses import strict
 
@@ -30,6 +31,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="HKUSTAudio/xcodec2-hf")
 @strict
+# Xcodec2Config：Xcodec2 主配置：FSQ 量化、下采样比与 Wav2Vec2-BERT 语义模型
 class Xcodec2Config(PreTrainedConfig):
     r"""
     downsampling_ratios (`list[int]`, *optional*, defaults to `[2, 2, 4, 4, 5]`):

@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# X-CLIP 建模：扩展 CLIP 的视频-文本对比学习，含 MIT 多帧融合与视频提示生成
 import copy
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -41,6 +42,7 @@ from .configuration_x_clip import XCLIPConfig, XCLIPTextConfig, XCLIPVisionConfi
 
 @auto_docstring
 @dataclass
+# XCLIPOutput：模型输出：对比损失、视频/文本嵌入与 MIT 输出
 class XCLIPOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -83,6 +85,7 @@ class XCLIPOutput(ModelOutput):
         )
 
 
+# XCLIPVisionEmbeddings：视觉 patch 嵌入：Conv2d 投影 + 位置编码
 class XCLIPVisionEmbeddings(nn.Module):
     def __init__(self, config: XCLIPVisionConfig):
         super().__init__()
@@ -166,6 +169,7 @@ class XCLIPVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# XCLIPTextEmbeddings：文本 token 嵌入 + 位置编码
 class XCLIPTextEmbeddings(nn.Module):
     def __init__(self, config: XCLIPTextConfig):
         super().__init__()
@@ -225,6 +229,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# XCLIPAttention：多头自注意力：支持 eager/SDPA/Flash 后端
 class XCLIPAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -283,6 +288,7 @@ class XCLIPAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# XCLIPMLP：两层 MLP 前馈网络
 class XCLIPMLP(nn.Module):
     def __init__(self, config: XCLIPVisionConfig | XCLIPTextConfig):
         super().__init__()
@@ -298,6 +304,7 @@ class XCLIPMLP(nn.Module):
         return hidden_states
 
 
+# XCLIPEncoderLayer：Pre-LN Transformer 层：自注意力 + FFN
 class XCLIPEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: XCLIPVisionConfig):
         super().__init__()
@@ -331,6 +338,7 @@ class XCLIPEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# XCLIPDropPath：随机深度 DropPath：训练时按样本丢弃残差路径
 class XCLIPDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -355,6 +363,7 @@ class XCLIPDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# XCLIPVisionEncoderLayer：视觉编码层：自注意力 + FFN + DropPath
 class XCLIPVisionEncoderLayer(GradientCheckpointingLayer):
     """
     This corresponds to the `CrossFramelAttentionBlock` class in the original implementation.
@@ -411,6 +420,7 @@ class XCLIPVisionEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# XCLIPPreTrainedModel：预训练基类：CLIP 组件权重初始化
 class XCLIPPreTrainedModel(PreTrainedModel):
     config: XCLIPConfig
     base_model_prefix = "x_clip"
@@ -473,6 +483,7 @@ class XCLIPPreTrainedModel(PreTrainedModel):
             init.normal_(module.position_embedding, std=factor)
 
 
+# XCLIPEncoder：堆叠 Transformer 编码层
 class XCLIPEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -507,6 +518,7 @@ class XCLIPEncoder(nn.Module):
         )
 
 
+# XCLIPVisionEncoder：视觉 Transformer 编码器：堆叠视觉编码层
 class XCLIPVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -546,6 +558,7 @@ class XCLIPVisionEncoder(nn.Module):
     The text model from XCLIP without any head or projection on top.
     """
 )
+# XCLIPTextModel：文本编码器：嵌入 → 编码 → 池化
 class XCLIPTextModel(XCLIPPreTrainedModel):
     config: XCLIPTextConfig
     input_modalities = ("text",)
@@ -644,6 +657,7 @@ class XCLIPTextModel(XCLIPPreTrainedModel):
     The vision model from XCLIP without any head or projection on top.
     """
 )
+# XCLIPVisionModel：视觉编码器：逐帧 patch 嵌入 → 编码 → 池化
 class XCLIPVisionModel(XCLIPPreTrainedModel):
     config: XCLIPVisionConfig
     main_input_name = "pixel_values"
@@ -761,6 +775,7 @@ class XCLIPVisionModel(XCLIPPreTrainedModel):
         )
 
 
+# XCLIPMultiframeIntegrationTransformer：多帧融合 Transformer（MIT）：帧间位置编码 + 均值池化
 class XCLIPMultiframeIntegrationTransformer(nn.Module):
     """
     This corresponds to the `MultiframeIntegrationTransformer` class in the original implementation.
@@ -798,6 +813,7 @@ class XCLIPMultiframeIntegrationTransformer(nn.Module):
         )
 
 
+# XCLIPCrossAttention：交叉注意力：视频提示生成器的 Q/K/V 投影
 class XCLIPCrossAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -859,6 +875,7 @@ class XCLIPCrossAttention(nn.Module):
         return attn_output
 
 
+# PromptGeneratorLayer：提示生成层：交叉注意力 + MLP 残差
 class PromptGeneratorLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -880,6 +897,7 @@ class PromptGeneratorLayer(nn.Module):
         return hidden_states
 
 
+# XCLIPPromptGenerator：视频特定提示生成器：视觉条件化文本嵌入
 class XCLIPPromptGenerator(nn.Module):
     """This corresponds to the `VideoSpecificPrompt` class in the original implementation."""
 
@@ -911,6 +929,7 @@ def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# XCLIPModel：完整 X-CLIP：文本/视觉编码 + MIT + 提示生成 + 对比损失
 class XCLIPModel(XCLIPPreTrainedModel):
     config: XCLIPConfig
 

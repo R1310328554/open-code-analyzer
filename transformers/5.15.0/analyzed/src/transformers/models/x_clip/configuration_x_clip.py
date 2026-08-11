@@ -13,6 +13,7 @@
 # limitations under the License.
 """X-CLIP model configuration"""
 
+# X-CLIP 配置：文本/视觉子配置与视频提示生成器超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -24,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="microsoft/xclip-base-patch32")
 @strict
+# XCLIPTextConfig：X-CLIP 文本编码器配置：vocab、层数与 quick_gelu 激活
 class XCLIPTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -62,6 +64,7 @@ class XCLIPTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="microsoft/xclip-base-patch32")
 @strict
+# XCLIPVisionConfig：X-CLIP 视觉编码器配置：patch 尺寸、帧数与 MIT 超参数
 class XCLIPVisionConfig(PreTrainedConfig):
     r"""
     mit_hidden_size (`int`, *optional*, defaults to 512):
@@ -116,6 +119,7 @@ class XCLIPVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="microsoft/xclip-base-patch32")
 @strict
+# XCLIPConfig：X-CLIP 联合配置：文本/视觉子配置与视频提示生成器参数
 class XCLIPConfig(PreTrainedConfig):
     r"""
     prompt_layers (`int`, *optional*, defaults to 2):

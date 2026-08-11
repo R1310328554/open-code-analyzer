@@ -13,6 +13,7 @@
 # limitations under the License.
 """Transformers Xcodec model."""
 
+# Xcodec 建模：语义 HuBERT + 声学 DAC 双路径神经音频编解码器
 import math
 from dataclasses import dataclass
 from functools import lru_cache
@@ -36,6 +37,7 @@ from .configuration_xcodec import XcodecConfig
 
 
 @dataclass
+# XcodecOutput：编解码输出：离散 audio_codes 与重建 audio_values
 class XcodecOutput(ModelOutput):
     """
     Args:
@@ -50,6 +52,7 @@ class XcodecOutput(ModelOutput):
 
 
 @dataclass
+# XcodecEncoderOutput：编码输出：离散 audio_codes
 class XcodecEncoderOutput(ModelOutput):
     """
     Args:
@@ -61,6 +64,7 @@ class XcodecEncoderOutput(ModelOutput):
 
 
 @dataclass
+# XcodecDecoderOutput：解码输出：重建 audio_values
 class XcodecDecoderOutput(ModelOutput):
     """
     Args:
@@ -71,6 +75,7 @@ class XcodecDecoderOutput(ModelOutput):
     audio_values: torch.FloatTensor | None = None
 
 
+# XcodecResidualUnit：语义编解码器残差单元：膨胀 Conv1d + 1x1 卷积
 class XcodecResidualUnit(nn.Module):
     """Residual block for SemanticEncoder and SemanticDecoder used in Xcodec."""
 
@@ -98,6 +103,7 @@ class XcodecResidualUnit(nn.Module):
         return hidden_state + output_tensor
 
 
+# XcodecSemanticEncoderBlock：语义编码块：残差单元 + 下采样 Conv1d
 class XcodecSemanticEncoderBlock(nn.Module):
     def __init__(self, config: XcodecConfig, in_channels: int, out_channels: int, stride: int):
         super().__init__()
@@ -117,6 +123,7 @@ class XcodecSemanticEncoderBlock(nn.Module):
         return hidden_state
 
 
+# SemanticEncoder：语义编码器：堆叠语义块将波形映射为隐表示
 class SemanticEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -147,6 +154,7 @@ class SemanticEncoder(nn.Module):
         return hidden_state
 
 
+# SemanticDecoderBlock：语义解码块：上采样 Conv1d + 残差单元
 class SemanticDecoderBlock(nn.Module):
     def __init__(self, config: XcodecConfig, in_channels: int, out_channels: int, stride: int):
         super().__init__()
@@ -178,6 +186,7 @@ class SemanticDecoderBlock(nn.Module):
         return hidden_state
 
 
+# SemanticDecoder：语义解码器：堆叠语义块重建语义特征
 class SemanticDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -218,6 +227,7 @@ class SemanticDecoder(nn.Module):
         return hidden_state
 
 
+# XcodecEuclideanCodebook：欧氏距离码本：最近邻向量量化
 class XcodecEuclideanCodebook(nn.Module):
     """Codebook with Euclidean distance."""
 
@@ -250,6 +260,7 @@ class XcodecEuclideanCodebook(nn.Module):
         return quantized
 
 
+# XcodecVectorQuantization：单层向量量化：码本查找 + straight-through 梯度
 class XcodecVectorQuantization(nn.Module):
     """
     Vector quantization implementation. Currently supports only euclidean distance.
@@ -272,6 +283,7 @@ class XcodecVectorQuantization(nn.Module):
         return quantize
 
 
+# XcodecResidualVectorQuantization：残差向量量化（RVQ）：多层码本级联
 class XcodecResidualVectorQuantization(nn.Module):
     """
     Residual vector quantization implementation. Follows Algorithm 1 in https://huggingface.co/papers/2107.03312
@@ -323,6 +335,7 @@ class XcodecResidualVectorQuantization(nn.Module):
 
 
 @auto_docstring
+# XcodecPreTrainedModel：预训练基类：音频 tokenizer 权重初始化与 Conv1d 长度计算
 class XcodecPreTrainedModel(PreTrainedAudioTokenizerBase):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -442,6 +455,7 @@ class XcodecPreTrainedModel(PreTrainedAudioTokenizerBase):
 
 
 @auto_docstring(custom_intro="""The Xcodec neural audio codec model.""")
+# XcodecModel：完整 Xcodec：语义 HuBERT + 声学 DAC 双路径编解码
 class XcodecModel(XcodecPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

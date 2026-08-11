@@ -13,6 +13,7 @@
 # limitations under the License.
 """XGLM model configuration"""
 
+# XGLM 配置：多语言因果语言模型超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/xglm-564M")
 @strict
+# XGLMConfig：XGLM 主配置：vocab、层数、注意力头与 dropout 参数
 class XGLMConfig(PreTrainedConfig):
     r"""
     Example:

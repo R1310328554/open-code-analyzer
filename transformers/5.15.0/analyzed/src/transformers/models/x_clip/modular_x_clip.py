@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch X-CLIP model."""
 
+# X-CLIP 模块化建模：复用 CLIP/AltCLIP/BEiT 组件的视频 CLIP 变体
 import copy
 from collections.abc import Callable
 from typing import Any
@@ -48,6 +49,7 @@ from ..clip.modeling_clip import (
 from .configuration_x_clip import XCLIPConfig, XCLIPTextConfig, XCLIPVisionConfig
 
 
+# XCLIPOutput：继承 CLIPOutput 的 X-CLIP 模型输出
 class XCLIPOutput(CLIPOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -86,26 +88,31 @@ class XCLIPOutput(CLIPOutput):
         )
 
 
+# XCLIPVisionEmbeddings：继承 CLIPVisionEmbeddings 的视觉 patch 嵌入
 class XCLIPVisionEmbeddings(CLIPVisionEmbeddings):
     def __init__(self, config: XCLIPVisionConfig):
         super().__init__(config)
 
 
+# XCLIPTextEmbeddings：继承 CLIPTextEmbeddings 的文本嵌入
 class XCLIPTextEmbeddings(CLIPTextEmbeddings):
     def __init__(self, config: XCLIPTextConfig):
         super().__init__(config)
 
 
+# XCLIPAttention：继承 CLIPAttention 的多头自注意力
 class XCLIPAttention(CLIPAttention):
     def __init__(self, config: XCLIPVisionConfig | XCLIPTextConfig):
         super().__init__(config)
 
 
+# XCLIPMLP：继承 CLIPMLP 的两层 MLP 前馈
 class XCLIPMLP(CLIPMLP):
     def __init__(self, config: XCLIPVisionConfig | XCLIPTextConfig):
         super().__init__(config)
 
 
+# XCLIPEncoderLayer：继承 AltCLIPEncoderLayer 的编码层
 class XCLIPEncoderLayer(AltCLIPEncoderLayer):
     def __init__(self, config: XCLIPVisionConfig):
         super().__init__()
@@ -113,10 +120,12 @@ class XCLIPEncoderLayer(AltCLIPEncoderLayer):
         self.mlp = XCLIPMLP(config)
 
 
+# XCLIPDropPath：继承 BeitDropPath 的随机深度模块
 class XCLIPDropPath(BeitDropPath):
     pass
 
 
+# XCLIPVisionEncoderLayer：继承 CLIPEncoderLayer 的视觉编码层
 class XCLIPVisionEncoderLayer(CLIPEncoderLayer):
     """
     This corresponds to the `CrossFramelAttentionBlock` class in the original implementation.
@@ -170,6 +179,7 @@ class XCLIPVisionEncoderLayer(CLIPEncoderLayer):
 
 
 @auto_docstring
+# XCLIPPreTrainedModel：继承 CLIPPreTrainedModel 的预训练基类
 class XCLIPPreTrainedModel(CLIPPreTrainedModel):
     config: XCLIPConfig
     base_model_prefix = "x_clip"
@@ -225,18 +235,21 @@ class XCLIPPreTrainedModel(CLIPPreTrainedModel):
             init.normal_(module.position_embedding, std=factor)
 
 
+# XCLIPEncoder：继承 AltCLIPEncoder 的 Transformer 编码器
 class XCLIPEncoder(AltCLIPEncoder):
     def __init__(self, config: XCLIPConfig):
         super().__init__()
         self.layers = nn.ModuleList([XCLIPEncoderLayer(config) for _ in range(config.num_hidden_layers)])
 
 
+# XCLIPVisionEncoder：继承 CLIPEncoder 的视觉编码器
 class XCLIPVisionEncoder(CLIPEncoder):
     def __init__(self, config: XCLIPVisionConfig):
         super().__init__()
         self.layers = nn.ModuleList([XCLIPVisionEncoderLayer(config) for _ in range(config.num_hidden_layers)])
 
 
+# XCLIPTextModel：多继承 CLIPTextModel 与 XCLIPPreTrainedModel 的文本编码器
 class XCLIPTextModel(CLIPTextModel, XCLIPPreTrainedModel):
     config: XCLIPTextConfig
 
@@ -265,6 +278,7 @@ class XCLIPTextModel(CLIPTextModel, XCLIPPreTrainedModel):
         return super().forward(**super_kwargs)
 
 
+# XCLIPVisionModel：多继承 CLIPVisionModel 与 XCLIPPreTrainedModel 的视觉编码器
 class XCLIPVisionModel(CLIPVisionModel, XCLIPPreTrainedModel):
     config: XCLIPVisionConfig
 
@@ -376,6 +390,7 @@ class XCLIPVisionModel(CLIPVisionModel, XCLIPPreTrainedModel):
         )
 
 
+# XCLIPMultiframeIntegrationTransformer：多帧融合 Transformer（MIT）
 class XCLIPMultiframeIntegrationTransformer(nn.Module):
     """
     This corresponds to the `MultiframeIntegrationTransformer` class in the original implementation.
@@ -413,6 +428,7 @@ class XCLIPMultiframeIntegrationTransformer(nn.Module):
         )
 
 
+# XCLIPCrossAttention：继承 CLIPAttention 的交叉注意力
 class XCLIPCrossAttention(CLIPAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -472,6 +488,7 @@ class XCLIPCrossAttention(CLIPAttention):
         return attn_output
 
 
+# PromptGeneratorLayer：提示生成层：交叉注意力 + MLP
 class PromptGeneratorLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -493,6 +510,7 @@ class PromptGeneratorLayer(nn.Module):
         return hidden_states
 
 
+# XCLIPPromptGenerator：视频特定提示生成器
 class XCLIPPromptGenerator(nn.Module):
     """This corresponds to the `VideoSpecificPrompt` class in the original implementation."""
 
@@ -511,6 +529,7 @@ class XCLIPPromptGenerator(nn.Module):
         return self.alpha * text
 
 
+# XCLIPModel：多继承 CLIPModel 与 XCLIPPreTrainedModel 的完整 X-CLIP
 class XCLIPModel(CLIPModel, XCLIPPreTrainedModel):
     config: XCLIPConfig
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Xcodec2 特征提取：mel 频谱（语义路径）与 padding 波形（声学路径）
 import copy
 from typing import Any
 
@@ -34,6 +35,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torchaudio",))
+# Xcodec2FeatureExtractor：提取 mel 频谱（语义）与 padding 波形（声学）
 class Xcodec2FeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Xcodec2 feature extractor, which computes mel-filter bank features for the semantic encoder and padded

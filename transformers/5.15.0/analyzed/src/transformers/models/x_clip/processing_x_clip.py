@@ -15,11 +15,13 @@
 Image/Text processor class for XCLIP
 """
 
+# X-CLIP 处理器：组合图像/视频处理器与文本分词器
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
 
 
 @auto_docstring
+# XCLIPProcessor：组合图像/视频处理器与文本分词器的处理器
 class XCLIPProcessor(ProcessorMixin):
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
