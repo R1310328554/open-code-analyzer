@@ -30,6 +30,7 @@ python utils/check_docstrings.py --fix_and_overwrite
 
 which is used by `make fix-repo` (note that this fills what it cans, you might have to manually fill information
 like argument descriptions).
+# docstring 校验：公开对象参数段与签名一致，支持 @auto_docstring 自动修复
 """
 
 import argparse
@@ -81,6 +82,7 @@ CHECKER_CONFIG = {
 logger = logging.get_logger(__name__)
 
 
+# DecoratedItem：@auto_docstring 装饰项元数据：行号/参数/类继承信息
 @dataclass
 class DecoratedItem:
     """Information about a single @auto_docstring decorated function or class."""
@@ -630,6 +632,7 @@ def find_source_file(obj: Any) -> Path:
     return obj_file.with_suffix(".py")
 
 
+# match_docstring_with_signature：比对签名与 docstring Args 段
 def match_docstring_with_signature(obj: Any) -> tuple[str, str] | None:
     """
     Matches the docstring of an object with its signature.
@@ -1965,6 +1968,7 @@ def update_file_with_new_docstrings(
     )
 
 
+# check_auto_docstrings：仅处理 @auto_docstring 装饰的 modeling 文件
 def check_auto_docstrings(overwrite: bool = False, check_all: bool = False, cache: dict[str, set[str]] | None = None):
     """
     Check docstrings of all public objects that are decorated with `@auto_docstrings`.
@@ -2088,6 +2092,7 @@ def check_auto_docstrings(overwrite: bool = False, check_all: bool = False, cach
         )
 
 
+# check_docstrings：入口：校验/修复全库公开对象 docstring
 def check_docstrings(overwrite: bool = False, check_all: bool = False, cache: dict[str, set[str]] | None = None):
     """
     Check docstrings of all public objects that are callables and are documented. By default, only checks the diff.

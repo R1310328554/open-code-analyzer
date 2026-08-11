@@ -30,6 +30,7 @@ Update the dummy files if needed (used in `make fix-repo`):
 
 ```bash
 python utils/check_dummies.py --fix_and_overwrite
+# Dummy 占位校验：按 __init__.py 导出同步 utils/dummy_*_objects.py
 ```
 """
 
@@ -101,6 +102,7 @@ def find_backend(line: str) -> str | None:
     return "_and_".join(backends)
 
 
+# read_init：解析 __init__.py 中按后端条件导入的公开对象
 def read_init() -> dict[str, list[str]]:
     """
     Read the init and extract backend-specific objects.
@@ -165,6 +167,7 @@ def create_dummy_object(name: str, backend_name: str) -> str:
         return DUMMY_CLASS.format(name, backend_name)
 
 
+# create_dummy_files：按后端分组生成 dummy 类/函数/常量源码
 def create_dummy_files(backend_specific_objects: dict[str, list[str]] | None = None) -> dict[str, str]:
     """
     Create the content of the dummy files.
@@ -192,6 +195,7 @@ def create_dummy_files(backend_specific_objects: dict[str, list[str]] | None = N
     return dummy_files
 
 
+# check_dummies：入口：比对/重写各后端 dummy 占位文件
 def check_dummies(overwrite: bool = False):
     """
     Check if the dummy files are up to date and maybe `overwrite` with the right content.

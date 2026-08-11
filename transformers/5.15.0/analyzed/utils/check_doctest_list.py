@@ -27,6 +27,7 @@ Auto-sort the doctest list if it is not properly sorted (used in `make fix-repo`
 
 ```bash
 python utils/check_doctest_list.py --fix_and_overwrite
+# doctest 列表维护：not_doctested/slow 列表路径存在性与字母序校验
 ```
 """
 
@@ -55,6 +56,7 @@ REPO_PATH = "."
 DOCTEST_FILE_PATHS = ["not_doctested.txt", "slow_documentation_tests.txt"]
 
 
+# clean_doctest_list：清理 doctest 列表：移除无效路径并排序
 def clean_doctest_list(doctest_file: str, overwrite: bool = False):
     """
     Cleans the doctest in a given file.

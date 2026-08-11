@@ -31,6 +31,7 @@ Regenerate it if needed (used in `make fix-repo`):
 
 ```bash
 python utils/check_inits.py --fix_and_overwrite
+# models/__init__.py 自动生成：TYPE_CHECKING 与 _LazyModule 导入结构同步
 ```
 """
 
@@ -95,6 +96,7 @@ def natural_sort_key(name: str) -> tuple[str | int, ...]:
     return tuple(int(part) if part.isdigit() else part for part in re.split(r"(\d+)", name))
 
 
+# get_model_names：从 define_import_structure 提取已暴露模型名
 def get_model_names() -> list[str]:
     """Return the models exposed by `models/__init__.py`, sorted."""
     import_structure = define_import_structure(str(MODELS_INIT_PATH))
@@ -102,12 +104,14 @@ def get_model_names() -> list[str]:
     return sorted(model_names, key=natural_sort_key)
 
 
+# generate_models_init：渲染 models/__init__.py 完整期望内容
 def generate_models_init() -> str:
     """Render the full expected content of `models/__init__.py`."""
     imports = "".join(f"    from .{model_name} import *\n" for model_name in get_model_names())
     return AUTO_GENERATED_HEADER + MODELS_INIT_TEMPLATE.format(imports=imports)
 
 
+# main：比对磁盘 init 与生成内容，可选覆盖写入
 def main(overwrite: bool):
     old_content = MODELS_INIT_PATH.read_text(encoding="utf-8")
     new_content = generate_models_init()

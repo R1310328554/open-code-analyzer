@@ -1,9 +1,11 @@
+# 自托管 Runner 监控：GitHub Actions API 检测离线 runner 并写 Slack 报告
 import argparse
 import json
 
 from github_utils import get_github_json
 
 
+# get_runner_status：查询目标 runner 在线状态，离线则抛错
 def get_runner_status(target_runners, token):
     offline_runners = []
 

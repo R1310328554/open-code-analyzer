@@ -1,3 +1,4 @@
+# Pipeline 类型提示生成：从 pipeline() 签名生成 overload 与 Literal task 类型
 import re
 
 from transformers.pipelines import SUPPORTED_TASKS, Pipeline
@@ -35,6 +36,7 @@ FOOTER = """
 TASK_PATTERN = "task: str | None = None"
 
 
+# main：解析 pipelines/__init__.py 并写入 generated-code 区间
 def main(pipeline_file_path: str, fix_and_overwrite: bool = False):
     with open(pipeline_file_path, "r") as file:
         content = file.read()

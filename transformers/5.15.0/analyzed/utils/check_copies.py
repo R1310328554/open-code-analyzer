@@ -33,6 +33,7 @@ python utils/check_copies.py --fix_and_overwrite
 ```
 
 for a check that will fix all inconsistencies automatically (used by `make fix-repo`).
+# 复制一致性校验：# Copied from 注释块/README 模型列表/FULL_COPIES 全量副本对齐
 """
 
 import argparse
@@ -285,6 +286,7 @@ def find_block_end(lines: list[str], start_index: int, indent: int) -> int:
     return line_index
 
 
+# split_code_into_blocks：将 Python 源码按类/函数/赋值块切分
 def split_code_into_blocks(
     lines: list[str], start_index: int, end_index: int, indent: int, backtrace: bool = False
 ) -> list[tuple[str, int, int]]:
@@ -642,6 +644,7 @@ def check_codes_match(observed_code: str, theoretical_code: str) -> int | None:
         diff_index += 1
 
 
+# is_copy_consistent：单文件复制块与源文件逐块比对
 def is_copy_consistent(
     filename: str, overwrite: bool = False, buffer: dict | None = None
 ) -> list[tuple[str, int]] | None:
@@ -839,6 +842,7 @@ def is_copy_consistent(
     return diffs
 
 
+# check_copies：入口：扫描 Copied from 注释与 README 模型列表一致性
 def check_copies(overwrite: bool = False, file: str | None = None):
     """
     Check every file is copy-consistent with the original. Also check the model list in the main README and other

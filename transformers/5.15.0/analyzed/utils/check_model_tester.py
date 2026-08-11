@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 模型测试器配置校验：ModelTester 生成的 config 维度不得过大以加速 CI
 
 
 import glob

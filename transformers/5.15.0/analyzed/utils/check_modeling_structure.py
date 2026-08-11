@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Thin local entrypoint for the external mlinter package."""
+# 建模文件结构检查：mlinter 包装入口，默认注入 utils/rules.toml
 
 import sys
 from pathlib import Path
@@ -33,6 +34,7 @@ CHECKER_CONFIG = {
 RULES_TOML_PATH = Path(__file__).resolve().with_name("rules.toml")
 
 
+# _require_mlinter：延迟导入 transformers-mlinter 并给出安装提示
 def _require_mlinter():
     try:
         import mlinter

@@ -2,6 +2,7 @@
 
 Usage:
     python utils/check_types.py src/transformers/utils src/transformers/generation
+# 类型检查入口：调用 ty check 校验指定目录静态类型
 """
 
 import subprocess
@@ -51,6 +52,7 @@ CHECKER_CONFIG = {
 }
 
 
+# main：将 CLI 目录参数转发给 ty check 子进程
 def main():
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <directory> [<directory> ...]")

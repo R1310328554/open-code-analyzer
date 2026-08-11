@@ -27,6 +27,7 @@ Auto-regenerate if out of date (used in ``make fix-repo``):
 
 ```bash
 python utils/check_modeling_rules_doc.py --fix_and_overwrite
+# 建模规则文档同步：rules.toml 规则与 modeling_rules.md 参考段对齐
 ```
 """
 
@@ -69,6 +70,7 @@ def _resolve_path(path: Path) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+# generate_rules_reference：调用 mlinter 生成 Rules reference Markdown
 def generate_rules_reference(rule_specs_path: Path = RULES_TOML_PATH) -> str:
     mlinter, mlinter_impl = _require_mlinter()
     # Reuse mlinter's registry-switching helper so docs rendering reflects the repo-local rule file.
@@ -76,6 +78,7 @@ def generate_rules_reference(rule_specs_path: Path = RULES_TOML_PATH) -> str:
         return mlinter.render_rules_reference()
 
 
+# check_modeling_rules_doc：校验/重写 modeling_rules.md 标记区间
 def check_modeling_rules_doc(overwrite: bool = False, rule_specs_path: Path = RULES_TOML_PATH):
     with DOC_PATH.open(encoding="utf-8") as f:
         content = f.read()

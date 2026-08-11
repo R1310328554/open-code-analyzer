@@ -16,6 +16,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 
 
+# 模块化转换校验：modular_*.py 转 modeling_*.py 与 ruff 格式化结果一致
 CHECKER_CONFIG = {
     "name": "modular_conversion",
     "label": "Modular file conversions",
@@ -32,6 +33,7 @@ console = Console()
 BACKUP_EXT = ".modular_backup"
 
 
+# process_file：单 modular 文件转换、diff 与可选备份恢复
 def process_file(
     modular_file_path,
     generated_modeling_content,
@@ -97,6 +99,7 @@ def convert_and_run_ruff(modular_file_path: str) -> dict[str, str]:
     return generated_modeling_content
 
 
+# compare_files：比对 modular 生成物与磁盘 modeling 文件
 def compare_files(modular_file_path, show_diff=True):
     # Generate the expected modeling content
     generated_modeling_content = convert_and_run_ruff(modular_file_path)
@@ -146,6 +149,7 @@ def converter_changed_in_diff():
     return any(f in CONVERTER_FILES for f in _get_modified_files())
 
 
+# guaranteed_no_diff：判断 PR 中 modular 变更是否可免 diff 检查
 def guaranteed_no_diff(modular_file_path, dependencies, models_in_diff):
     """
     Returns whether it is guaranteed to have no differences between the modular file and the modeling file.

@@ -27,6 +27,7 @@ Auto-sort the table of content if it is not properly sorted (used in `make fix-r
 
 ```bash
 python utils/check_doc_toc.py --fix_and_overwrite
+# 文档目录校验：_toctree.yml 模型文档去重、排序与完整性检查
 ```
 """
 
@@ -51,6 +52,7 @@ TOCTREE_PATH = os.path.join(ROOT, "docs", "source", "en", "_toctree.yml")
 DOC_PATH = os.path.join(ROOT, "docs", "source", "en", "model_doc")
 
 
+# clean_model_doc_toc：清理单模态 TOC：去重并按标题字母序排序
 def clean_model_doc_toc(model_doc: list[dict]) -> list[dict]:
     """
     Cleans a section of the table of content of the model documentation (one specific modality) by removing duplicates
@@ -87,6 +89,7 @@ def clean_model_doc_toc(model_doc: list[dict]) -> list[dict]:
     return sorted(new_doc, key=lambda s: s["title"].lower())
 
 
+# ensure_all_models_in_toctree：确保 model_doc 下所有 .md 已入 TOC
 def ensure_all_models_in_toctree(model_doc: list[dict]):
     """Make sure that all models in `model_doc` folder are also part of the `_toctree.yml`. Raise if it's not
     the case."""
@@ -119,6 +122,7 @@ def ensure_all_models_in_toctree(model_doc: list[dict]):
     raise ValueError(error_msg)
 
 
+# check_model_doc：校验/修复 _toctree.yml 模型文档章节
 def check_model_doc(overwrite: bool = False):
     """
     Check that the content of the table of content in `_toctree.yml` is up-to-date (i.e. it contains all models) and

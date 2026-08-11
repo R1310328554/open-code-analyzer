@@ -28,6 +28,7 @@ python utils/check_repo.py
 ```
 
 It has no auto-fix mode.
+# 仓库质量总检：模型注册/测试/文档/auto 映射/装饰器顺序等一致性
 """
 
 import ast
@@ -933,6 +934,7 @@ def check_models_are_tested(module: types.ModuleType, test_file: str) -> list[st
     return failures
 
 
+# check_all_models_are_tested：确保每个公开模型有 modeling 测试
 def check_all_models_are_tested():
     """Check all models are properly tested."""
     modules = get_model_modules()
@@ -1277,6 +1279,7 @@ SHOULD_HAVE_THEIR_OWN_PAGE = [
 ]
 
 
+# ignore_undocumented：文档检查白名单：内部/deprecated 对象跳过
 def ignore_undocumented(name: str) -> bool:
     """Rules to determine if `name` should be undocumented (returns `True` if it should not be documented)."""
     # NOT DOCUMENTED ON PURPOSE.
@@ -1321,6 +1324,7 @@ def ignore_undocumented(name: str) -> bool:
     return False
 
 
+# check_all_objects_are_documented：主 __init__ 导出对象均有文档
 def check_all_objects_are_documented():
     """Check all models are properly documented."""
     documented_objs, documented_methods_map = find_all_documented_objects()
@@ -1507,6 +1511,7 @@ def check_models_have_kwargs():
         )
 
 
+# check_repo_quality：入口：依次执行全部仓库级质量检查
 def check_repo_quality():
     """Check all models are tested and documented."""
     print("Repository-wide checks:")

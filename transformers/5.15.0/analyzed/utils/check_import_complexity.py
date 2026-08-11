@@ -22,6 +22,7 @@ potential regression in import speed.
 Usage:
     python utils/check_import_complexity.py            # CI check mode
     python utils/check_import_complexity.py --display   # show the full import tree
+# 导入复杂度检查：追踪 import transformers 加载模块数，防止回归
 """
 
 from __future__ import annotations
@@ -45,11 +46,13 @@ MAX_IMPORT_COUNT = 1000
 
 
 @dataclass
+# ImportNode：导入树节点 dataclass：模块名与子节点列表
 class ImportNode:
     name: str
     children: list[ImportNode] = field(default_factory=list)
 
 
+# LoaderProxy：包装真实 Loader：exec_module 时维护导入栈
 class LoaderProxy(importlib.abc.Loader):
     """Wrap a real loader to track the import stack during exec_module."""
 
@@ -79,6 +82,7 @@ class LoaderProxy(importlib.abc.Loader):
         return getattr(self._wrapped, name)
 
 
+# ImportTreeFinder：MetaPathFinder：拦截导入并构建父子树
 class ImportTreeFinder(importlib.abc.MetaPathFinder):
     """Intercept imports to build a parent/child tree of loaded modules."""
 
@@ -109,6 +113,7 @@ class ImportTreeFinder(importlib.abc.MetaPathFinder):
         return None
 
 
+# ImportTreeTracer：导入追踪器：线程本地栈与已见模块集合
 class ImportTreeTracer:
     def __init__(self) -> None:
         self._local = threading.local()
@@ -207,6 +212,7 @@ def format_tree(nodes: list[ImportNode]) -> str:
 # ---------------------------------------------------------------------------
 
 
+# main：执行 import transformers 并比对 MAX_IMPORT_COUNT
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check import complexity for `import transformers`.")
     parser.add_argument(
