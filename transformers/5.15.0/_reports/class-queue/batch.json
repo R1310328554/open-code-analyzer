@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T00:17:12Z",
   "files": [
-    "src/transformers/models/beit/image_processing_pil_beit.py",
-    "src/transformers/models/beit/modeling_beit.py",
-    "src/transformers/models/beit/modular_beit.py",
-    "src/transformers/models/bert/__init__.py",
-    "src/transformers/models/bert/configuration_bert.py",
-    "src/transformers/models/bert/modeling_bert.py",
-    "src/transformers/models/bert/tokenization_bert.py",
-    "src/transformers/models/bert/tokenization_bert_legacy.py",
-    "src/transformers/models/bert_generation/__init__.py",
-    "src/transformers/models/bert_generation/configuration_bert_generation.py",
-    "src/transformers/models/bert_generation/modeling_bert_generation.py",
-    "src/transformers/models/bert_generation/tokenization_bert_generation.py",
-    "src/transformers/models/bert_japanese/__init__.py",
-    "src/transformers/models/bert_japanese/tokenization_bert_japanese.py",
-    "src/transformers/models/bertweet/__init__.py",
     "src/transformers/models/bertweet/tokenization_bertweet.py",
     "src/transformers/models/big_bird/__init__.py",
     "src/transformers/models/big_bird/configuration_big_bird.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/bit/configuration_bit.py"
   ],
   "remaining_pending": 2379,
-  "done": 270
+  "done": 285
 }
