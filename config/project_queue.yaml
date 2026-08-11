@@ -59,7 +59,7 @@ projects:
   url: https://github.com/django/django
   languages:
   - python
-  status: in_progress
+  status: complete
   version: main-b5388a3a80ca
 - id: flask
   url: https://github.com/pallets/flask

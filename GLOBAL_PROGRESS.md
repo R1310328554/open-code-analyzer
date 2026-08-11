@@ -28,7 +28,7 @@
 | prometheus | 3.13.2 | 534 | 0 ✅ |
 | loki | 3.7.6 | 1552 | 0 ✅ |
 | transformers | 5.15.0 | 2679 | 0 ✅ |
-| django | main-b5388a3a80ca | 0 | 942 |
+| django | main-b5388a3a80ca | 942 | 0 ✅ |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus / loki / transformers。  
-进行中：django main-b5388a3a80ca（Python，pending=942）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus / loki / transformers / django。  
+进行中：sqlalchemy（待脚手架）。
