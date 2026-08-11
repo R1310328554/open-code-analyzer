@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:38:57Z",
   "files": [
-    "src/transformers/models/video_llama_3/image_processing_pil_video_llama_3.py",
-    "src/transformers/models/video_llama_3/image_processing_video_llama_3.py",
-    "src/transformers/models/video_llama_3/modeling_video_llama_3.py",
-    "src/transformers/models/video_llama_3/modular_video_llama_3.py",
-    "src/transformers/models/video_llama_3/processing_video_llama_3.py",
-    "src/transformers/models/video_llama_3/video_processing_video_llama_3.py",
-    "src/transformers/models/video_llava/__init__.py",
-    "src/transformers/models/video_llava/configuration_video_llava.py",
-    "src/transformers/models/video_llava/image_processing_video_llava.py",
-    "src/transformers/models/video_llava/modeling_video_llava.py",
-    "src/transformers/models/video_llava/processing_video_llava.py",
-    "src/transformers/models/video_llava/video_processing_video_llava.py",
-    "src/transformers/models/videomae/__init__.py",
-    "src/transformers/models/videomae/configuration_videomae.py",
-    "src/transformers/models/videomae/image_processing_pil_videomae.py",
     "src/transformers/models/videomae/image_processing_videomae.py",
     "src/transformers/models/videomae/modeling_videomae.py",
     "src/transformers/models/videomae/video_processing_videomae.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/vilt/__init__.py"
   ],
   "remaining_pending": 369,
-  "done": 2280
+  "done": 2295
 }
