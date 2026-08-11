@@ -6,6 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 r"""
+mysql+aiomysql 方言：asyncio 后端，基于 pymysql 协议适配。
+
+.. dialect:: mysql+aiomysqlr"""
 .. dialect:: mysql+aiomysql
     :name: aiomysql
     :dbapi: aiomysql
@@ -64,6 +67,7 @@ if TYPE_CHECKING:
     from ...engine.url import URL
 
 
+# aiomysql 异步游标适配
 class AsyncAdapt_aiomysql_cursor(AsyncAdapt_dbapi_cursor):
     __slots__ = ()
 
@@ -73,6 +77,7 @@ class AsyncAdapt_aiomysql_cursor(AsyncAdapt_dbapi_cursor):
         return connection.cursor(self._adapt_connection.dbapi.Cursor)
 
 
+# 服务端游标（SSCursor）异步适配
 class AsyncAdapt_aiomysql_ss_cursor(
     AsyncAdapt_dbapi_ss_cursor, AsyncAdapt_aiomysql_cursor
 ):
@@ -86,6 +91,7 @@ class AsyncAdapt_aiomysql_ss_cursor(
         )
 
 
+# aiomysql 连接：ping/autocommit/close 经 await_ 桥接
 class AsyncAdapt_aiomysql_connection(
     AsyncAdapt_terminate, AsyncAdapt_dbapi_connection
 ):
@@ -121,12 +127,14 @@ class AsyncAdapt_aiomysql_connection(
         self._connection.close()
 
 
+# sync 回退模式：await_ 使用 await_fallback
 class AsyncAdaptFallback_aiomysql_connection(AsyncAdapt_aiomysql_connection):
     __slots__ = ()
 
     await_ = staticmethod(await_fallback)
 
 
+# 合成 DBAPI 模块：合并 aiomysql 异常与 pymysql 类型常量
 class AsyncAdapt_aiomysql_dbapi(AsyncAdapt_dbapi_module):
     def __init__(self, aiomysql: ModuleType, pymysql: ModuleType):
         self.aiomysql = aiomysql
@@ -213,6 +221,7 @@ class AsyncAdapt_aiomysql_dbapi(AsyncAdapt_dbapi_module):
         return Cursor, SSCursor  # type: ignore[return-value]
 
 
+# aiomysql 方言：异步池、FOUND_ROWS 与断连检测
 class MySQLDialect_aiomysql(MySQLDialect_pymysql):
     driver = "aiomysql"
     supports_statement_cache = True
@@ -271,4 +280,5 @@ class MySQLDialect_aiomysql(MySQLDialect_pymysql):
         return connection._connection  # type: ignore[no-any-return]
 
 
+# 方言入口
 dialect = MySQLDialect_aiomysql

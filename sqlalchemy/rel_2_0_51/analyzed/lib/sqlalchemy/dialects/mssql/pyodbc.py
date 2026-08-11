@@ -7,6 +7,9 @@
 # mypy: ignore-errors
 
 r"""
+mssql+pyodbc 方言：Microsoft ODBC 驱动连接 SQL Server/Azure。
+
+.. dialect:: mssql+pyodbcr"""
 .. dialect:: mssql+pyodbc
     :name: PyODBC
     :dbapi: pyodbc
@@ -382,6 +385,7 @@ from ...connectors.pyodbc import PyODBCConnector
 from ...engine import cursor as _cursor
 
 
+# pyodbc/mxODBC 小数 bind 处理器：极端 adjusted 值转字符串
 class _ms_numeric_pyodbc:
     """Turns Decimals with adjusted() < 0 or > 7 into strings.
 
@@ -444,14 +448,17 @@ class _ms_numeric_pyodbc:
         return result
 
 
+# pyodbc Numeric 类型绑定
 class _MSNumeric_pyodbc(_ms_numeric_pyodbc, sqltypes.Numeric):
     pass
 
 
+# pyodbc Float 类型绑定
 class _MSFloat_pyodbc(_ms_numeric_pyodbc, sqltypes.Float):
     pass
 
 
+# 二进制 bind：NULL 用 BinaryNull 避免隐式转 SQLWCHAR
 class _ms_binary_pyodbc:
     """Wraps binary values in dialect-specific Binary wrapper.
     If the value is null, return a pyodbc-specific BinaryNull
@@ -475,6 +482,7 @@ class _ms_binary_pyodbc:
         return process
 
 
+# datetimeoffset 绑定：带时区值格式化为 T-SQL 字符串
 class _ODBCDateTimeBindProcessor:
     """Add bind processors to handle datetimeoffset behaviors"""
 
@@ -506,22 +514,27 @@ class _ODBCDateTimeBindProcessor:
         return process
 
 
+# 普通 DateTime 的 ODBC 绑定处理器
 class _ODBCDateTime(_ODBCDateTimeBindProcessor, _MSDateTime):
     pass
 
 
+# DATETIMEOFFSET 列的 ODBC 绑定（has_tz=True）
 class _ODBCDATETIMEOFFSET(_ODBCDateTimeBindProcessor, DATETIMEOFFSET):
     has_tz = True
 
 
+# VARBINARY 的 pyodbc 二进制包装
 class _VARBINARY_pyodbc(_ms_binary_pyodbc, VARBINARY):
     pass
 
 
+# BINARY 的 pyodbc 二进制包装
 class _BINARY_pyodbc(_ms_binary_pyodbc, BINARY):
     pass
 
 
+# 长字符串映射为 SQL_VARCHAR(max) 描述符
 class _String_pyodbc(sqltypes.String):
     def get_dbapi_type(self, dbapi):
         if self.length in (None, "max") or self.length >= 2000:
@@ -530,6 +543,7 @@ class _String_pyodbc(sqltypes.String):
             return dbapi.SQL_VARCHAR
 
 
+# Unicode 列映射 SQL_WVARCHAR
 class _Unicode_pyodbc(_MSUnicode):
     def get_dbapi_type(self, dbapi):
         if self.length in (None, "max") or self.length >= 2000:
@@ -538,6 +552,7 @@ class _Unicode_pyodbc(_MSUnicode):
             return dbapi.SQL_WVARCHAR
 
 
+# UnicodeText 映射 SQL_WVARCHAR
 class _UnicodeText_pyodbc(_MSUnicodeText):
     def get_dbapi_type(self, dbapi):
         if self.length in (None, "max") or self.length >= 2000:
@@ -546,6 +561,7 @@ class _UnicodeText_pyodbc(_MSUnicodeText):
             return dbapi.SQL_WVARCHAR
 
 
+# JSON 列 ODBC 类型描述符
 class _JSON_pyodbc(_MSJson):
     def get_dbapi_type(self, dbapi):
         return (dbapi.SQL_WVARCHAR, 0, 0)
@@ -561,9 +577,11 @@ class _JSONPathType_pyodbc(_MSJsonPathType):
         return dbapi.SQL_WVARCHAR
 
 
+# pyodbc 执行上下文：INSERT 后嵌入 select scope_identity()
 class MSExecutionContext_pyodbc(MSExecutionContext):
     _embedded_scope_identity = False
 
+    # 需要 lastrowid 时在 INSERT 语句末尾追加 scope_identity 查询
     def pre_exec(self):
         """where appropriate, issue "select scope_identity()" in the same
         statement.
@@ -590,6 +608,7 @@ class MSExecutionContext_pyodbc(MSExecutionContext):
 
             self.statement += "; select scope_identity()"
 
+    # 从嵌入的 scope_identity 结果集读取 _lastrowid
     def post_exec(self):
         if self._embedded_scope_identity:
             # Fetch the last inserted id from the manipulated statement
@@ -619,6 +638,7 @@ class MSExecutionContext_pyodbc(MSExecutionContext):
             super().post_exec()
 
 
+# pyodbc 方言：fast_executemany、setinputsizes 与类型 colspecs
 class MSDialect_pyodbc(PyODBCConnector, MSDialect):
     supports_statement_cache = True
 
@@ -710,6 +730,7 @@ class MSDialect_pyodbc(PyODBCConnector, MSDialect):
 
         return on_connect
 
+    # 注册 datetimeoffset 输出转换器
     def _setup_timestampoffset_type(self, connection):
         # output converter function for datetimeoffset
         def _handle_datetimeoffset(dto_value):
@@ -732,11 +753,13 @@ class MSDialect_pyodbc(PyODBCConnector, MSDialect):
             odbc_SQL_SS_TIMESTAMPOFFSET, _handle_datetimeoffset
         )
 
+    # fast_executemany 模式下启用 cursor.fast_executemany
     def do_executemany(self, cursor, statement, parameters, context=None):
         if self.fast_executemany:
             cursor.fast_executemany = True
         super().do_executemany(cursor, statement, parameters, context=context)
 
+    # 识别 ODBC 08S01/HYT00 等断连 SQLSTATE
     def is_disconnect(self, e, connection, cursor):
         if isinstance(e, self.dbapi.Error):
             code = e.args[0]
@@ -756,4 +779,5 @@ class MSDialect_pyodbc(PyODBCConnector, MSDialect):
         return super().is_disconnect(e, connection, cursor)
 
 
+# 方言入口
 dialect = MSDialect_pyodbc

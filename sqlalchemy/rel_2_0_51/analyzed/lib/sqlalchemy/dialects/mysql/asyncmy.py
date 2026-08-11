@@ -6,6 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 r"""
+mysql+asyncmy 方言：纯 asyncio MySQL 驱动 asyncmy 适配。
+
+.. dialect:: mysql+asyncmyr"""
 .. dialect:: mysql+asyncmy
     :name: asyncmy
     :dbapi: asyncmy
@@ -60,10 +63,12 @@ if TYPE_CHECKING:
     from ...engine.url import URL
 
 
+# asyncmy 异步游标适配
 class AsyncAdapt_asyncmy_cursor(AsyncAdapt_dbapi_cursor):
     __slots__ = ()
 
 
+# asyncmy 服务端游标适配
 class AsyncAdapt_asyncmy_ss_cursor(
     AsyncAdapt_dbapi_ss_cursor, AsyncAdapt_asyncmy_cursor
 ):
@@ -77,6 +82,7 @@ class AsyncAdapt_asyncmy_ss_cursor(
         )
 
 
+# asyncmy 连接：mutex 保护 ping，AttributeError 转 InternalError
 class AsyncAdapt_asyncmy_connection(
     AsyncAdapt_terminate, AsyncAdapt_dbapi_connection
 ):
@@ -133,6 +139,7 @@ class AsyncAdaptFallback_asyncmy_connection(AsyncAdapt_asyncmy_connection):
     await_ = staticmethod(await_fallback)
 
 
+# asyncmy DBAPI 模块包装
 class AsyncAdapt_asyncmy_dbapi(AsyncAdapt_dbapi_module):
     def __init__(self, asyncmy: ModuleType):
         self.asyncmy = asyncmy
@@ -194,6 +201,7 @@ class AsyncAdapt_asyncmy_dbapi(AsyncAdapt_dbapi_module):
             return _connection_ping_reconnects_true(Connection)
 
 
+# asyncmy 方言：异步池与断连关键字检测
 class MySQLDialect_asyncmy(MySQLDialect_pymysql):
     driver = "asyncmy"
     supports_statement_cache = True
@@ -250,4 +258,5 @@ class MySQLDialect_asyncmy(MySQLDialect_pymysql):
         return connection._connection  # type: ignore[no-any-return]
 
 
+# 方言入口
 dialect = MySQLDialect_asyncmy

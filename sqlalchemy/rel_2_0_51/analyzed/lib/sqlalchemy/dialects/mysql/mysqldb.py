@@ -6,6 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 """
+mysql+mysqldb 方言：mysqlclient（MySQLdb 维护分支）驱动适配。
+
+.. dialect:: mysql+mysqldb"""
 
 .. dialect:: mysql+mysqldb
     :name: mysqlclient (maintained fork of MySQL-Python)
@@ -116,6 +119,7 @@ if TYPE_CHECKING:
     from ...engine.url import URL
 
 
+# mysqldb 执行上下文（继承基类行为）
 class MySQLExecutionContext_mysqldb(MySQLExecutionContext):
     pass
 
@@ -124,6 +128,7 @@ class MySQLCompiler_mysqldb(MySQLCompiler):
     pass
 
 
+# mysqldb 方言：SSL 参数、FOUND_ROWS、服务端游标与 SET NAMES
 class MySQLDialect_mysqldb(MySQLDialect):
     driver = "mysqldb"
     supports_statement_cache = True
@@ -167,6 +172,7 @@ class MySQLDialect_mysqldb(MySQLDialect):
     def import_dbapi(cls) -> DBAPIModule:
         return __import__("MySQLdb")
 
+    # 连接后按 character_set_name 执行 SET NAMES
     def on_connect(self) -> Callable[[DBAPIConnection], None]:
         super_ = super().on_connect()
 
@@ -198,6 +204,7 @@ class MySQLDialect_mysqldb(MySQLDialect):
         if context is not None:
             cast(MySQLExecutionContext, context)._rowcount = rowcount
 
+    # 解析 URL：ssl_* 内联键、client_flag FOUND_ROWS
     def create_connect_args(
         self, url: URL, _translate_args: Optional[Dict[str, Any]] = None
     ) -> ConnectArgsType:
@@ -267,6 +274,7 @@ class MySQLDialect_mysqldb(MySQLDialect):
     def _extract_error_code(self, exception: DBAPIModule.Error) -> int:
         return exception.args[0]  # type: ignore[no-any-return]
 
+    # 从 DBAPI character_set_name 探测结果字符集
     def _detect_charset(self, connection: Connection) -> str:
         """Sniff out the character set in use for connection results."""
 
@@ -312,4 +320,5 @@ class MySQLDialect_mysqldb(MySQLDialect):
             super().set_isolation_level(dbapi_connection, level)
 
 
+# 默认 mysql 方言入口
 dialect = MySQLDialect_mysqldb

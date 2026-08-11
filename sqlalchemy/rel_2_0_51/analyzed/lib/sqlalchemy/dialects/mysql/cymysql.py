@@ -6,6 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 r"""
+mysql+cymysql 方言：CyMySQL 纯 Python 驱动（非 CI 测试）。
+
+.. dialect:: mysql+cymysqlr"""
 
 .. dialect:: mysql+cymysql
     :name: CyMySQL
@@ -44,6 +47,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import _ResultProcessorType
 
 
+# CyMySQL BIT 结果：可变长字节串转整数
 class _cymysqlBIT(BIT):
     def result_processor(
         self, dialect: Dialect, coltype: object
@@ -61,6 +65,7 @@ class _cymysqlBIT(BIT):
         return process
 
 
+# cymysql 方言：字符集自 connection.charset、OperationalError 断连码
 class MySQLDialect_cymysql(MySQLDialect_mysqldb):
     driver = "cymysql"
     supports_statement_cache = True
@@ -104,4 +109,5 @@ class MySQLDialect_cymysql(MySQLDialect_mysqldb):
             return False
 
 
+# 方言入口
 dialect = MySQLDialect_cymysql

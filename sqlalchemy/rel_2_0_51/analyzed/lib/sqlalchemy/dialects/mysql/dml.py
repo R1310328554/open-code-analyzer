@@ -4,7 +4,9 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
-from __future__ import annotations
+# MySQL/MariaDB 专用 INSERT 与 ON DUPLICATE KEY UPDATE 构造
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -31,6 +33,7 @@ from ...util.typing import Self
 __all__ = ("Insert", "insert")
 
 
+# 工厂函数：返回带 on_duplicate_key_update 的 Insert
 def insert(table: _DMLTableArgument) -> Insert:
     """Construct a MySQL/MariaDB-specific variant :class:`_mysql.Insert`
     construct.
@@ -50,6 +53,7 @@ def insert(table: _DMLTableArgument) -> Insert:
     return Insert(table)
 
 
+# MySQL INSERT：支持 inserted 命名空间与重复键更新
 class Insert(StandardInsert):
     """MySQL-specific implementation of INSERT.
 
@@ -66,6 +70,7 @@ class Insert(StandardInsert):
     inherit_cache = False
 
     @property
+    # ON DUPLICATE KEY UPDATE 中引用待插入行的 ColumnCollection
     def inserted(
         self,
     ) -> ReadOnlyColumnCollection[str, KeyedColumnElement[Any]]:
@@ -111,6 +116,7 @@ class Insert(StandardInsert):
             "has an ON DUPLICATE KEY clause present"
         },
     )
+    # 指定 ON DUPLICATE KEY UPDATE 子句（dict 或有序 2-tuple 列表）
     def on_duplicate_key_update(self, *args: _UpdateArg, **kw: Any) -> Self:
         r"""
         Specifies the ON DUPLICATE KEY UPDATE clause.
@@ -180,6 +186,7 @@ class Insert(StandardInsert):
         return self
 
 
+# ON DUPLICATE KEY UPDATE 子句 AST 节点
 class OnDuplicateClause(ClauseElement):
     __visit_name__ = "on_duplicate_key_update"
 

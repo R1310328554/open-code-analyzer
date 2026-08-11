@@ -6,6 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 """
+mysql+mariadbconnector 方言：MariaDB Connector/Python（C 扩展 DBAPI）。
+
+.. dialect:: mysql+mariadbconnector"""
 
 .. dialect:: mysql+mariadbconnector
     :name: MariaDB Connector/Python
@@ -63,6 +66,7 @@ if TYPE_CHECKING:
 mariadb_cpy_minimum_version = (1, 0, 1)
 
 
+# 规避 CONPY-270：UUID 结果手动 decode/as_uuid 转换
 class _MariaDBUUID(sqltypes.UUID[sqltypes._UUID_RETURN]):
     # work around JIRA issue
     # https://jira.mariadb.org/browse/CONPY-270.  When that issue is fixed,
@@ -92,6 +96,7 @@ class _MariaDBUUID(sqltypes.UUID[sqltypes._UUID_RETURN]):
             return process
 
 
+# mariadbconnector 执行上下文：buffered 游标与 lastrowid
 class MySQLExecutionContext_mariadbconnector(MySQLExecutionContext):
     _lastrowid: Optional[int] = None
 
@@ -121,6 +126,7 @@ class MySQLCompiler_mariadbconnector(MySQLCompiler):
     pass
 
 
+# mariadbconnector 方言：qmark、XA 事务与 FOUND_ROWS
 class MySQLDialect_mariadbconnector(MySQLDialect):
     driver = "mariadbconnector"
     supports_statement_cache = True
@@ -194,6 +200,7 @@ class MySQLDialect_mariadbconnector(MySQLDialect):
         else:
             return False
 
+    # URL 转连接 kwargs，合并 FOUND_ROWS client_flag
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         opts = url.translate_connect_args()
         opts.update(url.query)
@@ -257,6 +264,7 @@ class MySQLDialect_mariadbconnector(MySQLDialect):
     def detect_autocommit_setting(self, dbapi_conn: DBAPIConnection) -> bool:
         return bool(dbapi_conn.autocommit)
 
+    # AUTOCOMMIT 设 autocommit 属性，否则 SET SESSION TRANSACTION
     def set_isolation_level(
         self, dbapi_connection: DBAPIConnection, level: IsolationLevel
     ) -> None:
@@ -320,4 +328,5 @@ class MySQLDialect_mariadbconnector(MySQLDialect):
         )
 
 
+# 方言入口
 dialect = MySQLDialect_mariadbconnector

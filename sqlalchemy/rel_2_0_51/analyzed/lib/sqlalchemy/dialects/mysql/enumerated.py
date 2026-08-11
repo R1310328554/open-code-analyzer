@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-from __future__ import annotations
+# MySQL ENUM/SET 枚举类型实现
+
+from __future__ import annotationsfrom __future__ import annotations
 
 import enum
 import re
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import TypeEngineMixin
 
 
+# MySQL 原生 ENUM：DDL 枚举列表与空串回读处理
 class ENUM(type_api.NativeForEmulated, sqltypes.Enum, _StringType):
     """MySQL ENUM type."""
 
@@ -83,6 +86,7 @@ class ENUM(type_api.NativeForEmulated, sqltypes.Enum, _StringType):
         _StringType.__init__(self, length=self.length, **kw)
 
     @classmethod
+    # 从通用 Enum 适配为 mysql.ENUM
     def adapt_emulated_to_native(
         cls,
         impl: Union[TypeEngine[Any], TypeEngineMixin],
@@ -99,6 +103,7 @@ class ENUM(type_api.NativeForEmulated, sqltypes.Enum, _StringType):
         kw.setdefault("omit_aliases", impl._omit_aliases)
         return cls(**kw)
 
+    # MySQL 对非法枚举值回空串时不做校验
     def _object_value_for_elem(self, elem: str) -> Union[str, enum.Enum]:
         # mysql sends back a blank string for any value that
         # was persisted that was not in the enums; that is, it does no
@@ -119,6 +124,7 @@ class ENUM(type_api.NativeForEmulated, sqltypes.Enum, _StringType):
 # a string at the python level.  We either need to make a py-type agnostic
 # version of String as a base to be used for this, make this some kind of
 # TypeDecorator, or just vendor it out as its own type.
+# MySQL SET 类型：逗号分隔或位掩码 retrieve_as_bitwise 模式
 class SET(_StringType):
     """MySQL SET type."""
 
@@ -187,6 +193,7 @@ class SET(_StringType):
         kw.setdefault("length", length)
         super().__init__(**kw)
 
+    # 位掩码模式下 SELECT 渲染 col+0
     def column_expression(
         self, colexpr: ColumnElement[Any]
     ) -> ColumnElement[Any]:
@@ -197,6 +204,7 @@ class SET(_StringType):
         else:
             return colexpr
 
+    # 解析 SET：位掩码或驱动返回的逗号分隔字符串
     def result_processor(
         self, dialect: Dialect, coltype: Any
     ) -> Optional[_ResultProcessorType[Any]]:
@@ -231,6 +239,7 @@ class SET(_StringType):
 
         return process
 
+    # 绑定 SET：集合转逗号串或位或整数
     def bind_processor(
         self, dialect: Dialect
     ) -> _BindProcessorType[Union[str, int]]:

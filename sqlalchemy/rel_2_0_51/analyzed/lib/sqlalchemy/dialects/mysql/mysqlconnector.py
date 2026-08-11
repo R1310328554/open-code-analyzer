@@ -7,6 +7,9 @@
 
 
 r"""
+mysql+mysqlconnector 方言：Oracle MySQL Connector/Python 适配。
+
+.. dialect:: mysql+mysqlconnectorr"""
 .. dialect:: mysql+mysqlconnector
     :name: MySQL Connector/Python
     :dbapi: myconnpy
@@ -81,6 +84,7 @@ if TYPE_CHECKING:
     from ...sql.elements import BinaryExpression
 
 
+# mysqlconnector 执行上下文：buffered 默认/非缓冲服务端游标
 class MySQLExecutionContext_mysqlconnector(MySQLExecutionContext):
     def create_server_side_cursor(self) -> DBAPICursor:
         return self._dbapi_connection.cursor(buffered=False)
@@ -89,6 +93,7 @@ class MySQLExecutionContext_mysqlconnector(MySQLExecutionContext):
         return self._dbapi_connection.cursor(buffered=True)
 
 
+# mysqlconnector 编译器：MOD 渲染为 SQL % 运算符
 class MySQLCompiler_mysqlconnector(MySQLCompiler):
     def visit_mod_binary(
         self, binary: BinaryExpression[Any], operator: Any, **kw: Any
@@ -100,6 +105,7 @@ class MySQLCompiler_mysqlconnector(MySQLCompiler):
         )
 
 
+# mysqlconnector 不双写百分号且忽略 _double_percents 赋值
 class IdentifierPreparerCommon_mysqlconnector:
     @property
     def _double_percents(self) -> bool:
@@ -136,6 +142,7 @@ class _myconnpyBIT(BIT):
         return None
 
 
+# mysqlconnector 方言：禁用服务端游标、FOUND_ROWS 与 AUTOCOMMIT
 class MySQLDialect_mysqlconnector(MySQLDialect):
     driver = "mysqlconnector"
     supports_statement_cache = True
@@ -291,6 +298,7 @@ class MySQLDialect_mysqlconnector(MySQLDialect):
             super().set_isolation_level(dbapi_connection, level)
 
 
+# MariaDB + mysqlconnector 组合方言
 class MariaDBDialect_mysqlconnector(
     MariaDBDialect, MySQLDialect_mysqlconnector
 ):
@@ -299,5 +307,7 @@ class MariaDBDialect_mysqlconnector(
     preparer = MariaDBIdentifierPreparer_mysqlconnector
 
 
+# MySQL 方言入口
 dialect = MySQLDialect_mysqlconnector
+# MariaDB-only URL 使用的方言类
 mariadb_dialect = MariaDBDialect_mysqlconnector

@@ -4,7 +4,9 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
-from __future__ import annotations
+# MySQL JSON 类型与 JSON_EXTRACT 路径格式化
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 from typing import TYPE_CHECKING
@@ -17,6 +19,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import _LiteralProcessorType
 
 
+# MySQL/MariaDB JSON：自动用于该后端，索引操作用 JSON_EXTRACT
 class JSON(sqltypes.JSON):
     """MySQL JSON type.
 
@@ -41,6 +44,7 @@ class JSON(sqltypes.JSON):
     pass
 
 
+# JSON 索引/路径 bind 与 literal 前统一格式化
 class _FormatTypeMixin:
     def _format_value(self, value: Any) -> str:
         raise NotImplementedError()
@@ -70,6 +74,7 @@ class _FormatTypeMixin:
         return process
 
 
+# JSON 索引键：整数 [$[n]] 或字符串 [$."key"]
 class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
     def _format_value(self, value: Any) -> str:
         if isinstance(value, int):
@@ -79,6 +84,7 @@ class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
         return formatted_value
 
 
+# JSON 路径：拼接 [$n] 与 ."key" 段
 class JSONPathType(_FormatTypeMixin, sqltypes.JSON.JSONPathType):
     def _format_value(self, value: Any) -> str:
         return "$%s" % (

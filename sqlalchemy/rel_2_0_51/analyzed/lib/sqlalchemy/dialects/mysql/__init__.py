@@ -7,7 +7,9 @@
 # mypy: ignore-errors
 
 
-from . import aiomysql  # noqa
+# MySQL/MariaDB 方言包：重导出类型、DML 与默认 mysqldb 方言
+
+from . import aiomysql  # noqafrom . import aiomysql  # noqa
 from . import asyncmy  # noqa
 from . import base  # noqa
 from . import cymysql  # noqa
@@ -57,6 +59,7 @@ from .mariadb import INET4
 from .mariadb import INET6
 
 # default dialect
+# 默认方言指向 mysql+mysqldb
 base.dialect = dialect = mysqldb.dialect
 
 __all__ = (

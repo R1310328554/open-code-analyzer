@@ -1064,7 +1064,9 @@ output:
 
 """  # noqa
 
-from __future__ import annotations
+# MySQL/MariaDB 方言核心：编译器、DDL、类型映射、反射与方言能力
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from collections import defaultdict
 from itertools import compress
@@ -1189,6 +1191,7 @@ if TYPE_CHECKING:
     from ...sql.visitors import ExternallyTraversible
 
 
+# 检测 SET SESSION/GLOBAL 语句的正则（隔离级别等）
 SET_RE = re.compile(
     r"\s*SET\s+(?:(?:GLOBAL|SESSION)\s+)?\w", re.I | re.UNICODE
 )
@@ -1225,6 +1228,7 @@ MSReal = REAL
 MSFloat = FLOAT
 MSInteger = INTEGER
 
+# SQLAlchemy 通用类型到 MySQL 方言类型的 colspec 映射
 colspecs = {
     _IntegerType: _IntegerType,
     _NumericType: _NumericType,
@@ -1241,6 +1245,7 @@ colspecs = {
 }
 
 # Everything 3.23 through 5.1 excepting OpenGIS types.
+# information_schema 类型名到方言 TypeEngine 的反射映射
 ischema_names = {
     "bigint": BIGINT,
     "binary": BINARY,
@@ -1281,7 +1286,9 @@ ischema_names = {
 }
 
 
+# MySQL 执行上下文：DELETE RETURNING 空结果、服务端游标、序列
 class MySQLExecutionContext(default.DefaultExecutionContext):
+    # DELETE..RETURNING 无行时构造空 FullyBuffered 结果（#10505）
     def post_exec(self) -> None:
         if (
             self.isdelete
@@ -1308,6 +1315,7 @@ class MySQLExecutionContext(default.DefaultExecutionContext):
                 )
             )
 
+    # 使用方言 _sscursor 创建服务端游标
     def create_server_side_cursor(self) -> DBAPICursor:
         if self.dialect.supports_server_side_cursors:
             return self._dbapi_connection.cursor(
@@ -1316,6 +1324,7 @@ class MySQLExecutionContext(default.DefaultExecutionContext):
         else:
             raise NotImplementedError()
 
+    # MySQL/MariaDB 10.3+ 序列：select nextval(...)
     def fire_sequence(
         self, seq: Sequence_SchemaItem, type_: sqltypes.Integer
     ) -> int:
@@ -1328,6 +1337,7 @@ class MySQLExecutionContext(default.DefaultExecutionContext):
         )
 
 
+# MySQL SQL 编译：JSON、MATCH、LIMIT、FOR UPDATE、REGEXP 等
 class MySQLCompiler(compiler.SQLCompiler):
     dialect: MySQLDialect
     render_table_with_column_in_update_from = True
@@ -1336,6 +1346,7 @@ class MySQLCompiler(compiler.SQLCompiler):
     extract_map = compiler.SQLCompiler.extract_map.copy()
     extract_map.update({"milliseconds": "millisecond"})
 
+    # 无 FROM 的 SELECT 在有 WHERE 时追加 FROM DUAL
     def default_from(self) -> str:
         """Called when a ``SELECT`` statement has no froms,
         and no ``FROM`` clause is to be appended.
@@ -1357,6 +1368,7 @@ class MySQLCompiler(compiler.SQLCompiler):
         )
         return f"{clause} WITH ROLLUP"
 
+    # GROUP_CONCAT(expr SEPARATOR delim) 聚合字符串
     def visit_aggregate_strings_func(
         self, fn: aggregate_strings, **kw: Any
     ) -> str:
@@ -1371,6 +1383,7 @@ class MySQLCompiler(compiler.SQLCompiler):
     def visit_sysdate_func(self, fn: sysdate, **kw: Any) -> str:
         return "SYSDATE()"
 
+    # JSON 比较渲染 JSON_EXTRACT；非 JSON 用 CASE 处理 null
     def _render_json_extract_from_binary(
         self, binary: elements.BinaryExpression[Any], operator: Any, **kw: Any
     ) -> str:
@@ -1456,6 +1469,7 @@ class MySQLCompiler(compiler.SQLCompiler):
     ) -> str:
         return self._render_json_extract_from_binary(binary, operator, **kw)
 
+    # 编译 ON DUPLICATE KEY UPDATE 子句
     def visit_on_duplicate_key_update(
         self, on_duplicate: OnDuplicateClause, **kw: Any
     ) -> str:
@@ -1587,6 +1601,7 @@ class MySQLCompiler(compiler.SQLCompiler):
         "WITH QUERY EXPANSION",
     )
 
+    # FULLTEXT MATCH ... AGAINST 及模式修饰符
     def visit_mysql_match(self, element: expression.match, **kw: Any) -> str:
         return self.visit_match_op_binary(element, element.operator, **kw)
 
@@ -1766,6 +1781,7 @@ class MySQLCompiler(compiler.SQLCompiler):
             )
         )
 
+    # FOR UPDATE [OF cols] [NOWAIT/SKIP LOCKED]（MySQL 8+ / MariaDB）
     def for_update_clause(
         self, select: selectable.GenerativeSelect, **kw: Any
     ) -> str:
@@ -1796,6 +1812,7 @@ class MySQLCompiler(compiler.SQLCompiler):
 
         return tmp
 
+    # LIMIT/OFFSET；UPDATE/DELETE 的 limit 子句
     def limit_clause(
         self, select: selectable.GenerativeSelect, **kw: Any
     ) -> str:
@@ -1984,6 +2001,7 @@ class MySQLCompiler(compiler.SQLCompiler):
     ) -> str:
         return self._regexp_match(" NOT REGEXP ", binary, operator, **kw)
 
+    # REGEXP_REPLACE：MariaDB 与 MySQL 参数顺序差异
     def visit_regexp_replace_op_binary(
         self, binary: elements.BinaryExpression[Any], operator: Any, **kw: Any
     ) -> str:
@@ -2008,9 +2026,11 @@ class MySQLCompiler(compiler.SQLCompiler):
             )
 
 
+# MySQL DDL 编译：列定义、表选项 ENGINE/分区、索引与注释
 class MySQLDDLCompiler(compiler.DDLCompiler):
     dialect: MySQLDialect
 
+    # 列 DDL：类型、NULL、COMMENT、AUTO_INCREMENT、DEFAULT
     def get_column_specification(
         self, column: sa_schema.Column[Any], **kw: Any
     ) -> str:
@@ -2084,6 +2104,7 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
                     colspec.append("DEFAULT " + default)
         return " ".join(colspec)
 
+    # CREATE TABLE 尾部：ENGINE、CHARSET、PARTITION 等 mysql_* 选项
     def post_create_table(self, table: sa_schema.Table) -> str:
         """Build table-level CREATE options like ENGINE and COLLATE."""
 
@@ -2168,6 +2189,7 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
 
         return " ".join(table_opts)
 
+    # CREATE INDEX：USING、prefix、length、FULLTEXT 等
     def visit_create_index(self, create: ddl.CreateIndex, **kw: Any) -> str:  # type: ignore[override]  # noqa: E501
         index = create.element
         self._verify_index_table(index)
@@ -2348,7 +2370,9 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
         return text
 
 
+# MySQL 类型 DDL 编译：精度、字符集、ENUM/SET 字面量
 class MySQLTypeCompiler(compiler.GenericTypeCompiler):
+    # 数值类型追加 display_width unsigned zerofill
     def _extend_numeric(self, type_: _NumericType, spec: str) -> str:
         "Extend a numeric-type declaration with MySQL specific extensions."
 
@@ -2361,6 +2385,7 @@ class MySQLTypeCompiler(compiler.GenericTypeCompiler):
             spec += " ZEROFILL"
         return spec
 
+    # 字符串类型追加 charset/collation/binary
     def _extend_string(
         self, type_: _StringType, defaults: Dict[str, Any], spec: str
     ) -> str:
@@ -2401,6 +2426,7 @@ class MySQLTypeCompiler(compiler.GenericTypeCompiler):
     def _mysql_type(self, type_: Any) -> bool:
         return isinstance(type_, (_StringType, _NumericType))
 
+    # NUMERIC/DECIMAL/FLOAT/INTEGER 等各原生类型 visit 方法组
     def visit_NUMERIC(self, type_: NUMERIC, **kw: Any) -> str:  # type: ignore[override]  # NOQA: E501
         if type_.precision is None:
             return self._extend_numeric(type_, "NUMERIC")
@@ -2650,9 +2676,11 @@ class MySQLTypeCompiler(compiler.GenericTypeCompiler):
             type_, {}, "%s(%s)" % (name, ",".join(quoted_enums))
         )
 
+    # ENUM('a','b') DDL
     def visit_ENUM(self, type_: ENUM, **kw: Any) -> str:
         return self._visit_enumerated_values("ENUM", type_, type_.enums)
 
+    # SET('a','b') DDL
     def visit_SET(self, type_: SET, **kw: Any) -> str:
         return self._visit_enumerated_values("SET", type_, type_.values)
 
@@ -2660,6 +2688,7 @@ class MySQLTypeCompiler(compiler.GenericTypeCompiler):
         return "BOOL"
 
 
+# MySQL 标识符引用：反引号或 ANSI 双引号
 class MySQLIdentifierPreparer(compiler.IdentifierPreparer):
     reserved_words = RESERVED_WORDS_MYSQL
 
@@ -2682,10 +2711,12 @@ class MySQLIdentifierPreparer(compiler.IdentifierPreparer):
         return tuple([self.quote_identifier(i) for i in ids if i is not None])
 
 
+# MariaDB 保留字表与引用规则
 class MariaDBIdentifierPreparer(MySQLIdentifierPreparer):
     reserved_words = RESERVED_WORDS_MARIADB
 
 
+# MySQL/MariaDB 方言主类：版本检测、反射、隔离级别与 XA
 class MySQLDialect(default.DefaultDialect):
     """Details of the MySQL dialect.
     Not used directly in application code.
@@ -2817,6 +2848,7 @@ class MySQLDialect(default.DefaultDialect):
         cursor.execute("COMMIT")
         cursor.close()
 
+    # 读取 @@transaction_isolation 或 @@tx_isolation
     def get_isolation_level(
         self, dbapi_connection: DBAPIConnection
     ) -> IsolationLevel:
@@ -2856,6 +2888,7 @@ class MySQLDialect(default.DefaultDialect):
         finally:
             conn.close()
 
+    # SELECT VERSION() 解析并区分 MariaDB
     def _get_server_version_info(
         self, connection: Connection
     ) -> Tuple[int, ...]:
@@ -2911,6 +2944,7 @@ class MySQLDialect(default.DefaultDialect):
         self.server_version_info = server_version_info
         return server_version_info
 
+    # 切换 MariaDB preparer 与 RETURNING 能力
     def _set_mariadb(
         self, is_mariadb: Optional[bool], server_version_info: Tuple[int, ...]
     ) -> None:
@@ -3046,6 +3080,7 @@ class MySQLDialect(default.DefaultDialect):
         return connection.exec_driver_sql("SELECT DATABASE()").scalar()  # type: ignore[return-value]  # noqa: E501
 
     @reflection.cache
+    # 检查表是否存在（information_schema 或 SHOW）
     def has_table(
         self,
         connection: Connection,
@@ -3153,6 +3188,7 @@ class MySQLDialect(default.DefaultDialect):
             )
         ]
 
+    # 首连：sql_mode、大小写、序列、FOR UPDATE OF 等特性开关
     def initialize(self, connection: Connection) -> None:
         # this is driver-based, does not need server version info
         # and is fairly critical for even basic SQL operations
@@ -3325,6 +3361,7 @@ class MySQLDialect(default.DefaultDialect):
             return ReflectionDefaults.table_options()
 
     @reflection.cache
+    # 反射列定义：DESCRIBE/SHOW CREATE 与类型解析
     def get_columns(
         self,
         connection: Connection,
@@ -3359,6 +3396,7 @@ class MySQLDialect(default.DefaultDialect):
         return ReflectionDefaults.pk_constraint()
 
     @reflection.cache
+    # 反射外键；修正 MySQL 8 重复 FK 缺陷
     def get_foreign_keys(
         self,
         connection: Connection,
@@ -3551,6 +3589,7 @@ class MySQLDialect(default.DefaultDialect):
             return ReflectionDefaults.table_comment()
 
     @reflection.cache
+    # 反射索引：SHOW INDEX 与类型/表达式
     def get_indexes(
         self,
         connection: Connection,
@@ -3725,9 +3764,11 @@ class MySQLDialect(default.DefaultDialect):
         else:
             return cast(Optional[str], row[fetch_col])
 
+    # 探测连接/库默认字符集
     def _detect_charset(self, connection: Connection) -> str:
         raise NotImplementedError()
 
+    # lower_case_table_names 影响表名大小写
     def _detect_casing(self, connection: Connection) -> int:
         """Sniff out identifier case sensitivity.
 
@@ -3839,6 +3880,7 @@ class MySQLDialect(default.DefaultDialect):
         return cast(str, row[1]).strip()
 
     @overload
+    # DESCRIBE table；1146/1356 转 NoSuchTable/Unreflectable
     def _describe_table(
         self,
         connection: Connection,
@@ -3896,6 +3938,7 @@ class MySQLDialect(default.DefaultDialect):
         return rows
 
 
+# 反射行解码：按 charset 将 bytes 转为 unicode
 class _DecodingRow:
     """Return unicode-decoded values based on type inspection.
 
@@ -3942,6 +3985,7 @@ class _DecodingRow:
             return item
 
 
+# information_schema.columns 查询用 Table 构造
 _info_columns = sql.table(
     "columns",
     sql.column("table_schema", VARCHAR(64)),

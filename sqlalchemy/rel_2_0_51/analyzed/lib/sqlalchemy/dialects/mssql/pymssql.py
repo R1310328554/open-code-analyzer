@@ -8,6 +8,9 @@
 
 
 """
+mssql+pymssql 方言：基于 FreeTDS 的 pymssql DBAPI 驱动适配。
+
+.. dialect:: mssql+pymssql"""
 .. dialect:: mssql+pymssql
     :name: pymssql
     :dbapi: pymssql
@@ -32,7 +35,9 @@ from ... import util
 from ...engine import processors
 
 
+# pymssql 专用 Numeric：非 asdecimal 时用 to_float 处理结果
 class _MSNumeric_pymssql(sqltypes.Numeric):
+    # 按 asdecimal 选择浮点或标准 Numeric 结果处理器
     def result_processor(self, dialect, type_):
         if not self.asdecimal:
             return processors.to_float
@@ -40,6 +45,7 @@ class _MSNumeric_pymssql(sqltypes.Numeric):
             return sqltypes.Numeric.result_processor(self, dialect, type_)
 
 
+# pymssql 标识符预处理器：pyformat 但无需双写百分号
 class MSIdentifierPreparer_pymssql(MSIdentifierPreparer):
     def __init__(self, dialect):
         super().__init__(dialect)
@@ -48,6 +54,7 @@ class MSIdentifierPreparer_pymssql(MSIdentifierPreparer):
         self._double_percents = False
 
 
+# pymssql 方言主类：连接参数、版本检测与断连判定
 class MSDialect_pymssql(MSDialect):
     supports_statement_cache = True
     supports_native_decimal = True
@@ -62,6 +69,7 @@ class MSDialect_pymssql(MSDialect):
     )
 
     @classmethod
+    # 导入 pymssql；旧版补 Binary、低于 1.0 时告警
     def import_dbapi(cls):
         module = __import__("pymssql")
         # pymmsql < 2.1.1 doesn't have a Binary method.  we use string
@@ -77,6 +85,7 @@ class MSDialect_pymssql(MSDialect):
             )
         return module
 
+    # 解析 @@version 字符串得到 (major, minor, build, revision)
     def _get_server_version_info(self, connection):
         vers = connection.exec_driver_sql("select @@version").scalar()
         m = re.match(r"Microsoft .*? - (\d+)\.(\d+)\.(\d+)\.(\d+)", vers)
@@ -85,6 +94,7 @@ class MSDialect_pymssql(MSDialect):
         else:
             return None
 
+    # 将 URL 转为 pymssql 关键字连接参数（host:port 合并）
     def create_connect_args(self, url):
         opts = url.translate_connect_args(username="user")
         opts.update(url.query)
@@ -93,6 +103,7 @@ class MSDialect_pymssql(MSDialect):
             opts["host"] = "%s:%s" % (opts["host"], port)
         return ([], opts)
 
+    # 根据 FreeTDS/连接错误消息判断是否为断连
     def is_disconnect(self, e, connection, cursor):
         for msg in (
             "Adaptive Server connection timed out",
@@ -111,11 +122,13 @@ class MSDialect_pymssql(MSDialect):
         else:
             return False
 
+    # 在基类隔离级别列表上追加 AUTOCOMMIT
     def get_isolation_level_values(self, dbapi_connection):
         return super().get_isolation_level_values(dbapi_connection) + [
             "AUTOCOMMIT"
         ]
 
+    # AUTOCOMMIT 时直接 autocommit(True)，否则走基类
     def set_isolation_level(self, dbapi_connection, level):
         if level == "AUTOCOMMIT":
             dbapi_connection.autocommit(True)
@@ -124,4 +137,5 @@ class MSDialect_pymssql(MSDialect):
             super().set_isolation_level(dbapi_connection, level)
 
 
+# 方言入口：供 create_engine 解析 mssql+pymssql
 dialect = MSDialect_pymssql

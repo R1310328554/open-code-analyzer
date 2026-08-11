@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-from __future__ import annotations
+# MySQL FULLTEXT MATCH ... AGAINST 表达式构造
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 
@@ -20,6 +22,7 @@ from ...sql.base import Generative
 from ...util.typing import Self
 
 
+# MATCH(col1, col2) AGAINST('text') 及 BOOLEAN/NATURAL 修饰符
 class match(Generative, elements.BinaryExpression[Any]):
     """Produce a ``MATCH (X, Y) AGAINST ('TEXT')`` clause.
 
@@ -112,6 +115,7 @@ class match(Generative, elements.BinaryExpression[Any]):
         super().__init__(left, against, operators.match_op, modifiers=flags)
 
     @_generative
+    # 追加 IN BOOLEAN MODE 修饰
     def in_boolean_mode(self) -> Self:
         """Apply the "IN BOOLEAN MODE" modifier to the MATCH expression.
 
@@ -123,6 +127,7 @@ class match(Generative, elements.BinaryExpression[Any]):
         return self
 
     @_generative
+    # 追加 IN NATURAL LANGUAGE MODE 修饰
     def in_natural_language_mode(self) -> Self:
         """Apply the "IN NATURAL LANGUAGE MODE" modifier to the MATCH
         expression.
@@ -135,6 +140,7 @@ class match(Generative, elements.BinaryExpression[Any]):
         return self
 
     @_generative
+    # 追加 WITH QUERY EXPANSION 修饰
     def with_query_expansion(self) -> Self:
         """Apply the "WITH QUERY EXPANSION" modifier to the MATCH expression.
 
