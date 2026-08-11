@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:25:04Z",
   "files": [
-    "django/core/mail/deprecation.py",
-    "django/core/mail/exceptions.py",
-    "django/core/mail/handler.py",
-    "django/core/mail/message.py",
-    "django/core/mail/utils.py",
-    "django/core/management/__init__.py",
-    "django/core/management/base.py",
-    "django/core/management/color.py",
-    "django/core/management/commands/__init__.py",
-    "django/core/management/commands/check.py",
-    "django/core/management/commands/compilemessages.py",
-    "django/core/management/commands/createcachetable.py",
-    "django/core/management/commands/dbshell.py",
-    "django/core/management/commands/diffsettings.py",
-    "django/core/management/commands/dumpdata.py",
     "django/core/management/commands/flush.py",
     "django/core/management/commands/inspectdb.py",
     "django/core/management/commands/listurls.py",
@@ -33,5 +18,5 @@
     "django/core/management/commands/sqlsequencereset.py"
   ],
   "remaining_pending": 312,
-  "done": 600
+  "done": 615
 }
