@@ -35,9 +35,12 @@ from ..auto import AutoModel
 from .configuration_llava_next import LlavaNextConfig
 
 
+# LLaVA-NeXT 建模：任意分辨率视觉 patch 编码 + 文本解码多模态
+
 logger = logging.get_logger(__name__)
 
 
+# get_anyres_image_grid_shape：计算任意分辨率图像经 patch 预处理后的网格形状
 def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     """
     Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
@@ -69,6 +72,7 @@ def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     return height // patch_size, width // patch_size
 
 
+# image_size_to_num_patches：按 grid pinpoints 估算图像 patch 数量
 def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     """
     Calculate the number of patches after the preprocessing for images of any resolution.
@@ -106,6 +110,7 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     return num_patches
 
 
+# unpad_image：去除 padding 恢复原始宽高比（用于 anyres 特征对齐）
 def unpad_image(tensor, original_size):
     """
     Unpads a PyTorch tensor of a padded and resized image.
@@ -151,6 +156,7 @@ def unpad_image(tensor, original_size):
     """
 )
 @dataclass
+# LlavaNextModelOutputWithPast：LLaVA-NeXT 多模态主干输出 dataclass（含 past_key_values）
 class LlavaNextModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -172,6 +178,7 @@ class LlavaNextModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# LlavaNextCausalLMOutputWithPast：LLaVA-NeXT 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LlavaNextCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -197,6 +204,7 @@ class LlavaNextCausalLMOutputWithPast(ModelOutput):
 
 
 # Copied from transformers.models.llava.modeling_llava.LlavaMultiModalProjector with Llava->LlavaNext
+# LlavaNextMultiModalProjector：LLaVA-NeXT 视觉 patch 投影到文本隐空间
 class LlavaNextMultiModalProjector(nn.Module):
     def __init__(self, config: LlavaNextConfig):
         super().__init__()
@@ -220,6 +228,7 @@ class LlavaNextMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# LlavaNextPreTrainedModel：LLaVA-NeXT 多模态预训练基类与权重初始化
 class LlavaNextPreTrainedModel(PreTrainedModel):
     config: LlavaNextConfig
     base_model_prefix = "model"
@@ -247,6 +256,7 @@ class LlavaNextPreTrainedModel(PreTrainedModel):
     The Llava-Next model which consists of a vision backbone and a language model without language modeling head.
     """
 )
+# LlavaNextModel：LLaVA-NeXT 任意分辨率视觉编码 + 文本解码多模态主干
 class LlavaNextModel(LlavaNextPreTrainedModel):
     base_model_prefix = "model"
 
@@ -493,6 +503,7 @@ class LlavaNextModel(LlavaNextPreTrainedModel):
     The LLAVA-NeXT model which consists of a vision backbone and a language model.
     """
 )
+# LlavaNextForConditionalGeneration：LLaVA-NeXT 高分辨率图文条件生成模型
 class LlavaNextForConditionalGeneration(LlavaNextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

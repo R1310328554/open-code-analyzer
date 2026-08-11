@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LLaVA-NeXT 配置：任意分辨率 grid pinpoints + 视觉-语言多模态超参
+
+# LlavaNextConfig：llava-hf/llava-v1.6-mistral-7b-hf 任意分辨率视觉-语言默认超参
 @auto_docstring(checkpoint="llava-hf/llava-v1.6-mistral-7b-hf")
 @strict
+# LlavaNextConfig：llava-hf/llava-v1.6-mistral-7b-hf 任意分辨率视觉-语言多模态超参
 class LlavaNextConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`List`, *optional*, defaults to `[[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]`):

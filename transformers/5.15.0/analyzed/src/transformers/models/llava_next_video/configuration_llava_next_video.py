@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# configuration_llava_next_video 由 modular_llava_next_video.py 自动生成
 from typing import Literal
 
 from huggingface_hub.dataclasses import strict
@@ -27,8 +28,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LLaVA-NeXT-Video 配置：视频帧空间池化 + 视觉-语言多模态超参（由 modular 自动生成）
+
+# LlavaNextVideoConfig：llava-hf/LLaVA-NeXT-Video-7B-hf 视频-语言多模态默认超参
 @auto_docstring(checkpoint="llava-hf/LLaVA-NeXT-Video-7B-hf")
 @strict
+# LlavaNextVideoConfig：llava-hf/LLaVA-NeXT-Video-7B-hf 视频-语言多模态超参
 class LlavaNextVideoConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`List`, *optional*, defaults to `[[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]`):

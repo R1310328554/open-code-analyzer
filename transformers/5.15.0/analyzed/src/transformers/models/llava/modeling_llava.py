@@ -30,6 +30,8 @@ from ..auto import AutoModel
 from .configuration_llava import LlavaConfig
 
 
+# LLaVA 建模：CLIP 视觉编码 + LLaMA 文本解码多模态联合主干
+
 logger = logging.get_logger(__name__)
 
 
@@ -39,6 +41,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# LlavaModelOutputWithPast：LLaVA 多模态主干输出 dataclass（含 past_key_values 与 image_hidden_states）
 class LlavaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -60,6 +63,7 @@ class LlavaModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# LlavaCausalLMOutputWithPast：LLaVA 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LlavaCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -84,6 +88,7 @@ class LlavaCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# LlavaMultiModalProjector：LLaVA 视觉特征投影到文本隐空间的两层 MLP
 class LlavaMultiModalProjector(nn.Module):
     def __init__(self, config: LlavaConfig):
         super().__init__()
@@ -107,6 +112,7 @@ class LlavaMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# LlavaPreTrainedModel：LLaVA 多模态预训练基类与权重初始化
 class LlavaPreTrainedModel(PreTrainedModel):
     config: LlavaConfig
     base_model_prefix = "model"
@@ -127,6 +133,7 @@ class LlavaPreTrainedModel(PreTrainedModel):
     The Llava model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# LlavaModel：LLaVA 视觉编码 + 文本解码多模态联合主干
 class LlavaModel(LlavaPreTrainedModel):
     def __init__(self, config: LlavaConfig):
         super().__init__(config)
@@ -269,6 +276,7 @@ class LlavaModel(LlavaPreTrainedModel):
     The LLAVA model which consists of a vision backbone and a language model.
     """
 )
+# LlavaForConditionalGeneration：LLaVA 图文条件生成模型
 class LlavaForConditionalGeneration(LlavaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

@@ -27,7 +27,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaVA 图像预处理：PIL 后端 resize、中心裁剪与 CLIP 归一化
+
 @auto_docstring
+# LlavaImageProcessorPil：LLaVA PIL 后端 resize/中心裁剪/CLIP 归一化预处理
 class LlavaImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -45,6 +48,7 @@ class LlavaImageProcessorPil(PilBackend):
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # pad_to_square：按最长边将图像 padding 为正方形
     def pad_to_square(
         self,
         image: np.ndarray,

@@ -40,11 +40,15 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LLaVA-NeXT-Video modular 源：复用 LLaVA-NeXT 扩展视频帧空间池化与条件生成
+
 logger = logging.get_logger(__name__)
 
 
+# LlavaNextVideoConfig：llava-hf/LLaVA-NeXT-Video-7B-hf 视频-语言多模态默认超参
 @auto_docstring(checkpoint="llava-hf/LLaVA-NeXT-Video-7B-hf")
 @strict
+# LlavaNextVideoConfig：llava-hf/LLaVA-NeXT-Video-7B-hf 视频-语言多模态超参
 class LlavaNextVideoConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`List`, *optional*, defaults to `[[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]`):
@@ -133,6 +137,7 @@ class LlavaNextVideoConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# LlavaNextVideoModelOutputWithPast：LLaVA-NeXT-Video 多模态主干输出 dataclass（含 past_key_values）
 class LlavaNextVideoModelOutputWithPast(LlavaNextModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -151,6 +156,7 @@ class LlavaNextVideoModelOutputWithPast(LlavaNextModelOutputWithPast):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# LlavaNextVideoCausalLMOutputWithPast：LLaVA-NeXT-Video 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LlavaNextVideoCausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -173,6 +179,7 @@ class LlavaNextVideoCausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# LlavaNextVideoPooler：LLaVA-NeXT-Video 帧级空间池化（average/max/conv）
 class LlavaNextVideoPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -207,10 +214,12 @@ class LlavaNextVideoPooler(nn.Module):
         return image_features_spatial_pool.flatten(2).transpose(1, 2).contiguous()
 
 
+# LlavaNextVideoMultiModalProjector：LLaVA-NeXT-Video 视觉 patch 投影到文本隐空间
 class LlavaNextVideoMultiModalProjector(LlavaNextMultiModalProjector):
     pass
 
 
+# LlavaNextVideoPreTrainedModel：LLaVA-NeXT-Video 多模态预训练基类与权重初始化
 class LlavaNextVideoPreTrainedModel(LlavaNextPreTrainedModel):
     input_modalities = ("image", "video", "text")
     _can_record_outputs = {
@@ -219,6 +228,7 @@ class LlavaNextVideoPreTrainedModel(LlavaNextPreTrainedModel):
     }
 
 
+# LlavaNextVideoModel：LLaVA-NeXT-Video 视频帧编码 + 文本解码多模态主干
 class LlavaNextVideoModel(LlavaNextModel):
     def __init__(self, config: LlavaNextVideoConfig, **super_kwargs):
         super().__init__(config, **super_kwargs)
@@ -468,6 +478,7 @@ class LlavaNextVideoModel(LlavaNextModel):
         )
 
 
+# LlavaNextVideoForConditionalGeneration：LLaVA-NeXT-Video 视频-文本条件生成模型
 class LlavaNextVideoForConditionalGeneration(LlavaNextForConditionalGeneration):
     @merge_with_config_defaults
     @can_return_tuple

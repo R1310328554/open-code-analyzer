@@ -38,6 +38,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaVA-NeXT 图像预处理：Torchvision 后端任意分辨率 patch 切分与 padding
+
+# LlavaNextImageProcessorKwargs：LLaVA-NeXT 图像处理器可选参数字典类型
 class LlavaNextImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     image_grid_pinpoints (`list[list[int]]`, *optional*):
@@ -50,6 +53,7 @@ class LlavaNextImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# LlavaNextImageProcessor：LLaVA-NeXT Torchvision 后端任意分辨率 patch 预处理
 class LlavaNextImageProcessor(TorchvisionBackend):
     model_input_names = ["pixel_values", "image_sizes"]
     valid_kwargs = LlavaNextImageProcessorKwargs

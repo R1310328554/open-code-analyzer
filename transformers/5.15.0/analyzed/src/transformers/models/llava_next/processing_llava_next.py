@@ -28,6 +28,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LLaVA-NeXT Processor：任意分辨率图像预处理与分词器联合输入组装
+
+# LlavaNextProcessorKwargs：LLaVA-NeXT Processor 可选参数字典类型
 class LlavaNextProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -41,6 +44,7 @@ class LlavaNextProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LlavaNextProcessor：封装任意分辨率图像预处理与分词器的输入管线
 class LlavaNextProcessor(ProcessorMixin):
     valid_processor_kwargs = LlavaNextProcessorKwargs
 

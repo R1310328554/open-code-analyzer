@@ -34,7 +34,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaVA 图像预处理：Torchvision 后端 resize、中心裁剪与 CLIP 归一化
+
 @auto_docstring
+# LlavaImageProcessor：LLaVA Torchvision 后端 resize/中心裁剪/CLIP 归一化预处理
 class LlavaImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -52,6 +55,7 @@ class LlavaImageProcessor(TorchvisionBackend):
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # pad_to_square：按最长边将图像 padding 为正方形
     def pad_to_square(
         self,
         images: "torch.Tensor",

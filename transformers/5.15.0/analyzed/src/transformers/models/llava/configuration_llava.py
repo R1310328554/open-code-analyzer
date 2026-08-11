@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LLaVA 配置：llava-hf/llava-1.5-7b-hf CLIP 视觉塔 + LLaMA 文本解码器联合超参
+
+# LlavaConfig：llava-hf/llava-1.5-7b-hf 视觉-语言多模态默认超参
 @auto_docstring(checkpoint="llava-hf/llava-1.5-7b-hf")
 @strict
+# LlavaConfig：llava-hf/llava-1.5-7b-hf 视觉-语言多模态顶层超参（CLIP 视觉塔 + LLaMA 文本）
 class LlavaConfig(PreTrainedConfig):
     r"""
     Example:

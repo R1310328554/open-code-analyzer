@@ -27,6 +27,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LLaVA Processor：图像预处理与分词器联合多模态输入组装
+
+# LlavaProcessorKwargs：LLaVA Processor 可选参数字典类型
 class LlavaProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {"padding": False, "return_mm_token_type_ids": False, "return_text_replacement_offsets": False},
@@ -34,6 +37,7 @@ class LlavaProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LlavaProcessor：封装图像预处理与分词器的多模态输入管线
 class LlavaProcessor(ProcessorMixin):
     valid_processor_kwargs = LlavaProcessorKwargs
 

@@ -34,7 +34,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaVA-NeXT 图像预处理：PIL 后端任意分辨率 patch 切分与 padding
+
 # Adapted from transformers.models.llava_next.image_processing_llava_next.LlavaNextImageProcessorKwargs
+# LlavaNextImageProcessorKwargs：LLaVA-NeXT 图像处理器可选参数字典类型
 class LlavaNextImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     image_grid_pinpoints (`list[list[int]]`, *optional*):
@@ -47,6 +50,7 @@ class LlavaNextImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# LlavaNextImageProcessorPil：LLaVA-NeXT PIL 后端任意分辨率 patch 预处理
 class LlavaNextImageProcessorPil(PilBackend):
     model_input_names = ["pixel_values", "image_sizes"]
     valid_kwargs = LlavaNextImageProcessorKwargs
