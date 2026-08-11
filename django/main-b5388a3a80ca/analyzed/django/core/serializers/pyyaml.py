@@ -1,4 +1,6 @@
 """
+# YAML 序列化/反序列化（依赖 PyYAML）
+YAML serializer."""
 YAML serializer.
 
 Requires PyYaml (https://pyyaml.org/), but that's checked for in __init__.
@@ -21,12 +23,15 @@ except ImportError:
     from yaml import SafeDumper, SafeLoader
 
 
+# 安全 YAML 导出器：Decimal/time 转为字符串以保证互操作
 class DjangoSafeDumper(SafeDumper):
     # The "safe" serializer is used for better interoperability.
 
+    # 将 Decimal 表示为 YAML 字符串标量
     def represent_decimal(self, data):
         return self.represent_scalar("tag:yaml.org,2002:str", str(data))
 
+    # 将 time 表示为 YAML 字符串标量
     def represent_time(self, data):
         # Base YAML doesn't support serialization of time types (as opposed to
         # dates or datetimes, which it does support). Converting them to
@@ -39,11 +44,13 @@ DjangoSafeDumper.add_representer(decimal.Decimal, DjangoSafeDumper.represent_dec
 DjangoSafeDumper.add_representer(datetime.time, DjangoSafeDumper.represent_time)
 
 
+# 将 queryset 序列化为 YAML
 class Serializer(PythonSerializer):
     """Convert a queryset to YAML."""
 
     internal_use_only = False
 
+    # 用 DjangoSafeDumper 将 objects 写入 stream
     def end_serialization(self):
         self.options.setdefault("allow_unicode", True)
         yaml.dump(
@@ -59,6 +66,7 @@ class Serializer(PythonSerializer):
         return super(PythonSerializer, self).getvalue()
 
 
+# 从 YAML 流或字符串反序列化
 class Deserializer(PythonDeserializer):
     """Deserialize a stream or string of YAML data."""
 

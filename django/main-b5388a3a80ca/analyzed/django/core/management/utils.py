@@ -14,6 +14,7 @@ from django.utils.encoding import DEFAULT_LOCALE_ENCODING
 from .base import CommandError, CommandParser
 
 
+# 友好封装 subprocess.run，返回 stdout、stderr 与退出码
 def popen_wrapper(args, stdout_encoding="utf-8"):
     """
     Friendly wrapper around Popen.
@@ -31,6 +32,7 @@ def popen_wrapper(args, stdout_encoding="utf-8"):
     )
 
 
+# 解析逗号分隔或重复的 --extension 参数为带点前缀的扩展名集合
 def handle_extensions(extensions):
     """
     Organize multiple extensions that are separated with commas or passed by
@@ -53,6 +55,7 @@ def handle_extensions(extensions):
     return set(ext_list)
 
 
+# 在 PATH 中查找可执行命令（含 Windows PATHEXT）
 def find_command(cmd, path=None, pathext=None):
     if path is None:
         path = os.environ.get("PATH", "").split(os.pathsep)
@@ -78,6 +81,7 @@ def find_command(cmd, path=None, pathext=None):
     return None
 
 
+# 生成 50 字符随机字符串，可用作 SECRET_KEY
 def get_random_secret_key():
     """
     Return a 50 character random string usable as a SECRET_KEY setting value.
@@ -86,6 +90,7 @@ def get_random_secret_key():
     return get_random_string(50, chars)
 
 
+# 解析 app_label 或 app_label.ModelName 标签为元组 (models, apps)
 def parse_apps_and_model_labels(labels):
     """
     Parse a list of "app_label.ModelName" or "app_label" strings into actual
@@ -113,6 +118,7 @@ def parse_apps_and_model_labels(labels):
     return models, apps
 
 
+# 从 argv 中提取指定命令行选项值（如 --testrunner）
 def get_command_line_option(argv, option):
     """
     Return the value of a command line option (which should include leading
@@ -129,6 +135,7 @@ def get_command_line_option(argv, option):
         return options.value
 
 
+# 按操作系统规范化 glob 风格忽略路径模式
 def normalize_path_patterns(patterns):
     """Normalize an iterable of glob style patterns based on OS."""
     patterns = [os.path.normcase(p) for p in patterns]
@@ -144,6 +151,7 @@ def normalize_path_patterns(patterns):
     return norm_patterns
 
 
+# 判断路径是否匹配任一忽略模式
 def is_ignored_path(path, ignore_patterns):
     """
     Check if the given path should be ignored or not based on matching
@@ -159,10 +167,12 @@ def is_ignored_path(path, ignore_patterns):
     return any(ignore(pattern) for pattern in normalize_path_patterns(ignore_patterns))
 
 
+# 查找可用外部格式化器（当前为 black）
 def find_formatters():
     return {"black_path": shutil.which("black")}
 
 
+# 对指定文件运行 black 格式化器
 def run_formatters(written_files, black_path=(sentinel := object()), stderr=sys.stderr):
     """
     Run the black formatter on the specified files.

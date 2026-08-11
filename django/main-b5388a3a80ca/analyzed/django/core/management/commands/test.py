@@ -7,6 +7,7 @@ from django.test.runner import get_max_test_processes
 from django.test.utils import NullTimeKeeper, TimeKeeper, get_runner
 
 
+# test 命令：发现并运行指定模块或当前目录下的测试
 class Command(BaseCommand):
     help = "Discover and run tests in the specified modules or the current directory."
 
@@ -14,6 +15,7 @@ class Command(BaseCommand):
     requires_system_checks = []
     test_runner = None
 
+    # 预解析 --testrunner 以便测试运行器注册额外参数
     def run_from_argv(self, argv):
         """
         Pre-parse the command line to extract the value of the --testrunner
@@ -23,6 +25,7 @@ class Command(BaseCommand):
         self.test_runner = get_command_line_option(argv, "--testrunner")
         super().run_from_argv(argv)
 
+    # 添加 test_label、--testrunner 及 TestRunner 自定义参数
     def add_arguments(self, parser):
         parser.add_argument(
             "args",
@@ -51,6 +54,7 @@ class Command(BaseCommand):
         if hasattr(test_runner_class, "add_arguments"):
             test_runner_class.add_arguments(parser)
 
+    # 实例化 TestRunner 运行测试，失败时以退出码 1 结束
     def handle(self, *test_labels, **options):
         TestRunner = get_runner(settings, options["testrunner"])
 

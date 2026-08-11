@@ -12,6 +12,7 @@ from django.db.migrations.optimizer import MigrationOptimizer
 from django.db.migrations.writer import MigrationWriter
 
 
+# squashmigrations 命令：将一段迁移合并为单个 squashed 迁移
 class Command(BaseCommand):
     help = (
         "Squashes an existing set of migrations (from first until specified) into a "
@@ -58,6 +59,7 @@ class Command(BaseCommand):
             help="Do not add a header comment to the new squashed migration.",
         )
 
+    # 收集目标迁移链、优化操作并写入 replaces 迁移文件
     def handle(self, **options):
         self.verbosity = options["verbosity"]
         self.interactive = options["interactive"]
@@ -238,6 +240,7 @@ class Command(BaseCommand):
                         )
                     )
 
+    # 按前缀查找迁移，处理歧义与不存在的情况
     def find_migration(self, loader, app_label, name):
         try:
             return loader.get_migration_by_prefix(app_label, name)

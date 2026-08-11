@@ -23,6 +23,7 @@ from django.utils.http import parse_header_parameters
 from django.utils.version import get_docs_version
 
 
+# 模板命令基类：将 app/project 布局模板复制并渲染到目标目录
 class TemplateCommand(BaseCommand):
     """
     Copy either a Django application layout template or a Django project
@@ -44,6 +45,7 @@ class TemplateCommand(BaseCommand):
         (".py-tpl", ".py"),
     )
 
+    # 添加 name、directory、--template、--extension 等参数
     def add_arguments(self, parser):
         parser.add_argument("name", help="Name of the application or project.")
         parser.add_argument(
@@ -86,6 +88,7 @@ class TemplateCommand(BaseCommand):
             ),
         )
 
+    # 校验名称、渲染模板文件并运行格式化器
     def handle(self, app_or_project, name, target=None, **options):
         self.app_or_project = app_or_project
         self.a_or_an = "an" if app_or_project == "app" else "a"
@@ -234,6 +237,7 @@ class TemplateCommand(BaseCommand):
 
         run_formatters([top_dir], **formatter_paths, stderr=self.stderr)
 
+    # 解析模板路径：内置 conf 目录、本地目录或远程 URL
     def handle_template(self, template, subdir):
         """
         Determine where the app or project templates are.
@@ -260,6 +264,7 @@ class TemplateCommand(BaseCommand):
             "couldn't handle %s template %s." % (self.app_or_project, template)
         )
 
+    # 校验名称是否为合法标识符且不与已有 Python 模块冲突
     def validate_name(self, name, name_or_dir="name"):
         if name is None:
             raise CommandError(
@@ -291,6 +296,7 @@ class TemplateCommand(BaseCommand):
                 )
             )
 
+    # 下载远程模板压缩包到临时目录
     def download(self, url):
         """
         Download the given URL and return the file name.
@@ -353,6 +359,7 @@ class TemplateCommand(BaseCommand):
         # Giving up
         return the_path
 
+    # 类似 os.path.splitext，额外剥离 .tar 后缀
     def splitext(self, the_path):
         """
         Like os.path.splitext, but takes off .tar, too
@@ -363,6 +370,7 @@ class TemplateCommand(BaseCommand):
             base = base[:-4]
         return base, ext
 
+    # 解压归档到临时目录并返回路径
     def extract(self, filename):
         """
         Extract the given file to a temporary directory and return
@@ -381,6 +389,7 @@ class TemplateCommand(BaseCommand):
                 "couldn't extract file %s to %s: %s" % (filename, tempdir, e)
             )
 
+    # 判断模板路径是否为 http/https/ftp URL
     def is_url(self, template):
         """Return True if the name looks like a URL."""
         if ":" not in template:
@@ -388,12 +397,14 @@ class TemplateCommand(BaseCommand):
         scheme = template.split(":", 1)[0].lower()
         return scheme in self.url_schemes
 
+    # 按源文件权限与当前 umask 设置新文件权限
     def apply_umask(self, old_path, new_path):
         current_umask = os.umask(0)
         os.umask(current_umask)
         current_mode = stat.S_IMODE(os.stat(old_path).st_mode)
         os.chmod(new_path, current_mode & ~current_umask)
 
+    # 确保生成文件可写（源模板只读时有用）
     def make_writeable(self, filename):
         """
         Make sure that the file is writeable.

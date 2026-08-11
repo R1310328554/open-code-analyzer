@@ -1,4 +1,6 @@
 """
+# Django 对象序列化/反序列化接口
+Interfaces for serializing Django objects."""
 Interfaces for serializing Django objects.
 
 Usage::
@@ -34,6 +36,7 @@ BUILTIN_SERIALIZERS = {
 _serializers = {}
 
 
+# 注册失败时的占位序列化器，调用时重新抛出原始异常
 class BadSerializer:
     """
     Stub serializer to hold exception raised during registration
@@ -52,6 +55,7 @@ class BadSerializer:
         raise self.exception
 
 
+# 注册新序列化格式到全局或指定字典
 def register_serializer(format, serializer_module, serializers=None):
     """Register a new serializer.
 
@@ -88,6 +92,7 @@ def register_serializer(format, serializer_module, serializers=None):
         serializers[format] = module
 
 
+# 注销指定格式的序列化器
 def unregister_serializer(format):
     "Unregister a given serializer. This is not a thread-safe operation."
     if not _serializers:
@@ -97,6 +102,7 @@ def unregister_serializer(format):
     del _serializers[format]
 
 
+# 按格式名返回 Serializer 类
 def get_serializer(format):
     if not _serializers:
         _load_serializers()
@@ -105,18 +111,21 @@ def get_serializer(format):
     return _serializers[format].Serializer
 
 
+# 返回已注册的全部序列化格式名
 def get_serializer_formats():
     if not _serializers:
         _load_serializers()
     return list(_serializers)
 
 
+# 返回非 internal_use_only 的公开格式名
 def get_public_serializer_formats():
     if not _serializers:
         _load_serializers()
     return [k for k, v in _serializers.items() if not v.Serializer.internal_use_only]
 
 
+# 按格式名返回 Deserializer 类
 def get_deserializer(format):
     if not _serializers:
         _load_serializers()
@@ -125,6 +134,7 @@ def get_deserializer(format):
     return _serializers[format].Deserializer
 
 
+# 用指定格式序列化 queryset 并返回字符串/字节
 def serialize(format, queryset, **options):
     """
     Serialize a queryset (or any iterator that returns database objects) using
@@ -135,6 +145,7 @@ def serialize(format, queryset, **options):
     return s.getvalue()
 
 
+# 反序列化流或字符串，迭代 yield DeserializedObject
 def deserialize(format, stream_or_string, **options):
     """
     Deserialize a stream or a string. Return an iterator that yields ``(obj,
@@ -146,6 +157,7 @@ def deserialize(format, stream_or_string, **options):
     return d(stream_or_string, **options)
 
 
+# 懒加载内置与 SERIALIZATION_MODULES 配置的序列化器
 def _load_serializers():
     """
     Register built-in and settings-defined serializers. This is done lazily so
@@ -164,6 +176,7 @@ def _load_serializers():
     _serializers = serializers
 
 
+# 按 natural key 依赖关系排序待序列化模型列表
 def sort_dependencies(app_list, allow_cycles=False):
     """Sort a list of (app_config, models) pairs into a single list of models.
 

@@ -1,4 +1,6 @@
 """
+# JSON Lines 序列化/反序列化
+Serialize data to/from JSON Lines"""
 Serialize data to/from JSON Lines
 """
 
@@ -10,6 +12,7 @@ from django.core.serializers.python import Deserializer as PythonDeserializer
 from django.core.serializers.python import Serializer as PythonSerializer
 
 
+# 将 queryset 序列化为每行一个 JSON 对象
 class Serializer(PythonSerializer):
     """Convert a queryset to JSON Lines."""
 
@@ -28,6 +31,7 @@ class Serializer(PythonSerializer):
     def start_serialization(self):
         self._init_options()
 
+    # 每对象一行 JSON 并换行
     def end_object(self, obj):
         # self._current has the field data
         json.dump(self.get_dump_object(obj), self.stream, **self.json_kwargs)
@@ -39,6 +43,7 @@ class Serializer(PythonSerializer):
         return super(PythonSerializer, self).getvalue()
 
 
+# 逐行解析 JSON Lines 数据
 class Deserializer(PythonDeserializer):
     """Deserialize a stream or string of JSON data."""
 
@@ -57,6 +62,7 @@ class Deserializer(PythonDeserializer):
         except Exception as exc:
             raise DeserializationError(f"Error deserializing object: {exc}") from exc
 
+    # 跳过空行并逐行 json.loads
     @staticmethod
     def _get_lines(stream):
         for line in stream:

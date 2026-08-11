@@ -3,11 +3,13 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 
 
+# testserver 命令：加载 fixture 后启动开发服务器
 class Command(BaseCommand):
     help = "Runs a development server with data from the given fixture(s)."
 
     requires_system_checks = []
 
+    # 添加 fixture 路径、--addrport 与 --ipv6 参数
     def add_arguments(self, parser):
         parser.add_argument(
             "args",
@@ -35,6 +37,7 @@ class Command(BaseCommand):
             help="Tells Django to use an IPv6 address.",
         )
 
+    # 创建测试库、loaddata 后调用 runserver（禁用自动重载）
     def handle(self, *fixture_labels, **options):
         verbosity = options["verbosity"]
         interactive = options["interactive"]

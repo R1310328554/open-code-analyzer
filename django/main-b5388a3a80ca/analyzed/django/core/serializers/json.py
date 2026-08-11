@@ -1,4 +1,6 @@
 """
+# JSON 序列化/反序列化
+Serialize data to/from JSON"""
 Serialize data to/from JSON
 """
 
@@ -15,6 +17,7 @@ from django.utils.functional import Promise
 from django.utils.timezone import is_aware
 
 
+# 将 queryset 序列化为 JSON 数组
 class Serializer(PythonSerializer):
     """Convert a queryset to JSON."""
 
@@ -31,10 +34,12 @@ class Serializer(PythonSerializer):
         self.json_kwargs.setdefault("cls", DjangoJSONEncoder)
         self.json_kwargs.setdefault("ensure_ascii", False)
 
+    # 写入 JSON 数组起始 '['
     def start_serialization(self):
         self._init_options()
         self.stream.write("[")
 
+    # 写入 JSON 数组结束 ']'
     def end_serialization(self):
         if self.options.get("indent"):
             self.stream.write("\n")
@@ -58,6 +63,7 @@ class Serializer(PythonSerializer):
         return super(PythonSerializer, self).getvalue()
 
 
+# 从 JSON 流或字符串反序列化
 class Deserializer(PythonDeserializer):
     """Deserialize a stream or string of JSON data."""
 
@@ -81,12 +87,14 @@ class Deserializer(PythonDeserializer):
             raise DeserializationError(f"Error deserializing object: {exc}") from exc
 
 
+# 扩展 JSONEncoder：支持 datetime/Decimal/UUID/Promise
 class DjangoJSONEncoder(json.JSONEncoder):
     """
     JSONEncoder subclass that knows how to encode date/time, decimal types, and
     UUIDs.
     """
 
+    # 将 Django 特有类型转为 JSON 可编码值
     def default(self, o):
         # See "Date Time String Format" in the ECMA-262 specification.
         if isinstance(o, datetime.datetime):

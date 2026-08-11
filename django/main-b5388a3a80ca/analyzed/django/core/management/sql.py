@@ -4,6 +4,7 @@ from django.apps import apps
 from django.db import models
 
 
+# 返回清空数据库所需的 SQL 语句列表
 def sql_flush(style, connection, reset_sequences=True, allow_cascade=False):
     """
     Return a list of the SQL statements used to flush the database.
@@ -19,6 +20,7 @@ def sql_flush(style, connection, reset_sequences=True, allow_cascade=False):
     )
 
 
+# 为每个应用发送 pre_migrate 信号
 def emit_pre_migrate_signal(verbosity, interactive, db, **kwargs):
     # Emit the pre_migrate signal for every application.
     for app_config in apps.get_app_configs():
@@ -39,6 +41,7 @@ def emit_pre_migrate_signal(verbosity, interactive, db, **kwargs):
         )
 
 
+# 为每个应用发送 post_migrate 信号
 def emit_post_migrate_signal(verbosity, interactive, db, **kwargs):
     # Emit the post_migrate signal for every application.
     for app_config in apps.get_app_configs():

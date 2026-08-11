@@ -1,4 +1,6 @@
 """
+# 序列化/反序列化抽象基类
+Module for abstract serializer/unserializer base classes."""
 Module for abstract serializer/unserializer base classes.
 """
 
@@ -10,18 +12,21 @@ from django.db import models
 DEFER_FIELD = object()
 
 
+# 请求的序列化格式未注册时抛出
 class SerializerDoesNotExist(KeyError):
     """The requested serializer was not found."""
 
     pass
 
 
+# 序列化过程出错时抛出
 class SerializationError(Exception):
     """Something bad happened during serialization."""
 
     pass
 
 
+# 反序列化过程出错时抛出
 class DeserializationError(Exception):
     """Something bad happened during deserialization."""
 
@@ -37,6 +42,7 @@ class DeserializationError(Exception):
         )
 
 
+# 多对多字段反序列化失败时抛出
 class M2MDeserializationError(Exception):
     """Something bad happened during deserialization of a ManyToManyField."""
 
@@ -45,6 +51,7 @@ class M2MDeserializationError(Exception):
         self.pk = pk
 
 
+# 序列化进度条：在 stderr 输出 ASCII 进度
 class ProgressBar:
     progress_width = 75
 
@@ -70,6 +77,7 @@ class ProgressBar:
         self.output.flush()
 
 
+# 抽象序列化器基类：遍历 queryset 调用 handle_* 钩子
 class Serializer:
     """
     Abstract serializer base class.
@@ -81,6 +89,7 @@ class Serializer:
     progress_class = ProgressBar
     stream_class = StringIO
 
+    # 序列化 queryset，支持字段筛选与自然键
     def serialize(
         self,
         queryset,
@@ -149,6 +158,7 @@ class Serializer:
         self.end_serialization()
         return self.getvalue()
 
+    # 序列化开始时的钩子（子类必须实现）
     def start_serialization(self):
         """
         Called when serializing of the queryset starts.
@@ -163,6 +173,7 @@ class Serializer:
         """
         pass
 
+    # 单个对象序列化开始时的钩子
     def start_object(self, obj):
         """
         Called when serializing of an object starts.
@@ -177,6 +188,7 @@ class Serializer:
         """
         pass
 
+    # 处理非关系字段
     def handle_field(self, obj, field):
         """
         Called to handle each individual (non-relational) field on an object.
@@ -185,6 +197,7 @@ class Serializer:
             "subclasses of Serializer must provide a handle_field() method"
         )
 
+    # 处理外键字段
     def handle_fk_field(self, obj, field):
         """
         Called to handle a ForeignKey field.
@@ -193,6 +206,7 @@ class Serializer:
             "subclasses of Serializer must provide a handle_fk_field() method"
         )
 
+    # 处理多对多字段
     def handle_m2m_field(self, obj, field):
         """
         Called to handle a ManyToManyField.
@@ -238,6 +252,7 @@ class Serializer:
             return False
 
 
+# 抽象反序列化器基类
 class Deserializer:
     """
     Abstract base deserializer class.
@@ -263,6 +278,7 @@ class Deserializer:
         )
 
 
+# 反序列化结果容器：含未保存模型实例与 M2M 数据
 class DeserializedObject:
     """
     A deserialized model.
@@ -287,6 +303,7 @@ class DeserializedObject:
             self.object.pk,
         )
 
+    # raw 保存模型并可选写入 M2M 关系
     def save(self, save_m2m=True, using=None, **kwargs):
         # Call save on the Model baseclass directly. This bypasses any
         # model-defined save. The save is also forced to be raw.
@@ -300,6 +317,7 @@ class DeserializedObject:
         # the m2m data twice.
         self.m2m_data = None
 
+    # 解析并保存前向引用延迟字段
     def save_deferred_fields(self, using=None):
         self.m2m_data = {}
         for field, field_value in self.deferred_fields.items():
@@ -328,6 +346,7 @@ class DeserializedObject:
         self.save()
 
 
+# 构建模型实例，支持 natural key 查主键
 def build_instance(Model, data, db):
     """
     Build a model instance.
@@ -354,6 +373,7 @@ def build_instance(Model, data, db):
     return Model(**data)
 
 
+# 将 M2M 字段值解析为主键列表
 def deserialize_m2m_values(field, field_value, using, handle_forward_references):
     model = field.remote_field.model
     if hasattr(model._default_manager, "get_by_natural_key"):
@@ -389,6 +409,7 @@ def deserialize_m2m_values(field, field_value, using, handle_forward_references)
             raise M2MDeserializationError(e, pk)
 
 
+# 将 FK 字段值解析为关联对象主键
 def deserialize_fk_value(field, field_value, using, handle_forward_references):
     if field_value is None:
         return None

@@ -1,4 +1,6 @@
 """
+# Python 原生数据结构序列化器（其他格式的基类）
+A Python "serializer". Doesn't do much serializing per se"""
 A Python "serializer". Doesn't do much serializing per se -- just converts to
 and from basic Python data types (lists, dicts, strings, etc.). Useful as a
 basis for other serializers.
@@ -11,6 +13,7 @@ from django.db.models import CompositePrimaryKey
 from django.utils.encoding import is_protected_type
 
 
+# 将 QuerySet 转为 model/pk/fields 字典列表
 class Serializer(base.Serializer):
     """
     Serialize a QuerySet to basic Python objects.
@@ -32,6 +35,7 @@ class Serializer(base.Serializer):
         self.objects.append(self.get_dump_object(obj))
         self._current = None
 
+    # 构建含 model、pk 与 fields 的 dump 字典
     def get_dump_object(self, obj):
         data = {"model": str(obj._meta)}
         if not self.use_natural_primary_keys or not self._resolve_natural_key(obj):
@@ -48,9 +52,11 @@ class Serializer(base.Serializer):
         # converted to string first.
         return value if is_protected_type(value) else field.value_to_string(obj)
 
+    # 写入非关系字段值
     def handle_field(self, obj, field):
         self._current[field.name] = self._value_from_field(obj, field)
 
+    # 写入外键值或 natural key
     def handle_fk_field(self, obj, field):
         if self.use_natural_foreign_keys and (
             natural_key_value := self._resolve_fk_natural_key(obj, field)
@@ -60,6 +66,7 @@ class Serializer(base.Serializer):
             value = self._value_from_field(obj, field)
         self._current[field.name] = value
 
+    # 写入 M2M 关联对象列表
     def handle_m2m_field(self, obj, field):
         if field.remote_field.through._meta.auto_created:
             if self.use_natural_foreign_keys and self._model_supports_natural_key(
@@ -114,6 +121,7 @@ class Serializer(base.Serializer):
         return self.objects
 
 
+# 从 Python 对象列表反序列化为 ORM 实例
 class Deserializer(base.Deserializer):
     """
     Deserialize simple Python objects back into Django ORM instances.
@@ -141,6 +149,7 @@ class Deserializer(base.Deserializer):
             self._iterator = iter(self)
         return next(self._iterator)
 
+    # 解析单条记录，处理 FK/M2M 与前向引用
     def _handle_object(self, obj):
         data = {}
         m2m_data = {}
@@ -225,6 +234,7 @@ class Deserializer(base.Deserializer):
             field, field_value, self.using, self.handle_forward_references
         )
 
+    # 从 app_label.model_name 字符串查找模型类
     @staticmethod
     def _get_model_from_node(model_identifier):
         """Look up a model from an "app_label.model_name" string."""
