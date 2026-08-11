@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:30:18Z",
-  "files": [
-    "src/transformers/models/clvp/configuration_clvp.py",
-    "src/transformers/models/clvp/feature_extraction_clvp.py",
-    "src/transformers/models/clvp/modeling_clvp.py",
-    "src/transformers/models/clvp/number_normalizer.py",
-    "src/transformers/models/clvp/processing_clvp.py",
-    "src/transformers/models/clvp/tokenization_clvp.py",
-    "src/transformers/models/code_llama/__init__.py",
-    "src/transformers/models/code_llama/tokenization_code_llama.py",
-    "src/transformers/models/codegen/__init__.py",
-    "src/transformers/models/codegen/configuration_codegen.py",
-    "src/transformers/models/codegen/modeling_codegen.py",
-    "src/transformers/models/codegen/tokenization_codegen.py",
-    "src/transformers/models/cohere/__init__.py",
-    "src/transformers/models/cohere/configuration_cohere.py",
-    "src/transformers/models/cohere/modeling_cohere.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2259,
-  "done": 405
+  "done": 420
 }
