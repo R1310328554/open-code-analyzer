@@ -29,6 +29,8 @@ from ...configuration_utils import PreTrainedConfig
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# Sapiens2 modular 源：复用 DINOv3 ViT 并扩展多任务视觉估计
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -76,6 +78,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Sapiens2BackboneOutput：Sapiens2 骨干输出：多尺度特征图与隐藏状态
 class Sapiens2BackboneOutput(DINOv3ViTBackboneOutput):
     pass
 
@@ -86,6 +89,7 @@ class Sapiens2BackboneOutput(DINOv3ViTBackboneOutput):
     """
 )
 @dataclass
+# Sapiens2PoseEstimatorOutput：Sapiens2 姿态估计输出：关键点热图与坐标
 class Sapiens2PoseEstimatorOutput(VitPoseEstimatorOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -105,6 +109,7 @@ class Sapiens2PoseEstimatorOutput(VitPoseEstimatorOutput):
     """
 )
 @dataclass
+# Sapiens2NormalEstimatorOutput：Sapiens2 法线估计输出：逐像素表面法线
 class Sapiens2NormalEstimatorOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -132,6 +137,7 @@ class Sapiens2NormalEstimatorOutput(ModelOutput):
     """
 )
 @dataclass
+# Sapiens2PointmapEstimatorOutput：Sapiens2 点图估计输出：逐像素 3D 点坐标
 class Sapiens2PointmapEstimatorOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -162,6 +168,7 @@ class Sapiens2PointmapEstimatorOutput(ModelOutput):
     """
 )
 @dataclass
+# Sapiens2ImageMattingOutput：Sapiens2 抠图输出：前景 alpha 蒙版
 class Sapiens2ImageMattingOutput(ImageMattingOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -179,6 +186,7 @@ class Sapiens2ImageMattingOutput(ImageMattingOutput):
     foregrounds: torch.FloatTensor | None = None
 
 
+# boxes_to_crop_params：框转裁剪参数：计算人体区域裁剪坐标与尺寸
 def boxes_to_crop_params(
     boxes: torch.Tensor,
     output_size: tuple[int, int],
@@ -217,6 +225,7 @@ def boxes_to_crop_params(
     return center, scale
 
 
+# crop_and_resize：裁剪并缩放：按框裁剪图像并 resize 至目标尺寸
 def crop_and_resize(
     image: torch.Tensor,
     boxes: torch.Tensor,
@@ -280,6 +289,7 @@ def crop_and_resize(
     return output
 
 
+# gaussian_blur_preserve_max：高斯模糊保峰值：热图平滑同时保留最大值位置
 def gaussian_blur_preserve_max(heatmaps: torch.Tensor, kernel: int = 11) -> torch.Tensor:
     """Gaussian blur per-keypoint heatmap, preserving the original max value.
 
@@ -310,6 +320,7 @@ def gaussian_blur_preserve_max(heatmaps: torch.Tensor, kernel: int = 11) -> torc
     return result * scale[:, None, None]
 
 
+# get_keypoint_predictions：关键点预测：从热图提取坐标与置信度
 def get_keypoint_predictions(heatmaps: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Predict keypoint locations and confidence scores from heatmaps.
 
@@ -335,6 +346,7 @@ def get_keypoint_predictions(heatmaps: torch.Tensor) -> tuple[torch.Tensor, torc
     return locations, scores
 
 
+# post_dark_unbiased_data_processing：DARK 后处理：亚像素级无偏关键点精修
 def post_dark_unbiased_data_processing(
     keypoints: torch.Tensor, heatmaps: torch.Tensor, blur_kernel_size: int = 11
 ) -> torch.Tensor:
@@ -407,10 +419,12 @@ def post_dark_unbiased_data_processing(
     return keypoints - torch.cat([offset_x, offset_y], dim=-1)
 
 
+# Sapiens2ImageProcessorKwargs：Sapiens2 图像处理器参数：裁剪、热图与后处理选项
 class Sapiens2ImageProcessorKwargs(BeitImageProcessorKwargs, total=False):
     pass
 
 
+# Sapiens2ImageProcessor：Sapiens2 图像处理器：人体框裁剪、归一化与热图解码
 class Sapiens2ImageProcessor(BeitImageProcessor):
     valid_kwargs = Sapiens2ImageProcessorKwargs
     # Note: original Sapiens2 uses cv2.INTER_AREA for downsampling and cv2.INTER_CUBIC for upsampling
@@ -420,10 +434,12 @@ class Sapiens2ImageProcessor(BeitImageProcessor):
     size = {"height": 1024, "width": 768}
     do_pad = False  # Set to True for normal, albedo, and pointmap estimation
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Sapiens2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,
@@ -967,6 +983,7 @@ class Sapiens2ImageProcessor(BeitImageProcessor):
 
 @auto_docstring(checkpoint="facebook/sapiens2-seg-0.4b")
 @strict
+# Sapiens2HeadConfig：Sapiens2 任务头配置：输出通道、上采样与激活函数
 class Sapiens2HeadConfig(PreTrainedConfig):
     r"""
     upsample_out_channels (`list[int]`, *optional*):
@@ -1055,6 +1072,7 @@ class Sapiens2HeadConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sapiens2-pretrain-0.4b")
 @strict
+# Sapiens2Config：Sapiens2 联合配置：ViT 骨干与多任务头超参数
 class Sapiens2Config(DINOv3ViTConfig):
     r"""
     rope_theta (`float`, *optional*, defaults to 100.0):
@@ -1163,18 +1181,23 @@ class Sapiens2Config(DINOv3ViTConfig):
         super().__post_init__(**kwargs)
 
 
+# Sapiens2Embeddings：Sapiens2 嵌入：patch + RoPE 位置编码组合
 class Sapiens2Embeddings(DINOv3ViTEmbeddings):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.mask_token = nn.Parameter(torch.zeros(1, 1, config.hidden_size)) if config.use_mask_token else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, bool_masked_pos: torch.Tensor | None = None) -> torch.Tensor:
         if bool_masked_pos is not None and self.mask_token is None:
             raise ValueError("bool_masked_pos requires use_mask_token=True in the config")
         return super().forward(pixel_values, bool_masked_pos)
 
 
+# Sapiens2RopePositionEmbedding：Sapiens2 RoPE 位置嵌入：2D 旋转位置编码
 class Sapiens2RopePositionEmbedding(DINOv3ViTRopePositionEmbedding):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(self)
 
@@ -1189,11 +1212,14 @@ class Sapiens2RopePositionEmbedding(DINOv3ViTRopePositionEmbedding):
         self.num_patches_w = image_w // patch_size_w
 
 
+# Sapiens2RMSNorm：Sapiens2 RMSNorm：均方根归一化层
 class Sapiens2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Sapiens2Attention：Sapiens2 注意力：带 RoPE 的多头缩放点积自注意力
 class Sapiens2Attention(DINOv3ViTAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config, layer_idx: int):
         super().__init__(config)
         del self.k_proj
@@ -1205,6 +1231,7 @@ class Sapiens2Attention(DINOv3ViTAttention):
         self.q_norm = Sapiens2RMSNorm(self.head_dim, eps=config.rms_norm_eps) if config.use_qk_norm else nn.Identity()
         self.k_norm = Sapiens2RMSNorm(self.head_dim, eps=config.rms_norm_eps) if config.use_qk_norm else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1243,11 +1270,14 @@ class Sapiens2Attention(DINOv3ViTAttention):
         return attn_output, attn_weights
 
 
+# Sapiens2LayerScale：Sapiens2 层缩放：可学习 per-channel 残差缩放
 class Sapiens2LayerScale(DINOv3ViTLayerScale):
     pass
 
 
+# Sapiens2Layer：Sapiens2 Transformer 层：注意力 + MLP 残差块
 class Sapiens2Layer(DINOv3ViTLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config, layer_idx: int):
         super().__init__(config)
         self.attention = Sapiens2Attention(config, layer_idx=layer_idx)
@@ -1256,7 +1286,9 @@ class Sapiens2Layer(DINOv3ViTLayer):
         self.layer_scale2 = nn.Identity()
 
 
+# Sapiens2ConvLayer：Sapiens2 卷积层：深度可分离卷积特征提取
 class Sapiens2ConvLayer(PPOCRV5ServerDetConvBatchnormLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -1296,6 +1328,7 @@ class Sapiens2ConvLayer(PPOCRV5ServerDetConvBatchnormLayer):
         self.norm = nn.InstanceNorm2d(out_channels)
         self.act_fn = ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.pixel_shuffle(hidden_states)
@@ -1304,7 +1337,9 @@ class Sapiens2ConvLayer(PPOCRV5ServerDetConvBatchnormLayer):
         return hidden_states
 
 
+# Sapiens2Head：Sapiens2 任务头：上采样解码至像素分辨率
 class Sapiens2Head(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__()
         self.input_conv = (
@@ -1351,6 +1386,7 @@ class Sapiens2Head(nn.Module):
         )
         self.predictor = nn.Conv2d(predictor_in, config.num_labels, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.input_conv(hidden_states)
         for layer in self.upsample_layers:
@@ -1360,13 +1396,17 @@ class Sapiens2Head(nn.Module):
         return self.predictor(hidden_states)
 
 
+# Sapiens2PointmapFinalLayerBlock：Sapiens2 点图最终层块：卷积预测块
 class Sapiens2PointmapFinalLayerBlock(Mask2FormerPredictionBlock):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_dim: int, out_dim: int, activation: nn.Module) -> None:
         nn.Module.__init__(self)
         self.layers = nn.ModuleList([nn.Linear(in_dim, out_dim), activation])
 
 
+# Sapiens2PointmapFinalLayer：Sapiens2 点图最终层：3D 坐标回归头
 class Sapiens2PointmapFinalLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_dim: int, hidden_sizes: tuple[int, int], out_dim: int = 1, activation: str = "silu"):
         super().__init__()
         self.flatten = nn.Flatten()
@@ -1378,6 +1418,7 @@ class Sapiens2PointmapFinalLayer(nn.Module):
         )
         self.proj = nn.Linear(hidden_sizes[1], out_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.flatten(hidden_states)
         hidden_states = self.block1(hidden_states)
@@ -1385,7 +1426,9 @@ class Sapiens2PointmapFinalLayer(nn.Module):
         return self.proj(hidden_states)
 
 
+# Sapiens2PointmapScaleHead：Sapiens2 点图尺度头：深度尺度预测
 class Sapiens2PointmapScaleHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__()
         self.conv_layers = nn.ModuleList()
@@ -1404,12 +1447,14 @@ class Sapiens2PointmapScaleHead(nn.Module):
             activation=config.hidden_act,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for layer in self.conv_layers:
             hidden_states = layer(hidden_states)
         return self.predictor(hidden_states)
 
 
+# Sapiens2PreTrainedModel：Sapiens2 预训练基类：权重初始化策略
 class Sapiens2PreTrainedModel(DINOv3ViTPreTrainedModel):
     base_model_prefix = "model"
 
@@ -1419,6 +1464,7 @@ class Sapiens2PreTrainedModel(DINOv3ViTPreTrainedModel):
     _keys_to_ignore_on_load_missing = [r"mask_token"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module) -> None:
         PreTrainedModel._init_weights(self, module)
         if isinstance(module, (nn.Linear, nn.Conv2d)):
@@ -1444,7 +1490,9 @@ class Sapiens2PreTrainedModel(DINOv3ViTPreTrainedModel):
                     init.kaiming_normal_(head_module.weight, mode="fan_in", nonlinearity="linear")
 
 
+# Sapiens2Encoder：Sapiens2 编码器：堆叠 ViT Transformer 层
 class Sapiens2Encoder(DINOv3ViTEncoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.layer = nn.ModuleList(
@@ -1452,11 +1500,14 @@ class Sapiens2Encoder(DINOv3ViTEncoder):
         )
 
 
+# Sapiens2Model：Sapiens2 基础模型：ViT 编码器前向
 class Sapiens2Model(DINOv3ViTModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.norm = Sapiens2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -1491,11 +1542,14 @@ class Sapiens2Model(DINOv3ViTModel):
         return super().forward(pixel_values, bool_masked_pos=bool_masked_pos, **kwargs)
 
 
+# Sapiens2Backbone：Sapiens2 骨干：多尺度特征提取适配下游任务
 class Sapiens2Backbone(DINOv3ViTBackbone):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.norm = Sapiens2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -1570,7 +1624,9 @@ class Sapiens2Backbone(DINOv3ViTBackbone):
 
 
 @auto_docstring(checkpoint="facebook/sapiens2-seg-0.4b")
+# Sapiens2ForSemanticSegmentation：Sapiens2 语义分割：像素级类别预测
 class Sapiens2ForSemanticSegmentation(Sapiens2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1580,6 +1636,7 @@ class Sapiens2ForSemanticSegmentation(Sapiens2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1646,7 +1703,9 @@ class Sapiens2ForSemanticSegmentation(Sapiens2PreTrainedModel):
     The Sapiens2 model with a pose estimation head on top (a set of heatmap predictors on top of the hidden states output).
     """,
 )
+# Sapiens2ForPoseEstimation：Sapiens2 姿态估计：人体关键点热图回归
 class Sapiens2ForPoseEstimation(Sapiens2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1656,6 +1715,7 @@ class Sapiens2ForPoseEstimation(Sapiens2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1729,7 +1789,9 @@ class Sapiens2ForPoseEstimation(Sapiens2PreTrainedModel):
     The Sapiens2 model with a normal estimation head on top (a PixelShuffle-based decoder that predicts surface normal maps).
     """,
 )
+# Sapiens2ForNormalEstimation：Sapiens2 法线估计：表面法线向量预测
 class Sapiens2ForNormalEstimation(Sapiens2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1739,6 +1801,7 @@ class Sapiens2ForNormalEstimation(Sapiens2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1801,7 +1864,9 @@ class Sapiens2ForNormalEstimation(Sapiens2PreTrainedModel):
     coordinates, plus an optional scale branch for focal-length normalization).
     """,
 )
+# Sapiens2ForPointmapEstimation：Sapiens2 点图估计：逐像素 3D 坐标回归
 class Sapiens2ForPointmapEstimation(Sapiens2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.model = Sapiens2Model(config)
@@ -1815,6 +1880,7 @@ class Sapiens2ForPointmapEstimation(Sapiens2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1879,7 +1945,9 @@ class Sapiens2ForPointmapEstimation(Sapiens2PreTrainedModel):
     pre-multiplied RGB foreground and an alpha matte).
     """,
 )
+# Sapiens2ForImageMatting：Sapiens2 图像抠图：前景 alpha 蒙版预测
 class Sapiens2ForImageMatting(Sapiens2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sapiens2Config):
         super().__init__(config)
         self.model = Sapiens2Model(config)
@@ -1888,6 +1956,7 @@ class Sapiens2ForImageMatting(Sapiens2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

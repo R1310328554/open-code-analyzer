@@ -17,6 +17,8 @@ from tokenizers import Regex, Tokenizer, decoders, normalizers, pre_tokenizers, 
 from tokenizers.models import BPE
 
 from ...tokenization_python import (
+# SeamlessM4T 分词器：多语言 SentencePiece 文本编码与解码
+
     BatchEncoding,
     PreTokenizedInput,
     TextInput,
@@ -30,6 +32,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": "tokenizer.json"}
 
 
+# SeamlessM4TTokenizer：SeamlessM4T 分词器：SentencePiece 多语言编码解码
 class SeamlessM4TTokenizer(TokenizersBackend):
     """
     Construct a SeamlessM4T tokenizer (backed by HuggingFace's *tokenizers* library). Based on
@@ -106,6 +109,7 @@ class SeamlessM4TTokenizer(TokenizersBackend):
     prefix_tokens: list[int] = None
     suffix_tokens: list[int] = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -352,6 +356,7 @@ class SeamlessM4TTokenizer(TokenizersBackend):
             special_tokens=list(zip(prefix_tokens_str + suffix_tokens_str, self.prefix_tokens + self.suffix_tokens)),
         )
 
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] | None = None,

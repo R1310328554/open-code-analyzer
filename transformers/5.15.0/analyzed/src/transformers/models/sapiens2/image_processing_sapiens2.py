@@ -28,6 +28,8 @@ from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# Sapiens2 图像预处理：人体框裁剪、热图后处理与关键点解码
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -41,6 +43,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available
 
 
+# Sapiens2ImageProcessorKwargs：Sapiens2 图像处理器参数：裁剪、热图与后处理选项
 class Sapiens2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -52,18 +55,21 @@ class Sapiens2ImageProcessorKwargs(ImagesKwargs, total=False):
     do_reduce_labels: bool
 
 
+# box_xywh_to_xyxy：框格式转换：左上宽高 → 左上右下坐标
 def box_xywh_to_xyxy(x):
     x, y, w, h = x.unbind(-1)
     b = [(x), (y), (x + w), (y + h)]
     return torch.stack(b, dim=-1)
 
 
+# box_xywh_to_cxcywh：框格式转换：左上宽高 → 中心宽高
 def box_xywh_to_cxcywh(x):
     x, y, w, h = x.unbind(-1)
     b = [(x + 0.5 * w), (y + 0.5 * h), (w), (h)]
     return torch.stack(b, dim=-1)
 
 
+# boxes_to_crop_params：框转裁剪参数：计算人体区域裁剪坐标与尺寸
 def boxes_to_crop_params(
     boxes: torch.Tensor,
     output_size: tuple[int, int],
@@ -102,6 +108,7 @@ def boxes_to_crop_params(
     return center, scale
 
 
+# crop_and_resize：裁剪并缩放：按框裁剪图像并 resize 至目标尺寸
 def crop_and_resize(
     image: torch.Tensor,
     boxes: torch.Tensor,
@@ -165,6 +172,7 @@ def crop_and_resize(
     return output
 
 
+# gaussian_blur_preserve_max：高斯模糊保峰值：热图平滑同时保留最大值位置
 def gaussian_blur_preserve_max(heatmaps: torch.Tensor, kernel: int = 11) -> torch.Tensor:
     """Gaussian blur per-keypoint heatmap, preserving the original max value.
 
@@ -195,6 +203,7 @@ def gaussian_blur_preserve_max(heatmaps: torch.Tensor, kernel: int = 11) -> torc
     return result * scale[:, None, None]
 
 
+# get_keypoint_predictions：关键点预测：从热图提取坐标与置信度
 def get_keypoint_predictions(heatmaps: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Predict keypoint locations and confidence scores from heatmaps.
 
@@ -220,6 +229,7 @@ def get_keypoint_predictions(heatmaps: torch.Tensor) -> tuple[torch.Tensor, torc
     return locations, scores
 
 
+# post_dark_unbiased_data_processing：DARK 后处理：亚像素级无偏关键点精修
 def post_dark_unbiased_data_processing(
     keypoints: torch.Tensor, heatmaps: torch.Tensor, blur_kernel_size: int = 11
 ) -> torch.Tensor:
@@ -293,6 +303,7 @@ def post_dark_unbiased_data_processing(
 
 
 @auto_docstring
+# Sapiens2ImageProcessor：Sapiens2 图像处理器：人体框裁剪、归一化与热图解码
 class Sapiens2ImageProcessor(TorchvisionBackend):
     """PIL backend for Sapiens2 with reduce_label support."""
 
@@ -311,10 +322,12 @@ class Sapiens2ImageProcessor(TorchvisionBackend):
     do_reduce_labels = False
     do_pad = False  # Set to True for normal, albedo, and pointmap estimation
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Sapiens2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

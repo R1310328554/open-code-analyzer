@@ -21,10 +21,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Sapiens2 配置：ViT 骨干、任务头与多任务估计超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sapiens2-seg-0.4b")
 @strict
+# Sapiens2HeadConfig：Sapiens2 任务头配置：输出通道、上采样与激活函数
 class Sapiens2HeadConfig(PreTrainedConfig):
     r"""
     upsample_out_channels (`list[int]`, *optional*):
@@ -113,6 +116,7 @@ class Sapiens2HeadConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sapiens2-pretrain-0.4b")
 @strict
+# Sapiens2Config：Sapiens2 联合配置：ViT 骨干与多任务头超参数
 class Sapiens2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     rope_theta (`float`, *optional*, defaults to 100.0):

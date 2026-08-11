@@ -18,6 +18,8 @@ Feature extractor class for SeamlessM4T
 import numpy as np
 
 from ...utils import is_torch_available
+# SeamlessM4T 特征提取：Mel 频谱与语音波形预处理
+
 
 
 if is_torch_available():
@@ -32,6 +34,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# SeamlessM4TFeatureExtractor：SeamlessM4T 特征提取器：Mel 频谱与波形预处理
 class SeamlessM4TFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a SeamlessM4T feature extractor.
@@ -57,6 +60,7 @@ class SeamlessM4TFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size=80,
@@ -137,6 +141,7 @@ class SeamlessM4TFeatureExtractor(SequenceFeatureExtractor):
         ).T
         return features
 
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

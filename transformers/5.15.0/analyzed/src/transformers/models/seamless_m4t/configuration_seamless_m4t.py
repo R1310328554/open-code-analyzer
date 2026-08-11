@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SeamlessM4T 配置：Conformer 语音编码、Transformer 文本模块与 HiFi-GAN 声码器
+
 
 
 @auto_docstring(checkpoint="facebook/hf-seamless-m4t-medium")
 @strict
+# SeamlessM4TConfig：SeamlessM4T 联合配置：语音/文本编码解码与声码器超参数
 class SeamlessM4TConfig(PreTrainedConfig):
     r"""
     t2u_vocab_size (`int`, *optional*, defaults to 10082):

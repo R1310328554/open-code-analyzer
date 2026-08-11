@@ -24,6 +24,8 @@ from ...feature_extraction_utils import BatchFeature
 from ...image_utils import ImageInput
 from ...processing_utils import ImagesKwargs, ProcessingKwargs, ProcessorMixin, Unpack
 from ...utils import auto_docstring, is_torch_available
+# SAM-HQ 处理器：协调图像预处理与点/框/掩码提示输入
+
 
 
 if is_torch_available():
@@ -32,6 +34,7 @@ if is_torch_available():
 NestedList = list[Union[float | int | None, "NestedList"]]
 
 
+# SamHQImagesKwargs：SAM-HQ 图像处理参数：尺寸、归一化与 padding 选项
 class SamHQImagesKwargs(ImagesKwargs, total=False):
     """
     segmentation_maps (`ImageInput`, *optional*):
@@ -70,6 +73,7 @@ class SamHQImagesKwargs(ImagesKwargs, total=False):
     mask_pad_size: dict[str, int]
 
 
+# SamHQProcessorKwargs：SAM-HQ 处理器参数：图像与提示输入打包选项
 class SamHQProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: SamHQImagesKwargs
     _defaults = {
@@ -80,7 +84,9 @@ class SamHQProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# SamHQProcessor：SAM-HQ 处理器：图像预处理与点/框/掩码提示协调
 class SamHQProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor):
         super().__init__(image_processor)
         # Ensure image_processor is properly initialized
@@ -91,6 +97,7 @@ class SamHQProcessor(ProcessorMixin):
         self.target_size = self.image_processor.size["longest_edge"]
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

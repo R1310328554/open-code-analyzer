@@ -24,6 +24,8 @@ from ...utils.generic import ModelOutput, TransformersKwargs, merge_with_config_
 from ...utils.output_capturing import capture_outputs
 from ..sam.configuration_sam import SamConfig, SamMaskDecoderConfig, SamPromptEncoderConfig, SamVisionConfig
 from ..sam.modeling_sam import (
+# SAM-HQ modular 源：复用 SAM 组件并实现高质量掩码解码逻辑
+
     SamFeedForward,
     SamImageSegmentationOutput,
     SamLayerNorm,
@@ -43,18 +45,21 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQPromptEncoderConfig：SAM-HQ 提示编码器配置：嵌入维度与输入类型
 class SamHQPromptEncoderConfig(SamPromptEncoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQVisionConfig：SAM-HQ 视觉配置：ViT 层数、头数与 patch 尺寸
 class SamHQVisionConfig(SamVisionConfig):
     pass
 
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQMaskDecoderConfig：SAM-HQ 掩码解码器配置：Transformer 层数与上采样
 class SamHQMaskDecoderConfig(SamMaskDecoderConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -76,6 +81,7 @@ class SamHQMaskDecoderConfig(SamMaskDecoderConfig):
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQConfig：SAM-HQ 联合配置：视觉、提示与掩码解码超参数
 class SamHQConfig(SamConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `SamHQPromptEncoderConfig`], *optional*):
@@ -85,6 +91,7 @@ class SamHQConfig(SamConfig):
     """
 
 
+# SamHQVisionEncoderOutput：SAM-HQ 视觉编码输出：多尺度特征图与 neck 输出
 class SamHQVisionEncoderOutput(SamVisionEncoderOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -99,6 +106,7 @@ class SamHQVisionEncoderOutput(SamVisionEncoderOutput):
 
 
 @dataclass
+# SamHQMMaskDecoderOutputs：SAM-HQ 掩码解码输出：低/高分辨率掩码 logits 与 IoU
 class SamHQMMaskDecoderOutputs(ModelOutput):
     r"""
     masks (`torch.FloatTensor` of shape `(batch_size, num_prompts, num_masks, height, width)`):
@@ -115,22 +123,27 @@ class SamHQMMaskDecoderOutputs(ModelOutput):
     mask_decoder_attentions: torch.FloatTensor | None = None
 
 
+# SamHQImageSegmentationOutput：SAM-HQ 图像分割输出：掩码、分数与边界框
 class SamHQImageSegmentationOutput(SamImageSegmentationOutput):
     pass
 
 
+# SamHQVisionAttention：SAM-HQ 视觉注意力：ViT 骨干多头缩放点积自注意力
 class SamHQVisionAttention(SamVisionAttention):
     pass
 
 
+# SamHQVisionLayer：SAM-HQ 视觉层：自注意力 + MLP 的 Transformer 块
 class SamHQVisionLayer(SamVisionLayer):
     pass
 
 
+# SamHQPreTrainedModel：SAM-HQ 预训练基类：权重初始化与输出录制
 class SamHQPreTrainedModel(SamPreTrainedModel):
     pass
 
 
+# SamHQVisionEncoder：SAM-HQ 视觉编码器：ViT 堆叠 + neck 输出多尺度特征
 class SamHQVisionEncoder(SamVisionEncoder, SamHQPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": SamHQVisionLayer,
@@ -139,6 +152,7 @@ class SamHQVisionEncoder(SamVisionEncoder, SamHQPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor | None = None, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | SamHQVisionEncoderOutput:
@@ -166,19 +180,24 @@ class SamHQVisionEncoder(SamVisionEncoder, SamHQPreTrainedModel):
         )
 
 
+# SamHQLayerNorm：SAM-HQ LayerNorm：通道归一化适配提示/掩码解码
 class SamHQLayerNorm(SamLayerNorm):
     pass
 
 
+# SamHQTwoWayTransformer：SAM-HQ 双向 Transformer：prompt 与图像特征双向更新
 class SamHQTwoWayTransformer(SamTwoWayTransformer):
     pass
 
 
+# SamHQFeedForward：SAM-HQ FFN：两层线性 + ReLU 前馈网络
 class SamHQFeedForward(SamFeedForward):
     pass
 
 
+# SamHQMaskDecoder：SAM-HQ 掩码解码器：高质量掩码上采样与 IoU 预测
 class SamHQMaskDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQMaskDecoderConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -224,6 +243,7 @@ class SamHQMaskDecoder(nn.Module):
         self.mask_norm = SamHQLayerNorm(self.hidden_size // 4, data_format="channels_first")
         self.mask_conv2 = nn.Conv2d(self.hidden_size // 4, self.hidden_size // 8, kernel_size=3, stride=1, padding=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         image_embeddings: torch.Tensor,
@@ -379,6 +399,7 @@ class SamHQMaskDecoder(nn.Module):
         return masks, iou_pred
 
 
+# SamHQVisionModel：SAM-HQ 视觉模型：仅 ViT 编码器前向
 class SamHQVisionModel(SamVisionModel):
     pass
 
@@ -388,7 +409,9 @@ class SamHQVisionModel(SamVisionModel):
     Segment Anything Model HQ (SAM-HQ) for generating masks, given an input image and optional 2D location and bounding boxes.
     """
 )
+# SamHQModel：SAM-HQ 完整模型：视觉编码 + 提示编码 + 掩码解码
 class SamHQModel(SamModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.vision_encoder = SamHQVisionEncoder(config.vision_config)
@@ -414,6 +437,7 @@ class SamHQModel(SamModel):
         intermediate_embeddings = vision_output[1]
         return image_embeddings, intermediate_embeddings
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

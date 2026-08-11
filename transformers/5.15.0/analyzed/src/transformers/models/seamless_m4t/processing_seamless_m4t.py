@@ -19,11 +19,14 @@ from ...audio_utils import AudioInput
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, TextKwargs, Unpack
 from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring, logging
+# SeamlessM4T 处理器：协调文本分词与语音特征提取
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# SeamlessM4TTextKwargs：SeamlessM4T 文本处理参数：padding 与 truncation 选项
 class SeamlessM4TTextKwargs(TextKwargs):
     """
     src_lang (`str`, *optional*):
@@ -39,19 +42,23 @@ class SeamlessM4TTextKwargs(TextKwargs):
     tgt_lang: str | None
 
 
+# SeamlessM4TProcessorKwargs：SeamlessM4T 处理器参数：文本与音频输入打包
 class SeamlessM4TProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: SeamlessM4TTextKwargs
     _defaults = {}
 
 
 @auto_docstring
+# SeamlessM4TProcessor：SeamlessM4T 处理器：分词与特征提取协调
 class SeamlessM4TProcessor(ProcessorMixin):
     valid_processor_kwargs = SeamlessM4TProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] | None = None,

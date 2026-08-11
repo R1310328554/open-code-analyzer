@@ -37,6 +37,8 @@ from ...utils import auto_docstring, logging
 from ...utils.generic import ModelOutput, TransformersKwargs, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_sam_hq import SamHQConfig, SamHQMaskDecoderConfig, SamHQPromptEncoderConfig, SamHQVisionConfig
+# SAM-HQ 高质量分割建模：ViT 视觉编码、提示编码、双向 Transformer 与掩码解码
+
 
 
 logger = logging.get_logger(__name__)
@@ -49,6 +51,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# SamHQVisionEncoderOutput：SAM-HQ 视觉编码输出：多尺度特征图与 neck 输出
 class SamHQVisionEncoderOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -68,6 +71,7 @@ class SamHQVisionEncoderOutput(ModelOutput):
 
 
 @dataclass
+# SamHQMMaskDecoderOutputs：SAM-HQ 掩码解码输出：低/高分辨率掩码 logits 与 IoU
 class SamHQMMaskDecoderOutputs(ModelOutput):
     r"""
     masks (`torch.FloatTensor` of shape `(batch_size, num_prompts, num_masks, height, width)`):
@@ -90,6 +94,7 @@ class SamHQMMaskDecoderOutputs(ModelOutput):
     """
 )
 @dataclass
+# SamHQImageSegmentationOutput：SAM-HQ 图像分割输出：掩码、分数与边界框
 class SamHQImageSegmentationOutput(ModelOutput):
     r"""
     iou_scores (`torch.FloatTensor` of shape `(batch_size, num_masks)`):
@@ -122,9 +127,11 @@ class SamHQImageSegmentationOutput(ModelOutput):
     mask_decoder_attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# SamHQVisionAttention：SAM-HQ 视觉注意力：ViT 骨干多头缩放点积自注意力
 class SamHQVisionAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, window_size):
         super().__init__()
         input_size = (
@@ -224,6 +231,7 @@ class SamHQVisionAttention(nn.Module):
 
         return decomposed_rel_pos
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, output_attentions=None) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, height, width, _ = hidden_states.shape
         # qkv with shape (3, batch_size, nHead, height * width, channel)
@@ -255,13 +263,16 @@ class SamHQVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SamHQMLPBlock：SAM-HQ MLP 块：两层线性 + GELU 前馈网络
 class SamHQMLPBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.lin1 = nn.Linear(config.hidden_size, config.mlp_dim)
         self.lin2 = nn.Linear(config.mlp_dim, config.hidden_size)
         self.act = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.lin1(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -269,15 +280,18 @@ class SamHQMLPBlock(nn.Module):
         return hidden_states
 
 
+# SamHQVisionSdpaAttention：SAM-HQ SDPA 注意力：scaled dot-product 加速实现
 class SamHQVisionSdpaAttention(SamHQVisionAttention):
     """
     Multi-head Attention block with relative position embeddings.
     Using SDPA instead of the default attention.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, window_size):
         super().__init__(config, window_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, output_attentions=False) -> torch.Tensor:
         if output_attentions:
             logger.warning_once(
@@ -326,7 +340,9 @@ SAM_HQ_VISION_ATTENTION_CLASSES = {
 }
 
 
+# SamHQVisionLayer：SAM-HQ 视觉层：自注意力 + MLP 的 Transformer 块
 class SamHQVisionLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, window_size):
         super().__init__()
         self.layer_norm1 = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -389,6 +405,7 @@ class SamHQVisionLayer(GradientCheckpointingLayer):
         hidden_states = hidden_states[:, :height, :width, :].contiguous()
         return hidden_states
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.FloatTensor]:
         residual = hidden_states
         hidden_states = self.layer_norm1(hidden_states)
@@ -410,12 +427,15 @@ class SamHQVisionLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# SamHQPositionalEmbedding：SAM-HQ 位置嵌入：可学习 2D 绝对位置编码
 class SamHQPositionalEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.scale = config.scale
         self.positional_embedding = nn.Parameter(self.scale * torch.randn((2, config.num_pos_feats)))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_coords, input_shape=None):
         """Positionally encode points that are normalized to [0,1]."""
         coordinates = input_coords.clone()
@@ -434,6 +454,7 @@ class SamHQPositionalEmbedding(nn.Module):
 
 
 @auto_docstring
+# SamHQPreTrainedModel：SAM-HQ 预训练基类：权重初始化与输出录制
 class SamHQPreTrainedModel(PreTrainedModel):
     config: SamHQConfig
     base_model_prefix = "sam_hq"
@@ -444,6 +465,7 @@ class SamHQPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Module):
         super()._init_weights(module)
         if isinstance(module, SamHQVisionAttention):
@@ -457,6 +479,7 @@ class SamHQPreTrainedModel(PreTrainedModel):
             init.normal_(module.positional_embedding, std=module.scale)
 
 
+# SamHQPatchEmbeddings：SAM-HQ patch 嵌入：图像分块线性投影
 class SamHQPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -464,6 +487,7 @@ class SamHQPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -478,6 +502,7 @@ class SamHQPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -492,7 +517,9 @@ class SamHQPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# SamHQVisionNeck：SAM-HQ 视觉颈部：多尺度特征融合与通道对齐
 class SamHQVisionNeck(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQVisionConfig):
         super().__init__()
         self.config = config
@@ -502,6 +529,7 @@ class SamHQVisionNeck(nn.Module):
         self.conv2 = nn.Conv2d(config.output_channels, config.output_channels, kernel_size=3, padding=1, bias=False)
         self.layer_norm2 = SamHQLayerNorm(config.output_channels, data_format="channels_first")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.permute(0, 3, 1, 2)
         hidden_states = self.conv1(hidden_states)
@@ -512,12 +540,14 @@ class SamHQVisionNeck(nn.Module):
         return hidden_states
 
 
+# SamHQVisionEncoder：SAM-HQ 视觉编码器：ViT 堆叠 + neck 输出多尺度特征
 class SamHQVisionEncoder(SamHQPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": SamHQVisionLayer,
         "attentions": SamHQVisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQVisionConfig):
         super().__init__(config)
         self.config = config
@@ -554,6 +584,7 @@ class SamHQVisionEncoder(SamHQPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor | None = None, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | SamHQVisionEncoderOutput:
@@ -581,18 +612,21 @@ class SamHQVisionEncoder(SamHQPreTrainedModel):
         )
 
 
+# SamHQLayerNorm：SAM-HQ LayerNorm：通道归一化适配提示/掩码解码
 class SamHQLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
     width, channels) while channels_first corresponds to inputs with shape (batch_size, channels, height, width).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, normalized_shape, *, eps=1e-6, data_format="channels_last", **kwargs):
         super().__init__(normalized_shape, eps=eps, **kwargs)
         if data_format not in ["channels_last", "channels_first"]:
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -607,6 +641,7 @@ class SamHQLayerNorm(nn.LayerNorm):
         return features
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -629,12 +664,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# SamHQAttention：SAM-HQ 注意力：标准多头缩放点积注意力
 class SamHQAttention(nn.Module):
     """
     SAM_HQ's attention layer that allows for downscaling the size of the embedding after projection to queries, keys, and
     values.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, downsample_rate=None):
         super().__init__()
         self.config = config
@@ -665,6 +702,7 @@ class SamHQAttention(nn.Module):
         batch, n_tokens, n_heads, c_per_head = hidden_states.shape
         return hidden_states.reshape(batch // point_batch_size, point_batch_size, n_tokens, n_heads * c_per_head)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: Tensor,
@@ -707,7 +745,9 @@ class SamHQAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SamHQTwoWayAttentionBlock：SAM-HQ 双向注意力块：query 与图像 token 双向交互
 class SamHQTwoWayAttentionBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, attention_downsample_rate: int = 2, skip_first_layer_pe: bool = False):
         """
         A transformer block with four layers:
@@ -740,6 +780,7 @@ class SamHQTwoWayAttentionBlock(nn.Module):
         self.cross_attn_image_to_token = SamHQAttention(config, downsample_rate=attention_downsample_rate)
         self.skip_first_layer_pe = skip_first_layer_pe
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         queries: Tensor,
@@ -785,7 +826,9 @@ class SamHQTwoWayAttentionBlock(nn.Module):
         return queries, keys, attn_out
 
 
+# SamHQTwoWayTransformer：SAM-HQ 双向 Transformer：prompt 与图像特征双向更新
 class SamHQTwoWayTransformer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQMaskDecoderConfig):
         super().__init__()
         self.config = config
@@ -799,6 +842,7 @@ class SamHQTwoWayTransformer(nn.Module):
         self.final_attn_token_to_image = SamHQAttention(config)
         self.layer_norm_final_attn = nn.LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         point_embeddings: Tensor,
@@ -842,7 +886,9 @@ class SamHQTwoWayTransformer(nn.Module):
         return queries, keys
 
 
+# SamHQFeedForward：SAM-HQ FFN：两层线性 + ReLU 前馈网络
 class SamHQFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, sigmoid_output: bool = False
     ):
@@ -854,6 +900,7 @@ class SamHQFeedForward(nn.Module):
         self.layers = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 2)])
         self.sigmoid_output = sigmoid_output
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.proj_in(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -866,7 +913,9 @@ class SamHQFeedForward(nn.Module):
         return hidden_states
 
 
+# SamHQMaskDecoder：SAM-HQ 掩码解码器：高质量掩码上采样与 IoU 预测
 class SamHQMaskDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQMaskDecoderConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -912,6 +961,7 @@ class SamHQMaskDecoder(nn.Module):
         self.mask_norm = SamHQLayerNorm(self.hidden_size // 4, data_format="channels_first")
         self.mask_conv2 = nn.Conv2d(self.hidden_size // 4, self.hidden_size // 8, kernel_size=3, stride=1, padding=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         image_embeddings: torch.Tensor,
@@ -1072,10 +1122,12 @@ class SamHQMaskDecoder(nn.Module):
     The vision model from SamHQ without any head or projection on top.
     """
 )
+# SamHQVisionModel：SAM-HQ 视觉模型：仅 ViT 编码器前向
 class SamHQVisionModel(SamHQPreTrainedModel):
     config: SamHQVisionConfig
     main_input_name = "pixel_values"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQVisionConfig):
         super().__init__(config)
         self.vision_encoder = SamHQVisionEncoder(config)
@@ -1085,6 +1137,7 @@ class SamHQVisionModel(SamHQPreTrainedModel):
         return self.vision_encoder.patch_embed
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1093,7 +1146,9 @@ class SamHQVisionModel(SamHQPreTrainedModel):
         return self.vision_encoder(pixel_values, **kwargs)
 
 
+# SamHQMaskEmbedding：SAM-HQ 掩码嵌入：将二值掩码映射为 dense 特征
 class SamHQMaskEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQPromptEncoderConfig):
         super().__init__()
         self.mask_input_channels = config.mask_input_channels // 4
@@ -1108,6 +1163,7 @@ class SamHQMaskEmbedding(nn.Module):
             self.mask_input_channels * 4, eps=config.layer_norm_eps, data_format="channels_first"
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, masks):
         hidden_states = self.conv1(masks)
         hidden_states = self.layer_norm1(hidden_states)
@@ -1120,7 +1176,9 @@ class SamHQMaskEmbedding(nn.Module):
         return dense_embeddings
 
 
+# SamHQPromptEncoder：SAM-HQ 提示编码器：点/框/掩码提示转为稀疏与 dense 嵌入
 class SamHQPromptEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SamHQConfig):
         super().__init__()
         self.shared_embedding = SamHQPositionalEmbedding(config.vision_config)
@@ -1182,6 +1240,7 @@ class SamHQPromptEncoder(nn.Module):
         corner_embedding[:, :, 1, :] += self.point_embed[3].weight
         return corner_embedding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_points: tuple[torch.Tensor, torch.Tensor] | None,
@@ -1230,6 +1289,7 @@ class SamHQPromptEncoder(nn.Module):
     Segment Anything Model HQ (SAM-HQ) for generating masks, given an input image and optional 2D location and bounding boxes.
     """
 )
+# SamHQModel：SAM-HQ 完整模型：视觉编码 + 提示编码 + 掩码解码
 class SamHQModel(SamHQPreTrainedModel):
     input_modalities = ("image", "text")
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(SamHQTwoWayAttentionBlock, index=2)}
@@ -1237,6 +1297,7 @@ class SamHQModel(SamHQPreTrainedModel):
         "prompt_encoder.shared_embedding.positional_embedding": "shared_image_embedding.positional_embedding"
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.shared_image_embedding = SamHQPositionalEmbedding(config.vision_config)
@@ -1317,6 +1378,7 @@ class SamHQModel(SamHQPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
