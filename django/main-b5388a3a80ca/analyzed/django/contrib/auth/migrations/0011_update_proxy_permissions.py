@@ -1,3 +1,4 @@
+# 迁移 0011：将代理模型的默认权限 ContentType 从具体模型改为代理模型
 import sys
 
 from django.core.management.color import color_style
@@ -14,6 +15,7 @@ WARNING = """
 """
 
 
+# RunPython 正向：更新代理模型权限的 content_type 指向
 def update_proxy_model_permissions(apps, schema_editor, reverse=False):
     """
     Update the content_type of proxy model permissions to use the ContentType
@@ -64,6 +66,7 @@ def revert_proxy_model_permissions(apps, schema_editor):
     update_proxy_model_permissions(apps, schema_editor, reverse=True)
 
 
+# 数据迁移，冲突时输出 WARNING 供人工审计
 class Migration(migrations.Migration):
     dependencies = [
         ("auth", "0010_alter_group_name_max_length"),

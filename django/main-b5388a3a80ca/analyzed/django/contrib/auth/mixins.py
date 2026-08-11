@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.mixins — CBV 访问控制混入类。
+
+为类视图提供登录、权限及自定义测试的 dispatch 拦截逻辑。
+"""
 from urllib.parse import urlsplit
 
 from django.conf import settings
@@ -7,6 +12,7 @@ from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.shortcuts import resolve_url
 
 
+# 访问混入基类：配置 login_url、无权限时的重定向或抛异常
 class AccessMixin:
     """
     Abstract CBV mixin that gives access mixins the same customizable
@@ -44,6 +50,7 @@ class AccessMixin:
         """
         return self.redirect_field_name
 
+    # 未授权时重定向登录或抛出 PermissionDenied
     def handle_no_permission(self):
         if self.raise_exception or self.request.user.is_authenticated:
             raise PermissionDenied(self.get_permission_denied_message())
@@ -65,6 +72,7 @@ class AccessMixin:
         )
 
 
+# 要求 request.user 已认证
 class LoginRequiredMixin(AccessMixin):
     """Verify that the current user is authenticated."""
 
@@ -74,6 +82,7 @@ class LoginRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+# 要求用户拥有 permission_required 中的全部权限
 class PermissionRequiredMixin(AccessMixin):
     """Verify that the current user has all specified permissions."""
 
@@ -110,6 +119,7 @@ class PermissionRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+# 要求 test_func() 返回 True 才允许访问
 class UserPassesTestMixin(AccessMixin):
     """
     Deny a request with a permission error if the test_func() method returns

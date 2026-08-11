@@ -1,7 +1,9 @@
+# 迁移 0004：为 username 添加 UnicodeUsernameValidator 与 unique 错误消息
 from django.contrib.auth import validators
 from django.db import migrations, models
 
 
+# 无数据库结构变更，仅更新字段元数据（#13147）
 class Migration(migrations.Migration):
     dependencies = [
         ("auth", "0003_alter_user_email_max_length"),

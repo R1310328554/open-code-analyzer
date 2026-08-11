@@ -1,15 +1,18 @@
+# 初始迁移：创建 Permission、Group、User 模型及 auth 核心表结构
 import django.contrib.auth.models
 from django.contrib.auth import validators
 from django.db import migrations, models
 from django.utils import timezone
 
 
+# auth 应用 schema 初始化，依赖 contenttypes
 class Migration(migrations.Migration):
     dependencies = [
         ("contenttypes", "__first__"),
     ]
 
     operations = [
+        # 创建权限模型，按 ContentType 与 codename 唯一
         migrations.CreateModel(
             name="Permission",
             fields=[
@@ -47,6 +50,7 @@ class Migration(migrations.Migration):
                 ("objects", django.contrib.auth.models.PermissionManager()),
             ],
         ),
+        # 创建用户组模型，可关联多对多权限
         migrations.CreateModel(
             name="Group",
             fields=[
@@ -78,6 +82,7 @@ class Migration(migrations.Migration):
                 ("objects", django.contrib.auth.models.GroupManager()),
             ],
         ),
+        # 创建可交换 User 模型（swappable=AUTH_USER_MODEL）
         migrations.CreateModel(
             name="User",
             fields=[

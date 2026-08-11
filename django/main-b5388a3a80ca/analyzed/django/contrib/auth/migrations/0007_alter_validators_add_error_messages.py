@@ -1,7 +1,9 @@
+# 迁移 0007：username 字段补充 validators 与 error_messages 元数据
 from django.contrib.auth import validators
 from django.db import migrations, models
 
 
+# 无数据库结构变更
 class Migration(migrations.Migration):
     dependencies = [
         ("auth", "0006_require_contenttypes_0002"),

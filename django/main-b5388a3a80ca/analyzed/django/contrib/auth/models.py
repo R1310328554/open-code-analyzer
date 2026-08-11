@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.models — 认证与授权核心模型。
+
+定义 Permission、Group、User 及 AnonymousUser，并提供权限查询混入。
+"""
 from collections.abc import Iterable
 
 from django.apps import apps
@@ -15,6 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from .validators import UnicodeUsernameValidator
 
 
+# user_logged_in 信号接收器：更新 last_login 时间戳
 def update_last_login(sender, user, **kwargs):
     """
     A signal receiver which updates the last_login date for
@@ -24,6 +30,7 @@ def update_last_login(sender, user, **kwargs):
     user.save(update_fields=["last_login"])
 
 
+# 权限管理器：按 codename 与 ContentType 自然键查询
 class PermissionManager(models.Manager):
     use_in_migrations = True
 
@@ -36,6 +43,7 @@ class PermissionManager(models.Manager):
         )
 
 
+# 全局权限：绑定 ContentType，codename 在类型内唯一
 class Permission(models.Model):
     """
     The permissions system provides a way to assign permissions to specific
@@ -90,6 +98,7 @@ class Permission(models.Model):
     natural_key.dependencies = ["contenttypes.contenttype"]
 
 
+# 用户组管理器：按 name 自然键查询
 class GroupManager(models.Manager):
     """
     The manager for the auth's Group model.
@@ -104,6 +113,7 @@ class GroupManager(models.Manager):
         return await self.aget(name=name)
 
 
+# 用户组：成员自动继承组内全部权限
 class Group(models.Model):
     """
     Groups are a generic way of categorizing users to apply permissions, or
@@ -142,6 +152,7 @@ class Group(models.Model):
         return (self.name,)
 
 
+# 用户管理器：create_user/create_superuser 及 with_perm 查询
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -188,6 +199,7 @@ class UserManager(BaseUserManager):
 
     acreate_user.alters_data = True
 
+    # 创建 is_staff 与 is_superuser 均为 True 的用户
     def create_superuser(self, username, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -245,6 +257,7 @@ class UserManager(BaseUserManager):
 
 
 # A few helper functions for common logic between User and AnonymousUser.
+# 汇总各 auth 后端的 user/group/all 权限字符串
 def _user_get_permissions(user, obj, from_name):
     permissions = set()
     name = "get_%s_permissions" % from_name
@@ -263,6 +276,7 @@ async def _auser_get_permissions(user, obj, from_name):
     return permissions
 
 
+# 遍历后端 has_perm，PermissionDenied 时短路返回 False
 def _user_has_perm(user, perm, obj):
     """
     A backend can raise `PermissionDenied` to short-circuit permission checks.
@@ -319,6 +333,7 @@ async def _auser_has_module_perms(user, app_label):
     return False
 
 
+# 抽象混入：groups、user_permissions 及 has_perm/has_perms 等
 class PermissionsMixin(models.Model):
     """
     Add the fields and methods necessary to support the Group and Permission
@@ -386,6 +401,7 @@ class PermissionsMixin(models.Model):
     async def aget_all_permissions(self, obj=None):
         return await _auser_get_permissions(self, obj, "all")
 
+    # 超级用户直接 True，否则委托各后端
     def has_perm(self, perm, obj=None):
         """
         Return True if the user has the specified permission. Query all
@@ -448,6 +464,7 @@ class PermissionsMixin(models.Model):
         return await _auser_has_module_perms(self, app_label)
 
 
+# 完整用户抽象基类：username、邮箱、staff/active 等字段
 class AbstractUser(AbstractBaseUser, PermissionsMixin):
     """
     An abstract base class implementing a fully featured User model with
@@ -519,6 +536,7 @@ class AbstractUser(AbstractBaseUser, PermissionsMixin):
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
 
+# 默认 User 实现，swappable 为 AUTH_USER_MODEL
 class User(AbstractUser):
     """
     Users within the Django authentication system are represented by this
@@ -531,6 +549,7 @@ class User(AbstractUser):
         swappable = "AUTH_USER_MODEL"
 
 
+# 未登录占位用户：无 pk，权限查询恒为空或 False
 class AnonymousUser:
     id = None
     pk = None
