@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# 连接池事件：connect/checkout/checkin/invalidate/reset 等钩子
+
 from __future__ import annotations
 
 import typing
@@ -24,6 +26,7 @@ if typing.TYPE_CHECKING:
     from ..engine.interfaces import DBAPIConnection
 
 
+# Pool 事件命名空间：监听连接创建、检出与归还
 class PoolEvents(event.Events[Pool]):
     """Available events for :class:`_pool.Pool`.
 

@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# ORM 工具：别名实体、Bundle、loader criteria 与类型注解解析
+
 from __future__ import annotations
 
 import enum
@@ -152,6 +154,7 @@ _de_stringify_partial = functools.partial(
 # function and maintain the signature anyway
 
 
+# 字符串注解去引号/解析的 Protocol
 class _DeStringifyAnnotation(Protocol):
     def __call__(
         self,
@@ -169,6 +172,7 @@ de_stringify_annotation = cast(
 )
 
 
+# 仅按名称求值模块符号的 Protocol
 class _EvalNameOnly(Protocol):
     def __call__(self, name: str, module_name: str) -> Any: ...
 
@@ -176,6 +180,7 @@ class _EvalNameOnly(Protocol):
 eval_name_only = cast(_EvalNameOnly, _de_stringify_partial(_eval_name_only))
 
 
+# relationship cascade 选项的不可变 FrozenSet 封装
 class CascadeOptions(FrozenSet[str]):
     """Keeps track of the options sent to
     :paramref:`.relationship.cascade`"""
@@ -485,6 +490,7 @@ def identity_key(
         raise sa_exc.ArgumentError("class or instance is required")
 
 
+# ORMAdapter 使用场景枚举（joined load、多态等）
 class _TraceAdaptRole(enum.Enum):
     """Enumeration of all the use cases for ORMAdapter.
 
@@ -545,6 +551,7 @@ class _TraceAdaptRole(enum.Enum):
     LEGACY_SELECT_FROM_ALIAS = enum.auto()
 
 
+# 带 role 标记的 ColumnAdapter：语句级列适配
 class ORMStatementAdapter(sql_util.ColumnAdapter):
     """ColumnAdapter which includes a role attribute."""
 
@@ -574,6 +581,7 @@ class ORMStatementAdapter(sql_util.ColumnAdapter):
         )
 
 
+# ORM 列适配器：限制仅适配匹配 mapper 的实体列
 class ORMAdapter(sql_util.ColumnAdapter):
     """ColumnAdapter subclass which excludes adaptation of entities from
     non-matching mappers.
@@ -627,6 +635,7 @@ class ORMAdapter(sql_util.ColumnAdapter):
         return not entity or entity.isa(self.mapper) or self.mapper.isa(entity)
 
 
+# 映射类的别名代理：__getattr__ 转发并持有 SQL Alias
 class AliasedClass(
     inspection.Inspectable["AliasedInsp[_O]"], ORMColumnsClauseRole[_O]
 ):
@@ -830,6 +839,7 @@ class AliasedClass(
 
 
 @inspection._self_inspects
+# AliasedClass 的检查接口：inspect(aliased) 返回的 Inspector
 class AliasedInsp(
     ORMEntityColumnsClauseRole[_O],
     ORMFromClauseRole,
@@ -1294,6 +1304,7 @@ class AliasedInsp(
             return "aliased(%s)" % (self._target.__name__,)
 
 
+# loader_criteria lambda 包装：绕过 unmapped mixin 的 declared_attr 警告
 class _WrapUserEntity:
     """A wrapper used within the loader_criteria lambda caller so that
     we can bypass declared_attr descriptors on unmapped mixins, which
@@ -1322,6 +1333,7 @@ class _WrapUserEntity:
             return getattr(subject, name)
 
 
+# with_loader_criteria 选项：为实体加载附加全局 WHERE
 class LoaderCriteriaOption(CriteriaOption):
     """Add additional WHERE criteria to the load for all occurrences of
     a particular entity.
@@ -1531,6 +1543,7 @@ def _inspect_generic_alias(
 
 
 @inspection._self_inspects
+# 命名列组 Bundle：Query 结果中打包多列为结构化元组
 class Bundle(
     ORMColumnsClauseRole[_T],
     SupportsCloneAnnotations,
@@ -1779,6 +1792,7 @@ def _orm_full_deannotate(element: _SA) -> _SA:
     return sql_util._deep_deannotate(element)
 
 
+# ORM 扩展 Join：接受 mapped entity/AliasedClass 作为左右表
 class _ORMJoin(expression.Join):
     """Extend Join to support ORM constructs as input."""
 
@@ -2197,6 +2211,7 @@ def _is_mapped_annotation(
         return is_origin_of_cls(annotated, _MappedAnnotationBase)
 
 
+# Mapped 字符串注解清理失败时抛出的内部异常
 class _CleanupError(Exception):
     pass
 

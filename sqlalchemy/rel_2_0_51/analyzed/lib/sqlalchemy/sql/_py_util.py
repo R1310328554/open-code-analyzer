@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# SQL 编译匿名符号映射：prefix_anon_map 与 cache_anon_map
+
 from __future__ import annotations
 
 import typing
@@ -19,6 +21,7 @@ if typing.TYPE_CHECKING:
     from .cache_key import CacheConst
 
 
+# 编译器前缀匿名映射：<ident> <name> -> <name>_<index>
 class prefix_anon_map(Dict[str, str]):
     """A map that creates new keys for missing key access.
 
@@ -40,6 +43,7 @@ class prefix_anon_map(Dict[str, str]):
         return value
 
 
+# 缓存键匿名映射：对象 id -> 递增字符串标签
 class cache_anon_map(
     Dict[Union[int, "Literal[CacheConst.NO_CACHE]"], Union[Literal[True], str]]
 ):

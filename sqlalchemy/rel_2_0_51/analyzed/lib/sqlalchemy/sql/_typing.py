@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# SQL 内部 typing：Protocol、TypeAlias 与 coercion 参数类型
+
 from __future__ import annotations
 
 import operator
@@ -85,18 +87,21 @@ _CE = TypeVar("_CE", bound="ColumnElement[Any]")
 _CLE = TypeVar("_CLE", bound="ClauseElement")
 
 
+# 具 __clause_element__ 的可强制为 ClauseElement 的对象
 class _HasClauseElement(Protocol, Generic[_T_co]):
     """indicates a class that has a __clause_element__() method"""
 
     def __clause_element__(self) -> roles.ExpressionElementRole[_T_co]: ...
 
 
+# ClauseAdapter.traverse 可调用 Protocol
 class _CoreAdapterProto(Protocol):
     """protocol for the ClauseAdapter/ColumnAdapter.traverse() method."""
 
     def __call__(self, obj: _CE) -> _CE: ...
 
 
+# 具 dialect 属性的 Engine/Connection 类 Protocol
 class _HasDialect(Protocol):
     """protocol for Engine/Connection-like objects that have dialect
     attribute.
@@ -147,7 +152,8 @@ _TextCoercedExpressionArgument = Union[
     roles.ExpressionElementRole[_T],
 ]
 
-_ColumnsClauseArgument = Union[
+# SELECT 列/实体参数联合类型
+_ColumnsClauseArgument = Union[_ColumnsClauseArgument = Union[
     roles.TypedColumnsClauseRole[_T],
     roles.ColumnsClauseRole,
     "SQLCoreOperations[_T]",
@@ -199,7 +205,8 @@ position in a selectable, like TextClause().columns() or values(...).
 
 """
 
-_ColumnExpressionArgument = Union[
+# 列表达式参数联合类型（含 literal、ClauseElement）
+_ColumnExpressionArgument = Union[_ColumnExpressionArgument = Union[
     "ColumnElement[_T]",
     _HasClauseElement[_T],
     "SQLCoreOperations[_T]",
@@ -298,7 +305,8 @@ used for :class:`.PrimaryKeyConstraint`, :class:`.UniqueConstraint`, etc.
 
 """
 
-_DMLTableArgument = Union[
+# DML 目标表参数（Table、Join、子查询等）
+_DMLTableArgument = Union[_DMLTableArgument = Union[
     "TableClause",
     "Join",
     "Alias",
@@ -382,6 +390,7 @@ else:
     is_dml = operator.attrgetter("is_dml")
 
 
+# TypeGuard：FromClause 是否带 schema 属性
 def has_schema_attr(t: FromClauseRole) -> TypeGuard[TableClause]:
     return hasattr(t, "schema")
 
@@ -411,6 +420,7 @@ def _unexpected_kw(methname: str, kw: Dict[str, Any]) -> NoReturn:
 
 
 @overload
+# typing 辅助：将类型包装为 Optional
 def Nullable(
     val: "SQLCoreOperations[_T]",
 ) -> "SQLCoreOperations[Optional[_T]]": ...
@@ -445,6 +455,7 @@ def Nullable(
 
 
 @overload
+# typing 辅助：去除 Optional 包装
 def NotNullable(
     val: "SQLCoreOperations[Optional[_T]]",
 ) -> "SQLCoreOperations[_T]": ...

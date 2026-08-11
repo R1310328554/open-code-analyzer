@@ -8,6 +8,8 @@
 
 """Pool implementation classes."""
 
+# 连接池具体实现：QueuePool、NullPool、StaticPool 等
+
 from __future__ import annotations
 
 import threading
@@ -41,6 +43,7 @@ if typing.TYPE_CHECKING:
     from ..engine.interfaces import DBAPIConnection
 
 
+# 有界队列池：Engine 默认实现（非 SQLite memory）
 class QueuePool(Pool):
     """A :class:`_pool.Pool`
     that imposes a limit on the number of open connections.
@@ -257,6 +260,7 @@ class QueuePool(Pool):
         return self._pool.maxsize - self._pool.qsize() + self._overflow
 
 
+# asyncio 版 QueuePool：无 threading.Lock
 class AsyncAdaptedQueuePool(QueuePool):
     """An asyncio-compatible version of :class:`.QueuePool`.
 
@@ -278,10 +282,12 @@ class AsyncAdaptedQueuePool(QueuePool):
     _dialect = _AsyncConnDialect()
 
 
+# Fallback 异步队列池实现
 class FallbackAsyncAdaptedQueuePool(AsyncAdaptedQueuePool):
     _queue_class = sqla_queue.FallbackAsyncAdaptedQueue  # type: ignore[assignment] # noqa: E501
 
 
+# 不池化：每次打开/关闭真实 DBAPI 连接
 class NullPool(Pool):
     """A Pool which does not pool connections.
 
@@ -324,6 +330,7 @@ class NullPool(Pool):
         pass
 
 
+# 每线程单连接池（主要用于测试）
 class SingletonThreadPool(Pool):
     """A Pool that maintains one connection per thread.
 
@@ -455,6 +462,7 @@ class SingletonThreadPool(Pool):
         return _ConnectionFairy._checkout(self, self._fairy)
 
 
+# 全局单连接池：所有请求共享一条连接
 class StaticPool(Pool):
     """A Pool of exactly one connection, used for all requests.
 
@@ -520,6 +528,7 @@ class StaticPool(Pool):
         return rec
 
 
+# 调试池：同时最多允许一条 checkout
 class AssertionPool(Pool):
     """A :class:`_pool.Pool` that allows at most one checked out connection at
     any given time.

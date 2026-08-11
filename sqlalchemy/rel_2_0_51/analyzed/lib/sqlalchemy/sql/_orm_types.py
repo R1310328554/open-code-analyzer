@@ -11,9 +11,13 @@ are meaningful to the ORM.
 
 """
 
+# ORM execution_options 文档用 Literal 类型别名
+
 from __future__ import annotations
 
 from ..util.typing import Literal
 
+# UPDATE/DELETE 后会话同步策略
 SynchronizeSessionArgument = Literal[False, "auto", "evaluate", "fetch"]
+# ORM DML 执行策略（bulk/raw/orm）
 DMLStrategyArgument = Literal["bulk", "raw", "orm", "auto"]

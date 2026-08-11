@@ -8,6 +8,8 @@
 
 """Base constructs for connection pools."""
 
+# 连接池核心：Pool、连接记录与 DBAPI 代理（Fairy）
+
 from __future__ import annotations
 
 from collections import deque
@@ -47,6 +49,8 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass(frozen=True)
+# reset 事件状态：事务是否已重置、是否仅 terminate
+# 连接池抽象基类：checkout/checkin、invalidate 与事件
 class PoolResetState:
     """describes the state of a DBAPI connection as it is being passed to
     the :meth:`.PoolEvents.reset` connection pool event.
@@ -91,6 +95,7 @@ class PoolResetState:
     """
 
 
+# 归还连接时的 reset 策略枚举（rollback/commit/none）
 class ResetStyle(Enum):
     """Describe options for "reset on return" behaviors."""
 
@@ -106,6 +111,7 @@ _ResetStyleArgType = Union[
 reset_rollback, reset_commit, reset_none = list(ResetStyle)
 
 
+# Pool 内置的部分 Dialect：提供 do_rollback/commit
 class _ConnDialect:
     """partial implementation of :class:`.Dialect`
     which provides DBAPI connection methods.
@@ -141,14 +147,17 @@ class _ConnDialect:
         return connection
 
 
+# 异步 Dialect 标记：is_async=True
 class _AsyncConnDialect(_ConnDialect):
     is_async = True
 
 
+# 无 record 参数的 DBAPI 连接工厂 Protocol
 class _CreatorFnType(Protocol):
     def __call__(self) -> DBAPIConnection: ...
 
 
+# 带 ConnectionPoolEntry 的连接工厂 Protocol
 class _CreatorWRecFnType(Protocol):
     def __call__(self, rec: ConnectionPoolEntry) -> DBAPIConnection: ...
 
@@ -471,6 +480,7 @@ class Pool(log.Identified, event.EventTarget):
         raise NotImplementedError()
 
 
+# 连接管理公共接口：dbapi/driver 双连接引用
 class ManagesConnection:
     """Common base for the two connection-management interfaces
     :class:`.PoolProxiedConnection` and :class:`.ConnectionPoolEntry`.
@@ -595,6 +605,7 @@ class ManagesConnection:
         raise NotImplementedError()
 
 
+# 池槽位长期维护的单条 DBAPI 连接
 class ConnectionPoolEntry(ManagesConnection):
     """Interface for the object that maintains an individual database
     connection on behalf of a :class:`_pool.Pool` instance.
@@ -629,6 +640,7 @@ class ConnectionPoolEntry(ManagesConnection):
         raise NotImplementedError()
 
 
+# ConnectionPoolEntry 内部实现：checkout 生命周期
 class _ConnectionRecord(ConnectionPoolEntry):
     """Maintains a position in a connection pool which references a pooled
     connection.
@@ -1055,6 +1067,7 @@ _strong_ref_connection_records: Dict[
 ] = {}
 
 
+# checkout 期 DBAPI 连接公开代理接口
 class PoolProxiedConnection(ManagesConnection):
     """A connection-like adapter for a :pep:`249` DBAPI connection, which
     includes additional methods specific to the :class:`.Pool` implementation.
@@ -1133,6 +1146,7 @@ class PoolProxiedConnection(ManagesConnection):
         return None
 
 
+# 无 Fairy 时的临时 PoolProxiedConnection
 class _AdhocProxiedConnection(PoolProxiedConnection):
     """provides the :class:`.PoolProxiedConnection` interface for cases where
     the DBAPI connection is not actually proxied.
@@ -1192,6 +1206,7 @@ class _AdhocProxiedConnection(PoolProxiedConnection):
         return getattr(self.dbapi_connection, key)
 
 
+# checkout 期连接代理：归还时自动 checkin
 class _ConnectionFairy(PoolProxiedConnection):
     """Proxies a DBAPI connection and provides return-on-dereference
     support.

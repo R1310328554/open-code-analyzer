@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# DML 构造器工厂：insert/update/delete 返回 Insert/Update/Delete
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -17,6 +19,7 @@ if TYPE_CHECKING:
     from ._typing import _DMLTableArgument
 
 
+# 构造 INSERT 语句对象
 def insert(table: _DMLTableArgument) -> Insert:
     """Construct an :class:`_expression.Insert` object.
 
@@ -79,6 +82,7 @@ def insert(table: _DMLTableArgument) -> Insert:
     return Insert(table)
 
 
+# 构造 UPDATE 语句对象
 def update(table: _DMLTableArgument) -> Update:
     r"""Construct an :class:`_expression.Update` object.
 
@@ -108,6 +112,7 @@ def update(table: _DMLTableArgument) -> Update:
     return Update(table)
 
 
+# 构造 DELETE 语句对象
 def delete(table: _DMLTableArgument) -> Delete:
     r"""Construct :class:`_expression.Delete` object.
 

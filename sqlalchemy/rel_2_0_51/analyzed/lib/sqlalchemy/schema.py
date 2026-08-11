@@ -7,6 +7,9 @@
 
 """Compatibility namespace for sqlalchemy.sql.schema and related."""
 
+# schema 兼容命名空间：重导出 Table/Column/Constraint 与 DDL 构造
+"""Compatibility namespace for sqlalchemy.sql.schema and related."""
+
 from __future__ import annotations
 
 from .sql.base import SchemaVisitor as SchemaVisitor
@@ -18,6 +21,7 @@ from .sql.ddl import CreateColumn as CreateColumn
 from .sql.ddl import CreateIndex as CreateIndex
 from .sql.ddl import CreateSchema as CreateSchema
 from .sql.ddl import CreateSequence as CreateSequence
+# CREATE TABLE DDL 元素
 from .sql.ddl import CreateTable as CreateTable
 from .sql.ddl import DDL as DDL
 from .sql.ddl import DDLElement as DDLElement
@@ -42,6 +46,7 @@ from .sql.naming import conv as conv
 from .sql.schema import _get_table_key as _get_table_key
 from .sql.schema import BLANK_SCHEMA as BLANK_SCHEMA
 from .sql.schema import CheckConstraint as CheckConstraint
+# 表列定义
 from .sql.schema import Column as Column
 from .sql.schema import (
     ColumnCollectionConstraint as ColumnCollectionConstraint,
@@ -59,11 +64,13 @@ from .sql.schema import HasConditionalDDL as HasConditionalDDL
 from .sql.schema import Identity as Identity
 from .sql.schema import Index as Index
 from .sql.schema import insert_sentinel as insert_sentinel
+# 元数据容器：注册 Table 与命名约定
 from .sql.schema import MetaData as MetaData
 from .sql.schema import PrimaryKeyConstraint as PrimaryKeyConstraint
 from .sql.schema import SchemaConst as SchemaConst
 from .sql.schema import SchemaItem as SchemaItem
 from .sql.schema import SchemaVisitable as SchemaVisitable
 from .sql.schema import Sequence as Sequence
+# 表 Schema 对象
 from .sql.schema import Table as Table
 from .sql.schema import UniqueConstraint as UniqueConstraint

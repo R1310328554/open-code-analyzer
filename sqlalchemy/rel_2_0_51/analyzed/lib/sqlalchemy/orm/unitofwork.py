@@ -15,6 +15,8 @@ organizes them in order of dependency, and executes.
 
 """
 
+# ORM 工作单元（Unit of Work）：flush 任务编排与依赖排序执行
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,6 +41,7 @@ if TYPE_CHECKING:
     from .state import InstanceState
 
 
+# 在 relationship 集合/标量属性上注册 cascade save-update/delete 事件
 def track_cascade_events(descriptor, prop):
     """Establish event listeners on object attributes which handle
     cascade-on-set/append.
@@ -153,6 +156,7 @@ def track_cascade_events(descriptor, prop):
     )
 
 
+# 工作单元事务上下文：组装 flush 任务、依赖图与 post_update 状态
 class UOWTransaction:
     session: Session
     transaction: SessionTransaction
@@ -486,6 +490,7 @@ class UOWTransaction:
             self.session._register_persistent(other)
 
 
+# 遍历 dependency 关联 mapper 层次结构的 mixin
 class IterateMappersMixin:
     __slots__ = ()
 
@@ -500,6 +505,7 @@ class IterateMappersMixin:
             return self.dependency_processor.mapper.self_and_descendants
 
 
+# flush 预处理：按 dependency 收集待处理 state
 class Preprocess(IterateMappersMixin):
     __slots__ = (
         "dependency_processor",
@@ -550,6 +556,7 @@ class Preprocess(IterateMappersMixin):
             return False
 
 
+# 排序后 flush 动作基类：execute/execute_aggregate 钩子
 class PostSortRec:
     __slots__ = ("disabled",)
 
@@ -566,6 +573,7 @@ class PostSortRec:
         self.execute(uow)
 
 
+# 批量处理某 dependency 的全部 save 或 delete state
 class ProcessAll(IterateMappersMixin, PostSortRec):
     __slots__ = "dependency_processor", "isdelete", "fromparent", "sort_key"
 
@@ -611,6 +619,7 @@ class ProcessAll(IterateMappersMixin, PostSortRec):
                     yield state
 
 
+# 批量执行 mapper 的 post_update 列更新
 class PostUpdateAll(PostSortRec):
     __slots__ = "mapper", "isdelete", "sort_key"
 
@@ -628,6 +637,7 @@ class PostUpdateAll(PostSortRec):
         persistence.post_update(self.mapper, states, uow, cols)
 
 
+# 按 mapper 层次批量 INSERT/UPDATE 持久化
 class SaveUpdateAll(PostSortRec):
     __slots__ = ("mapper", "sort_key")
 
@@ -665,6 +675,7 @@ class SaveUpdateAll(PostSortRec):
         return "%s(%s)" % (self.__class__.__name__, self.mapper)
 
 
+# 按 mapper 层次批量 DELETE 持久化
 class DeleteAll(PostSortRec):
     __slots__ = ("mapper", "sort_key")
 
@@ -702,6 +713,7 @@ class DeleteAll(PostSortRec):
         return "%s(%s)" % (self.__class__.__name__, self.mapper)
 
 
+# 单 state 的 dependency save/delete 处理（可聚合）
 class ProcessState(PostSortRec):
     __slots__ = "dependency_processor", "isdelete", "state", "sort_key"
 
@@ -738,6 +750,7 @@ class ProcessState(PostSortRec):
         )
 
 
+# 单 state 的 save/update 持久化（可聚合）
 class SaveUpdateState(PostSortRec):
     __slots__ = "state", "mapper", "sort_key"
 
@@ -766,6 +779,7 @@ class SaveUpdateState(PostSortRec):
         )
 
 
+# 单 state 的 delete 持久化（可聚合）
 class DeleteState(PostSortRec):
     __slots__ = "state", "mapper", "sort_key"
 

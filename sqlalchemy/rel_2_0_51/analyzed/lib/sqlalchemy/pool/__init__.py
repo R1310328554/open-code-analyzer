@@ -8,6 +8,9 @@
 
 """Connection pooling for DB-API connections.
 
+# 连接池公开 API：重导出 Pool 实现类与连接代理类型
+"""Connection pooling for DB-API connections.
+
 Provides a number of connection pool implementations for a variety of
 usage scenarios and thread behavior requirements imposed by the
 application, DB-API or database itself.
@@ -27,6 +30,7 @@ from .base import _finalize_fairy
 from .base import _ResetStyleArgType as _ResetStyleArgType
 from .base import ConnectionPoolEntry as ConnectionPoolEntry
 from .base import ManagesConnection as ManagesConnection
+# 连接池抽象基类
 from .base import Pool as Pool
 from .base import PoolProxiedConnection as PoolProxiedConnection
 from .base import PoolResetState as PoolResetState
@@ -38,7 +42,10 @@ from .impl import AsyncAdaptedQueuePool as AsyncAdaptedQueuePool
 from .impl import (
     FallbackAsyncAdaptedQueuePool as FallbackAsyncAdaptedQueuePool,
 )
+# 不池化：每次 checkout 新建连接
 from .impl import NullPool as NullPool
+# 默认有界队列连接池
 from .impl import QueuePool as QueuePool
 from .impl import SingletonThreadPool as SingletonThreadPool
+# 单连接静态池（常用于 SQLite :memory:）
 from .impl import StaticPool as StaticPool

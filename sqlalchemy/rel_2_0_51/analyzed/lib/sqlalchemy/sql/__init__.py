@@ -4,7 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
-from typing import Any
+# SQL 表达式公开 API：重导出 select/insert/ColumnElement 等
+from typing import Anyfrom typing import Any
 from typing import TYPE_CHECKING
 
 from ._typing import ColumnExpressionArgument as ColumnExpressionArgument
@@ -50,6 +51,7 @@ from .expression import FromClause as FromClause
 from .expression import func as func
 from .expression import funcfilter as funcfilter
 from .expression import Insert as Insert
+# INSERT DML 构造器
 from .expression import insert as insert
 from .expression import intersect as intersect
 from .expression import intersect_all as intersect_all
@@ -82,6 +84,7 @@ from .expression import outparam as outparam
 from .expression import over as over
 from .expression import quoted_name as quoted_name
 from .expression import Select as Select
+# 核心 select() 构造器
 from .expression import select as select
 from .expression import Selectable as Selectable
 from .expression import SelectLabelStyle as SelectLabelStyle
@@ -89,6 +92,7 @@ from .expression import SQLColumnExpression as SQLColumnExpression
 from .expression import StatementLambdaElement as StatementLambdaElement
 from .expression import Subquery as Subquery
 from .expression import table as table
+# 临时表 TableClause 类型
 from .expression import TableClause as TableClause
 from .expression import TableSample as TableSample
 from .expression import tablesample as tablesample
@@ -108,6 +112,7 @@ from .expression import within_group as within_group
 from .visitors import ClauseVisitor as ClauseVisitor
 
 
+# 模块加载后注入子模块交叉引用（coercions/elements 等）
 def __go(lcls: Any) -> None:
     from .. import util as _sa_util
 

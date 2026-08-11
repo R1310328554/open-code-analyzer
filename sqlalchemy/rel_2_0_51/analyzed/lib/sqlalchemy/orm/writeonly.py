@@ -16,6 +16,8 @@ object must be executed each time.
 
 """
 
+# Write-only 关系集合：仅支持写入，读取需显式 select()
+
 from __future__ import annotations
 
 from typing import Any
@@ -74,6 +76,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound=Any)
 
 
+# Write-only 属性历史：直接接收 append/remove 事件
 class WriteOnlyHistory(Generic[_T]):
     """Overrides AttributeHistory to receive append/remove events directly."""
 
@@ -147,6 +150,7 @@ class WriteOnlyHistory(Generic[_T]):
             self.deleted_items.add(value)
 
 
+# Write-only 属性实现：dynamic=True、不支持 population
 class WriteOnlyAttributeImpl(
     attributes.HasCollectionAdapter, attributes.AttributeImpl
 ):
@@ -438,6 +442,7 @@ class WriteOnlyAttributeImpl(
 
 @log.class_logger
 @relationships.RelationshipProperty.strategy_for(lazy="write_only")
+# lazy="write_only" 加载策略：注册 WriteOnlyAttributeImpl
 class WriteOnlyLoader(strategies.AbstractRelationshipLoader, log.Identified):
     impl_class = WriteOnlyAttributeImpl
 
@@ -464,6 +469,7 @@ class WriteOnlyLoader(strategies.AbstractRelationshipLoader, log.Identified):
         )
 
 
+# 简化版 CollectionAdapter：内部 API 一致性
 class DynamicCollectionAdapter:
     """simplified CollectionAdapter for internal API consistency"""
 
@@ -485,6 +491,7 @@ class DynamicCollectionAdapter:
         return True
 
 
+# 虚拟集合基类：append/remove 同步到 attribute 事件
 class AbstractCollectionWriter(Generic[_T]):
     """Virtual collection which includes append/remove methods that synchronize
     into the attribute event system.
@@ -548,6 +555,7 @@ class AbstractCollectionWriter(Generic[_T]):
         )
 
 
+# Write-only 集合：lazy="write_only" 关系的公开接口
 class WriteOnlyCollection(AbstractCollectionWriter[_T]):
     """Write-only collection which can synchronize changes into the
     attribute event system.

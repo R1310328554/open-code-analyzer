@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# SQL 表达式构造器：and_/or_/bindparam/case/cast 等工厂函数
+
 from __future__ import annotations
 
 import typing
@@ -60,6 +62,7 @@ if typing.TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
+# 集合 ALL 比较子句（如 PostgreSQL ARRAY）
 def all_(expr: _ColumnExpressionArgument[_T]) -> CollectionAggregate[bool]:
     """Produce an ALL expression.
 
@@ -114,6 +117,7 @@ def all_(expr: _ColumnExpressionArgument[_T]) -> CollectionAggregate[bool]:
     return CollectionAggregate._create_all(expr)
 
 
+# 逻辑 AND 组合（空参时返回 true()）
 def and_(  # type: ignore[empty-body]
     initial_clause: Union[Literal[True], _ColumnExpressionArgument[bool]],
     *clauses: _ColumnExpressionArgument[bool],
@@ -462,6 +466,7 @@ def not_(clause: _ColumnExpressionArgument[_T]) -> ColumnElement[_T]:
     return coercions.expect(roles.ExpressionElementRole, clause).__invert__()
 
 
+# 命名绑定参数占位符
 def bindparam(
     key: Optional[str],
     value: Any = _NoArg.NO_ARG,
@@ -734,6 +739,7 @@ def bindparam(
     )
 
 
+# SQL CASE WHEN 表达式
 def case(
     *whens: Union[
         typing_Tuple[_ColumnExpressionArgument[bool], Any], Mapping[Any, Any]
@@ -853,6 +859,7 @@ def case(
     return Case(*whens, value=value, else_=else_)
 
 
+# 类型转换 CAST 表达式
 def cast(
     expression: _ColumnExpressionOrLiteralArgument[Any],
     type_: _TypeEngineArgument[_T],
@@ -955,6 +962,7 @@ def try_cast(
     return TryCast(expression, type_)
 
 
+# 独立列/字面量 ColumnClause
 def column(
     text: str,
     type_: Optional[_TypeEngineArgument[_T]] = None,
@@ -1208,6 +1216,7 @@ def extract(field: str, expr: _ColumnExpressionArgument[Any]) -> Extract:
     return Extract(field, expr)
 
 
+# SQL FALSE 常量
 def false() -> False_:
     """Return a :class:`.False_` construct.
 
@@ -1397,6 +1406,7 @@ def nulls_last(column: _ColumnExpressionArgument[_T]) -> UnaryExpression[_T]:
     return UnaryExpression._create_nulls_last(column)
 
 
+# 逻辑 OR 组合
 def or_(  # type: ignore[empty-body]
     initial_clause: Union[Literal[False], _ColumnExpressionArgument[bool]],
     *clauses: _ColumnExpressionArgument[bool],
@@ -1601,6 +1611,7 @@ def over(
 
 
 @_document_text_coercion("text", ":func:`.text`", ":paramref:`.text.text`")
+# 原始 SQL 文本片段
 def text(text: str) -> TextClause:
     r"""Construct a new :class:`_expression.TextClause` clause,
     representing
@@ -1680,6 +1691,7 @@ def text(text: str) -> TextClause:
     return TextClause(text)
 
 
+# SQL TRUE 常量
 def true() -> True_:
     """Return a constant :class:`.True_` construct.
 

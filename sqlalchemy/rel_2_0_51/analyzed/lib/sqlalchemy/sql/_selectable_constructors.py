@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# SELECT/FromClause 构造器：select/join/alias/cte/union 等
+
 from __future__ import annotations
 
 from typing import Any
@@ -56,6 +58,7 @@ if TYPE_CHECKING:
     from .selectable import SelectBase
 
 
+# 为 FromClause 创建 SQL 别名
 def alias(
     selectable: FromClause, name: Optional[str] = None, flat: bool = False
 ) -> NamedFromClause:
@@ -90,6 +93,7 @@ def alias(
     return Alias._factory(selectable, name=name, flat=flat)
 
 
+# 公共表表达式 CTE
 def cte(
     selectable: HasCTE, name: Optional[str] = None, recursive: bool = False
 ) -> CTE:
@@ -165,6 +169,7 @@ def except_all(
     return CompoundSelect._create_except_all(*selects)
 
 
+# EXISTS 子查询构造
 def exists(
     __argument: Optional[
         Union[_ColumnsClauseArgument[Any], SelectBase, ScalarSelect[Any]]
@@ -265,6 +270,7 @@ def intersect_all(
     return CompoundSelect._create_intersect_all(*selects)
 
 
+# INNER JOIN 构造
 def join(
     left: _FromClauseArgument,
     right: _FromClauseArgument,
@@ -348,6 +354,7 @@ def lateral(
     return Lateral._factory(selectable, name=name)
 
 
+# LEFT OUTER JOIN 构造
 def outerjoin(
     left: _FromClauseArgument,
     right: _FromClauseArgument,
@@ -386,6 +393,7 @@ def outerjoin(
 
 
 @overload
+# select() 重载：单实体 SELECT
 def select(__ent0: _TCCA[_T0]) -> Select[Tuple[_T0]]: ...
 
 
@@ -494,6 +502,7 @@ def select(
 ) -> Select[Any]: ...
 
 
+# select() 实现：构造 Core SELECT 语句
 def select(*entities: _ColumnsClauseArgument[Any], **__kw: Any) -> Select[Any]:
     r"""Construct a new :class:`_expression.Select`.
 
@@ -538,6 +547,7 @@ def select(*entities: _ColumnsClauseArgument[Any], **__kw: Any) -> Select[Any]:
     return Select(*entities)
 
 
+# 临时 TableClause（无 MetaData 绑定）
 def table(name: str, *columns: ColumnClause[Any], **kw: Any) -> TableClause:
     """Produce a new :class:`_expression.TableClause`.
 
@@ -611,6 +621,7 @@ def tablesample(
 
 
 @overload
+# UNION 复合查询
 def union(
     *selects: _TypedSelectable[_TP],
 ) -> CompoundSelect[_TP]: ...
@@ -674,6 +685,7 @@ def union_all(
     return CompoundSelect._create_union_all(*selects)
 
 
+# VALUES 子句构造（INSERT ... VALUES 或独立 VALUES）
 def values(
     *columns: _OnlyColumnArgument[Any],
     name: Optional[str] = None,
