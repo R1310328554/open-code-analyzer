@@ -23,6 +23,8 @@ from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
+# SuperPoint Torchvision 图像处理器：批量缩放、灰度预处理与关键点后处理
+
 
 
 if TYPE_CHECKING:
@@ -31,6 +33,7 @@ if TYPE_CHECKING:
 from torchvision.transforms.v2 import functional as tvF
 
 
+# SuperPointImageProcessorKwargs：SuperPoint 预处理参数：是否将 RGB 转为灰度
 class SuperPointImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -40,6 +43,7 @@ class SuperPointImageProcessorKwargs(ImagesKwargs, total=False):
     do_grayscale: bool
 
 
+# is_grayscale：灰度检测：判断 RGB 三通道像素值是否完全相同
 def is_grayscale(image: "torch.Tensor") -> bool:
     """Checks if an image is grayscale (all RGB channels are identical)."""
     if image.ndim < 3 or image.shape[0 if image.ndim == 3 else 1] == 1:
@@ -49,6 +53,7 @@ def is_grayscale(image: "torch.Tensor") -> bool:
     )
 
 
+# convert_to_grayscale：转灰度：NTSC 加权或 rgb_to_grayscale 输出三通道同值
 def convert_to_grayscale(image: "torch.Tensor") -> "torch.Tensor":
     """
     Converts an image to grayscale format using the NTSC formula. Only support torch.Tensor.
@@ -67,6 +72,7 @@ def convert_to_grayscale(image: "torch.Tensor") -> "torch.Tensor":
 
 
 @auto_docstring
+# SuperPointImageProcessor：SuperPoint Torchvision 后端：按尺寸分组批量预处理
 class SuperPointImageProcessor(TorchvisionBackend):
     valid_kwargs = SuperPointImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -78,9 +84,11 @@ class SuperPointImageProcessor(TorchvisionBackend):
     do_normalize = None
     do_grayscale = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SuperPointImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # _preprocess：内部预处理：缩放/归一化/灰度或 padding 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -111,6 +119,7 @@ class SuperPointImageProcessor(TorchvisionBackend):
         processed_images = reorder_images(processed_images_grouped, grouped_images_index)
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # post_process_keypoint_detection：后处理关键点：相对坐标乘原图尺寸转绝对坐标并去 padding
     def post_process_keypoint_detection(
         self, outputs: "SuperPointKeypointDescriptionOutput", target_sizes: TensorType | list[tuple]
     ) -> list[dict[str, "torch.Tensor"]]:

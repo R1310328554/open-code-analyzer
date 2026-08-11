@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Swin 配置：窗口大小、各阶段深度/头数与 Backbone 输出特征索引
+
 
 
 @auto_docstring(checkpoint="microsoft/swin-tiny-patch4-window7-224")
 @strict
+# SwinConfig：Swin 配置：窗口大小、各阶段 depths/num_heads 与骨干输出索引
 class SwinConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     depths (`list(int)`, *optional*, defaults to `[2, 2, 6, 2]`):
@@ -75,6 +78,7 @@ class SwinConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         self.num_layers = len(self.depths)
         # we set the hidden_size attribute in order to make Swin work with VisionEncoderDecoderModel

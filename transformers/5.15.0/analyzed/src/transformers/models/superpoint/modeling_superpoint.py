@@ -20,6 +20,8 @@ from torch import nn
 
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import (
+# SuperPoint 建模：卷积编码器 + 兴趣点/描述子双解码器的自监督关键点检测
+
     BaseModelOutputWithNoAttention,
 )
 from transformers.models.superpoint.configuration_superpoint import SuperPointConfig
@@ -34,6 +36,7 @@ from ...utils import (
 logger = logging.get_logger(__name__)
 
 
+# remove_keypoints_from_borders：边界关键点过滤：移除距图像边缘不足 border 像素的点
 def remove_keypoints_from_borders(
     keypoints: torch.Tensor, scores: torch.Tensor, border: int, height: int, width: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -44,6 +47,7 @@ def remove_keypoints_from_borders(
     return keypoints[mask], scores[mask]
 
 
+# top_k_keypoints：Top-K 筛选：保留得分最高的 k 个关键点
 def top_k_keypoints(keypoints: torch.Tensor, scores: torch.Tensor, k: int) -> tuple[torch.Tensor, torch.Tensor]:
     """Keeps the k keypoints with highest score"""
     if k >= len(keypoints):
@@ -52,6 +56,7 @@ def top_k_keypoints(keypoints: torch.Tensor, scores: torch.Tensor, k: int) -> tu
     return keypoints[indices], scores
 
 
+# simple_nms：简单 NMS：max_pool 迭代抑制邻域非极大响应
 def simple_nms(scores: torch.Tensor, nms_radius: int) -> torch.Tensor:
     """Applies non-maximum suppression on scores"""
     if nms_radius < 0:
@@ -80,6 +85,7 @@ def simple_nms(scores: torch.Tensor, nms_radius: int) -> torch.Tensor:
     """
 )
 @dataclass
+# SuperPointKeypointDescriptionOutput：SuperPoint 输出：关键点坐标、得分、描述子与 padding 掩码
 class SuperPointKeypointDescriptionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -107,7 +113,9 @@ class SuperPointKeypointDescriptionOutput(ModelOutput):
     hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# SuperPointConvBlock：SuperPoint 卷积块：双 3×3 Conv + ReLU + 可选 2×2 MaxPool
 class SuperPointConvBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config: SuperPointConfig, in_channels: int, out_channels: int, add_pooling: bool = False
     ) -> None:
@@ -129,6 +137,7 @@ class SuperPointConvBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2) if add_pooling else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.relu(self.conv_a(hidden_states))
         hidden_states = self.relu(self.conv_b(hidden_states))
@@ -137,12 +146,14 @@ class SuperPointConvBlock(nn.Module):
         return hidden_states
 
 
+# SuperPointEncoder：SuperPoint 编码器：4 层卷积逐步下采样提取特征图
 class SuperPointEncoder(nn.Module):
     """
     SuperPoint encoder module. It is made of 4 convolutional layers with ReLU activation and max pooling, reducing the
      dimensionality of the image.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperPointConfig) -> None:
         super().__init__()
         # SuperPoint uses 1 channel images
@@ -165,6 +176,7 @@ class SuperPointEncoder(nn.Module):
         )
         self.conv_blocks = nn.ModuleList(conv_blocks)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input,
@@ -187,6 +199,7 @@ class SuperPointEncoder(nn.Module):
         )
 
 
+# SuperPointInterestPointDecoder：SuperPoint 兴趣点解码器：softmax 得分 + NMS + 阈值提取关键点
 class SuperPointInterestPointDecoder(nn.Module):
     """
     The SuperPointInterestPointDecoder uses the output of the SuperPointEncoder to compute the keypoint with scores.
@@ -196,6 +209,7 @@ class SuperPointInterestPointDecoder(nn.Module):
     as to keep only the k keypoints with highest score.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperPointConfig) -> None:
         super().__init__()
         self.keypoint_threshold = config.keypoint_threshold
@@ -216,12 +230,14 @@ class SuperPointInterestPointDecoder(nn.Module):
             config.decoder_hidden_size, config.keypoint_decoder_dim, kernel_size=1, stride=1, padding=0
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, encoded: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         scores = self._get_pixel_scores(encoded)
         keypoints, scores = self._extract_keypoints(scores)
 
         return keypoints, scores
 
+    # _get_pixel_scores：像素得分计算：Conv + softmax 重塑为细粒度得分图并 NMS
     def _get_pixel_scores(self, encoded: torch.Tensor) -> torch.Tensor:
         """Based on the encoder output, compute the scores for each pixel of the image"""
         scores = self.relu(self.conv_score_a(encoded))
@@ -233,6 +249,7 @@ class SuperPointInterestPointDecoder(nn.Module):
         scores = simple_nms(scores, self.nms_radius)
         return scores
 
+    # _extract_keypoints：关键点提取：阈值筛选、边界过滤、Top-K 与 (y,x)→(x,y) 翻转
     def _extract_keypoints(self, scores: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Based on their scores, extract the pixels that represent the keypoints that will be used for descriptors computation.
@@ -259,6 +276,7 @@ class SuperPointInterestPointDecoder(nn.Module):
         return keypoints, scores
 
 
+# SuperPointDescriptorDecoder：SuperPoint 描述子解码器：Conv 生成 L2 归一化描述子并插值采样
 class SuperPointDescriptorDecoder(nn.Module):
     """
     The SuperPointDescriptorDecoder uses the outputs of both the SuperPointEncoder and the
@@ -268,6 +286,7 @@ class SuperPointDescriptorDecoder(nn.Module):
     are then interpolated at the keypoints locations.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperPointConfig) -> None:
         super().__init__()
 
@@ -288,6 +307,7 @@ class SuperPointDescriptorDecoder(nn.Module):
             padding=0,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, encoded: torch.Tensor, keypoints: torch.Tensor) -> torch.Tensor:
         """Based on the encoder output and the keypoints, compute the descriptors for each keypoint"""
         descriptors = self.conv_descriptor_b(self.relu(self.conv_descriptor_a(encoded)))
@@ -301,6 +321,7 @@ class SuperPointDescriptorDecoder(nn.Module):
         return descriptors
 
     @staticmethod
+    # _sample_descriptors：描述子采样：grid_sample 双线性插值关键点处描述子并 L2 归一化
     def _sample_descriptors(keypoints, descriptors, scale: int = 8) -> torch.Tensor:
         """Interpolate descriptors at keypoint locations"""
         batch_size, num_channels, height, width = descriptors.shape
@@ -320,6 +341,7 @@ class SuperPointDescriptorDecoder(nn.Module):
 
 
 @auto_docstring
+# SuperPointPreTrainedModel：SuperPoint 预训练基类：单通道像素提取与权重初始化
 class SuperPointPreTrainedModel(PreTrainedModel):
     config: SuperPointConfig
     base_model_prefix = "superpoint"
@@ -327,6 +349,7 @@ class SuperPointPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
     supports_gradient_checkpointing = False
 
+    # extract_one_channel_pixel_values：单通道提取：从三通道同值输入取首通道供 SuperPoint 使用
     def extract_one_channel_pixel_values(self, pixel_values: torch.FloatTensor) -> torch.FloatTensor:
         """
         Assuming pixel_values has shape (batch_size, 3, height, width), and that all channels values are the same,
@@ -349,6 +372,7 @@ class SuperPointPreTrainedModel(PreTrainedModel):
     SuperPoint model outputting keypoints and descriptors.
     """
 )
+# SuperPointForKeypointDetection：SuperPoint 关键点检测：编码器 + 关键点/描述子双解码器联合推理
 class SuperPointForKeypointDetection(SuperPointPreTrainedModel):
     """
     SuperPoint model. It consists of a SuperPointEncoder, a SuperPointInterestPointDecoder and a
@@ -359,6 +383,7 @@ class SuperPointForKeypointDetection(SuperPointPreTrainedModel):
     keypoints. It is made of a convolutional encoder and two decoders: one for keypoints and one for descriptors.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperPointConfig) -> None:
         super().__init__(config)
 
@@ -371,6 +396,7 @@ class SuperPointForKeypointDetection(SuperPointPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

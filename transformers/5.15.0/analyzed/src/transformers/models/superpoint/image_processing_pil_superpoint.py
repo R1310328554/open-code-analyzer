@@ -23,6 +23,8 @@ from ...image_utils import PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
+# SuperPoint PIL 图像处理器：缩放、归一化、灰度转换与关键点后处理
+
 
 
 if TYPE_CHECKING:
@@ -31,6 +33,7 @@ if TYPE_CHECKING:
     from .modeling_superpoint import SuperPointKeypointDescriptionOutput
 
 
+# is_grayscale：灰度检测：判断 RGB 三通道像素值是否完全相同
 def is_grayscale(image: np.ndarray) -> bool:
     """Checks if an image is grayscale (all RGB channels are identical)."""
     if image.shape[0] == 1:
@@ -38,6 +41,7 @@ def is_grayscale(image: np.ndarray) -> bool:
     return np.all(image[0, ...] == image[1, ...]) and np.all(image[1, ...] == image[2, ...])
 
 
+# convert_to_grayscale：转灰度：NTSC 加权或 rgb_to_grayscale 输出三通道同值
 def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
     """
     Converts an image to grayscale format using the NTSC formula. Only support numpy arrays.
@@ -59,6 +63,7 @@ def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
 
 
 # Adapted from transformers.models.superpoint.image_processing_superpoint.SuperPointImageProcessorKwargs
+# SuperPointImageProcessorKwargs：SuperPoint 预处理参数：是否将 RGB 转为灰度
 class SuperPointImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -69,6 +74,7 @@ class SuperPointImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SuperPointImageProcessorPil：SuperPoint PIL 后端：逐图缩放/归一化/灰度转换
 class SuperPointImageProcessorPil(PilBackend):
     valid_kwargs = SuperPointImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -80,9 +86,11 @@ class SuperPointImageProcessorPil(PilBackend):
     do_normalize = None
     do_grayscale = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SuperPointImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # _preprocess：内部预处理：缩放/归一化/灰度或 padding 流水线
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -111,6 +119,7 @@ class SuperPointImageProcessorPil(PilBackend):
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
     @requires(backends=("torch",))
+    # post_process_keypoint_detection：后处理关键点：相对坐标乘原图尺寸转绝对坐标并去 padding
     def post_process_keypoint_detection(
         self, outputs: "SuperPointKeypointDescriptionOutput", target_sizes: TensorType | list[tuple]
     ) -> list[dict[str, "torch.Tensor"]]:

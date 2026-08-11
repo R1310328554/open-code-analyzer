@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SwiftFormer 配置：各阶段嵌入维度、下采样策略与 LayerScale 超参数
+
 
 
 @auto_docstring(checkpoint="MBZUAI/swiftformer-xs")
 @strict
+# SwiftFormerConfig：SwiftFormer 配置：各阶段 embed_dims、depths 与 LayerScale 超参数
 class SwiftFormerConfig(PreTrainedConfig):
     r"""
     embed_dims (`list[int]`, *optional*, defaults to `[48, 56, 112, 220]`):

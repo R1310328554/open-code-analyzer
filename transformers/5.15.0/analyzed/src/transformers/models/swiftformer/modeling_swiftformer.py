@@ -25,11 +25,14 @@ from ...modeling_outputs import BaseModelOutputWithNoAttention, ImageClassifierO
 from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring, logging
 from .configuration_swiftformer import SwiftFormerConfig
+# SwiftFormer 建模：ConvEncoder + 高效加性注意力 + MLP 的多阶段视觉骨干
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# SwiftFormerPatchEmbedding：SwiftFormer 初始 Patch 嵌入：两层 3×3 Conv 将输入下采样 4 倍
 class SwiftFormerPatchEmbedding(nn.Module):
     """
     Patch Embedding Layer constructed of two 2D convolutional layers.
@@ -39,6 +42,7 @@ class SwiftFormerPatchEmbedding(nn.Module):
     Output: tensor of shape `[batch_size, out_channels, height/4, width/4]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig):
         super().__init__()
 
@@ -53,10 +57,12 @@ class SwiftFormerPatchEmbedding(nn.Module):
             nn.ReLU(),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         return self.patch_embedding(x)
 
 
+# SwiftFormerEmbeddings：SwiftFormer 阶段间嵌入：Conv 下采样 + BatchNorm 切换通道维度
 class SwiftFormerEmbeddings(nn.Module):
     """
     Embeddings layer consisting of a single 2D convolutional and batch normalization layer.
@@ -66,6 +72,7 @@ class SwiftFormerEmbeddings(nn.Module):
     Output: tensor of shape `[batch_size, channels, height/stride, width/stride]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, index: int):
         super().__init__()
 
@@ -84,12 +91,14 @@ class SwiftFormerEmbeddings(nn.Module):
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=stride, padding=padding)
         self.norm = nn.BatchNorm2d(embed_dim, eps=config.batch_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = self.proj(x)
         x = self.norm(x)
         return x
 
 
+# SwiftFormerConvEncoder：SwiftFormer 卷积编码器：深度可分离 3×3 + 1×1 Conv 残差块
 class SwiftFormerConvEncoder(nn.Module):
     """
     `SwiftFormerConvEncoder` with 3*3 and 1*1 convolutions.
@@ -99,6 +108,7 @@ class SwiftFormerConvEncoder(nn.Module):
     Output: tensor of shape `[batch_size, channels, height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, dim: int):
         super().__init__()
         hidden_dim = int(config.mlp_ratio * dim)
@@ -111,6 +121,7 @@ class SwiftFormerConvEncoder(nn.Module):
         self.drop_path = nn.Dropout(p=config.drop_conv_encoder_rate)
         self.layer_scale = nn.Parameter(torch.ones(dim).unsqueeze(-1).unsqueeze(-1), requires_grad=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         input = x
         x = self.depth_wise_conv(x)
@@ -122,6 +133,7 @@ class SwiftFormerConvEncoder(nn.Module):
         return x
 
 
+# SwiftFormerMlp：SwiftFormer MLP：1×1 Conv 前馈网络 + BatchNorm + GELU
 class SwiftFormerMlp(nn.Module):
     """
     MLP layer with 1*1 convolutions.
@@ -131,6 +143,7 @@ class SwiftFormerMlp(nn.Module):
     Output: tensor of shape `[batch_size, channels, height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, in_features: int):
         super().__init__()
         hidden_features = int(in_features * config.mlp_ratio)
@@ -141,6 +154,7 @@ class SwiftFormerMlp(nn.Module):
         self.fc2 = nn.Conv2d(hidden_features, in_features, 1)
         self.drop = nn.Dropout(p=config.drop_mlp_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = self.norm1(x)
         x = self.fc1(x)
@@ -151,6 +165,7 @@ class SwiftFormerMlp(nn.Module):
         return x
 
 
+# SwiftFormerEfficientAdditiveAttention：SwiftFormer 高效加性注意力：线性复杂度全局 token 混合
 class SwiftFormerEfficientAdditiveAttention(nn.Module):
     """
     Efficient Additive Attention module for SwiftFormer.
@@ -160,6 +175,7 @@ class SwiftFormerEfficientAdditiveAttention(nn.Module):
     Output: tensor of shape `[batch_size, channels, height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, dim: int = 512):
         super().__init__()
 
@@ -171,6 +187,7 @@ class SwiftFormerEfficientAdditiveAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.final = nn.Linear(dim, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         query = self.to_query(x)
         key = self.to_key(x)
@@ -191,6 +208,7 @@ class SwiftFormerEfficientAdditiveAttention(nn.Module):
         return out
 
 
+# SwiftFormerLocalRepresentation：SwiftFormer 局部表示：深度可分离 3×3 Conv 提取局部特征
 class SwiftFormerLocalRepresentation(nn.Module):
     """
     Local Representation module for SwiftFormer that is implemented by 3*3 depth-wise and point-wise convolutions.
@@ -200,6 +218,7 @@ class SwiftFormerLocalRepresentation(nn.Module):
     Output: tensor of shape `[batch_size, channels, height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, dim: int):
         super().__init__()
 
@@ -211,6 +230,7 @@ class SwiftFormerLocalRepresentation(nn.Module):
         self.drop_path = nn.Identity()
         self.layer_scale = nn.Parameter(torch.ones(dim).unsqueeze(-1).unsqueeze(-1), requires_grad=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         input = x
         x = self.depth_wise_conv(x)
@@ -223,6 +243,7 @@ class SwiftFormerLocalRepresentation(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->SwiftFormerDropPath
+# SwiftFormerDropPath：SwiftFormer 随机深度：训练时按概率丢弃残差分支
 class SwiftFormerDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -230,10 +251,12 @@ class SwiftFormerDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -243,10 +266,12 @@ class SwiftFormerDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_：返回 DropPath 丢弃概率等调试信息
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
+# SwiftFormerEncoderBlock：SwiftFormer 编码块：局部表示 + 加性注意力 + MLP 三段残差
 class SwiftFormerEncoderBlock(nn.Module):
     """
     SwiftFormer Encoder Block for SwiftFormer. It consists of (1) Local representation module, (2)
@@ -257,6 +282,7 @@ class SwiftFormerEncoderBlock(nn.Module):
     Output: tensor of shape `[batch_size, channels,height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, dim: int, drop_path: float = 0.0) -> None:
         super().__init__()
 
@@ -276,6 +302,7 @@ class SwiftFormerEncoderBlock(nn.Module):
                 layer_scale_init_value * torch.ones(dim).unsqueeze(-1).unsqueeze(-1), requires_grad=True
             )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = self.local_representation(x)
         batch_size, channels, height, width = x.shape
@@ -290,6 +317,7 @@ class SwiftFormerEncoderBlock(nn.Module):
         return x
 
 
+# SwiftFormerStage：SwiftFormer 阶段：多个 ConvEncoder 块 + 末尾 EncoderBlock
 class SwiftFormerStage(GradientCheckpointingLayer):
     """
     A Swiftformer stage consisting of a series of `SwiftFormerConvEncoder` blocks and a final
@@ -300,6 +328,7 @@ class SwiftFormerStage(GradientCheckpointingLayer):
     Output: tensor in shape `[batch_size, channels, height, width]`
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig, index: int) -> None:
         super().__init__()
 
@@ -318,13 +347,16 @@ class SwiftFormerStage(GradientCheckpointingLayer):
 
         self.blocks = nn.ModuleList(blocks)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input):
         for block in self.blocks:
             input = block(input)
         return input
 
 
+# SwiftFormerEncoder：SwiftFormer 编码器：多阶段 Stage 与可选下采样嵌入串联
 class SwiftFormerEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig) -> None:
         super().__init__()
         self.config = config
@@ -347,6 +379,7 @@ class SwiftFormerEncoder(nn.Module):
 
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -375,6 +408,7 @@ class SwiftFormerEncoder(nn.Module):
 
 
 @auto_docstring
+# SwiftFormerPreTrainedModel：SwiftFormer 预训练基类：Conv/Linear 截断正态初始化与 LayerScale
 class SwiftFormerPreTrainedModel(PreTrainedModel):
     config: SwiftFormerConfig
     base_model_prefix = "swiftformer"
@@ -384,6 +418,7 @@ class SwiftFormerPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["SwiftFormerEncoderBlock"]
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Conv/Linear 截断正态、LayerScale 与偏置置零
     def _init_weights(self, module: nn.Module) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -402,7 +437,9 @@ class SwiftFormerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SwiftFormerModel：SwiftFormer 基模型：Patch 嵌入 + 编码器输出特征图
 class SwiftFormerModel(SwiftFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig):
         super().__init__(config)
         self.config = config
@@ -414,6 +451,7 @@ class SwiftFormerModel(SwiftFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -446,7 +484,9 @@ class SwiftFormerModel(SwiftFormerPreTrainedModel):
 
 
 @auto_docstring
+# SwiftFormerForImageClassification：SwiftFormer 图像分类：双头蒸馏 logits 平均 + 交叉熵损失
 class SwiftFormerForImageClassification(SwiftFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwiftFormerConfig) -> None:
         super().__init__(config)
 
@@ -464,6 +504,7 @@ class SwiftFormerForImageClassification(SwiftFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

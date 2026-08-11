@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Swin2SR 配置：6 阶段深度、上采样倍率、残差连接与重建模块类型
+
 
 
 @auto_docstring(checkpoint="caidas/swin2sr-classicalsr-x2-64")
 @strict
+# Swin2SRConfig：Swin2SR 配置：6 阶段深度、上采样倍率与重建 upsampler 类型
 class Swin2SRConfig(PreTrainedConfig):
     r"""
     num_channels_out (`int`, *optional*, defaults to `num_channels`):
@@ -86,6 +89,7 @@ class Swin2SRConfig(PreTrainedConfig):
     resi_connection: str = "1conv"
     upsampler: str = "pixelshuffle"
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         self.num_channels_out = self.num_channels if self.num_channels_out is None else self.num_channels_out
         self.num_layers = len(self.depths)

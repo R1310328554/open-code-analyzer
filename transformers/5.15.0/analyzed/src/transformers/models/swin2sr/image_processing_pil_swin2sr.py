@@ -19,6 +19,8 @@ from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import pad as np_pad
 from ...image_utils import (
+# Swin2SR PIL 图像处理器：归一化缩放与对称 padding 至 size_divisor 整除
+
     ChannelDimension,
     ImageInput,
     PILImageResampling,
@@ -29,6 +31,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.swin2sr.image_processing_swin2sr.Swin2SRImageProcessorKwargs
+# Swin2SRImageProcessorKwargs：Swin2SR 预处理参数：padding 对齐的 size_divisor
 class Swin2SRImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -39,6 +42,7 @@ class Swin2SRImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Swin2SRImageProcessorPil：Swin2SR PIL 后端：归一化 + 对称 padding 至整除 size_divisor
 class Swin2SRImageProcessorPil(PilBackend):
     """PIL backend for Swin2SR with custom pad."""
 
@@ -49,6 +53,7 @@ class Swin2SRImageProcessorPil(PilBackend):
     do_pad = True
     size_divisor = 8
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Swin2SRImageProcessorKwargs]):
         # Handle legacy pad_size parameter
         pad_size = kwargs.pop("pad_size", None)
@@ -57,6 +62,7 @@ class Swin2SRImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理入口：解析 kwargs 并调用后端 _preprocess
     def preprocess(
         self,
         images: ImageInput,
@@ -64,6 +70,7 @@ class Swin2SRImageProcessorPil(PilBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # pad：对称 padding：扩展 H/W 至 size_divisor 的最近倍数
     def pad(
         self,
         image: np.ndarray,
@@ -83,6 +90,7 @@ class Swin2SRImageProcessorPil(PilBackend):
             input_data_format=ChannelDimension.FIRST,
         )
 
+    # _preprocess：内部预处理：缩放/归一化/灰度或 padding 流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

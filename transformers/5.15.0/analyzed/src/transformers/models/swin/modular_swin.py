@@ -32,6 +32,8 @@ from ...utils import ModelOutput, TransformersKwargs, auto_docstring, logging, t
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from ..vit.modeling_vit import (
+# Swin 模块化实现：窗口 Transformer 核心组件，供 modeling_swin 代码生成
+
     PreTrainedModel,
     ViTAttention,
     ViTLayer,
@@ -45,6 +47,7 @@ from .configuration_swin import SwinConfig
 logger = logging.get_logger(__name__)
 
 
+# SwinDropPath：Swin 随机深度：训练时按概率丢弃残差分支
 class SwinDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -52,10 +55,12 @@ class SwinDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -65,6 +70,7 @@ class SwinDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_：返回 DropPath 丢弃概率等调试信息
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
@@ -75,6 +81,7 @@ class SwinDropPath(nn.Module):
     """
 )
 @dataclass
+# SwinEncoderOutput：Swin 编码器输出：last_hidden_state 与可选 hidden_states
 class SwinEncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -97,6 +104,7 @@ class SwinEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# SwinModelOutput：Swin 模型输出：池化序列表示 + 编码器隐状态
 class SwinModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -122,6 +130,7 @@ class SwinModelOutput(ModelOutput):
     """
 )
 @dataclass
+# SwinMaskedImageModelingOutput：Swin 掩码图像建模输出：重建 logits 与损失
 class SwinMaskedImageModelingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `bool_masked_pos` is provided):
@@ -149,6 +158,7 @@ class SwinMaskedImageModelingOutput(ModelOutput):
     """
 )
 @dataclass
+# SwinImageClassifierOutput：Swin 分类输出：logits 与可选 hidden_states
 class SwinImageClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -170,6 +180,7 @@ class SwinImageClassifierOutput(ModelOutput):
     reshaped_hidden_states: tuple[torch.FloatTensor, ...] | None = None
 
 
+# window_partition：窗口划分：将 H×W 特征图切分为 window_size×window_size 窗口序列
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -182,6 +193,7 @@ def window_partition(input_feature, window_size):
     return windows
 
 
+# window_reverse：窗口还原：将窗口序列重组为 H×W 特征图
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -192,11 +204,13 @@ def window_reverse(windows, window_size, height, width):
     return windows
 
 
+# SwinEmbeddings：Swin 嵌入层：Patch 嵌入 + 可选绝对位置编码 + LayerNorm
 class SwinEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings. Optionally, also the mask token.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, use_mask_token=False):
         super().__init__()
 
@@ -244,6 +258,7 @@ class SwinEmbeddings(nn.Module):
 
         return patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None,
@@ -272,6 +287,7 @@ class SwinEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# SwinPatchEmbeddings：Swin Patch 嵌入：Conv2d 将图像切分为 patch 序列
 class SwinPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -279,6 +295,7 @@ class SwinPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -302,6 +319,7 @@ class SwinPatchEmbeddings(nn.Module):
             pixel_values = nn.functional.pad(pixel_values, pad_values)
         return pixel_values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor | None) -> tuple[torch.Tensor, tuple[int]]:
         _, num_channels, height, width = pixel_values.shape
         # pad the input to be divisible by self.patch_size, if needed
@@ -314,6 +332,7 @@ class SwinPatchEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# SwinPatchMerging：Swin Patch 合并：2×2 邻域拼接 + Linear 下采样通道翻倍
 class SwinPatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -323,6 +342,7 @@ class SwinPatchMerging(nn.Module):
             Number of input channels.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int) -> None:
         super().__init__()
         self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
@@ -334,6 +354,7 @@ class SwinPatchMerging(nn.Module):
             input_feature = nn.functional.pad(input_feature, (0, 0, 0, width % 2, 0, height % 2))
         return input_feature
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_feature: torch.Tensor, input_dimensions: tuple[int, int]) -> torch.Tensor:
         height, width = input_dimensions
         # `dim` is height * width
@@ -354,6 +375,7 @@ class SwinPatchMerging(nn.Module):
         return input_feature
 
 
+# SwinRelativePositionBias：Swin 相对位置偏置：可学习窗口内相对位置注意力偏置表
 class SwinRelativePositionBias(nn.Module):
     """
     Relative position bias for Swin's window-based attention, following the style of BeitRelativePositionBias.
@@ -364,6 +386,7 @@ class SwinRelativePositionBias(nn.Module):
     are learned parameters and must be re-read on every forward call.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_heads: int, window_size: tuple[int, int]):
         super().__init__()
         self.window_size = window_size
@@ -392,13 +415,16 @@ class SwinRelativePositionBias(nn.Module):
 
         return relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self) -> torch.Tensor:
         relative_position_bias = self.relative_position_bias_table[self.relative_position_index]
         relative_position_bias = relative_position_bias.view(self.window_area, self.window_area, -1)
         return relative_position_bias.permute(2, 0, 1).contiguous().unsqueeze(0)  # 1, num_heads, Wh*Ww, Wh*Ww
 
 
+# SwinAttention：Swin 窗口注意力：窗口内多头自注意力 + 相对位置偏置
 class SwinAttention(ViTAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwinConfig, hidden_size: int, num_attention_heads: int, window_size: int):
         super().__init__(config)
         self.num_attention_heads = num_attention_heads
@@ -412,6 +438,7 @@ class SwinAttention(ViTAttention):
 
         self.relative_position_bias = SwinRelativePositionBias(num_attention_heads, (window_size, window_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -465,7 +492,9 @@ class SwinAttention(ViTAttention):
         return attn_output, attn_weights
 
 
+# SwinMLP：Swin MLP：两层 Linear + GELU 前馈网络
 class SwinMLP(ViTMLP):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwinConfig, dim: int):
         nn.Module.__init__(self)
         self.activation_fn = ACT2FN[config.hidden_act]
@@ -473,7 +502,9 @@ class SwinMLP(ViTMLP):
         self.fc2 = nn.Linear(int(config.mlp_ratio * dim), dim)
 
 
+# SwinLayer：Swin Transformer 层：窗口注意力 + MLP 双残差 + DropPath
 class SwinLayer(ViTLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SwinConfig,
@@ -545,6 +576,7 @@ class SwinLayer(ViTLayer):
             )
         return hidden_states
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -593,7 +625,9 @@ class SwinLayer(ViTLayer):
         return hidden_states, attn_weights
 
 
+# SwinStage：Swin 阶段：多个 SwinLayer + 可选 PatchMerging 下采样
 class SwinStage(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SwinConfig,
@@ -647,6 +681,7 @@ class SwinStage(GradientCheckpointingLayer):
         batch_size, _, hidden_size = spatial_state.shape
         return spatial_state.view(batch_size, h, w, hidden_size).permute(0, 3, 1, 2).contiguous()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -674,6 +709,7 @@ class SwinStage(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SwinPreTrainedModel：Swin 预训练基类：权重初始化与梯度检查点支持
 class SwinPreTrainedModel(ViTPreTrainedModel):
     config: SwinConfig
     _no_split_modules = ["SwinStage"]
@@ -696,6 +732,7 @@ class SwinPreTrainedModel(ViTPreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Conv/Linear 截断正态、LayerScale 与偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         PreTrainedModel._init_weights(self, module)
@@ -709,7 +746,9 @@ class SwinPreTrainedModel(ViTPreTrainedModel):
             init.copy_(module.relative_position_index, module._create_relative_position_index().view(-1))
 
 
+# SwinEncoder：Swin 编码器：多阶段 SwinStage 堆叠输出特征序列
 class SwinEncoder(SwinPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwinConfig, grid_size: tuple[int, int]):
         super().__init__(config)
         self.num_layers = len(config.depths)
@@ -734,6 +773,7 @@ class SwinEncoder(SwinPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -781,7 +821,9 @@ class SwinEncoder(SwinPreTrainedModel):
 
 
 @auto_docstring
+# SwinModel：Swin 基模型：嵌入 + 编码器 + 全局平均池化
 class SwinModel(SwinPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True, use_mask_token=False):
         r"""
         add_pooling_layer (`bool`, *optional*, defaults to `True`):
@@ -805,6 +847,7 @@ class SwinModel(SwinPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -860,7 +903,9 @@ class SwinModel(SwinPreTrainedModel):
     </Tip>
     """
 )
+# SwinForMaskedImageModeling：Swin 掩码图像建模：编码器 + 上采样解码头重建像素
 class SwinForMaskedImageModeling(SwinPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -879,6 +924,7 @@ class SwinForMaskedImageModeling(SwinPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -968,7 +1014,9 @@ class SwinForMaskedImageModeling(SwinPreTrainedModel):
     </Tip>
     """
 )
+# SwinForImageClassification：Swin 图像分类：编码器 + LayerNorm + Linear 分类头
 class SwinForImageClassification(SwinPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -985,6 +1033,7 @@ class SwinForImageClassification(SwinPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1026,9 +1075,11 @@ class SwinForImageClassification(SwinPreTrainedModel):
     Swin backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# SwinBackbone：Swin 骨干网络：多尺度特征图输出供下游检测/分割使用
 class SwinBackbone(BackboneMixin, SwinPreTrainedModel):
     _keys_to_ignore_on_load_missing = [r"swin.layernorm.*"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwinConfig):
         super().__init__(config)
 
@@ -1047,6 +1098,7 @@ class SwinBackbone(BackboneMixin, SwinPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,

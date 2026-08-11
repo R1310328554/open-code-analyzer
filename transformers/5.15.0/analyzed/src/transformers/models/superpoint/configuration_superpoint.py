@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SuperPoint 配置：编码器通道、关键点/描述子解码维度与 NMS 阈值超参数
+
 
 
 @auto_docstring(checkpoint="magic-leap-community/superpoint")
 @strict
+# SuperPointConfig：SuperPoint 配置：编码器通道、关键点/描述子解码维度与 NMS 超参数
 class SuperPointConfig(PreTrainedConfig):
     r"""
     encoder_hidden_sizes (`List`, *optional*, defaults to `[64, 64, 128, 128]`):

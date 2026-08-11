@@ -20,6 +20,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# Swin2SR Torchvision 图像处理器：批量归一化与对称 padding 预处理
+
     ImageInput,
     PILImageResampling,
     SizeDict,
@@ -28,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# Swin2SRImageProcessorKwargs：Swin2SR 预处理参数：padding 对齐的 size_divisor
 class Swin2SRImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -38,6 +41,7 @@ class Swin2SRImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Swin2SRImageProcessor：Swin2SR Torchvision 后端：批量归一化与对称 padding
 class Swin2SRImageProcessor(TorchvisionBackend):
     """Torchvision backend for Swin2SR with custom pad."""
 
@@ -48,6 +52,7 @@ class Swin2SRImageProcessor(TorchvisionBackend):
     do_pad = True
     size_divisor = 8
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Swin2SRImageProcessorKwargs]):
         # Handle legacy pad_size parameter
         pad_size = kwargs.pop("pad_size", None)
@@ -56,6 +61,7 @@ class Swin2SRImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理入口：解析 kwargs 并调用后端 _preprocess
     def preprocess(
         self,
         images: ImageInput,
@@ -63,6 +69,7 @@ class Swin2SRImageProcessor(TorchvisionBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # pad：对称 padding：扩展 H/W 至 size_divisor 的最近倍数
     def pad(
         self,
         images: "torch.Tensor",
@@ -76,6 +83,7 @@ class Swin2SRImageProcessor(TorchvisionBackend):
         pad_width = (width // size_divisor + 1) * size_divisor - width
         return tvF.pad(images, (0, 0, pad_width, pad_height), padding_mode="symmetric")
 
+    # _preprocess：内部预处理：缩放/归一化/灰度或 padding 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
