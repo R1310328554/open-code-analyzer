@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Mistral4 配置：MoE 因果语言模型默认超参
+
+# Mistral4Config：mistralai/Mistral-Small-4 MoE 因果 LM 默认超参
 @auto_docstring(checkpoint="mistralai/Mistral-Small-4-119B-2603")
 @strict
+# Mistral4Config：mistralai/Mistral-Small-4 MoE 因果 LM 默认超参
 class Mistral4Config(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):

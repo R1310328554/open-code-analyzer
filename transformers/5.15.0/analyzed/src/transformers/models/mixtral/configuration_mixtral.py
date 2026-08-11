@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Mixtral 配置：8x7B 稀疏 MoE 因果 LM 超参
+
+# MixtralConfig：mistralai/Mixtral-8x7B 稀疏 MoE 因果 LM 默认超参
 @auto_docstring(checkpoint="mistralai/Mixtral-8x7B-v0.1")
 @strict
+# MixtralConfig：mistralai/Mixtral-8x7B 稀疏 MoE 因果 LM 默认超参
 class MixtralConfig(PreTrainedConfig):
     r"""
     Example:

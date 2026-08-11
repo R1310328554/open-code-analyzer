@@ -23,8 +23,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MLCD 配置：DeepGlint MLCD ViT 视觉编码器超参
+
+# MLCDVisionConfig：DeepGlint-AI/mlcd ViT 视觉编码器超参
 @auto_docstring(checkpoint="DeepGlint-AI/mlcd-vit-bigG-patch14-336")
 @strict
+# MLCDVisionConfig：DeepGlint-AI/mlcd ViT 视觉编码器超参
 class MLCDVisionConfig(PreTrainedConfig):
     r"""
     num_key_value_groups (`int`, *optional*, defaults to 1):

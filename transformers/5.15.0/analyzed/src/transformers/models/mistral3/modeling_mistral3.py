@@ -37,7 +37,10 @@ from ..auto import AutoModel
 from .configuration_mistral3 import Mistral3Config
 
 
+# Mistral3 建模：Pixtral ViT + Mistral LLM 多模态条件生成（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Mistral3RMSNorm：Mistral3 RMS 层归一化（等价 T5LayerNorm）
 class Mistral3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -58,6 +61,7 @@ class Mistral3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Mistral3PatchMerger：Mistral3 视觉 patch 空间合并与下采样模块
 class Mistral3PatchMerger(nn.Module):
     """
     Learned merging of spatial_merge_size ** 2 patches
@@ -96,6 +100,7 @@ class Mistral3PatchMerger(nn.Module):
         return image_features
 
 
+# Mistral3MultiModalProjector：Mistral3 视觉特征到语言嵌入空间的多模态投影器
 class Mistral3MultiModalProjector(nn.Module):
     def __init__(self, config: Mistral3Config):
         super().__init__()
@@ -130,6 +135,7 @@ class Mistral3MultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# Mistral3CausalLMOutputWithPast：Mistral3 条件生成输出（含 past_key_values 与图像特征）
 class Mistral3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -160,6 +166,7 @@ class Mistral3CausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# Mistral3ModelOutputWithPast：Mistral3 多模态主干前向输出（含 past_key_values）
 class Mistral3ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -176,6 +183,7 @@ class Mistral3ModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# Mistral3PreTrainedModel：Mistral3 预训练基类与权重初始化
 class Mistral3PreTrainedModel(PreTrainedModel):
     config: Mistral3Config
     base_model_prefix = "model"
@@ -196,6 +204,7 @@ class Mistral3PreTrainedModel(PreTrainedModel):
     The Mistral3 model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# Mistral3Model：Mistral3 多模态主干（Pixtral 视觉塔 + Mistral 文本 LLM）
 class Mistral3Model(Mistral3PreTrainedModel):
     def __init__(self, config: Mistral3Config):
         super().__init__(config)
@@ -327,6 +336,7 @@ class Mistral3Model(Mistral3PreTrainedModel):
     The MISTRAL3 model which consists of a vision backbone and a language model.
     """
 )
+# Mistral3ForConditionalGeneration：Mistral3 图文条件生成（Pixtral ViT + Mistral LLM）
 class Mistral3ForConditionalGeneration(Mistral3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

@@ -38,8 +38,12 @@ from ..qwen2_vl.modeling_qwen2_vl import VisionRotaryEmbedding, apply_rotary_pos
 logger = logging.get_logger(__name__)
 
 
+# MLCD modular 源：CLIP 视觉编码器 + Qwen2-VL 2D RoPE 注意力
+
+# MLCDVisionConfig：DeepGlint-AI/mlcd ViT 视觉编码器超参
 @auto_docstring(checkpoint="DeepGlint-AI/mlcd-vit-bigG-patch14-336")
 @strict
+# MLCDVisionConfig：DeepGlint-AI/mlcd ViT 视觉编码器超参
 class MLCDVisionConfig(PreTrainedConfig):
     r"""
     num_key_value_groups (`int`, *optional*, defaults to 1):
@@ -78,14 +82,17 @@ class MLCDVisionConfig(PreTrainedConfig):
     initializer_factor: float = 1.0
 
 
+# MLCDMLP：MLCD 视觉编码器 FFN 子层
 class MLCDMLP(CLIPMLP):
     pass
 
 
+# MLCDRotaryEmbedding：MLCD 视觉 2D 旋转位置编码（RoPE）
 class MLCDRotaryEmbedding(VisionRotaryEmbedding):
     pass
 
 
+# MLCDVisionEmbeddings：MLCD 视觉 patch 嵌入与位置编码
 class MLCDVisionEmbeddings(CLIPVisionEmbeddings):
     def __init__(self, config: MLCDVisionConfig):
         super().__init__(config)
@@ -104,6 +111,7 @@ class MLCDVisionEmbeddings(CLIPVisionEmbeddings):
         return embeddings
 
 
+# MLCDAttention：MLCD 视觉编码器多头自注意力（含 2D RoPE）
 class MLCDAttention(CLIPAttention):
     """Multi-headed attention with RoPE. Refer to papers:
     - Attention is all you need:
@@ -164,6 +172,7 @@ class MLCDAttention(CLIPAttention):
         return attn_output, attn_weights
 
 
+# MLCDEncoderLayer：MLCD 视觉编码器单层（注意力 + MLP）
 class MLCDEncoderLayer(CLIPEncoderLayer):
     def __init__(self, config: MLCDVisionConfig):
         super().__init__(config)
@@ -206,6 +215,7 @@ class MLCDEncoderLayer(CLIPEncoderLayer):
         return hidden_states
 
 
+# MLCDEncoder：MLCD 视觉 Transformer 编码器堆叠
 class MLCDEncoder(CLIPEncoder):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -256,6 +266,7 @@ class MLCDEncoder(CLIPEncoder):
 
 
 @auto_docstring
+# MLCDPreTrainedModel：MLCD 预训练基类与权重初始化
 class MLCDPreTrainedModel(PreTrainedModel):
     config: MLCDVisionConfig
     base_model_prefix = "vision_model"
@@ -304,6 +315,7 @@ class MLCDPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# MLCDVisionModel：MLCD ViT 视觉编码器（含 2D RoPE 注意力）
 class MLCDVisionModel(CLIPVisionModel):
     def __init__(self, config: MLCDVisionConfig):
         super().__init__(config)

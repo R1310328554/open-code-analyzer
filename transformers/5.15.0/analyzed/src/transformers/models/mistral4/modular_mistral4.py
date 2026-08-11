@@ -48,18 +48,24 @@ from .configuration_mistral4 import Mistral4Config
 logger = logging.get_logger(__name__)
 
 
+# Mistral4 modular 源：DeepSeek MoE + Llama 解码器 + Llama-4 注意力缩放
+
+# Mistral4RMSNorm：Mistral4 RMS 层归一化（等价 T5LayerNorm）
 class Mistral4RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Mistral4RotaryEmbedding：Mistral4 旋转位置编码（YaRN 扩展 RoPE）
 class Mistral4RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# Mistral4MLP：Mistral4 SwiGLU 前馈 MLP 子层
 class Mistral4MLP(Qwen2MoeMLP):
     pass
 
 
+# Mistral4TopkRouter：Mistral4 MoE top-k 专家路由器
 class Mistral4TopkRouter(DeepseekV2TopkRouter):
     def __init__(self, config):
         super().__init__(config)
@@ -92,14 +98,17 @@ class Mistral4TopkRouter(DeepseekV2TopkRouter):
         return router_logits, topk_weights, topk_indices
 
 
+# Mistral4Experts：Mistral4 MoE 多专家 FFN 并行计算模块
 class Mistral4Experts(DeepseekV3Experts):
     pass
 
 
+# Mistral4MoE：Mistral4 稀疏 MoE 层（路由 + 专家 FFN）
 class Mistral4MoE(DeepseekV3MoE):
     pass
 
 
+# Mistral4Attention：Mistral4 多头因果自注意力（Llama-4 位置缩放 + GQA）
 class Mistral4Attention(DeepseekV3Attention):
     def forward(
         self,
@@ -166,6 +175,7 @@ class Mistral4Attention(DeepseekV3Attention):
         return attn_output, attn_weights
 
 
+# Mistral4DecoderLayer：Mistral4 解码器单层（注意力 + MoE FFN）
 class Mistral4DecoderLayer(DeepseekV3DecoderLayer):
     def __init__(self, config: Mistral4Config, layer_idx: int):
         nn.Module.__init__(self)
@@ -182,6 +192,7 @@ class Mistral4DecoderLayer(DeepseekV3DecoderLayer):
         self.post_attention_layernorm = Mistral4RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# Mistral4PreTrainedModel：Mistral4 预训练基类与权重初始化
 class Mistral4PreTrainedModel(PreTrainedModel):
     config: Mistral4Config
     base_model_prefix = "model"
@@ -211,18 +222,22 @@ class Mistral4PreTrainedModel(PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# Mistral4Model：Mistral4 MoE Transformer 解码器主干
 class Mistral4Model(LlamaModel):
     pass
 
 
+# Mistral4ForCausalLM：Mistral4 因果语言建模条件生成
 class Mistral4ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# Mistral4ForSequenceClassification：Mistral4 序列分类
 class Mistral4ForSequenceClassification(GenericForSequenceClassification, Mistral4PreTrainedModel):
     pass
 
 
+# Mistral4ForTokenClassification：Mistral4 词元分类
 class Mistral4ForTokenClassification(GenericForTokenClassification, Mistral4PreTrainedModel):
     pass
 

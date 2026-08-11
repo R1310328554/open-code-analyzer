@@ -53,7 +53,10 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_mixtral import MixtralConfig
 
 
+# Mixtral 建模：8 专家稀疏 MoE 因果 LM（由 modular 自动生成）
+
 @use_experts_implementation
+# MixtralExperts：Mixtral MoE 多专家 FFN 并行计算模块
 class MixtralExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -93,6 +96,7 @@ class MixtralExperts(nn.Module):
         return final_hidden_states
 
 
+# MixtralTopKRouter：Mixtral MoE top-k 专家路由器
 class MixtralTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -111,6 +115,7 @@ class MixtralTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# MixtralSparseMoeBlock：Mixtral 稀疏 MoE 层（路由 + 专家 FFN）
 class MixtralSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -131,6 +136,7 @@ class MixtralSparseMoeBlock(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# MixtralRMSNorm：Mixtral RMS 层归一化（等价 T5LayerNorm）
 class MixtralRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -151,6 +157,7 @@ class MixtralRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MixtralRotaryEmbedding：Mixtral 旋转位置编码（RoPE）
 class MixtralRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MixtralConfig, device=None):
@@ -208,6 +215,7 @@ class MixtralRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -216,6 +224,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -241,6 +250,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -253,6 +263,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -279,6 +290,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# MixtralAttention：Mixtral 多头因果自注意力（GQA，滑动窗口）
 class MixtralAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -338,6 +350,7 @@ class MixtralAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MixtralDecoderLayer：Mixtral 解码器单层（自注意力 + MoE FFN）
 class MixtralDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MixtralConfig, layer_idx: int):
         super().__init__()
@@ -377,6 +390,7 @@ class MixtralDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MixtralPreTrainedModel：Mixtral 预训练基类与权重初始化
 class MixtralPreTrainedModel(PreTrainedModel):
     config: MixtralConfig
     base_model_prefix = "model"
@@ -407,6 +421,7 @@ class MixtralPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MixtralModel：Mixtral MoE Transformer 解码器主干
 class MixtralModel(MixtralPreTrainedModel):
     def __init__(self, config: MixtralConfig):
         super().__init__(config)
@@ -482,6 +497,7 @@ class MixtralModel(MixtralPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：Mixtral MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -565,6 +581,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# MixtralForCausalLM：Mixtral 因果语言建模条件生成
 class MixtralForCausalLM(MixtralPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -668,14 +685,17 @@ class MixtralForCausalLM(MixtralPreTrainedModel, GenerationMixin):
         )
 
 
+# MixtralForSequenceClassification：Mixtral 序列分类
 class MixtralForSequenceClassification(GenericForSequenceClassification, MixtralPreTrainedModel):
     pass
 
 
+# MixtralForTokenClassification：Mixtral 词元分类
 class MixtralForTokenClassification(GenericForTokenClassification, MixtralPreTrainedModel):
     pass
 
 
+# MixtralForQuestionAnswering：Mixtral 抽取式问答
 class MixtralForQuestionAnswering(GenericForQuestionAnswering, MixtralPreTrainedModel):
     pass
 

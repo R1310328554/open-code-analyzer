@@ -50,6 +50,9 @@ from .configuration_mixtral import MixtralConfig
 logger = logging.get_logger(__name__)
 
 
+# Mixtral modular 源：Mistral 解码器 + 稀疏 MoE FFN 替换
+
+# load_balancing_loss_func：Mixtral MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -133,6 +136,7 @@ def load_balancing_loss_func(
 
 
 @use_experts_implementation
+# MixtralExperts：Mixtral MoE 多专家 FFN 并行计算模块
 class MixtralExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -172,6 +176,7 @@ class MixtralExperts(nn.Module):
         return final_hidden_states
 
 
+# MixtralTopKRouter：Mixtral MoE top-k 专家路由器
 class MixtralTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -190,6 +195,7 @@ class MixtralTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# MixtralSparseMoeBlock：Mixtral 稀疏 MoE 层（路由 + 专家 FFN）
 class MixtralSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -209,18 +215,22 @@ class MixtralSparseMoeBlock(nn.Module):
         return hidden_states
 
 
+# MixtralRMSNorm：Mixtral RMS 层归一化（等价 T5LayerNorm）
 class MixtralRMSNorm(MistralRMSNorm):
     pass
 
 
+# MixtralRotaryEmbedding：Mixtral 旋转位置编码（RoPE）
 class MixtralRotaryEmbedding(MistralRotaryEmbedding):
     pass
 
 
+# MixtralAttention：Mixtral 多头因果自注意力（GQA，滑动窗口）
 class MixtralAttention(MistralAttention):
     pass
 
 
+# MixtralDecoderLayer：Mixtral 解码器单层（自注意力 + MoE FFN）
 class MixtralDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MixtralConfig, layer_idx: int):
         super().__init__()
@@ -259,6 +269,7 @@ class MixtralDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MixtralPreTrainedModel：Mixtral 预训练基类与权重初始化
 class MixtralPreTrainedModel(MistralPreTrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(MixtralTopKRouter, index=0),
@@ -277,6 +288,7 @@ class MixtralPreTrainedModel(MistralPreTrainedModel):
             init.normal_(module.weight, mean=0.0, std=std)
 
 
+# MixtralModel：Mixtral MoE Transformer 解码器主干
 class MixtralModel(MistralModel):
     def forward(
         self,
@@ -333,6 +345,7 @@ class MixtralModel(MistralModel):
         )
 
 
+# MixtralForCausalLM：Mixtral 因果语言建模条件生成
 class MixtralForCausalLM(MistralForCausalLM):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
@@ -427,14 +440,17 @@ class MixtralForCausalLM(MistralForCausalLM):
         )
 
 
+# MixtralForSequenceClassification：Mixtral 序列分类
 class MixtralForSequenceClassification(MistralForSequenceClassification):
     pass
 
 
+# MixtralForTokenClassification：Mixtral 词元分类
 class MixtralForTokenClassification(MistralForTokenClassification):
     pass
 
 
+# MixtralForQuestionAnswering：Mixtral 抽取式问答
 class MixtralForQuestionAnswering(MistralForQuestionAnswering):
     pass
 

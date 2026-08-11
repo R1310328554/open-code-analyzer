@@ -37,10 +37,14 @@ from .configuration_mistral3 import Mistral3Config
 logger = logging.get_logger(__name__)
 
 
+# Mistral3 modular 源：LLaVA 多模态框架 + Pixtral 视觉 patch 合并
+
+# Mistral3RMSNorm：Mistral3 RMS 层归一化（等价 T5LayerNorm）
 class Mistral3RMSNorm(MistralRMSNorm):
     pass
 
 
+# Mistral3PatchMerger：Mistral3 视觉 patch 空间合并与下采样模块
 class Mistral3PatchMerger(nn.Module):
     """
     Learned merging of spatial_merge_size ** 2 patches
@@ -79,6 +83,7 @@ class Mistral3PatchMerger(nn.Module):
         return image_features
 
 
+# Mistral3MultiModalProjector：Mistral3 视觉特征到语言嵌入空间的多模态投影器
 class Mistral3MultiModalProjector(nn.Module):
     def __init__(self, config: Mistral3Config):
         super().__init__()
@@ -107,18 +112,22 @@ class Mistral3MultiModalProjector(nn.Module):
         return hidden_states
 
 
+# Mistral3CausalLMOutputWithPast：Mistral3 条件生成输出（含 past_key_values 与图像特征）
 class Mistral3CausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# Mistral3ModelOutputWithPast：Mistral3 多模态主干前向输出（含 past_key_values）
 class Mistral3ModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# Mistral3PreTrainedModel：Mistral3 预训练基类与权重初始化
 class Mistral3PreTrainedModel(LlavaPreTrainedModel):
     pass
 
 
+# Mistral3Model：Mistral3 多模态主干（Pixtral 视觉塔 + Mistral 文本 LLM）
 class Mistral3Model(LlavaModel):
     @merge_with_config_defaults
     @can_return_tuple
@@ -213,6 +222,7 @@ class Mistral3Model(LlavaModel):
         )
 
 
+# Mistral3ForConditionalGeneration：Mistral3 图文条件生成（Pixtral ViT + Mistral LLM）
 class Mistral3ForConditionalGeneration(LlavaForConditionalGeneration):
     @merge_with_config_defaults
     @can_return_tuple

@@ -34,6 +34,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_mlcd import MLCDVisionConfig
 
 
+# MLCD 建模：带 2D RoPE 的 ViT 视觉编码器（由 modular 自动生成）
+
+# MLCDMLP：MLCD 视觉编码器 FFN 子层
 class MLCDMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -49,6 +52,7 @@ class MLCDMLP(nn.Module):
         return hidden_states
 
 
+# MLCDRotaryEmbedding：MLCD 视觉 2D 旋转位置编码（RoPE）
 class MLCDRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -61,6 +65,7 @@ class MLCDRotaryEmbedding(nn.Module):
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# MLCDVisionEmbeddings：MLCD 视觉 patch 嵌入与位置编码
 class MLCDVisionEmbeddings(nn.Module):
     def __init__(self, config: MLCDVisionConfig):
         super().__init__()
@@ -137,6 +142,7 @@ class MLCDVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -162,6 +168,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -169,6 +176,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -181,6 +189,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# apply_rotary_pos_emb_vision：MLCD 将 2D RoPE 应用到视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -195,6 +204,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# MLCDAttention：MLCD 视觉编码器多头自注意力（含 2D RoPE）
 class MLCDAttention(nn.Module):
     """Multi-headed attention with RoPE. Refer to papers:
     - Attention is all you need:
@@ -267,6 +277,7 @@ class MLCDAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MLCDEncoderLayer：MLCD 视觉编码器单层（注意力 + MLP）
 class MLCDEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MLCDVisionConfig):
         super().__init__()
@@ -313,6 +324,7 @@ class MLCDEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MLCDEncoder：MLCD 视觉 Transformer 编码器堆叠
 class MLCDEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -366,6 +378,7 @@ class MLCDEncoder(nn.Module):
 
 
 @auto_docstring
+# MLCDPreTrainedModel：MLCD 预训练基类与权重初始化
 class MLCDPreTrainedModel(PreTrainedModel):
     config: MLCDVisionConfig
     base_model_prefix = "vision_model"
@@ -419,6 +432,7 @@ class MLCDPreTrainedModel(PreTrainedModel):
     The vision model from M_L_C_D without any head or projection on top.
     """
 )
+# MLCDVisionModel：MLCD ViT 视觉编码器（含 2D RoPE 注意力）
 class MLCDVisionModel(MLCDPreTrainedModel):
     config: MLCDVisionConfig
     main_input_name = "pixel_values"
