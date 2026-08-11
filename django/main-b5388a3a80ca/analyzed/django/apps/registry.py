@@ -1,3 +1,4 @@
+# Apps 注册表：管理已安装应用配置、模型注册与延迟加载
 import functools
 import sys
 import threading
@@ -10,12 +11,15 @@ from django.core.exceptions import AppRegistryNotReady, ImproperlyConfigured
 from .config import AppConfig
 
 
+# Apps：全局应用注册表，跟踪 AppConfig 与已导入模型
 class Apps:
     """
     A registry that stores the configuration of installed applications.
 
     It also keeps track of models, e.g. to provide reverse relations.
     """
+
+    # __init__：初始化 all_models、app_configs 与就绪状态标志
 
     def __init__(self, installed_apps=()):
         # installed_apps is set to None when creating the main registry
@@ -57,6 +61,8 @@ class Apps:
         # Populate apps and models, unless it's the main registry.
         if installed_apps is not None:
             self.populate(installed_apps)
+
+    # populate：三阶段加载应用配置、导入模型并调用 ready()
 
     def populate(self, installed_apps=None):
         """
@@ -126,6 +132,8 @@ class Apps:
             self.ready = True
             self.ready_event.set()
 
+    # check_apps_ready：应用未就绪时抛出 AppRegistryNotReady
+
     def check_apps_ready(self):
         """Raise an exception if all apps haven't been imported yet."""
         if not self.apps_ready:
@@ -137,15 +145,21 @@ class Apps:
             settings.INSTALLED_APPS
             raise AppRegistryNotReady("Apps aren't loaded yet.")
 
+    # check_models_ready：模型未导入完成时抛出异常
+
     def check_models_ready(self):
         """Raise an exception if all models haven't been imported yet."""
         if not self.models_ready:
             raise AppRegistryNotReady("Models aren't loaded yet.")
 
+    # get_app_configs：返回所有已安装 AppConfig 的可迭代对象
+
     def get_app_configs(self):
         """Import applications and return an iterable of app configs."""
         self.check_apps_ready()
         return self.app_configs.values()
+
+    # get_app_config：按 app_label 查找 AppConfig
 
     def get_app_config(self, app_label):
         """
@@ -166,6 +180,7 @@ class Apps:
 
     # This method is performance-critical at least for Django's test suite.
     @functools.cache
+    # get_models：返回全部已安装模型列表（带缓存）
     def get_models(self, include_auto_created=False, include_swapped=False):
         """
         Return a list of all installed models.
@@ -184,6 +199,8 @@ class Apps:
         for app_config in self.app_configs.values():
             result.extend(app_config.get_models(include_auto_created, include_swapped))
         return result
+
+    # get_model：按 app_label 与 model_name 解析模型类
 
     def get_model(self, app_label, model_name=None, require_ready=True):
         """
@@ -212,6 +229,8 @@ class Apps:
 
         return app_config.get_model(model_name, require_ready=require_ready)
 
+    # register_model：模型导入时注册到 all_models 并处理冲突
+
     def register_model(self, app_label, model):
         # Since this method is called when models are imported, it cannot
         # perform imports because of the risk of import loops. It mustn't
@@ -239,6 +258,8 @@ class Apps:
         self.do_pending_operations(model)
         self.clear_cache()
 
+    # is_installed：检查给定完整应用名是否已安装
+
     def is_installed(self, app_name):
         """
         Check whether an application with this name exists in the registry.
@@ -247,6 +268,8 @@ class Apps:
         """
         self.check_apps_ready()
         return any(ac.name == app_name for ac in self.app_configs.values())
+
+    # get_containing_app_config：查找包含指定对象路径的应用
 
     def get_containing_app_config(self, object_name):
         """
@@ -267,6 +290,8 @@ class Apps:
         if candidates:
             return sorted(candidates, key=lambda ac: -len(ac.name))[0]
 
+    # get_registered_model：导入期安全地获取已注册模型
+
     def get_registered_model(self, app_label, model_name):
         """
         Similar to get_model(), but doesn't require that an app exists with
@@ -281,6 +306,7 @@ class Apps:
         return model
 
     @functools.cache
+    # get_swappable_settings_name：解析可替换模型的 settings 名
     def get_swappable_settings_name(self, to_string):
         """
         For a given model string (e.g. "auth.User"), return the name of the
@@ -302,6 +328,8 @@ class Apps:
             if model._meta.swappable and model._meta.label_lower == to_string:
                 return model._meta.swappable
         return None
+
+    # set_available_apps：临时限制可用应用集合（测试优化）
 
     def set_available_apps(self, available):
         """
@@ -331,10 +359,14 @@ class Apps:
         }
         self.clear_cache()
 
+    # unset_available_apps：恢复 set_available_apps 前的状态
+
     def unset_available_apps(self):
         """Cancel a previous call to set_available_apps()."""
         self.app_configs = self.stored_app_configs.pop()
         self.clear_cache()
+
+    # set_installed_apps：临时替换 INSTALLED_APPS 并重新 populate
 
     def set_installed_apps(self, installed):
         """
@@ -361,11 +393,15 @@ class Apps:
         self.clear_cache()
         self.populate(installed)
 
+    # unset_installed_apps：恢复 set_installed_apps 前的应用集
+
     def unset_installed_apps(self):
         """Cancel a previous call to set_installed_apps()."""
         self.app_configs = self.stored_app_configs.pop()
         self.apps_ready = self.models_ready = self.ready = True
         self.clear_cache()
+
+    # clear_cache：清除注册表相关内部缓存
 
     def clear_cache(self):
         """
@@ -384,6 +420,8 @@ class Apps:
             for app_config in self.app_configs.values():
                 for model in app_config.get_models(include_auto_created=True):
                     model._meta._expire_cache()
+
+    # lazy_model_operation：模型就绪后延迟执行回调函数
 
     def lazy_model_operation(self, function, *model_keys):
         """
@@ -424,6 +462,8 @@ class Apps:
                 self._pending_operations[next_model].append(apply_next_model)
             else:
                 apply_next_model(model_class)
+
+    # do_pending_operations：模型注册时执行等待中的操作
 
     def do_pending_operations(self, model):
         """

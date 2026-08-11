@@ -3,15 +3,18 @@ Default Django settings. Override these with settings in the module pointed to
 by the DJANGO_SETTINGS_MODULE environment variable.
 """
 
+# Django 全局默认配置项，可由 DJANGO_SETTINGS_MODULE 指向的模块覆盖
 
 # This is defined here as a do-nothing function because we can't import
 # django.utils.translation -- that module depends on the settings.
+# gettext_noop：占位翻译函数，避免循环导入 translation 模块
 def gettext_noop(s):
     return s
 
 
 ####################
-# CORE             #
+# CORE
+# 核心运行时设置：调试、时区、语言等             #
 ####################
 
 DEBUG = False
@@ -182,6 +185,7 @@ DEFAULT_CHARSET = "utf-8"
 SERVER_EMAIL = "root@localhost"
 
 # Database connection info. If left empty, will default to the dummy backend.
+# 数据库连接配置字典
 DATABASES = {}
 
 # Classes used to implement DB routing behavior.
@@ -220,6 +224,7 @@ EMAIL_SSL_KEYFILE = None
 EMAIL_TIMEOUT = None
 
 # List of strings representing installed apps.
+# 已安装应用列表，populate 时逐项加载
 INSTALLED_APPS = []
 
 TEMPLATES = []
@@ -276,6 +281,7 @@ IGNORABLE_404_URLS = []
 # A secret key for this particular Django installation. Used in secret-key
 # hashing algorithms. Set this in your settings, or Django will complain
 # loudly.
+# 密钥，用于签名与安全哈希，必须在项目中设置
 SECRET_KEY = ""
 
 # List of secret keys used to verify the validity of signatures. This allows
@@ -479,6 +485,7 @@ SECURE_PROXY_SSL_HEADER = None
 # List of middleware to use. Order is important; in the request phase, these
 # middleware will be applied in the order given, and in the response
 # phase the middleware will be applied in reverse order.
+# 请求/响应处理中间件链
 MIDDLEWARE = []
 
 ############

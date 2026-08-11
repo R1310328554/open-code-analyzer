@@ -1,3 +1,4 @@
+# AppConfig：表示单个 Django 应用及其元数据与模型加载
 import inspect
 import os
 from importlib import import_module
@@ -10,8 +11,11 @@ APPS_MODULE_NAME = "apps"
 MODELS_MODULE_NAME = "models"
 
 
+# AppConfig：封装应用标签、路径、verbose_name 与 models 模块
 class AppConfig:
     """Class representing a Django application and its configuration."""
+
+    # __init__：解析 label、path、verbose_name 等应用元数据
 
     def __init__(self, app_name, app_module):
         # Full Python path to the application e.g. 'django.contrib.admin'.
@@ -59,6 +63,7 @@ class AppConfig:
         return "<%s: %s>" % (self.__class__.__name__, self.label)
 
     @cached_property
+    # default_auto_field：缓存属性，返回 DEFAULT_AUTO_FIELD 设置
     def default_auto_field(self):
         from django.conf import settings
 
@@ -67,6 +72,8 @@ class AppConfig:
     @property
     def _is_default_auto_field_overridden(self):
         return self.__class__.default_auto_field is not AppConfig.default_auto_field
+
+    # _path_from_module：从模块 __path__/__file__ 推断应用目录
 
     def _path_from_module(self, module):
         """Attempt to determine app's filesystem path from its module."""
@@ -97,6 +104,7 @@ class AppConfig:
         return paths[0]
 
     @classmethod
+    # create：工厂方法，从 INSTALLED_APPS 条目创建 AppConfig 实例
     def create(cls, entry):
         """
         Factory that creates an app config from an entry in INSTALLED_APPS.
@@ -221,6 +229,8 @@ class AppConfig:
         # Entry is a path to an app config class.
         return app_config_class(app_name, app_module)
 
+    # get_model：按不区分大小写的名称返回模型类
+
     def get_model(self, model_name, require_ready=True):
         """
         Return the model with the given case-insensitive model_name.
@@ -237,6 +247,8 @@ class AppConfig:
             raise LookupError(
                 "App '%s' doesn't have a '%s' model." % (self.label, model_name)
             )
+
+    # get_models：迭代本应用下的模型，可排除自动创建与 swapped
 
     def get_models(self, include_auto_created=False, include_swapped=False):
         """
@@ -259,6 +271,8 @@ class AppConfig:
                 continue
             yield model
 
+    # import_models：导入 models 子模块并绑定 all_models 字典
+
     def import_models(self):
         # Dictionary of models for this app, primarily maintained in the
         # 'all_models' attribute of the Apps this AppConfig is attached to.
@@ -267,6 +281,8 @@ class AppConfig:
         if module_has_submodule(self.module, MODELS_MODULE_NAME):
             models_module_name = "%s.%s" % (self.name, MODELS_MODULE_NAME)
             self.models_module = import_module(models_module_name)
+
+    # ready：子类可覆盖，在 Django 启动完成时执行自定义逻辑
 
     def ready(self):
         """

@@ -8,6 +8,8 @@ The 'fallback' key can be used to specify a special fallback logic which
 doesn't follow the traditional 'fr-ca' -> 'fr' fallback logic.
 """
 
+# 语言元信息字典 LANG_INFO：bidi、代码、英文名与本地化名称
+# 各语言代码对应的元数据（双向文本、显示名等）
 LANG_INFO = {
     "af": {
         "bidi": False,

@@ -2,6 +2,8 @@
 #
 # The *_FORMAT strings use the Django date format syntax,
 # see https://docs.djangoproject.com/en/dev/ref/templates/builtins/#date
+# 阿塞拜疆语日期、时间与数字本地化格式
+# 完整日期显示格式
 DATE_FORMAT = "j E Y"
 TIME_FORMAT = "G:i"
 DATETIME_FORMAT = "j E Y, G:i"
@@ -9,6 +11,7 @@ YEAR_MONTH_FORMAT = "F Y"
 MONTH_DAY_FORMAT = "j F"
 SHORT_DATE_FORMAT = "d.m.Y"
 SHORT_DATETIME_FORMAT = "d.m.Y H:i"
+# 一周起始日：1 表示周一
 FIRST_DAY_OF_WEEK = 1  # Monday
 
 # The *_INPUT_FORMATS strings use the Python strftime format syntax,
@@ -26,5 +29,6 @@ DATETIME_INPUT_FORMATS = [
     "%d.%m.%y %H:%M",  # '25.10.06 14:30'
 ]
 DECIMAL_SEPARATOR = ","
+# 千位分隔符（此处为非断行空格）
 THOUSAND_SEPARATOR = "\xa0"  # non-breaking space
 NUMBER_GROUPING = 3

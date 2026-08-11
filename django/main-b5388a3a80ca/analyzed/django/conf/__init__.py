@@ -6,6 +6,7 @@ variable, and then from django.conf.global_settings; see the global_settings.py
 for a list of all possible variables.
 """
 
+# Django 配置系统：LazySettings 延迟加载用户 settings 模块
 import importlib
 import os
 import time
@@ -60,6 +61,7 @@ EMAIL_SETTING_DEPRECATED_MSG = (
 # RemovedInDjango70Warning.
 # Must be called with the complete set of user-defined setting names (but no
 # default settings).
+# _check_email_settings_conflicts：MAILERS 与旧邮件设置互斥检查
 def _check_email_settings_conflicts(explicit_settings):
     deprecated = DEPRECATED_EMAIL_SETTINGS.intersection(explicit_settings)
     if deprecated and "MAILERS" in explicit_settings:
@@ -70,6 +72,7 @@ def _check_email_settings_conflicts(explicit_settings):
         )
 
 
+# SettingsReference：引用 settings 属性的字符串子类，便于序列化
 class SettingsReference(str):
     """
     String subclass which references a current settings value. It's treated as
@@ -79,16 +82,21 @@ class SettingsReference(str):
     def __new__(self, value, setting_name):
         return str.__new__(self, value)
 
+    # __init__：合并 global_settings 与用户 settings 模块
+
     def __init__(self, value, setting_name):
         self.setting_name = setting_name
 
 
+# LazySettings：settings 的延迟代理，首次访问时加载配置模块
 class LazySettings(LazyObject):
     """
     A lazy proxy for either global Django settings or a custom settings object.
     The user can manually configure settings prior to using them. Otherwise,
     Django uses the settings module pointed to by DJANGO_SETTINGS_MODULE.
     """
+
+    # _setup：从 DJANGO_SETTINGS_MODULE 环境变量加载 Settings
 
     def _setup(self, name=None):
         """
@@ -115,6 +123,8 @@ class LazySettings(LazyObject):
         return '<LazySettings "%(settings_module)s">' % {
             "settings_module": self._wrapped.SETTINGS_MODULE,
         }
+
+    # __getattr__：读取配置项并缓存，处理 MEDIA/STATIC 前缀等
 
     def __getattr__(self, name):
         """Return the value of a setting and cache it in self.__dict__."""
@@ -143,6 +153,8 @@ class LazySettings(LazyObject):
 
         self.__dict__[name] = val
         return val
+
+    # __setattr__：设置配置项并清除相关缓存
 
     def __setattr__(self, name, value):
         """
@@ -178,12 +190,15 @@ class LazySettings(LazyObject):
 
         super().__setattr__(name, value)
 
+    # __delattr__：删除配置项并清缓存
+
     def __delattr__(self, name):
         """Delete a setting and clear it from cache if needed."""
         super().__delattr__(name)
         self.__dict__.pop(name, None)
 
     # RemovedInDjango70Warning.
+    # __dir__：MAILERS 启用时过滤已弃用邮件设置名
     def __dir__(self):
         attrs = super().__dir__()
         if hasattr(self._wrapped, "MAILERS"):
@@ -196,6 +211,8 @@ class LazySettings(LazyObject):
                 or self._wrapped.is_overridden(name)
             ]
         return attrs
+
+    # configure：手动配置 settings（测试或独立脚本场景）
 
     def configure(self, default_settings=global_settings, **options):
         """
@@ -217,6 +234,7 @@ class LazySettings(LazyObject):
         self._wrapped = holder
 
     @staticmethod
+    # _add_script_prefix：为相对 MEDIA/STATIC URL 添加 SCRIPT_NAME
     def _add_script_prefix(value):
         """
         Add SCRIPT_NAME prefix to relative paths.
@@ -232,11 +250,13 @@ class LazySettings(LazyObject):
         return "%s%s" % (get_script_prefix(), value)
 
     @property
+    # configured：属性，表示 settings 是否已完成配置
     def configured(self):
         """Return True if the settings have already been configured."""
         return self._wrapped is not empty
 
 
+# Settings：从 global_settings 与用户模块合并后的配置对象
 class Settings:
     def __init__(self, settings_module):
         # update this dict from global settings (but only for ALL_CAPS
@@ -311,6 +331,8 @@ class Settings:
             os.environ["TZ"] = self.TIME_ZONE
             time.tzset()
 
+    # is_overridden：判断某配置是否被用户模块显式覆盖
+
     def is_overridden(self, setting):
         return setting in self._explicit_settings
 
@@ -321,6 +343,7 @@ class Settings:
         }
 
 
+# UserSettingsHolder：手动 configure() 时的配置持有者
 class UserSettingsHolder:
     """Holder for user configured settings."""
 
@@ -386,6 +409,9 @@ class UserSettingsHolder:
         return "<%(cls)s>" % {
             "cls": self.__class__.__name__,
         }
+
+
+# _show_settings_deprecation_warning：对外部代码使用弃用设置发出警告
 
 
 def _show_settings_deprecation_warning(message, category):

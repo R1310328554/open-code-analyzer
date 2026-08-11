@@ -1,8 +1,12 @@
+# Django 包入口：版本号与 setup() 启动初始化
 from django.utils.version import get_version
 
 VERSION = (6, 2, 0, "alpha", 0)
 
 __version__ = get_version(VERSION)
+
+
+# setup：配置日志、URL 前缀并 populate 已安装应用
 
 
 def setup(set_prefix=True):

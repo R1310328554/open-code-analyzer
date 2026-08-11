@@ -2,6 +2,8 @@
 #
 # The *_FORMAT strings use the Django date format syntax,
 # see https://docs.djangoproject.com/en/dev/ref/templates/builtins/#date
+# 阿拉伯语日期、时间与数字本地化格式
+# 完整日期显示格式（Django 模板 date 语法）
 DATE_FORMAT = "j F، Y"
 TIME_FORMAT = "g:i A"
 # DATETIME_FORMAT =
@@ -16,6 +18,8 @@ SHORT_DATE_FORMAT = "d‏/m‏/Y"
 # DATE_INPUT_FORMATS =
 # TIME_INPUT_FORMATS =
 # DATETIME_INPUT_FORMATS =
+# 小数分隔符
 DECIMAL_SEPARATOR = ","
+# 千位分隔符
 THOUSAND_SEPARATOR = "."
 # NUMBER_GROUPING =
