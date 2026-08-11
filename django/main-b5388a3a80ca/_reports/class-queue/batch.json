@@ -15,23 +15,8 @@
     "django/contrib/admin/helpers.py",
     "django/contrib/admin/migrations/0001_initial.py",
     "django/contrib/admin/migrations/0002_logentry_remove_auto_add.py",
-    "django/contrib/admin/migrations/0003_logentry_add_action_flag_choices.py",
-    "django/contrib/admin/migrations/__init__.py",
-    "django/contrib/admin/models.py",
-    "django/contrib/admin/options.py",
-    "django/contrib/admin/sites.py",
-    "django/contrib/admin/static/admin/js/SelectBox.js",
-    "django/contrib/admin/static/admin/js/SelectFilter2.js",
-    "django/contrib/admin/static/admin/js/actions.js",
-    "django/contrib/admin/static/admin/js/admin/DateTimeShortcuts.js",
-    "django/contrib/admin/static/admin/js/admin/RelatedObjectLookups.js",
-    "django/contrib/admin/static/admin/js/autocomplete.js",
-    "django/contrib/admin/static/admin/js/calendar.js",
-    "django/contrib/admin/static/admin/js/cancel.js",
-    "django/contrib/admin/static/admin/js/change_form.js",
-    "django/contrib/admin/static/admin/js/core.js",
-    "django/contrib/admin/static/admin/js/filters.js"
+    "django/contrib/admin/migrations/0003_logentry_add_action_flag_choices.py"
   ],
   "remaining_pending": 732,
-  "done": 180
+  "done": 195
 }
