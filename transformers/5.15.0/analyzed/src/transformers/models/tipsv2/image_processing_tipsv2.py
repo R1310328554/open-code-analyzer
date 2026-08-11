@@ -23,7 +23,10 @@ from ...image_utils import PILImageResampling
 from ...utils import auto_docstring
 
 
+# Tipsv2 图像处理器：448×448 双线性缩放，仅 rescale 不做 ImageNet 归一化
+
 @auto_docstring
+# Tipsv2ImageProcessor：Tipsv2 图像处理器：448 固定尺寸 Torchvision 后端预处理
 class Tipsv2ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     size = {"height": 448, "width": 448}

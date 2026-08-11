@@ -22,12 +22,15 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, is_timm_available, requires_backends
 
 
+# TimmWrapper 配置：timm 架构名、do_pooling 与 ImageNet 标签自动推断
+
 if is_timm_available():
     from timm.data import ImageNetInfo, infer_imagenet_subset
 
 
 @auto_docstring(checkpoint="resnet50")
 @strict
+# TimmWrapperConfig：TimmWrapper 配置：architecture、do_pooling 与 timm model_args 扩展参数
 class TimmWrapperConfig(PreTrainedConfig):
     r"""
     architecture (`str`, *optional*, defaults to `"resnet50"`):
@@ -58,6 +61,7 @@ class TimmWrapperConfig(PreTrainedConfig):
     model_args: dict[str, Any] | None = None
 
     @classmethod
+    # from_dict：从字典构建配置：推断 ImageNet 标签并统一 num_labels 字段
     def from_dict(cls, config_dict: dict[str, Any], **kwargs):
         # Create a copy to avoid mutating the original dict
         config_dict = config_dict.copy()
@@ -100,6 +104,7 @@ class TimmWrapperConfig(PreTrainedConfig):
 
         return super().from_dict(config_dict, **kwargs)
 
+    # to_dict：序列化为字典：Timm 兼容 num_classes/label_names 与隐藏 transforms
     def to_dict(self) -> dict[str, Any]:
         output = super().to_dict()
         output.setdefault("num_classes", self.num_labels)

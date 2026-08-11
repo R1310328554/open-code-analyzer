@@ -21,8 +21,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# TimmBackbone 配置：timm 模型名、features_only 与多尺度 out_indices
+
 @auto_docstring(checkpoint="")
 @strict
+# TimmBackboneConfig：TimmBackbone 配置：backbone 名称、features_only 与 out_indices 多尺度输出
 class TimmBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     backbone (`str`, *optional*):
@@ -56,6 +59,7 @@ class TimmBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     freeze_batch_norm_2d: bool = False
     output_stride: int | None = None
 
+    # __post_init__：后初始化：派生 stage_names/out_indices 等字段并校验架构一致性
     def __post_init__(self, **kwargs):
         self.out_indices = self.out_indices if self.out_indices is not None else [-1]
         super().__post_init__(**kwargs)

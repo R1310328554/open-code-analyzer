@@ -25,8 +25,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Tipsv2 配置：DINOv2 风格视觉塔 + SigLIP 文本塔与可学习温度参数
+
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2VisionConfig：Tipsv2 视觉配置：ViT 层数、register token、LayerScale 与 SwiGLU FFN 开关
 class Tipsv2VisionConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to `1.0`):
@@ -79,6 +82,7 @@ class Tipsv2VisionConfig(BackboneConfigMixin, PreTrainedConfig):
     reshape_hidden_states: bool = True
     base_config_key = "vision_config"
 
+    # __post_init__：后初始化：派生 stage_names/out_indices 等字段并校验架构一致性
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(
@@ -89,6 +93,7 @@ class Tipsv2VisionConfig(BackboneConfigMixin, PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2TextConfig：Tipsv2 文本配置：BPE 词表、正弦位置编码与 masked mean 池化 epsilon
 class Tipsv2TextConfig(PreTrainedConfig):
     r"""
     scale_sqrt_depth (`bool`, *optional*, defaults to `True`):
@@ -126,6 +131,7 @@ class Tipsv2TextConfig(PreTrainedConfig):
     scale_sqrt_depth: bool = True
     pooling_epsilon: float = 1e-8
 
+    # validate_architecture：架构校验：hidden_size 整除头数、双塔 hidden 一致、温度>0
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         super().validate_architecture()
@@ -138,6 +144,7 @@ class Tipsv2TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2Config：Tipsv2 主配置：聚合 text/vision 子配置与对比学习温度初值
 class Tipsv2Config(PreTrainedConfig):
     r"""
     text_config (`dict`, *optional*):
@@ -170,6 +177,7 @@ class Tipsv2Config(PreTrainedConfig):
     vision_config: dict | Tipsv2VisionConfig | None = None
     temperature_init_value: float = 0.005065968260169029
 
+    # __post_init__：后初始化：派生 stage_names/out_indices 等字段并校验架构一致性
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config = self.sub_configs["text_config"](**self.text_config)
@@ -183,6 +191,7 @@ class Tipsv2Config(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：hidden_size 整除头数、双塔 hidden 一致、温度>0
     def validate_architecture(self):
         super().validate_architecture()
         if (

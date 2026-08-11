@@ -17,6 +17,9 @@ from ...image_utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, PILImage
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# TimeSformer 视频处理器：224 中心裁剪、ImageNet 归一化与 pixel_values 键映射
+
+# TimesformerVideoProcessor：TimeSformer 视频预处理：缩放/中心裁剪/归一化，输出 pixel_values
 class TimesformerVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -33,6 +36,7 @@ class TimesformerVideoProcessor(BaseVideoProcessor):
     do_sample_frames = False
     model_input_names = ["pixel_values"]
 
+    # preprocess：预处理入口：解析 kwargs 并调用后端变换流水线
     def preprocess(self, videos, **kwargs):
         batch = super().preprocess(videos, **kwargs)
         batch["pixel_values"] = batch.pop("pixel_values_videos")

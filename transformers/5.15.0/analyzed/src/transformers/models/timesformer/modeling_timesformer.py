@@ -31,13 +31,17 @@ from ...utils import (
 from .configuration_timesformer import TimesformerConfig
 
 
+# TimeSformer 视频建模：ViT 风格时空分离/联合注意力，支持 Kinetics 等视频分类
+
 logger = logging.get_logger(__name__)
 
 
 # Adapted from https://github.com/facebookresearch/TimeSformer/blob/a5ef29a7b7264baff199a30b3306ac27de901133/timesformer/models/vit.py#L155
+# TimesformerPatchEmbeddings：TimeSformer 块嵌入：Conv2d 将每帧图像切为 patch 序列
 class TimesformerPatchEmbeddings(nn.Module):
     """Image to Patch Embedding"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -54,6 +58,7 @@ class TimesformerPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(config.num_channels, config.hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_frames, num_channels, height, width = pixel_values.shape
         pixel_values = pixel_values.reshape(batch_size * num_frames, num_channels, height, width)
@@ -64,11 +69,13 @@ class TimesformerPatchEmbeddings(nn.Module):
         return embeddings, num_frames, patch_width
 
 
+# TimesformerEmbeddings：TimeSformer 嵌入：CLS/空间/时间位置编码与 patch 投影组合
 class TimesformerEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -89,6 +96,7 @@ class TimesformerEmbeddings(nn.Module):
             self.time_embeddings = nn.Parameter(torch.zeros(1, num_frames, embed_dim))
             self.time_drop = nn.Dropout(p=drop_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size = pixel_values.shape[0]
 
@@ -145,7 +153,9 @@ class TimesformerEmbeddings(nn.Module):
 
 
 # Adapted from https://github.com/facebookresearch/TimeSformer/blob/a5ef29a7b7264baff199a30b3306ac27de901133/timesformer/models/vit.py#L57
+# TimesformerSelfAttention：TimeSformer 自注意力：单头 QKV 线性 + 缩放点积 softmax
 class TimesformerSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig):
         super().__init__()
 
@@ -159,6 +169,7 @@ class TimesformerSelfAttention(nn.Module):
         self.qkv = nn.Linear(config.hidden_size, config.hidden_size * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attention_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, output_attentions: bool = False):
         batch_size, hidden_size, num_channels = hidden_states.shape
         qkv = (
@@ -179,17 +190,20 @@ class TimesformerSelfAttention(nn.Module):
         return outputs
 
 
+# TimesformerSelfOutput：TimeSformer 注意力输出：Dense + Dropout（残差在 Layer 内完成）
 class TimesformerSelfOutput(nn.Module):
     """
     The residual connection is defined in TimesformerLayer instead of here (as is the case with other models), due to
     the layernorm applied before each block.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -197,12 +211,15 @@ class TimesformerSelfOutput(nn.Module):
         return hidden_states
 
 
+# TimeSformerAttention：TimeSformer 注意力模块：SelfAttention + SelfOutput 封装
 class TimeSformerAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig) -> None:
         super().__init__()
         self.attention = TimesformerSelfAttention(config)
         self.output = TimesformerSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -217,7 +234,9 @@ class TimeSformerAttention(nn.Module):
 
 
 # Adapted from https://github.com/facebookresearch/TimeSformer/blob/a5ef29a7b7264baff199a30b3306ac27de901133/timesformer/models/vit.py#L39
+# TimesformerIntermediate：TimeSformer FFN 前半：Linear + 激活 + Dropout
 class TimesformerIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -228,6 +247,7 @@ class TimesformerIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -236,12 +256,15 @@ class TimesformerIntermediate(nn.Module):
         return hidden_states
 
 
+# TimesformerOutput：TimeSformer FFN 后半：Linear + Dropout 映射回 hidden_size
 class TimesformerOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig) -> None:
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -250,6 +273,7 @@ class TimesformerOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->TimesformerDropPath
+# TimesformerDropPath：TimeSformer 随机深度：训练时按样本丢弃残差分支
 class TimesformerDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -257,10 +281,12 @@ class TimesformerDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -270,12 +296,15 @@ class TimesformerDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_：返回 DropPath 概率等调试摘要
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
 # Adapted from https://github.com/facebookresearch/TimeSformer/blob/a5ef29a7b7264baff199a30b3306ac27de901133/timesformer/models/vit.py#L89
+# TimesformerLayer：TimeSformer Transformer 层：时空分离/联合注意力 + MLP 双残差
 class TimesformerLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig, layer_index: int) -> None:
         super().__init__()
 
@@ -304,6 +333,7 @@ class TimesformerLayer(GradientCheckpointingLayer):
             self.temporal_attention = TimeSformerAttention(config)
             self.temporal_dense = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, output_attentions: bool = False):
         num_frames = self.config.num_frames
         num_patch_width = self.config.image_size // self.config.patch_size
@@ -398,13 +428,16 @@ class TimesformerLayer(GradientCheckpointingLayer):
             return outputs
 
 
+# TimesformerEncoder：TimeSformer 编码器：堆叠多层 TimesformerLayer 输出序列隐状态
 class TimesformerEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesformerConfig) -> None:
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([TimesformerLayer(config, ind) for ind in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -439,6 +472,7 @@ class TimesformerEncoder(nn.Module):
 
 
 @auto_docstring
+# TimesformerPreTrainedModel：TimeSformer 预训练基类：Conv/Linear/嵌入权重截断正态初始化
 class TimesformerPreTrainedModel(PreTrainedModel):
     config: TimesformerConfig
     base_model_prefix = "timesformer"
@@ -448,6 +482,7 @@ class TimesformerPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["TimesformerLayer"]
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, (nn.Linear, nn.Conv2d)):
@@ -460,7 +495,9 @@ class TimesformerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# TimesformerModel：TimeSformer 基模型：嵌入 + 编码器 + 末层 LayerNorm
 class TimesformerModel(TimesformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -473,10 +510,12 @@ class TimesformerModel(TimesformerPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -593,7 +632,9 @@ class TimesformerModel(TimesformerPreTrainedModel):
     of the [CLS] token) e.g. for ImageNet.
     """
 )
+# TimesformerForVideoClassification：TimeSformer 视频分类：CLS token 池化 + Linear 分类头
 class TimesformerForVideoClassification(TimesformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -607,6 +648,7 @@ class TimesformerForVideoClassification(TimesformerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

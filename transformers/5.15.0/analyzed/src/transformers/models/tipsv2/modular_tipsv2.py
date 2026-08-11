@@ -55,12 +55,15 @@ from ..siglip2.configuration_siglip2 import Siglip2TextConfig
 from ..speech_to_text.modeling_speech_to_text import Speech2TextSinusoidalPositionalEmbedding
 
 
+# Tipsv2 模块化实现：复用 DINOv2/CLIP/SigLIP 组件，供 modeling 代码生成
+
 logger = logging.get_logger(__name__)
 
 
 VOCAB_FILES_NAMES = {"vocab_file": "tokenizer.model"}
 
 
+# Tipsv2Tokenizer：Tipsv2 分词器：SentencePiece 风格 BPE + Metaspace 预分词
 class Tipsv2Tokenizer(TokenizersBackend):
     """Tipsv2 tokenizer backed by HuggingFace's *tokenizers* library, based on a BPE (SentencePiece) model."""
 
@@ -69,6 +72,7 @@ class Tipsv2Tokenizer(TokenizersBackend):
     model = BPE
     padding_side = "right"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: dict[str, int] | None = None,
@@ -135,6 +139,7 @@ class Tipsv2Tokenizer(TokenizersBackend):
 
 
 @auto_docstring
+# Tipsv2ImageProcessor：Tipsv2 图像处理器：448 固定尺寸 Torchvision 后端预处理
 class Tipsv2ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     size = {"height": 448, "width": 448}
@@ -144,6 +149,7 @@ class Tipsv2ImageProcessor(TorchvisionBackend):
     do_convert_rgb = True
 
 
+# Tipsv2ProcessorKwargs：Tipsv2 处理器参数：文本默认 max_length=64 截断 padding
 class Tipsv2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -155,15 +161,18 @@ class Tipsv2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Tipsv2Processor：Tipsv2 多模态处理器：组合 ImageProcessor 与 Tokenizer 联合调用
 class Tipsv2Processor(ProcessorMixin):
     valid_processor_kwargs = Tipsv2ProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None):
         super().__init__(image_processor, tokenizer)
 
 
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2VisionConfig：Tipsv2 视觉配置：ViT 层数、register token、LayerScale 与 SwiGLU FFN 开关
 class Tipsv2VisionConfig(Dinov2WithRegistersConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to `1.0`):
@@ -201,6 +210,7 @@ class Tipsv2VisionConfig(Dinov2WithRegistersConfig):
 
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2TextConfig：Tipsv2 文本配置：BPE 词表、正弦位置编码与 masked mean 池化 epsilon
 class Tipsv2TextConfig(Siglip2TextConfig):
     r"""
     scale_sqrt_depth (`bool`, *optional*, defaults to `True`):
@@ -232,9 +242,11 @@ class Tipsv2TextConfig(Siglip2TextConfig):
 
     projection_size = AttributeError()
 
+    # __post_init__：后初始化：派生 stage_names/out_indices 等字段并校验架构一致性
     def __post_init__(self, **kwargs):
         raise AttributeError("Not used")
 
+    # validate_architecture：架构校验：hidden_size 整除头数、双塔 hidden 一致、温度>0
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         PreTrainedConfig.validate_architecture(self)
@@ -247,6 +259,7 @@ class Tipsv2TextConfig(Siglip2TextConfig):
 
 @auto_docstring(checkpoint="google/tipsv2-b14")
 @strict
+# Tipsv2Config：Tipsv2 主配置：聚合 text/vision 子配置与对比学习温度初值
 class Tipsv2Config(PreTrainedConfig):
     r"""
     text_config (`dict`, *optional*):
@@ -279,6 +292,7 @@ class Tipsv2Config(PreTrainedConfig):
     vision_config: dict | Tipsv2VisionConfig | None = None
     temperature_init_value: float = 0.005065968260169029
 
+    # __post_init__：后初始化：派生 stage_names/out_indices 等字段并校验架构一致性
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config = self.sub_configs["text_config"](**self.text_config)
@@ -292,6 +306,7 @@ class Tipsv2Config(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：hidden_size 整除头数、双塔 hidden 一致、温度>0
     def validate_architecture(self):
         super().validate_architecture()
         if (
@@ -307,11 +322,14 @@ class Tipsv2Config(PreTrainedConfig):
             raise ValueError(f"`temperature_init_value` ({self.temperature_init_value}) must be strictly positive.")
 
 
+# Tipsv2Output：Tipsv2 对比输出：图文嵌入、logits_per_image/text 与可选对比损失
 class Tipsv2Output(CLIPOutput):
     pass
 
 
+# Tipsv2VisionEmbeddings：Tipsv2 视觉嵌入：CLS/mask/register token + 可插值位置编码
 class Tipsv2VisionEmbeddings(Dinov2WithRegistersEmbeddings):
+    # interpolate_pos_encoding：位置编码插值：双线性缩放预训练 sin 位置以适配更高分辨率
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher
@@ -367,6 +385,7 @@ class Tipsv2VisionEmbeddings(Dinov2WithRegistersEmbeddings):
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1)
 
 
+# Tipsv2VisionPreTrainedModel：Tipsv2 视觉预训练基类：ViT 权重初始化与梯度检查点支持
 class Tipsv2VisionPreTrainedModel(Dinov2WithRegistersPreTrainedModel):
     config: Tipsv2VisionConfig
     base_model_prefix = "vision_model"
@@ -374,11 +393,14 @@ class Tipsv2VisionPreTrainedModel(Dinov2WithRegistersPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = {"text_encoder"}
 
 
+# Tipsv2VisionEncoder：Tipsv2 视觉编码器：多层 VisionLayer 堆叠输出 patch 序列
 class Tipsv2VisionEncoder(Dinov2WithRegistersEncoder):
     pass
 
 
+# Tipsv2VisionModel：Tipsv2 视觉塔：patch 嵌入 + 编码器 + CLS 池化投影
 class Tipsv2VisionModel(Dinov2WithRegistersModel):
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, **super_kwargs) -> BaseModelOutputWithPooling:
         r"""
         bool_masked_pos (`torch.BoolTensor` of shape `(batch_size, sequence_length)`):
@@ -411,7 +433,9 @@ class Tipsv2VisionModel(Dinov2WithRegistersModel):
         return super().forward(**super_kwargs)
 
 
+# Tipsv2VisionBackbone：Tipsv2 视觉骨干：多 stage 特征图输出，支持 reshape 为 4D 张量
 class Tipsv2VisionBackbone(Dinov2WithRegistersBackbone):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: "Tipsv2Config | Tipsv2VisionConfig"):
         # reassign config to vision_config for compatibility with AutoBackbone
         if isinstance(config, Tipsv2Config):
@@ -433,6 +457,7 @@ class Tipsv2VisionBackbone(Dinov2WithRegistersBackbone):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, **super_kwargs) -> BackboneOutput:
         r"""
         Examples:
@@ -454,13 +479,16 @@ class Tipsv2VisionBackbone(Dinov2WithRegistersBackbone):
         return super().forward(**super_kwargs)
 
 
+# Tipsv2SinusoidalPositionalEmbedding：Tipsv2 正弦位置编码：固定 sin/cos 位置嵌入表
 class Tipsv2SinusoidalPositionalEmbedding(Speech2TextSinusoidalPositionalEmbedding):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         nn.Module.__init__(self)
         self.make_weights(
             num_embeddings=config.max_position_embeddings, embedding_dim=config.hidden_size, padding_idx=None
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.LongTensor) -> torch.Tensor:
         return self.weights[position_ids]
 
@@ -468,12 +496,15 @@ class Tipsv2SinusoidalPositionalEmbedding(Speech2TextSinusoidalPositionalEmbeddi
         raise AttributeError("Not needed")
 
 
+# Tipsv2TextEmbeddings：Tipsv2 文本嵌入：词嵌入 + sqrt(hidden) 缩放 + 正弦位置编码
 class Tipsv2TextEmbeddings(CLIPTextEmbeddings):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
         self.position_embedding = Tipsv2SinusoidalPositionalEmbedding(config)
         self.embed_scale = math.sqrt(config.hidden_size) if config.scale_sqrt_depth else 1.0
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -504,6 +535,7 @@ class Tipsv2TextEmbeddings(CLIPTextEmbeddings):
 # Identical to CLIP's implementation but couldn't import it because the vision model
 # already requires eager_attention_forward from DINOv2 which results in modular
 # conflicts.
+# text_eager_attention_forward：Tipsv2 文本 eager 注意力：双向 mask + 缩放点积 softmax
 def text_eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -525,10 +557,13 @@ def text_eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Tipsv2TextAttention：Tipsv2 文本自注意力：双向多头注意力 + 可选 eager 实现
 class Tipsv2TextAttention(CLIPAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -563,19 +598,24 @@ class Tipsv2TextAttention(CLIPAttention):
         return attn_output, attn_weights
 
 
+# Tipsv2TextEncoderLayer：Tipsv2 文本编码层：自注意力 + MLP 双残差 + LayerNorm
 class Tipsv2TextEncoderLayer(CLIPEncoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
         self.self_attn = Tipsv2TextAttention(config)
 
 
+# Tipsv2TextEncoder：Tipsv2 文本编码器：多层 TextEncoderLayer 堆叠
 class Tipsv2TextEncoder(CLIPEncoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
         self.layers = nn.ModuleList([Tipsv2TextEncoderLayer(config) for _ in range(config.num_hidden_layers)])
 
 
 @auto_docstring
+# Tipsv2TextPreTrainedModel：Tipsv2 文本预训练基类：Linear/LayerNorm 权重初始化
 class Tipsv2TextPreTrainedModel(PreTrainedModel):
     config: Tipsv2TextConfig
     base_model_prefix = "text_model"
@@ -594,6 +634,7 @@ class Tipsv2TextPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Tipsv2TextEmbeddings):
@@ -613,9 +654,11 @@ class Tipsv2TextPreTrainedModel(PreTrainedModel):
     The TIPSv2 text tower without any projection head on top.
     """
 )
+# Tipsv2TextModel：Tipsv2 文本塔：token 嵌入 + 编码器 + masked mean 池化
 class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
     _input_embed_layer = "token_embedding"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
         self.config = config
@@ -627,6 +670,7 @@ class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -691,6 +735,7 @@ class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
 
 
 @auto_docstring
+# Tipsv2PreTrainedModel：Tipsv2 联合预训练基类：双塔共享初始化与输出录制
 class Tipsv2PreTrainedModel(PreTrainedModel):
     config: Tipsv2Config
     base_model_prefix = "model"
@@ -707,6 +752,7 @@ class Tipsv2PreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
     _supports_attention_backend = True
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Tipsv2Model):
@@ -714,9 +760,11 @@ class Tipsv2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Tipsv2Model：Tipsv2 对比模型：视觉/文本塔 + L2 归一化投影 + 温度缩放余弦相似度
 class Tipsv2Model(Tipsv2PreTrainedModel):
     _keys_to_ignore_on_load_missing = ["temperature"]  # learnable but not in published checkpoints
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2Config):
         super().__init__(config)
         self.text_model = Tipsv2TextModel._from_config(config.text_config)
@@ -761,14 +809,17 @@ class Tipsv2Model(Tipsv2PreTrainedModel):
             **kwargs,
         )
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self) -> nn.Module:
         return self.text_model.get_input_embeddings()
 
+    # set_input_embeddings：设置 token 嵌入：TimmWrapper 不支持，直接 NotImplementedError
     def set_input_embeddings(self, value: nn.Module):
         self.text_model.set_input_embeddings(value)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

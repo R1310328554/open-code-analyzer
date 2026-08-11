@@ -24,6 +24,8 @@ from ...utils import TensorType, logging, requires_backends
 from ...utils.import_utils import is_timm_available, is_torch_available, requires
 
 
+# TimmWrapper 图像处理器：复用 timm resolve_data_config 构建 val/train transforms
+
 if is_timm_available():
     import timm
 
@@ -35,6 +37,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch", "timm", "torchvision"))
+# TimmWrapperImageProcessor：TimmWrapper 图像处理器：timm create_transform 推理/训练双流水线
 class TimmWrapperImageProcessor(BaseImageProcessor):
     """
     Wrapper class for timm models to be used within transformers.
@@ -49,6 +52,7 @@ class TimmWrapperImageProcessor(BaseImageProcessor):
 
     main_input_name = "pixel_values"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         pretrained_cfg: dict[str, Any],
@@ -71,6 +75,7 @@ class TimmWrapperImageProcessor(BaseImageProcessor):
             transform.__class__.__name__ == "ToTensor" for transform in self.val_transforms.transforms
         )
 
+    # to_dict：序列化为字典：Timm 兼容 num_classes/label_names 与隐藏 transforms
     def to_dict(self) -> dict[str, Any]:
         """
         Serializes this instance to a Python dictionary.
@@ -82,6 +87,7 @@ class TimmWrapperImageProcessor(BaseImageProcessor):
         return output
 
     @classmethod
+    # get_image_processor_dict：加载图像处理器配置：从 config.json 读取 timm pretrained_cfg
     def get_image_processor_dict(
         cls, pretrained_model_name_or_path: str | os.PathLike, **kwargs
     ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -93,6 +99,7 @@ class TimmWrapperImageProcessor(BaseImageProcessor):
             pretrained_model_name_or_path, image_processor_filename=image_processor_filename, **kwargs
         )
 
+    # preprocess：预处理入口：解析 kwargs 并调用后端变换流水线
     def preprocess(
         self,
         images: ImageInput,
@@ -126,6 +133,7 @@ class TimmWrapperImageProcessor(BaseImageProcessor):
 
         return BatchFeature({"pixel_values": images}, tensor_type=return_tensors)
 
+    # save_pretrained：禁用独立保存：图像处理器配置随模型 config.json 一并持久化
     def save_pretrained(self, *args, **kwargs):
         # disable it to make checkpoint the same as in `timm` library.
         logger.warning_once(

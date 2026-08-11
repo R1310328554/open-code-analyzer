@@ -22,6 +22,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Tipsv2 多模态处理器：图像+文本联合预处理，默认 max_length=64 padding
+
+# Tipsv2ProcessorKwargs：Tipsv2 处理器参数：文本默认 max_length=64 截断 padding
 class Tipsv2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -33,9 +36,11 @@ class Tipsv2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Tipsv2Processor：Tipsv2 多模态处理器：组合 ImageProcessor 与 Tokenizer 联合调用
 class Tipsv2Processor(ProcessorMixin):
     valid_processor_kwargs = Tipsv2ProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None):
         super().__init__(image_processor, tokenizer)
 

@@ -23,6 +23,8 @@ from ...utils import auto_docstring, is_timm_available, requires_backends
 from .configuration_timm_wrapper import TimmWrapperConfig
 
 
+# TimmWrapper 建模：timm 模型特征提取/分类头，兼容 forward_intermediates 中间层
+
 if is_timm_available():
     import timm
 
@@ -34,6 +36,7 @@ if is_timm_available():
     """
 )
 @dataclass
+# TimmWrapperModelOutput：TimmWrapper 输出：last_hidden_state、pooler_output 与可选 hidden_states
 class TimmWrapperModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor`):
@@ -53,6 +56,7 @@ class TimmWrapperModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# _create_timm_model_with_error_handling：创建 timm 模型：未知架构时提示升级 timm 版本
 def _create_timm_model_with_error_handling(config: "TimmWrapperConfig", **model_kwargs):
     """
     Creates a timm model and provides a clear error message if the model is not found,
@@ -76,6 +80,7 @@ def _create_timm_model_with_error_handling(config: "TimmWrapperConfig", **model_
 
 
 @auto_docstring
+# TimmWrapperPreTrainedModel：TimmWrapper 预训练基类：梯度检查点探测与 state_dict 键前缀修正
 class TimmWrapperPreTrainedModel(PreTrainedModel):
     base_model_prefix = "timm_model"
     main_input_name = "pixel_values"
@@ -88,10 +93,12 @@ class TimmWrapperPreTrainedModel(PreTrainedModel):
     # used in Trainer to avoid passing `loss_kwargs` to model forward
     accepts_loss_kwargs = False
 
+    # post_init：后初始化：探测 timm 梯度检查点支持并完成权重初始化
     def post_init(self):
         self.supports_gradient_checkpointing = self._timm_model_supports_gradient_checkpointing()
         super().post_init()
 
+    # load_state_dict：加载权重：为 timm 子模块键自动补 timm_model. 前缀
     def load_state_dict(self, state_dict, *args, **kwargs):
         """
         Override original method to fix state_dict keys on load for cases when weights are loaded
@@ -101,6 +108,7 @@ class TimmWrapperPreTrainedModel(PreTrainedModel):
         return super().load_state_dict(state_dict, *args, **kwargs)
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """
         Initialize weights function to properly initialize Linear layer weights.
@@ -122,6 +130,7 @@ class TimmWrapperPreTrainedModel(PreTrainedModel):
                 dtype=module.pos_embed.dtype if module.pos_embed is not None else torch.float32,
             )
 
+    # _timm_model_supports_gradient_checkpointing：探测 timm 是否支持 set_grad_checkpointing 且不抛异常
     def _timm_model_supports_gradient_checkpointing(self):
         """
         Check if the timm model supports gradient checkpointing by checking if the `set_grad_checkpointing` method is available.
@@ -137,22 +146,27 @@ class TimmWrapperPreTrainedModel(PreTrainedModel):
         except Exception:
             return False
 
+    # _set_gradient_checkpointing：开关 timm 模型梯度检查点以节省显存
     def _set_gradient_checkpointing(self, enable: bool = True, *args, **kwargs):
         self.timm_model.set_grad_checkpointing(enable)
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self):
         # TIMM backbones operate directly on images and do not expose token embeddings.
         return None
 
+    # set_input_embeddings：设置 token 嵌入：TimmWrapper 不支持，直接 NotImplementedError
     def set_input_embeddings(self, value):
         raise NotImplementedError("TimmWrapper models do not own token embeddings and cannot set them.")
 
 
+# TimmWrapperModel：TimmWrapper 特征模型：forward_features/head 或 features_only 多尺度输出
 class TimmWrapperModel(TimmWrapperPreTrainedModel):
     """
     Wrapper class for timm models to be used in transformers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimmWrapperConfig):
         requires_backends(self, ["vision", "timm"])
         super().__init__(config)
@@ -163,6 +177,7 @@ class TimmWrapperModel(TimmWrapperPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -265,11 +280,13 @@ class TimmWrapperModel(TimmWrapperPreTrainedModel):
         )
 
 
+# TimmWrapperForImageClassification：TimmWrapper 图像分类：timm 分类头 + 标准 loss_function
 class TimmWrapperForImageClassification(TimmWrapperPreTrainedModel):
     """
     Wrapper class for timm models to be used in transformers for image classification.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimmWrapperConfig):
         requires_backends(self, ["vision", "timm"])
         super().__init__(config)
@@ -289,6 +306,7 @@ class TimmWrapperForImageClassification(TimmWrapperPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

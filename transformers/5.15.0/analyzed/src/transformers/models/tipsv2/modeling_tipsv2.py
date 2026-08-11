@@ -41,8 +41,11 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_tipsv2 import Tipsv2Config, Tipsv2TextConfig, Tipsv2VisionConfig
 
 
+# Tipsv2 建模（自动生成）：双塔 ViT + 文本编码器，余弦相似度对比损失
+
 @auto_docstring
 @dataclass
+# Tipsv2Output：Tipsv2 对比输出：图文嵌入、logits_per_image/text 与可选对比损失
 class Tipsv2Output(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -71,10 +74,12 @@ class Tipsv2Output(ModelOutput):
     text_model_output: BaseModelOutputWithPooling = None
     vision_model_output: BaseModelOutputWithPooling = None
 
+    # to_tuple：递归转元组：嵌套 ModelOutput 展开为 plain tuple
     def to_tuple(self) -> tuple[Any]:
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# Tipsv2VisionPatchEmbeddings：Tipsv2 视觉块嵌入：Conv2d patch 投影为 token 序列
 class Tipsv2VisionPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -82,6 +87,7 @@ class Tipsv2VisionPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -97,6 +103,7 @@ class Tipsv2VisionPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -108,11 +115,13 @@ class Tipsv2VisionPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# Tipsv2VisionEmbeddings：Tipsv2 视觉嵌入：CLS/mask/register token + 可插值位置编码
 class Tipsv2VisionEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, register tokens, position and patch embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig) -> None:
         super().__init__()
 
@@ -126,6 +135,7 @@ class Tipsv2VisionEmbeddings(nn.Module):
         self.patch_size = config.patch_size
         self.config = config
 
+    # interpolate_pos_encoding：位置编码插值：双线性缩放预训练 sin 位置以适配更高分辨率
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher
@@ -180,6 +190,7 @@ class Tipsv2VisionEmbeddings(nn.Module):
         # Combine class and patch embeddings
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, bool_masked_pos: torch.Tensor | None = None) -> torch.Tensor:
         batch_size, _, height, width = pixel_values.shape
         target_dtype = self.patch_embeddings.projection.weight.dtype
@@ -207,6 +218,7 @@ class Tipsv2VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -236,7 +248,9 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Tipsv2Vision
+# Tipsv2VisionSelfAttention：Tipsv2 视觉自注意力：多头缩放点积 + 可选 eager 实现
 class Tipsv2VisionSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -257,6 +271,7 @@ class Tipsv2VisionSelfAttention(nn.Module):
         self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
         self.value = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -292,17 +307,20 @@ class Tipsv2VisionSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Tipsv2Vision
+# Tipsv2VisionSelfOutput：Tipsv2 视觉注意力输出：Dense + Dropout + 残差 LayerNorm
 class Tipsv2VisionSelfOutput(nn.Module):
     """
     The residual connection is defined in Tipsv2VisionLayer instead of here (as is the case with other models), due to the
     layernorm applied before each block.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -310,12 +328,15 @@ class Tipsv2VisionSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Tipsv2Vision
+# Tipsv2VisionAttention：Tipsv2 视觉注意力封装：SelfAttention + SelfOutput
 class Tipsv2VisionAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig):
         super().__init__()
         self.attention = Tipsv2VisionSelfAttention(config)
         self.output = Tipsv2VisionSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -326,16 +347,21 @@ class Tipsv2VisionAttention(nn.Module):
         return output
 
 
+# Tipsv2VisionLayerScale：Tipsv2 LayerScale：可学习标量缩放残差分支（DINOv2 风格）
 class Tipsv2VisionLayerScale(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.lambda1 = nn.Parameter(config.layerscale_value * torch.ones(config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         return hidden_state * self.lambda1
 
 
+# Tipsv2VisionMLP：Tipsv2 视觉 MLP：两层 Linear + GELU 前馈网络
 class Tipsv2VisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -347,6 +373,7 @@ class Tipsv2VisionMLP(nn.Module):
             self.activation = config.hidden_act
         self.fc2 = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -354,7 +381,9 @@ class Tipsv2VisionMLP(nn.Module):
         return hidden_state
 
 
+# Tipsv2VisionSwiGLUFFN：Tipsv2 SwiGLU FFN：门控 SwiGLU 替代标准 MLP
 class Tipsv2VisionSwiGLUFFN(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -364,6 +393,7 @@ class Tipsv2VisionSwiGLUFFN(nn.Module):
         self.weights_in = nn.Linear(in_features, 2 * hidden_features, bias=True)
         self.weights_out = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.weights_in(hidden_state)
         x1, x2 = hidden_state.chunk(2, dim=-1)
@@ -371,6 +401,7 @@ class Tipsv2VisionSwiGLUFFN(nn.Module):
         return self.weights_out(hidden)
 
 
+# Tipsv2VisionDropPath：Tipsv2 随机深度：Stochastic Depth 按样本丢弃残差
 class Tipsv2VisionDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -378,10 +409,12 @@ class Tipsv2VisionDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -391,13 +424,16 @@ class Tipsv2VisionDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_：返回 DropPath 概率等调试摘要
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
+# Tipsv2VisionLayer：Tipsv2 视觉 Transformer 层：Attention + LayerScale + MLP 残差堆叠
 class Tipsv2VisionLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig) -> None:
         super().__init__()
 
@@ -414,6 +450,7 @@ class Tipsv2VisionLayer(GradientCheckpointingLayer):
             self.mlp = Tipsv2VisionMLP(config)
         self.layer_scale2 = Tipsv2VisionLayerScale(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -437,6 +474,7 @@ class Tipsv2VisionLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Tipsv2VisionPreTrainedModel：Tipsv2 视觉预训练基类：ViT 权重初始化与梯度检查点支持
 class Tipsv2VisionPreTrainedModel(PreTrainedModel):
     config: Tipsv2VisionConfig
     base_model_prefix = "vision_model"
@@ -455,6 +493,7 @@ class Tipsv2VisionPreTrainedModel(PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = {"text_encoder"}
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module: nn.Linear | nn.Conv2d | nn.LayerNorm) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -471,7 +510,9 @@ class Tipsv2VisionPreTrainedModel(PreTrainedModel):
             init.constant_(module.lambda1, self.config.layerscale_value)
 
 
+# Tipsv2VisionEncoder：Tipsv2 视觉编码器：多层 VisionLayer 堆叠输出 patch 序列
 class Tipsv2VisionEncoder(Tipsv2VisionPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig):
         super().__init__(config)
         self.layer = nn.ModuleList([Tipsv2VisionLayer(config) for _ in range(config.num_hidden_layers)])
@@ -479,6 +520,7 @@ class Tipsv2VisionEncoder(Tipsv2VisionPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> BaseModelOutput:
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states)
@@ -487,7 +529,9 @@ class Tipsv2VisionEncoder(Tipsv2VisionPreTrainedModel):
 
 
 @auto_docstring
+# Tipsv2VisionModel：Tipsv2 视觉塔：patch 嵌入 + 编码器 + CLS 池化投影
 class Tipsv2VisionModel(Tipsv2VisionPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2VisionConfig):
         super().__init__(config)
         self.config = config
@@ -500,11 +544,13 @@ class Tipsv2VisionModel(Tipsv2VisionPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self) -> Tipsv2VisionPatchEmbeddings:
         return self.embeddings.patch_embeddings
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -562,7 +608,9 @@ class Tipsv2VisionModel(Tipsv2VisionPreTrainedModel):
     Tipsv2Vision backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# Tipsv2VisionBackbone：Tipsv2 视觉骨干：多 stage 特征图输出，支持 reshape 为 4D 张量
 class Tipsv2VisionBackbone(BackboneMixin, Tipsv2VisionPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: "Tipsv2Config | Tipsv2VisionConfig"):
         # reassign config to vision_config for compatibility with AutoBackbone
         if isinstance(config, Tipsv2Config):
@@ -581,12 +629,14 @@ class Tipsv2VisionBackbone(BackboneMixin, Tipsv2VisionPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self) -> Tipsv2VisionPatchEmbeddings:
         return self.embeddings.patch_embeddings
 
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -637,9 +687,11 @@ class Tipsv2VisionBackbone(BackboneMixin, Tipsv2VisionPreTrainedModel):
         )
 
 
+# Tipsv2SinusoidalPositionalEmbedding：Tipsv2 正弦位置编码：固定 sin/cos 位置嵌入表
 class Tipsv2SinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__()
         self.make_weights(
@@ -673,11 +725,14 @@ class Tipsv2SinusoidalPositionalEmbedding(nn.Module):
         return emb.to(torch.get_default_dtype())
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.LongTensor) -> torch.Tensor:
         return self.weights[position_ids]
 
 
+# Tipsv2TextEmbeddings：Tipsv2 文本嵌入：词嵌入 + sqrt(hidden) 缩放 + 正弦位置编码
 class Tipsv2TextEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__()
         embed_dim = config.hidden_size
@@ -689,6 +744,7 @@ class Tipsv2TextEmbeddings(nn.Module):
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
         self.embed_scale = math.sqrt(config.hidden_size) if config.scale_sqrt_depth else 1.0
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -719,6 +775,7 @@ class Tipsv2TextEmbeddings(nn.Module):
 # Identical to CLIP's implementation but couldn't import it because the vision model
 # already requires eager_attention_forward from DINOv2 which results in modular
 # conflicts.
+# text_eager_attention_forward：Tipsv2 文本 eager 注意力：双向 mask + 缩放点积 softmax
 def text_eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -740,9 +797,11 @@ def text_eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Tipsv2TextAttention：Tipsv2 文本自注意力：双向多头注意力 + 可选 eager 实现
 class Tipsv2TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__()
         self.config = config
@@ -758,6 +817,7 @@ class Tipsv2TextAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -793,7 +853,9 @@ class Tipsv2TextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Tipsv2MLP：Tipsv2 文本 MLP：两层 Linear + ReLU 前馈
 class Tipsv2MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -801,6 +863,7 @@ class Tipsv2MLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -808,7 +871,9 @@ class Tipsv2MLP(nn.Module):
         return hidden_states
 
 
+# Tipsv2TextEncoderLayer：Tipsv2 文本编码层：自注意力 + MLP 双残差 + LayerNorm
 class Tipsv2TextEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -817,6 +882,7 @@ class Tipsv2TextEncoderLayer(GradientCheckpointingLayer):
         self.mlp = Tipsv2MLP(config)
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -841,6 +907,7 @@ class Tipsv2TextEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Tipsv2TextEncoder：Tipsv2 文本编码器：多层 TextEncoderLayer 堆叠
 class Tipsv2TextEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -850,12 +917,14 @@ class Tipsv2TextEncoder(nn.Module):
         config: Tipsv2TextConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__()
         self.config = config
         self.layers = nn.ModuleList([Tipsv2TextEncoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds,
@@ -876,6 +945,7 @@ class Tipsv2TextEncoder(nn.Module):
 
 
 @auto_docstring
+# Tipsv2TextPreTrainedModel：Tipsv2 文本预训练基类：Linear/LayerNorm 权重初始化
 class Tipsv2TextPreTrainedModel(PreTrainedModel):
     config: Tipsv2TextConfig
     base_model_prefix = "text_model"
@@ -894,6 +964,7 @@ class Tipsv2TextPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Tipsv2TextEmbeddings):
@@ -913,9 +984,11 @@ class Tipsv2TextPreTrainedModel(PreTrainedModel):
     The TIPSv2 text tower without any projection head on top.
     """
 )
+# Tipsv2TextModel：Tipsv2 文本塔：token 嵌入 + 编码器 + masked mean 池化
 class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
     _input_embed_layer = "token_embedding"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2TextConfig):
         super().__init__(config)
         self.config = config
@@ -927,6 +1000,7 @@ class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -991,6 +1065,7 @@ class Tipsv2TextModel(Tipsv2TextPreTrainedModel):
 
 
 @auto_docstring
+# Tipsv2PreTrainedModel：Tipsv2 联合预训练基类：双塔共享初始化与输出录制
 class Tipsv2PreTrainedModel(PreTrainedModel):
     config: Tipsv2Config
     base_model_prefix = "model"
@@ -1007,6 +1082,7 @@ class Tipsv2PreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
     _supports_attention_backend = True
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Tipsv2Model):
@@ -1015,16 +1091,19 @@ class Tipsv2PreTrainedModel(PreTrainedModel):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-tipsv2.html
+# contrastive_loss：对称对比损失：logits 对角线为正样本的交叉熵
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文对比损失：image-text 与 text-image 双向 CE 均值
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# _get_vector_norm：L2 向量范数：沿最后一维计算欧氏范数用于嵌入归一化
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -1037,9 +1116,11 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# Tipsv2Model：Tipsv2 对比模型：视觉/文本塔 + L2 归一化投影 + 温度缩放余弦相似度
 class Tipsv2Model(Tipsv2PreTrainedModel):
     _keys_to_ignore_on_load_missing = ["temperature"]  # learnable but not in published checkpoints
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2Config):
         super().__init__(config)
         self.text_model = Tipsv2TextModel._from_config(config.text_config)
@@ -1084,14 +1165,17 @@ class Tipsv2Model(Tipsv2PreTrainedModel):
             **kwargs,
         )
 
+    # get_input_embeddings：获取输入嵌入：TimeSformer 返回 patch 投影；TimmWrapper 无 token 嵌入
     def get_input_embeddings(self) -> nn.Module:
         return self.text_model.get_input_embeddings()
 
+    # set_input_embeddings：设置 token 嵌入：TimmWrapper 不支持，直接 NotImplementedError
     def set_input_embeddings(self, value: nn.Module):
         self.text_model.set_input_embeddings(value)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

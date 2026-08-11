@@ -25,10 +25,13 @@ from ...utils.generic import can_return_tuple
 from .configuration_timm_backbone import TimmBackboneConfig
 
 
+# TimmBackbone 建模：timm.create_model 包装为 Transformers BackboneOutput API
+
 if is_timm_available():
     import timm
 
 
+# TimmBackbone：TimmBackbone 骨干：timm 模型包装为 BackboneMixin 统一特征图 API
 class TimmBackbone(BackboneMixin, PreTrainedModel):
     """
     Wrapper class for timm models to be used as backbones. This enables using the timm models interchangeably with the
@@ -40,6 +43,7 @@ class TimmBackbone(BackboneMixin, PreTrainedModel):
     supports_gradient_checkpointing = False
     config: TimmBackboneConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, **kwargs):
         requires_backends(self, "timm")
 
@@ -82,6 +86,7 @@ class TimmBackbone(BackboneMixin, PreTrainedModel):
         self.post_init()
 
     @classmethod
+    # from_pretrained：从 timm 预训练名加载：自动构造 TimmBackboneConfig 并创建模型
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         requires_backends(cls, ["vision", "timm"])
 
@@ -97,14 +102,17 @@ class TimmBackbone(BackboneMixin, PreTrainedModel):
         )
         return super()._from_config(config, pretrained=True, **kwargs)
 
+    # freeze_batch_norm_2d：冻结 BatchNorm2d：timm 工具将 BN 转为推理态 FrozenBN
     def freeze_batch_norm_2d(self):
         timm.utils.model.freeze_batch_norm_2d(self._backbone)
 
+    # unfreeze_batch_norm_2d：解冻 BatchNorm2d：恢复 BN 可训练 running stats
     def unfreeze_batch_norm_2d(self):
         timm.utils.model.unfreeze_batch_norm_2d(self._backbone)
 
     @torch.no_grad()
     # trf-ignore: TRF018
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """We need to at least re-init the non-persistent buffers if the model was initialized on meta device (we
         assume weights and persistent buffers will be part of checkpoint as we have no way to control timm inits)"""
@@ -119,6 +127,7 @@ class TimmBackbone(BackboneMixin, PreTrainedModel):
                 init.zeros_(module.num_batches_tracked)
 
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
