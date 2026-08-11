@@ -2,6 +2,7 @@ from django.db import ProgrammingError
 from django.utils.functional import cached_property
 
 
+# 数据库后端能力标志集合，供 ORM/SQL 编译器查询
 class BaseDatabaseFeatures:
     # An optional tuple indicating the minimum supported database version.
     minimum_database_version = None
@@ -454,6 +455,7 @@ class BaseDatabaseFeatures:
     supports_uuid7_function = False
     supports_uuid7_function_shift = False
 
+    # 绑定 BaseDatabaseWrapper 实例
     def __init__(self, connection):
         self.connection = connection
 
@@ -461,11 +463,13 @@ class BaseDatabaseFeatures:
         del self.connection
 
     @cached_property
+    # 是否支持 EXPLAIN 查询执行计划
     def supports_explaining_query_execution(self):
         """Does this backend support explaining query execution?"""
         return self.connection.ops.explain_prefix is not None
 
     @cached_property
+    # 运行时检测是否支持事务与 ROLLBACK
     def supports_transactions(self):
         """Confirm support for transactions."""
         with self.connection.cursor() as cursor:
@@ -479,6 +483,7 @@ class BaseDatabaseFeatures:
             cursor.execute("DROP TABLE ROLLBACK_TEST")
         return count == 0
 
+    # 该模型是否允许 GROUP BY 主键优化
     def allows_group_by_selected_pks_on_model(self, model):
         if not self.allows_group_by_selected_pks:
             return False

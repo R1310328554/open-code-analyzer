@@ -1,4 +1,6 @@
 """
+# 实现 WSGI 协议的 HTTP 服务器（仅供 runserver 测试使用）
+HTTP server that implements the Python WSGI protocol"""
 HTTP server that implements the Python WSGI protocol (PEP 333, rev 1.21).
 
 Based on wsgiref.simple_server which is part of the standard library since 2.5.
@@ -26,6 +28,7 @@ __all__ = ("WSGIServer", "WSGIRequestHandler")
 logger = logging.getLogger("django.server")
 
 
+# 加载 settings.WSGI_APPLICATION 配置的 WSGI 应用
 def get_internal_wsgi_application():
     """
     Load and return the WSGI application as configured by the user in
@@ -54,6 +57,7 @@ def get_internal_wsgi_application():
         ) from err
 
 
+# 判断当前异常是否为断管/连接重置类错误
 def is_broken_pipe_error():
     exc_type, _, _ = sys.exc_info()
     return issubclass(
@@ -66,17 +70,20 @@ def is_broken_pipe_error():
     )
 
 
+# 实现 WSGI 协议的 BaseHTTPServer
 class WSGIServer(simple_server.WSGIServer):
     """BaseHTTPServer that implements the Python WSGI protocol"""
 
     request_queue_size = 10
 
+    # 支持 IPv6 与地址复用
     def __init__(self, *args, ipv6=False, allow_reuse_address=True, **kwargs):
         if ipv6:
             self.address_family = socket.AF_INET6
         self.allow_reuse_address = allow_reuse_address
         super().__init__(*args, **kwargs)
 
+    # 断管错误仅记录 info，其他错误走父类处理
     def handle_error(self, request, client_address):
         if is_broken_pipe_error():
             logger.info("- Broken pipe from %s", client_address)
@@ -84,6 +91,7 @@ class WSGIServer(simple_server.WSGIServer):
             super().handle_error(request, client_address)
 
 
+# 多线程版 WSGIServer，供 runserver 并发处理请求
 class ThreadedWSGIServer(socketserver.ThreadingMixIn, WSGIServer):
     """A threaded version of the WSGIServer"""
 
@@ -95,6 +103,7 @@ class ThreadedWSGIServer(socketserver.ThreadingMixIn, WSGIServer):
 
     # socketserver.ThreadingMixIn.process_request() passes this method as
     # the target to a new Thread object.
+    # 工作线程可继承父线程的数据库连接
     def process_request_thread(self, request, client_address):
         if self.connections_override:
             # Override this thread's database connections with the ones
@@ -107,11 +116,13 @@ class ThreadedWSGIServer(socketserver.ThreadingMixIn, WSGIServer):
         # Used for mocking in tests.
         connections.close_all()
 
+    # 请求结束后关闭该线程的数据库连接
     def close_request(self, request):
         self._close_connections()
         super().close_request(request)
 
 
+# WSGI 响应处理器：LimitedStream、持久连接与 HEAD 支持
 class ServerHandler(simple_server.ServerHandler):
     http_version = "1.1"
 
@@ -130,6 +141,7 @@ class ServerHandler(simple_server.ServerHandler):
             LimitedStream(stdin, content_length), stdout, stderr, environ, **kwargs
         )
 
+    # 调整 Content-Length/Connection 以符合 HTTP/1.1
     def cleanup_headers(self):
         super().cleanup_headers()
         if (
@@ -158,6 +170,7 @@ class ServerHandler(simple_server.ServerHandler):
         self.get_stdin().read()
         super().close()
 
+    # HEAD 请求仅发送头、不输出 body
     def finish_response(self):
         if self.environ["REQUEST_METHOD"] == "HEAD":
             try:
@@ -175,6 +188,7 @@ class ServerHandler(simple_server.ServerHandler):
             super().finish_response()
 
 
+# WSGI 请求处理器：日志、环境变量与持久连接
 class WSGIRequestHandler(simple_server.WSGIRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -182,6 +196,7 @@ class WSGIRequestHandler(simple_server.WSGIRequestHandler):
         # Short-circuit parent method to not call socket.getfqdn
         return self.client_address[0]
 
+    # 格式化访问日志，检测 HTTPS 误连
     def log_message(self, format, *args):
         if args[1][0] == "4" and args[0].startswith("\x16\x03"):
             # 0x16 = Handshake, 0x03 = SSL 3.0 or TLS 1.x
@@ -205,6 +220,7 @@ class WSGIRequestHandler(simple_server.WSGIRequestHandler):
             server_time=self.log_date_time_string(),
         )
 
+    # 构建 WSGI environ，剔除含下划线的请求头
     def get_environ(self):
         # Strip all headers with underscores in the name before constructing
         # the WSGI environ. This prevents header-spoofing based on ambiguity
@@ -216,6 +232,7 @@ class WSGIRequestHandler(simple_server.WSGIRequestHandler):
 
         return super().get_environ()
 
+    # 支持 HTTP/1.1 持久连接
     def handle(self):
         self.close_connection = True
         self.handle_one_request()
@@ -226,6 +243,7 @@ class WSGIRequestHandler(simple_server.WSGIRequestHandler):
         except (AttributeError, OSError):
             pass
 
+    # 处理单次请求，使用 ServerHandler 运行 WSGI 应用
     def handle_one_request(self):
         """
         Copy of WSGIRequestHandler.handle() but with different ServerHandler
@@ -248,6 +266,7 @@ class WSGIRequestHandler(simple_server.WSGIRequestHandler):
         handler.run(self.server.get_app())
 
 
+# 绑定地址并启动 WSGI 服务器（可选多线程）
 def run(
     addr,
     port,

@@ -13,10 +13,12 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 
 # These values, if given to validate(), will trigger the self.required check.
+# 传入 validate() 时触发 required 校验的空值集合
 EMPTY_VALUES = (None, "", [], (), {})
 
 
 @deconstructible
+# 正则表达式校验器，支持 inverse_match 反向匹配
 class RegexValidator:
     regex = ""
     message = _("Enter a valid value.")
@@ -44,6 +46,7 @@ class RegexValidator:
 
         self.regex = _lazy_re_compile(self.regex, self.flags)
 
+    # 校验输入是否匹配（或不匹配）正则
     def __call__(self, value):
         """
         Validate that the input contains (or does *not* contain, if
@@ -66,6 +69,7 @@ class RegexValidator:
 
 
 @deconstructible
+# 域名格式校验器，支持 IDNA 与 ASCII-only 模式
 class DomainNameValidator(RegexValidator):
     message = _("Enter a valid domain name.")
     ul = "\u00a1-\uffff"  # Unicode letters range (must not be a raw string).
@@ -127,6 +131,7 @@ validate_domain_name = DomainNameValidator()
 
 
 @deconstructible
+# URL 格式校验器：scheme、主机、IPv6 与长度限制
 class URLValidator(RegexValidator):
     # IP patterns
     ipv4_re = (
@@ -202,11 +207,13 @@ integer_validator = RegexValidator(
 )
 
 
+# 校验值为合法整数
 def validate_integer(value):
     return integer_validator(value)
 
 
 @deconstructible
+# 电子邮件地址格式校验器
 class EmailValidator:
     message = _("Enter a valid email address.")
     code = "invalid"
@@ -257,6 +264,7 @@ class EmailValidator:
         ):
             raise ValidationError(self.message, code=self.code, params={"value": value})
 
+    # 校验 @ 后的域名或 IP 字面量部分
     def validate_domain_part(self, domain_part):
         if self.domain_regex.match(domain_part):
             return True
@@ -283,6 +291,7 @@ class EmailValidator:
 validate_email = EmailValidator()
 
 slug_re = _lazy_re_compile(r"^[-a-zA-Z0-9_]+\Z")
+# ASCII slug 校验：字母、数字、下划线与连字符
 validate_slug = RegexValidator(
     slug_re,
     # Translators: "letters" means latin letters: a-z and A-Z.
@@ -291,6 +300,7 @@ validate_slug = RegexValidator(
 )
 
 slug_unicode_re = _lazy_re_compile(r"^[-\w]+\Z")
+# Unicode slug 校验
 validate_unicode_slug = RegexValidator(
     slug_unicode_re,
     _(
@@ -301,6 +311,7 @@ validate_unicode_slug = RegexValidator(
 )
 
 
+# 校验 IPv4 地址
 def validate_ipv4_address(value):
     try:
         ipaddress.IPv4Address(value)
@@ -312,6 +323,7 @@ def validate_ipv4_address(value):
         )
 
 
+# 校验 IPv6 地址
 def validate_ipv6_address(value):
     if not is_valid_ipv6_address(value):
         raise ValidationError(
@@ -321,6 +333,7 @@ def validate_ipv6_address(value):
         )
 
 
+# 校验 IPv4 或 IPv6 地址
 def validate_ipv46_address(value):
     try:
         validate_ipv4_address(value)
@@ -342,6 +355,7 @@ ip_address_validator_map = {
 }
 
 
+# 按 protocol 返回 GenericIPAddressField 所需校验器列表
 def ip_address_validators(protocol, unpack_ipv4):
     """
     Depending on the given parameters, return the appropriate validators for
@@ -360,6 +374,7 @@ def ip_address_validators(protocol, unpack_ipv4):
         )
 
 
+# 返回逗号分隔整数列表的 RegexValidator
 def int_list_validator(sep=",", message=None, code="invalid", allow_negative=False):
     regexp = _lazy_re_compile(
         r"^%(neg)s\d+(?:%(sep)s%(neg)s\d+)*\Z"
@@ -377,6 +392,7 @@ validate_comma_separated_integer_list = int_list_validator(
 
 
 @deconstructible
+# 限值校验抽象基类
 class BaseValidator:
     message = _("Ensure this value is %(limit_value)s (it is %(show_value)s).")
     code = "limit_value"
@@ -404,14 +420,17 @@ class BaseValidator:
             and self.code == other.code
         )
 
+    # 子类定义比较逻辑，True 表示校验失败
     def compare(self, a, b):
         return a is not b
 
+    # 提取用于比较的清洗值
     def clean(self, x):
         return x
 
 
 @deconstructible
+# 最大值校验器
 class MaxValueValidator(BaseValidator):
     message = _("Ensure this value is less than or equal to %(limit_value)s.")
     code = "max_value"
@@ -421,6 +440,7 @@ class MaxValueValidator(BaseValidator):
 
 
 @deconstructible
+# 最小值校验器
 class MinValueValidator(BaseValidator):
     message = _("Ensure this value is greater than or equal to %(limit_value)s.")
     code = "min_value"
@@ -430,6 +450,7 @@ class MinValueValidator(BaseValidator):
 
 
 @deconstructible
+# 步长倍数校验器，可选 offset 起始偏移
 class StepValueValidator(BaseValidator):
     message = _("Ensure this value is a multiple of step size %(limit_value)s.")
     code = "step_size"
@@ -468,6 +489,7 @@ class StepValueValidator(BaseValidator):
 
 
 @deconstructible
+# 最小长度校验器
 class MinLengthValidator(BaseValidator):
     message = ngettext_lazy(
         "Ensure this value has at least %(limit_value)d character (it has "
@@ -486,6 +508,7 @@ class MinLengthValidator(BaseValidator):
 
 
 @deconstructible
+# 最大长度校验器
 class MaxLengthValidator(BaseValidator):
     message = ngettext_lazy(
         "Ensure this value has at most %(limit_value)d character (it has "
@@ -504,6 +527,7 @@ class MaxLengthValidator(BaseValidator):
 
 
 @deconstructible
+# Decimal 字段位数与小数位校验
 class DecimalValidator:
     """
     Validate that the input does not exceed the maximum number of digits
@@ -592,6 +616,7 @@ class DecimalValidator:
 
 
 @deconstructible
+# 文件扩展名白名单校验
 class FileExtensionValidator:
     message = _(
         "File extension “%(extension)s” is not allowed. "
@@ -636,6 +661,7 @@ class FileExtensionValidator:
         )
 
 
+# 返回 Pillow 支持的图片扩展名列表
 def get_available_image_extensions():
     try:
         from PIL import Image
@@ -646,6 +672,7 @@ def get_available_image_extensions():
         return [ext.lower()[1:] for ext in Image.EXTENSION]
 
 
+# 校验上传文件为支持的图片格式
 def validate_image_file_extension(value):
     return FileExtensionValidator(allowed_extensions=get_available_image_extensions())(
         value
@@ -653,6 +680,7 @@ def validate_image_file_extension(value):
 
 
 @deconstructible
+# 禁止字符串含空字符 \x00
 class ProhibitNullCharactersValidator:
     """Validate that the string doesn't contain the null character."""
 

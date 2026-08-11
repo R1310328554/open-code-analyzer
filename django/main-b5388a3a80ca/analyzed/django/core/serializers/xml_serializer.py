@@ -1,4 +1,6 @@
 """
+# XML 序列化/反序列化
+XML serializer."""
 XML serializer.
 """
 
@@ -15,15 +17,18 @@ from django.db import DEFAULT_DB_ALIAS, models
 from django.utils.xmlutils import SimplerXMLGenerator, UnserializableContentError
 
 
+# 将 QuerySet 序列化为 XML 格式
 class Serializer(base.Serializer):
     """Serialize a QuerySet to XML."""
 
+    # 按 indent 选项输出缩进空白
     def indent(self, level):
         if self.options.get("indent") is not None:
             self.xml.ignorableWhitespace(
                 "\n" + " " * self.options.get("indent") * level
             )
 
+    # 打开 XML 文档并写入根元素 django-objects
     def start_serialization(self):
         """
         Start serialization -- open the XML document and the root element.
@@ -38,6 +43,7 @@ class Serializer(base.Serializer):
         self.xml.startDocument()
         self.xml.startElement("django-objects", {"version": "1.0"})
 
+    # 结束 XML 文档
     def end_serialization(self):
         """
         End serialization -- end the document.
@@ -46,6 +52,7 @@ class Serializer(base.Serializer):
         self.xml.endElement("django-objects")
         self.xml.endDocument()
 
+    # 写入单个 object 元素及 model/pk 属性
     def start_object(self, obj):
         """
         Called as each object is handled.
@@ -71,6 +78,7 @@ class Serializer(base.Serializer):
                 % (obj.__class__.__name__, obj.pk)
             )
 
+    # 关闭 object 元素并恢复缩进层级
     def end_object(self, obj):
         """
         Called after handling all fields for an object.
@@ -79,6 +87,7 @@ class Serializer(base.Serializer):
         self.xml.endElement("object")
         self.indent_level -= 1
 
+    # 序列化普通字段（非 FK/M2M）
     def handle_field(self, obj, field):
         """
         Handle each field on an object (except for ForeignKeys and
@@ -114,6 +123,7 @@ class Serializer(base.Serializer):
         self.xml.endElement("field")
         self.indent_level -= 1
 
+    # 序列化外键字段，支持 natural key
     def handle_fk_field(self, obj, field):
         """
         Handle a ForeignKey (they need to be treated slightly
@@ -140,6 +150,7 @@ class Serializer(base.Serializer):
         self.xml.endElement("field")
         self.indent_level -= 1
 
+    # 序列化多对多关系，仅输出关联对象引用
     def handle_m2m_field(self, obj, field):
         """
         Handle a ManyToManyField. Related objects are only serialized as
@@ -215,6 +226,7 @@ class Serializer(base.Serializer):
             self.xml.endElement("field")
             self.indent_level -= 1
 
+    # 输出关系字段的 <field> 起始标签
     def _start_relational_field(self, field):
         """Output the <field> element for relational fields."""
         self.indent_level += 1
@@ -229,9 +241,11 @@ class Serializer(base.Serializer):
         )
 
 
+# 从 XML 流反序列化为 ORM 对象
 class Deserializer(base.Deserializer):
     """Deserialize XML."""
 
+    # 初始化 pulldom 事件流与 hardened 解析器
     def __init__(
         self,
         stream_or_string,
@@ -246,10 +260,12 @@ class Deserializer(base.Deserializer):
         self.db = using
         self.ignore = ignorenonexistent
 
+    # 创建禁止 DTD/外部实体的安全 XML 解析器
     def _make_parser(self):
         """Create a hardened XML parser (no custom/external entities)."""
         return DefusedExpatParser()
 
+    # 迭代解析下一个 <object> 节点
     def __next__(self):
         for event, node in self.event_stream:
             if event == "START_ELEMENT" and node.nodeName == "object":
@@ -257,6 +273,7 @@ class Deserializer(base.Deserializer):
                 return self._handle_object(node)
         raise StopIteration
 
+    # 将 <object> 节点转为 DeserializedObject
     def _handle_object(self, node):
         """Convert an <object> node to a DeserializedObject."""
         # Look up the model using the model loading mechanism. If this fails,
@@ -343,6 +360,7 @@ class Deserializer(base.Deserializer):
         # Return a DeserializedObject so that the m2m data has a place to live.
         return base.DeserializedObject(obj, m2m_data, deferred_fields)
 
+    # 解析外键 <field> 节点
     def _handle_fk_field_node(self, node, field):
         """
         Handle a <field> node for a ForeignKey
@@ -390,6 +408,7 @@ class Deserializer(base.Deserializer):
                     field_value
                 )
 
+    # 解析多对多 <field> 节点
     def _handle_m2m_field_node(self, node, field):
         """
         Handle a <field> node for a ManyToManyField.
@@ -438,6 +457,7 @@ class Deserializer(base.Deserializer):
         else:
             return values
 
+    # 从节点属性查找 Django 模型类
     def _get_model_from_node(self, node, attr):
         """
         Look up a model from a <object model=...> or a <field rel=... to=...>
@@ -458,12 +478,14 @@ class Deserializer(base.Deserializer):
             )
 
 
+# 校验 DOM 节点为文本或 CDATA，拒绝嵌套元素
 def check_element_type(element):
     if element.childNodes:
         raise SuspiciousOperation(f"Unexpected element: {element.tagName!r}")
     return element.nodeType in (element.TEXT_NODE, element.CDATA_SECTION_NODE)
 
 
+# 返回直接子元素中指定标签名的节点（非递归）
 def getChildrenByTagName(node, tag_name):
     """
     Like Element.getElementsByTagName() but return only direct children.
@@ -483,6 +505,7 @@ def getChildrenByTagName(node, tag_name):
     ]
 
 
+# 拼接节点下所有文本/CDATA 内容
 def getInnerText(node):
     return "".join(
         [child.data for child in node.childNodes if check_element_type(child)]
@@ -492,6 +515,7 @@ def getInnerText(node):
 # Below code based on Christian Heimes' defusedxml
 
 
+# 加固的 expat 解析器：禁止 DTD 与外部实体引用
 class DefusedExpatParser(_ExpatParser):
     """
     An expat parser hardened against XML bomb attacks.
@@ -504,9 +528,11 @@ class DefusedExpatParser(_ExpatParser):
         self.setFeature(handler.feature_external_ges, False)
         self.setFeature(handler.feature_external_pes, False)
 
+    # 拒绝 DOCTYPE 声明以防 XML 炸弹
     def start_doctype_decl(self, name, sysid, pubid, has_internal_subset):
         raise DTDForbidden(name, sysid, pubid)
 
+    # 拒绝实体声明
     def entity_decl(
         self, name, is_parameter_entity, value, base, sysid, pubid, notation_name
     ):
@@ -516,6 +542,7 @@ class DefusedExpatParser(_ExpatParser):
         # expat 1.2
         raise EntitiesForbidden(name, None, base, sysid, pubid, notation_name)
 
+    # 拒绝外部实体引用
     def external_entity_ref_handler(self, context, base, sysid, pubid):
         raise ExternalReferenceForbidden(context, base, sysid, pubid)
 
@@ -528,6 +555,7 @@ class DefusedExpatParser(_ExpatParser):
         parser.ExternalEntityRefHandler = self.external_entity_ref_handler
 
 
+# defusedxml 异常基类
 class DefusedXmlException(ValueError):
     """Base exception."""
 
@@ -535,6 +563,7 @@ class DefusedXmlException(ValueError):
         return str(self)
 
 
+# 禁止文档类型定义
 class DTDForbidden(DefusedXmlException):
     """Document type definition is forbidden."""
 
@@ -549,6 +578,7 @@ class DTDForbidden(DefusedXmlException):
         return tpl.format(self.name, self.sysid, self.pubid)
 
 
+# 禁止实体定义
 class EntitiesForbidden(DefusedXmlException):
     """Entity definition is forbidden."""
 
@@ -566,6 +596,7 @@ class EntitiesForbidden(DefusedXmlException):
         return tpl.format(self.name, self.sysid, self.pubid)
 
 
+# 禁止解析外部引用
 class ExternalReferenceForbidden(DefusedXmlException):
     """Resolving an external reference is forbidden."""
 

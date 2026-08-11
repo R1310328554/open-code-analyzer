@@ -2,6 +2,7 @@ import django
 from django.core.handlers.wsgi import WSGIHandler
 
 
+# Django WSGI 公共入口：setup 后返回 WSGIHandler 实例
 def get_wsgi_application():
     """
     The public interface to Django's WSGI support. Return a WSGI callable.

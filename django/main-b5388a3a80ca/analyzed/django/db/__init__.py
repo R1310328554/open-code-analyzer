@@ -35,15 +35,19 @@ __all__ = [
     "DJANGO_VERSION_PICKLE_KEY",
 ]
 
+# 全局数据库连接处理器
 connections = ConnectionHandler()
 
+# 数据库路由：读写分离与多库选择
 router = ConnectionRouter()
 
 # For backwards compatibility. Prefer connections['default'] instead.
+# 默认数据库连接的便捷代理
 connection = ConnectionProxy(connections, DEFAULT_DB_ALIAS)
 
 
 # Register an event to reset saved queries when a Django request is started.
+# 请求开始时清空各连接的查询日志
 def reset_queries(**kwargs):
     for conn in connections.all(initialized_only=True):
         conn.queries_log.clear()
@@ -54,6 +58,7 @@ signals.request_started.connect(reset_queries)
 
 # Register an event to reset transaction state and close connections past
 # their lifetime.
+# 关闭过期或不可用的数据库连接
 def close_old_connections(**kwargs):
     for conn in connections.all(initialized_only=True):
         conn.close_if_unusable_or_obsolete()

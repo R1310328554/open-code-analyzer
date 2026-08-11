@@ -27,6 +27,7 @@ RAN_DB_VERSION_CHECK = set()
 logger = logging.getLogger("django.db.backends.base")
 
 
+# 数据库连接包装器抽象基类
 class BaseDatabaseWrapper:
     """Represent a database connection."""
 
@@ -50,6 +51,7 @@ class BaseDatabaseWrapper:
 
     queries_limit = 9000
 
+    # 初始化连接参数、事务状态与后端组件实例
     def __init__(self, settings_dict, alias=DEFAULT_DB_ALIAS):
         # Connection related attributes.
         # The underlying database connection.
@@ -124,6 +126,7 @@ class BaseDatabaseWrapper:
             f"vendor={self.vendor!r} alias={self.alias!r}>"
         )
 
+    # 确保连接时区与 timezone_name 一致
     def ensure_timezone(self):
         """
         Ensure the connection's timezone is set to `self.timezone_name` and
@@ -180,6 +183,7 @@ class BaseDatabaseWrapper:
             )
         return list(self.queries_log)
 
+    # 返回数据库版本元组（子类实现）
     def get_database_version(self):
         """Return a tuple of the database's version."""
         raise NotImplementedError(
@@ -187,6 +191,7 @@ class BaseDatabaseWrapper:
             "method."
         )
 
+    # 校验数据库版本不低于 minimum_database_version
     def check_database_version_supported(self):
         """
         Raise an error if the database version isn't supported by this
@@ -205,6 +210,7 @@ class BaseDatabaseWrapper:
 
     # ##### Backend-specific methods for creating connections and cursors #####
 
+    # 返回 get_new_connection 所需的连接参数字典
     def get_connection_params(self):
         """Return a dict of parameters suitable for get_new_connection."""
         raise NotImplementedError(
@@ -212,6 +218,7 @@ class BaseDatabaseWrapper:
             "method"
         )
 
+    # 建立底层数据库连接（子类实现）
     def get_new_connection(self, conn_params):
         """Open a connection to the database."""
         raise NotImplementedError(
@@ -234,6 +241,7 @@ class BaseDatabaseWrapper:
     # ##### Backend-specific methods for creating connections #####
 
     @async_unsafe
+    # 打开连接并初始化 autocommit 与连接状态
     def connect(self):
         """Connect to the database. Assume that the connection is closed."""
         # Check for invalid configurations.
@@ -268,6 +276,7 @@ class BaseDatabaseWrapper:
             )
 
     @async_unsafe
+    # 保证连接已建立，atomic 块内禁止新建连接
     def ensure_connection(self):
         """Guarantee that a connection to the database is established."""
         if self.connection is None:
@@ -315,11 +324,13 @@ class BaseDatabaseWrapper:
     # ##### Generic wrappers for PEP-249 connection methods #####
 
     @async_unsafe
+    # 创建游标，必要时先打开连接
     def cursor(self):
         """Create a cursor, opening a connection if necessary."""
         return self._cursor()
 
     @async_unsafe
+    # 提交事务并重置 dirty 标志
     def commit(self):
         """Commit a transaction and reset the dirty flag."""
         self.validate_thread_sharing()
@@ -330,6 +341,7 @@ class BaseDatabaseWrapper:
         self.run_commit_hooks_on_set_autocommit_on = True
 
     @async_unsafe
+    # 回滚事务并清空 on_commit 钩子
     def rollback(self):
         """Roll back a transaction and reset the dirty flag."""
         self.validate_thread_sharing()
@@ -341,6 +353,7 @@ class BaseDatabaseWrapper:
         self.run_on_commit = []
 
     @async_unsafe
+    # 关闭数据库连接
     def close(self):
         """Close the connection to the database."""
         self.validate_thread_sharing()
@@ -381,6 +394,7 @@ class BaseDatabaseWrapper:
     # ##### Generic savepoint management methods #####
 
     @async_unsafe
+    # 在当前事务内创建保存点
     def savepoint(self):
         """
         Create a savepoint inside the current transaction. Return an
@@ -402,6 +416,7 @@ class BaseDatabaseWrapper:
         return sid
 
     @async_unsafe
+    # 回滚到指定保存点
     def savepoint_rollback(self, sid):
         """
         Roll back to a savepoint. Do nothing if savepoints are not supported.
@@ -420,6 +435,7 @@ class BaseDatabaseWrapper:
         ]
 
     @async_unsafe
+    # 释放保存点
     def savepoint_commit(self, sid):
         """
         Release a savepoint. Do nothing if savepoints are not supported.
@@ -454,6 +470,7 @@ class BaseDatabaseWrapper:
         self.ensure_connection()
         return self.autocommit
 
+    # 启用或禁用 autocommit 模式
     def set_autocommit(
         self, autocommit, force_begin_transaction_with_broken_autocommit=False
     ):
@@ -526,6 +543,7 @@ class BaseDatabaseWrapper:
     # ##### Foreign key constraints checks handling #####
 
     @contextmanager
+    # 上下文管理器：临时禁用外键约束检查
     def constraint_checks_disabled(self):
         """
         Disable foreign key constraint checking.
@@ -562,6 +580,7 @@ class BaseDatabaseWrapper:
 
     # ##### Connection termination handling #####
 
+    # 检测连接是否仍可用（子类实现）
     def is_usable(self):
         """
         Test if the database connection is usable.
@@ -588,6 +607,7 @@ class BaseDatabaseWrapper:
             self.close()
         self.health_check_done = True
 
+    # 连接出错或超过 CONN_MAX_AGE 时关闭
     def close_if_unusable_or_obsolete(self):
         """
         Close the current connection if unrecoverable errors have occurred
@@ -634,6 +654,7 @@ class BaseDatabaseWrapper:
                 )
             self._thread_sharing_count -= 1
 
+    # 校验连接未被其他线程非法共享
     def validate_thread_sharing(self):
         """
         Validate that the connection isn't accessed by another thread than the
@@ -682,6 +703,7 @@ class BaseDatabaseWrapper:
         return utils.CursorWrapper(cursor, self)
 
     @contextmanager
+    # 上下文管理器：临时连接，用完即关
     def temporary_connection(self):
         """
         Context manager that ensures that a connection is established, and
@@ -699,6 +721,7 @@ class BaseDatabaseWrapper:
                 self.close()
 
     @contextmanager
+    # 无目标库名的游标，用于创建/删除测试库
     def _nodb_cursor(self):
         """
         Return a cursor from an alternative connection to be used when there is
@@ -714,6 +737,7 @@ class BaseDatabaseWrapper:
         finally:
             conn.close()
 
+    # 返回 SchemaEditor 实例用于 DDL 迁移
     def schema_editor(self, *args, **kwargs):
         """
         Return a new instance of this backend's SchemaEditor.
@@ -724,6 +748,7 @@ class BaseDatabaseWrapper:
             )
         return self.SchemaEditorClass(self, *args, **kwargs)
 
+    # 注册事务提交后执行的回调
     def on_commit(self, func, robust=False):
         if not callable(func):
             raise TypeError("on_commit()'s callback must be a callable.")
@@ -777,6 +802,7 @@ class BaseDatabaseWrapper:
         finally:
             self.execute_wrappers.pop()
 
+    # 复制连接实例，供并行测试使用
     def copy(self, alias=None):
         """
         Return a copy of this connection.

@@ -1,4 +1,6 @@
 """
+# URL 安全签名 JSON 对象的创建与还原
+Functions for creating and restoring url-safe signed JSON objects."""
 Functions for creating and restoring url-safe signed JSON objects.
 
 The format used looks like this:
@@ -53,18 +55,21 @@ _SEP_UNSAFE = _lazy_re_compile(r"^[A-z0-9-_=]*$")
 BASE62_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 
+# 签名验证失败时抛出
 class BadSignature(Exception):
     """Signature does not match."""
 
     pass
 
 
+# 签名时间戳超出 max_age 时抛出
 class SignatureExpired(BadSignature):
     """Signature timestamp is older than required max_age."""
 
     pass
 
 
+# 将整数编码为 base62 字符串
 def b62_encode(s):
     if s == 0:
         return "0"
@@ -77,6 +82,7 @@ def b62_encode(s):
     return sign + encoded
 
 
+# 将 base62 字符串解码为整数
 def b62_decode(s):
     if s == "0":
         return 0
@@ -90,16 +96,19 @@ def b62_decode(s):
     return sign * decoded
 
 
+# URL 安全 base64 编码（去除填充 =）
 def b64_encode(s):
     return base64.urlsafe_b64encode(s).strip(b"=")
 
 
+# URL 安全 base64 解码
 def b64_decode(s):
     pad = b"=" * (-len(s) % 4)
     return base64.urlsafe_b64decode(s + pad)
 
 
 # RemovedInDjango70Warning: algorithm="sha256"
+# 计算 HMAC 并返回 base64 编码摘要
 def base64_hmac(salt, value, key, algorithm=None):
     if algorithm is None:
         warnings.warn(
@@ -147,6 +156,7 @@ def _unsign_cookie(signed_value, *, cookie_name, salt="", max_age=None):
         raise
 
 
+# 返回用于 Cookie 签名的 Signer 实例
 def get_cookie_signer(salt="django.core.signing.get_cookie_signer"):
     Signer = import_string(settings.SIGNING_BACKEND)
     return Signer(
@@ -156,16 +166,21 @@ def get_cookie_signer(salt="django.core.signing.get_cookie_signer"):
     )
 
 
+# signing.dumps/loads 使用的 JSON 序列化器
 class JSONSerializer:
     """
     Simple wrapper around json to be used in signing.dumps and
     signing.loads.
     """
 
-    def dumps(self, obj):
+    # 将对象序列化为 latin-1 字节串
+    # 生成 URL 安全、HMAC 签名的 base64 JSON 字符串
+def dumps(self, obj):
         return json.dumps(obj, separators=(",", ":")).encode("latin-1")
 
-    def loads(self, data):
+    # 从 latin-1 字节串反序列化
+    # dumps 的逆操作，签名失败时抛出 BadSignature
+def loads(self, data):
         return json.loads(data.decode("latin-1"))
 
 
@@ -215,7 +230,9 @@ def loads(
     )
 
 
+# HMAC 签名器：sign/unsign 字符串或 JSON 对象
 class Signer:
+    # 配置密钥、分隔符、salt 与 HMAC 算法
     def __init__(
         self, *, key=None, sep=":", salt=None, algorithm=None, fallback_keys=None
     ):
@@ -237,13 +254,16 @@ class Signer:
                 "only A-z0-9-_=)" % sep,
             )
 
+    # 计算值的 HMAC 签名
     def signature(self, value, key=None):
         key = key or self.key
         return base64_hmac(self.salt + "signer", value, key, algorithm=self.algorithm)
 
+    # 返回值与签名的拼接串
     def sign(self, value):
         return "%s%s%s" % (value, self.sep, self.signature(value))
 
+    # 验证签名并还原原始值
     def unsign(self, signed_value):
         if self.sep not in signed_value:
             raise BadSignature('No "%s" found in value' % self.sep)
@@ -253,6 +273,7 @@ class Signer:
                 return value
         raise BadSignature('Signature "%s" does not match' % sig)
 
+    # 序列化对象、可选 zlib 压缩后签名
     def sign_object(self, obj, serializer=JSONSerializer, compress=False):
         """
         Return URL-safe, hmac signed base64 compressed JSON string.
@@ -278,6 +299,7 @@ class Signer:
             base64d = "." + base64d
         return self.sign(base64d)
 
+    # 验签、解压并反序列化对象
     def unsign_object(self, signed_obj, serializer=JSONSerializer, **kwargs):
         # Signer.unsign() returns str but base64 and zlib compression operate
         # on bytes.
@@ -292,7 +314,9 @@ class Signer:
         return serializer().loads(data)
 
 
+# 带时间戳的签名器，支持 max_age 过期校验
 class TimestampSigner(Signer):
+    # 返回当前 Unix 时间的 base62 编码
     def timestamp(self):
         return b62_encode(int(time.time()))
 
@@ -300,6 +324,7 @@ class TimestampSigner(Signer):
         value = "%s%s%s" % (value, self.sep, self.timestamp())
         return super().sign(value)
 
+    # 验签并检查签名是否超过 max_age
     def unsign(self, value, max_age=None):
         """
         Retrieve original value and check it wasn't signed more

@@ -3,9 +3,11 @@ from collections import namedtuple
 from django.db.models import DB_CASCADE, DB_SET_DEFAULT, DB_SET_NULL, DO_NOTHING
 
 # Structure returned by DatabaseIntrospection.get_table_list()
+# get_table_list 返回的表/视图信息
 TableInfo = namedtuple("TableInfo", ["name", "type"])
 
 # Structure returned by the DB-API cursor.description interface (PEP 249)
+# cursor.description 对应的字段元数据结构
 FieldInfo = namedtuple(
     "FieldInfo",
     "name type_code display_size internal_size precision scale null_ok "
@@ -13,6 +15,7 @@ FieldInfo = namedtuple(
 )
 
 
+# 数据库内省工具抽象基类
 class BaseDatabaseIntrospection:
     """Encapsulate backend-specific introspection utilities."""
 
@@ -25,12 +28,14 @@ class BaseDatabaseIntrospection:
         # DB_RESTRICT - "RESTRICT" is not supported.
     }
 
+    # 绑定 BaseDatabaseWrapper 实例
     def __init__(self, connection):
         self.connection = connection
 
     def __del__(self):
         del self.connection
 
+    # 将数据库列类型映射为 Django 字段类型
     def get_field_type(self, data_type, description):
         """
         Hook for a database backend to use the cursor description to
@@ -41,6 +46,7 @@ class BaseDatabaseIntrospection:
         """
         return self.data_types_reverse[data_type]
 
+    # 标识符比较前的规范化转换
     def identifier_converter(self, name):
         """
         Apply a conversion to the identifier for the purposes of comparison.
@@ -49,6 +55,7 @@ class BaseDatabaseIntrospection:
         """
         return name
 
+    # 返回库中所有表名（Python 排序）
     def table_names(self, cursor=None, include_views=False):
         """
         Return a list of names of all tables that exist in the database.
@@ -69,6 +76,7 @@ class BaseDatabaseIntrospection:
                 return get_names(cursor)
         return get_names(cursor)
 
+    # 返回 TableInfo 列表（子类实现）
     def get_table_list(self, cursor):
         """
         Return an unsorted list of TableInfo named tuples of all tables and
@@ -79,6 +87,7 @@ class BaseDatabaseIntrospection:
             "method"
         )
 
+    # 返回表的 FieldInfo 列描述（子类实现）
     def get_table_description(self, cursor, table_name):
         """
         Return a description of the table with the DB-API cursor.description
@@ -89,6 +98,7 @@ class BaseDatabaseIntrospection:
             "get_table_description() method."
         )
 
+    # 迭代当前连接上可迁移的模型
     def get_migratable_models(self):
         from django.apps import apps
         from django.db import router
@@ -100,6 +110,7 @@ class BaseDatabaseIntrospection:
             if model._meta.can_migrate(self.connection)
         )
 
+    # 返回 INSTALLED_APPS 中模型对应的表名
     def django_table_names(self, only_existing=False, include_views=True):
         """
         Return a list of all table names that have associated Django models and
@@ -125,6 +136,7 @@ class BaseDatabaseIntrospection:
             ]
         return tables
 
+    # 根据表名集合返回对应模型集合
     def installed_models(self, tables):
         """
         Return a set of all models represented by the provided list of table
@@ -137,6 +149,7 @@ class BaseDatabaseIntrospection:
             if self.identifier_converter(m._meta.db_table) in tables
         }
 
+    # 返回所有模型相关序列信息
     def sequence_list(self):
         """
         Return a list of information about all DB sequences for all models in
@@ -164,6 +177,7 @@ class BaseDatabaseIntrospection:
                         )
         return sequence_list
 
+    # 返回指定表的序列元数据（子类实现）
     def get_sequences(self, cursor, table_name, table_fields=()):
         """
         Return a list of introspected sequences for table_name. Each sequence
@@ -176,6 +190,7 @@ class BaseDatabaseIntrospection:
             "method"
         )
 
+    # 返回表的外键关系字典（子类实现）
     def get_relations(self, cursor, table_name):
         """
         Return a dictionary of
@@ -189,6 +204,7 @@ class BaseDatabaseIntrospection:
             "get_relations() method."
         )
 
+    # 返回表的主键列名
     def get_primary_key_column(self, cursor, table_name):
         """
         Return the name of the primary key column for the given table.
@@ -203,6 +219,7 @@ class BaseDatabaseIntrospection:
                 return constraint["columns"]
         return None
 
+    # 返回表上索引/约束/外键的详细信息（子类实现）
     def get_constraints(self, cursor, table_name):
         """
         Retrieve any constraints or keys (unique, pk, fk, check, index)
