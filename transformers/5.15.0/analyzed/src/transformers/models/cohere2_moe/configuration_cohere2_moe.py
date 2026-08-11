@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="CohereLabs/command-a-plus-05-2026")
 @strict
+# Cohere2MoeConfig：MoE 超参，num_experts_per_tok 控制 top-k 路由
 class Cohere2MoeConfig(PreTrainedConfig):
     r"""
     logit_scale (`float`, *optional*, defaults to 0.0625):
@@ -126,6 +127,7 @@ class Cohere2MoeConfig(PreTrainedConfig):
     rms_norm_eps: float | None = None
     sliding_window_pattern: int = 4
 
+# __post_init__：构建 layer_types/mlp_layer_types 前缀 dense + 稀疏模式
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

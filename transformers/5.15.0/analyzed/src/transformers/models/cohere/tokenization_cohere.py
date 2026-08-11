@@ -42,6 +42,7 @@ Unless the user asks for a different style of answer, you should answer in full 
 # fmt: on
 
 
+# CohereTokenizer：Command-R 系列 BPE 分词器，左填充
 class CohereTokenizer(TokenizersBackend):
     """
     Construct a Cohere tokenizer. Based on byte-level Byte-Pair-Encoding.
@@ -112,6 +113,7 @@ class CohereTokenizer(TokenizersBackend):
     model = BPE
     # No `max_model_input_sizes`
 
+# __init__：构建 ByteLevel BPE，配置 NFC 归一化与数字预分词
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -183,6 +185,7 @@ class CohereTokenizer(TokenizersBackend):
 
         self._post_init()
 
+# apply_tool_use_template：渲染 Command-R 工具调用对话模板
     def apply_tool_use_template(
         self,
         conversation: list[dict[str, str]],
@@ -294,6 +297,7 @@ class CohereTokenizer(TokenizersBackend):
             **kwargs,
         )
 
+# apply_grounded_generation_template：渲染 RAG  grounded 生成模板
     def apply_grounded_generation_template(
         self,
         conversation: list[dict[str, str]],

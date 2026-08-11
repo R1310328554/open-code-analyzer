@@ -22,6 +22,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="CohereLabs/command-a-vision-07-2025")
 @strict
+# Cohere2VisionConfig：组合 vision_config 与 text_config 子配置
 class Cohere2VisionConfig(PreTrainedConfig):
     r"""
     downsample_factor (`int`, *optional*, defaults to 2):
@@ -40,6 +41,7 @@ class Cohere2VisionConfig(PreTrainedConfig):
     alignment_intermediate_size: int = 36864
     tie_word_embeddings: bool = True
 
+# __post_init__：解析 dict 子配置，默认 SigLIP 视觉 + Cohere2 文本
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "siglip_vision_model")

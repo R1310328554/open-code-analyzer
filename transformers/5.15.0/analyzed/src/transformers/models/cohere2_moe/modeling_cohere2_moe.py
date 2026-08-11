@@ -45,6 +45,7 @@ from .configuration_cohere2_moe import Cohere2MoeConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Cohere2MoeRMSNorm：RMSNorm，等价 T5LayerNorm
 class Cohere2MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -65,6 +66,7 @@ class Cohere2MoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Cohere2MoeLayerNorm：均值中心化 LayerNorm
 class Cohere2MoeLayerNorm(nn.Module):
     def __init__(self, hidden_size=None, eps=1e-5, bias=False):
         """The hidden size can be a tuple or an int. The tuple is used for QKNorm to normalize across head_dim"""
@@ -82,6 +84,7 @@ class Cohere2MoeLayerNorm(nn.Module):
         return hidden_states.to(input_dtype)
 
 
+# Cohere2MoeMLP：dense 前缀层使用的 SwiGLU MLP
 class Cohere2MoeMLP(nn.Module):
     def __init__(self, config: Cohere2MoeConfig, intermediate_size=None):
         super().__init__()
@@ -99,6 +102,7 @@ class Cohere2MoeMLP(nn.Module):
 
 
 @use_experts_implementation
+# Cohere2MoeExperts：3D 张量存储多专家 gate/up/down 权重
 class Cohere2MoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -138,6 +142,7 @@ class Cohere2MoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Cohere2MoeTopKRouter：线性路由 + softmax/sigmoid top-k 选专家
 class Cohere2MoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -165,6 +170,7 @@ class Cohere2MoeTopKRouter(nn.Module):
         return router_logits, router_scores, selected_experts
 
 
+# Cohere2MoeSparseMoeBlock：路由 + 专家计算 + 可选共享专家融合
 class Cohere2MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -270,6 +276,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(dtype=dtype), k_embed.to(dtype=dtype)
 
 
+# Cohere2MoeAttention：dense 前缀层 force_rope 强制应用 RoPE
 class Cohere2MoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -343,6 +350,7 @@ class Cohere2MoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Cohere2MoeDecoderLayer：按 mlp_layer_types 选 dense 或 MoE
 class Cohere2MoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Cohere2MoeConfig, layer_idx: int):
         super().__init__()
@@ -401,6 +409,7 @@ class Cohere2MoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Cohere2MoeRotaryEmbedding：RoPE 嵌入，支持多种 rope_type
 class Cohere2MoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Cohere2MoeConfig, device=None):
@@ -456,6 +465,7 @@ class Cohere2MoeRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Cohere2MoePreTrainedModel：初始化专家与路由权重
 class Cohere2MoePreTrainedModel(PreTrainedModel):
     config: Cohere2MoeConfig
     base_model_prefix = "model"
@@ -486,6 +496,7 @@ class Cohere2MoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Cohere2MoeModel：嵌入 + MoE 解码层栈
 class Cohere2MoeModel(Cohere2MoePreTrainedModel):
     def __init__(self, config: Cohere2MoeConfig):
         super().__init__(config)
@@ -568,6 +579,7 @@ class Cohere2MoeModel(Cohere2MoePreTrainedModel):
 
 
 @auto_docstring
+# Cohere2MoeForCausalLM：MoE 因果 LM，输出含 router_logits
 class Cohere2MoeForCausalLM(Cohere2MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

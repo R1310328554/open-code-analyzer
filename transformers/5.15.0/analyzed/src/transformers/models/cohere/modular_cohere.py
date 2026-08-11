@@ -49,6 +49,7 @@ from .configuration_cohere import CohereConfig
 logger = logging.get_logger(__name__)
 
 
+# CohereLayerNorm：LayerNorm 变体，hidden_size 可为元组以支持 QKNorm
 class CohereLayerNorm(nn.Module):
     def __init__(self, hidden_size=None, eps=1e-5, bias=False):
         """The hidden size can be a tuple or an int. The tuple is used for QKNorm to normalize across head_dim"""
@@ -66,6 +67,7 @@ class CohereLayerNorm(nn.Module):
         return hidden_states.to(input_dtype)
 
 
+# CohereRotaryEmbedding：RoPE 使用 repeat_interleave 而非 cat
 class CohereRotaryEmbedding(LlamaRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -83,6 +85,7 @@ class CohereRotaryEmbedding(LlamaRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：Cohere 专用旋转半向量，与 Llama 实现不同
 def rotate_half(x):
     # Split and rotate. Note that this function is different from e.g. Llama.
     x1 = x[..., ::2]
@@ -91,6 +94,7 @@ def rotate_half(x):
     return rot_x
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -119,6 +123,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(dtype=dtype), k_embed.to(dtype=dtype)
 
 
+# CohereMLP：SwiGLU 前馈，继承 LlamaMLP 并重置投影层
 class CohereMLP(LlamaMLP):
     def __init__(self, config):
         super().__init__(config)
@@ -128,6 +133,7 @@ class CohereMLP(LlamaMLP):
 
 
 @no_inherit_decorator
+# CohereAttention：多头注意力，可选 QK 归一化
 class CohereAttention(LlamaAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -192,6 +198,7 @@ class CohereAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# CohereDecoderLayer：Pre-LN + 并行残差（attn 与 MLP 同层相加）
 class CohereDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CohereConfig, layer_idx: int):
         super().__init__()
@@ -245,6 +252,7 @@ class CohereDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# CohereModel：堆叠 CohereDecoderLayer 的骨干网络
 class CohereModel(LlamaModel):
     def __init__(self, config: CohereConfig):
         super().__init__(config)
@@ -254,6 +262,7 @@ class CohereModel(LlamaModel):
         self.norm = CohereLayerNorm(hidden_size=(config.hidden_size), eps=config.layer_norm_eps)
 
 
+# CohereForCausalLM：因果语言建模头，logits 乘以 logit_scale
 class CohereForCausalLM(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)

@@ -32,6 +32,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# Cohere2VisionImageProcessorKwargs：crop_to_patches/min/max_patches 参数
 class Cohere2VisionImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_to_patches (`bool`, *optional*, defaults to `False`):
@@ -51,6 +52,7 @@ class Cohere2VisionImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：枚举不超过 max_tiles 的宽高块组合
 def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given maximum number of input tiles.
@@ -80,6 +82,7 @@ def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int
     return aspect_ratios
 
 
+# get_optimal_tiled_canvas：按原图宽高比选取最优分块网格
 def get_optimal_tiled_canvas(
     original_image_size: tuple[int, int],
     target_tile_size: tuple[int, int],
@@ -107,6 +110,7 @@ def get_optimal_tiled_canvas(
 
 
 @auto_docstring
+# Cohere2VisionImageProcessor：512×512 分块预处理，最多 12 patches
 class Cohere2VisionImageProcessor(TorchvisionBackend):
     valid_kwargs = Cohere2VisionImageProcessorKwargs
     resample = PILImageResampling.BICUBIC
@@ -125,6 +129,7 @@ class Cohere2VisionImageProcessor(TorchvisionBackend):
     def __init__(self, **kwargs: Unpack[Cohere2VisionImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+# crop_image_to_patches：resize 后切分 patches，可选缩略图
     def crop_image_to_patches(
         self,
         images: "torch.Tensor",
@@ -191,6 +196,7 @@ class Cohere2VisionImageProcessor(TorchvisionBackend):
 
         return processed_images
 
+# _preprocess：分块 → resize → rescale/normalize 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -254,6 +260,7 @@ class Cohere2VisionImageProcessor(TorchvisionBackend):
             data={"pixel_values": processed_images, "num_patches": num_patches}, tensor_type=return_tensors
         )
 
+# get_number_of_image_patches：给定尺寸预估 patch 数量
     def get_number_of_image_patches(self, height: int, width: int, images_kwargs: dict | None = None) -> int:
         """
         A utility that returns number patches for a given image size.

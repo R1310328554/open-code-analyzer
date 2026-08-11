@@ -33,6 +33,7 @@ from ..auto import AutoModel
 from .configuration_cohere2_vision import Cohere2VisionConfig
 
 
+# Cohere2VisionMultiModalProjector：pixel_shuffle 降采样 + SwiGLU 对齐到文本隐层
 class Cohere2VisionMultiModalProjector(nn.Module):
     def __init__(self, config: Cohere2VisionConfig):
         super().__init__()
@@ -45,6 +46,7 @@ class Cohere2VisionMultiModalProjector(nn.Module):
         self.act = nn.SiLU()
         self.linear_2 = nn.Linear(self.intermediate_size // 2, config.text_config.hidden_size, bias=True)
 
+# pixel_shuffle：空间维度重排实现 downsample_factor 倍降采样
     def pixel_shuffle(self, image_features):  # B, S, D
         batch_size, seq_length, feature_dim = image_features.shape
         height = width = int(seq_length**0.5)
@@ -78,6 +80,7 @@ class Cohere2VisionMultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# Cohere2VisionModelOutputWithPast：含 image_hidden_states 的多模态输出
 class Cohere2VisionModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -99,6 +102,7 @@ class Cohere2VisionModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Cohere2VisionCausalLMOutputWithPast：条件生成输出，含 loss/logits/image_hidden_states
 class Cohere2VisionCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -124,6 +128,7 @@ class Cohere2VisionCausalLMOutputWithPast(ModelOutput):
 
 
 @auto_docstring
+# Cohere2VisionPreTrainedModel：声明 image+text 双模态输入支持
 class Cohere2VisionPreTrainedModel(PreTrainedModel):
     config: Cohere2VisionConfig
     base_model_prefix = "model"
@@ -143,6 +148,7 @@ class Cohere2VisionPreTrainedModel(PreTrainedModel):
     The Cohere2Vision model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# Cohere2VisionModel：vision_tower + projector + language_model
 class Cohere2VisionModel(Cohere2VisionPreTrainedModel):
     def __init__(self, config: Cohere2VisionConfig):
         super().__init__(config)
@@ -156,6 +162,7 @@ class Cohere2VisionModel(Cohere2VisionPreTrainedModel):
     @auto_docstring(
         custom_intro="Obtains image last hidden states from the vision tower and apply multimodal projection."
     )
+# get_image_features：视觉塔前向 + 多模态投影
     def get_image_features(
         self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -168,6 +175,7 @@ class Cohere2VisionModel(Cohere2VisionPreTrainedModel):
 
         return image_outputs
 
+# get_placeholder_mask：校验 image_token 占位符数量与特征一致
     def get_placeholder_mask(
         self, input_ids: torch.LongTensor, inputs_embeds: torch.FloatTensor, image_features: torch.FloatTensor
     ):
@@ -242,6 +250,7 @@ class Cohere2VisionModel(Cohere2VisionPreTrainedModel):
     The COHERE2_VISION model which consists of a vision backbone and a language model.
     """
 )
+# Cohere2VisionForConditionalGeneration：带 lm_head 的条件生成模型
 class Cohere2VisionForConditionalGeneration(Cohere2VisionPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

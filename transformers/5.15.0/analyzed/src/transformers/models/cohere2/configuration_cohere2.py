@@ -27,6 +27,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="CohereForAI/c4ai-command-r-v01")
 @strict
+# Cohere2Config：256K 词表、8192 隐层，支持 layer_types 滑动/全注意力交替
 class Cohere2Config(PreTrainedConfig):
     r"""
     logit_scale (`float`, *optional*, defaults to 0.0625):
@@ -85,6 +86,7 @@ class Cohere2Config(PreTrainedConfig):
     sliding_window: int | None = 4096
     layer_types: list[str] | None = None
 
+# __post_init__：推导 head_dim 与 layer_types 滑动窗口模式
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

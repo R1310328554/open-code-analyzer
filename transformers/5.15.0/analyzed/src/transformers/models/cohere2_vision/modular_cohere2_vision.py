@@ -39,6 +39,7 @@ from .configuration_cohere2_vision import Cohere2VisionConfig
 logger = logging.get_logger(__name__)
 
 
+# Cohere2VisionMultiModalProjector：视觉特征 pixel_shuffle + 两层 MLP 投影
 class Cohere2VisionMultiModalProjector(nn.Module):
     def __init__(self, config: Cohere2VisionConfig):
         super().__init__()
@@ -78,18 +79,22 @@ class Cohere2VisionMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# Cohere2VisionModelOutputWithPast：继承 AyaVision 输出结构
 class Cohere2VisionModelOutputWithPast(AyaVisionModelOutputWithPast):
     pass
 
 
+# Cohere2VisionCausalLMOutputWithPast：继承 AyaVision 因果 LM 输出
 class Cohere2VisionCausalLMOutputWithPast(AyaVisionCausalLMOutputWithPast):
     pass
 
 
+# Cohere2VisionPreTrainedModel：继承 AyaVision 预训练基类
 class Cohere2VisionPreTrainedModel(AyaVisionPreTrainedModel):
     base_model_prefix = "model"
 
 
+# Cohere2VisionModel：重写 get_image_features 与 forward 融合图像
 class Cohere2VisionModel(AyaVisionModel):
     @can_return_tuple
     @auto_docstring(
@@ -150,6 +155,7 @@ class Cohere2VisionModel(AyaVisionModel):
         )
 
 
+# Cohere2VisionForConditionalGeneration：条件生成，委托 model 处理多模态
 class Cohere2VisionForConditionalGeneration(AyaVisionForConditionalGeneration):
     @auto_docstring
     def get_image_features(
@@ -240,6 +246,7 @@ class Cohere2VisionForConditionalGeneration(AyaVisionForConditionalGeneration):
 
 
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：计算合法分块宽高组合
 def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given maximum number of input tiles.
@@ -269,6 +276,7 @@ def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int
     return aspect_ratios
 
 
+# get_optimal_tiled_canvas：最小缩放选取最优 tile 网格
 def get_optimal_tiled_canvas(
     original_image_size: tuple[int, int],
     target_tile_size: tuple[int, int],
@@ -295,6 +303,7 @@ def get_optimal_tiled_canvas(
     return best_grid  # (width, height)
 
 
+# Cohere2VisionImageProcessorKwargs：分块预处理可选参数
 class Cohere2VisionImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_to_patches (`bool`, *optional*, defaults to `False`):
@@ -314,6 +323,7 @@ class Cohere2VisionImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Cohere2VisionImageProcessor：继承 GotOcr2 分块逻辑，512×512 默认
 class Cohere2VisionImageProcessor(GotOcr2ImageProcessor):
     size = {"height": 512, "width": 512}
     min_patches = 1

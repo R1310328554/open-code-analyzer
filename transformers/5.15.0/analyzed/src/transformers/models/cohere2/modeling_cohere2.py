@@ -39,6 +39,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_cohere2 import Cohere2Config
 
 
+# Cohere2RotaryEmbedding：可配置 RoPE 类型，支持 dynamic_rope_update
 class Cohere2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Cohere2Config, device=None):
@@ -59,6 +60,7 @@ class Cohere2RotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+# compute_default_rope_parameters：按 rope_theta 计算逆频率
     def compute_default_rope_parameters(config: Cohere2Config, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -79,6 +81,7 @@ class Cohere2RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+# forward：按 layer_types 选择 full/sliding 因果掩码
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -93,6 +96,7 @@ class Cohere2RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Cohere2LayerNorm：均值中心化 LayerNorm
 class Cohere2LayerNorm(nn.Module):
     def __init__(self, hidden_size=None, eps=1e-5, bias=False):
         """The hidden size can be a tuple or an int. The tuple is used for QKNorm to normalize across head_dim"""
@@ -110,6 +114,7 @@ class Cohere2LayerNorm(nn.Module):
         return hidden_states.to(input_dtype)
 
 
+# repeat_kv：GQA 时将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -122,6 +127,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -147,6 +153,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：Cohere 风格旋转半向量
 def rotate_half(x):
     # Split and rotate. Note that this function is different from e.g. Llama.
     x1 = x[..., ::2]
@@ -155,6 +162,7 @@ def rotate_half(x):
     return rot_x
 
 
+# apply_rotary_pos_emb：对 Q/K 施加旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -183,6 +191,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(dtype=dtype), k_embed.to(dtype=dtype)
 
 
+# Cohere2Attention：按 layer_types 切换滑动窗口或全注意力
 class Cohere2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -253,6 +262,7 @@ class Cohere2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Cohere2MLP：SwiGLU 前馈网络
 class Cohere2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -269,6 +279,7 @@ class Cohere2MLP(nn.Module):
         return down_proj
 
 
+# Cohere2DecoderLayer：Pre-LN 解码层，attn 与 MLP 并行残差
 class Cohere2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Cohere2Config, layer_idx: int):
         super().__init__()
@@ -320,6 +331,7 @@ class Cohere2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Cohere2PreTrainedModel：声明 Flash/SDPA/Flex 注意力后端支持
 class Cohere2PreTrainedModel(PreTrainedModel):
     config: Cohere2Config
     base_model_prefix = "model"
@@ -339,6 +351,7 @@ class Cohere2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Cohere2Model：嵌入 + 解码层栈 + 最终 LayerNorm
 class Cohere2Model(Cohere2PreTrainedModel):
     def __init__(self, config: Cohere2Config):
         super().__init__(config)
@@ -417,6 +430,7 @@ class Cohere2Model(Cohere2PreTrainedModel):
 
 
 @auto_docstring
+# Cohere2ForCausalLM：因果 LM 头，logits 乘以 logit_scale
 class Cohere2ForCausalLM(Cohere2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

@@ -45,26 +45,31 @@ from ..mixtral.modeling_mixtral import MixtralExperts
 from .configuration_cohere2_moe import Cohere2MoeConfig
 
 
+# Cohere2MoeRMSNorm：继承 Llama RMSNorm
 class Cohere2MoeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Cohere2MoeLayerNorm：复用 Cohere2 LayerNorm
 class Cohere2MoeLayerNorm(Cohere2LayerNorm):
     pass
 
 
+# Cohere2MoeMLP：dense 层 MLP，可指定 intermediate_size
 class Cohere2MoeMLP(Cohere2MLP):
     def __init__(self, config: Cohere2MoeConfig, intermediate_size=None):
         super().__init__(config)
         self.intermediate_size = intermediate_size if intermediate_size is not None else config.intermediate_size
 
 
+# Cohere2MoeExperts：继承 Mixtral 专家集合实现
 class Cohere2MoeExperts(MixtralExperts):
     def __init__(self, config):
         super().__init__(config)
         self.num_experts = config.num_experts
 
 
+# Cohere2MoeTopKRouter：Top-K 专家路由门控
 class Cohere2MoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -92,6 +97,7 @@ class Cohere2MoeTopKRouter(nn.Module):
         return router_logits, router_scores, selected_experts
 
 
+# Cohere2MoeSparseMoeBlock：稀疏 MoE 块，支持共享专家 sum/average
 class Cohere2MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -124,6 +130,7 @@ class Cohere2MoeSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# Cohere2MoeAttention：扩展 force_rope 以适配 dense 前缀层
 class Cohere2MoeAttention(Cohere2Attention):
     def __init__(self, config: Cohere2MoeConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -174,6 +181,7 @@ class Cohere2MoeAttention(Cohere2Attention):
         return attn_output, attn_weights
 
 
+# Cohere2MoeDecoderLayer：替换 norm 与 mlp 为 MoE 变体
 class Cohere2MoeDecoderLayer(Cohere2DecoderLayer):
     def __init__(self, config: Cohere2MoeConfig, layer_idx: int):
         super().__init__()
@@ -211,6 +219,7 @@ class Cohere2MoePreTrainedModel(Cohere2PreTrainedModel):
             init.normal_(module.weight, mean=0.0, std=std)
 
 
+# Cohere2MoeModel：继承 Cohere2Model，返回 MoeModelOutputWithPast
 class Cohere2MoeModel(Cohere2Model):
     def __init__(self, config: Cohere2MoeConfig):
         super().__init__()
@@ -278,6 +287,7 @@ class Cohere2MoeModel(Cohere2Model):
         )
 
 
+# Cohere2MoeForCausalLM：MoE 因果 LM，含 router_logits 输出
 class Cohere2MoeForCausalLM(Cohere2ForCausalLM):
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 

@@ -48,6 +48,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="CohereForAI/c4ai-command-r-v01")
 @strict
+# Cohere2Config：Cohere2 超参 dataclass，含 TP/PP 分片计划
 class Cohere2Config(PreTrainedConfig):
     r"""
     logit_scale (`float`, *optional*, defaults to 0.0625):
@@ -125,6 +126,7 @@ class Cohere2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Cohere2RotaryEmbedding：继承 Cohere 交错 RoPE
 class Cohere2RotaryEmbedding(CohereRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -142,10 +144,12 @@ class Cohere2RotaryEmbedding(CohereRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Cohere2LayerNorm：直接复用 Cohere LayerNorm
 class Cohere2LayerNorm(CohereLayerNorm):
     pass
 
 
+# Cohere2Attention：滑动窗口层才应用 RoPE
 class Cohere2Attention(CohereAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -216,6 +220,7 @@ class Cohere2Attention(CohereAttention):
         return attn_output, attn_weights
 
 
+# Cohere2DecoderLayer：继承 Cohere 并行残差解码层
 class Cohere2DecoderLayer(CohereDecoderLayer):
     def __init__(self, config: Cohere2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -245,6 +250,7 @@ class Cohere2DecoderLayer(CohereDecoderLayer):
         return hidden_states
 
 
+# Cohere2PreTrainedModel：注册可录制 hidden_states/attentions
 class Cohere2PreTrainedModel(CoherePreTrainedModel):
     config: Cohere2Config
     _can_record_outputs = {
@@ -253,6 +259,7 @@ class Cohere2PreTrainedModel(CoherePreTrainedModel):
     }
 
 
+# Cohere2Model：基于 Gemma2Model 骨架，替换 norm 与 embed
 class Cohere2Model(Gemma2Model):
     def __init__(self, config: Cohere2Config):
         super().__init__(config)
@@ -317,6 +324,7 @@ class Cohere2Model(Gemma2Model):
         )
 
 
+# Cohere2ForCausalLM：直接继承 Cohere 因果 LM
 class Cohere2ForCausalLM(CohereForCausalLM):
     pass
 
