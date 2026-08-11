@@ -4,15 +4,22 @@ from itertools import chain
 from operator import attrgetter, or_
 
 from django.db import IntegrityError, connections, models, transaction
+"""
+django.db.models.deletion — 级联删除与 on_delete 处理器。
+
+Collector 收集待删对象、字段更新与 RESTRICT/PROTECT 错误。
+"""
 from django.db.models import query_utils, signals, sql
 
 
+# PROTECT 策略阻止删除时抛出的异常
 class ProtectedError(IntegrityError):
     def __init__(self, msg, protected_objects):
         self.protected_objects = protected_objects
         super().__init__(msg, protected_objects)
 
 
+# RESTRICT 策略存在引用时抛出的异常
 class RestrictedError(IntegrityError):
     def __init__(self, msg, restricted_objects):
         self.restricted_objects = restricted_objects
@@ -81,6 +88,7 @@ def DO_NOTHING(collector, field, sub_objs, using):
     pass
 
 
+# 数据库级 ON DELETE 策略（DB_CASCADE 等）
 class DatabaseOnDelete:
     def __init__(self, operation, name, forced_collector=None):
         self.operation = operation
@@ -114,6 +122,7 @@ def get_candidate_relations_to_delete(opts):
     )
 
 
+# 删除收集器：级联、fast_delete、字段 SET_NULL 与依赖排序
 class Collector:
     def __init__(self, using, origin=None, force_collection=False):
         self.using = using

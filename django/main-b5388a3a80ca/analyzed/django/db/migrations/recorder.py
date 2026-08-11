@@ -3,9 +3,15 @@ from django.db import DatabaseError, models
 from django.utils.functional import classproperty
 from django.utils.timezone import now
 
+"""
+django.db.migrations.recorder — django_migrations 表读写。
+
+记录已应用迁移；表本身由 schema_editor 手动创建而非迁移生成。
+"""
 from .exceptions import MigrationSchemaMissing
 
 
+# 管理 django_migrations：查询/记录/撤销已应用迁移
 class MigrationRecorder:
     """
     Deal with storing migration records in the database.

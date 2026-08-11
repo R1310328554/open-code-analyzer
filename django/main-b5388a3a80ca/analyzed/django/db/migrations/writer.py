@@ -12,9 +12,15 @@ from django.db.migrations.loader import MigrationLoader
 from django.db.migrations.serializer import Serializer, serializer_factory
 from django.utils.inspect import get_func_args
 from django.utils.module_loading import module_dir
+"""
+django.db.migrations.writer — 迁移文件源码生成。
+
+将 Migration 实例与 Operation 序列化为可执行的 Python 模块文本。
+"""
 from django.utils.timezone import now
 
 
+# 单个 Operation 的 deconstruct 参数序列化与缩进输出
 class OperationWriter:
     def __init__(self, operation, indentation=2):
         self.operation = operation
@@ -115,6 +121,7 @@ class OperationWriter:
         return "\n".join(self.buff)
 
 
+# 完整迁移文件：imports、dependencies、operations 与头部注释
 class MigrationWriter:
     """
     Take a Migration instance and is able to produce the contents

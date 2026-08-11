@@ -1,3 +1,8 @@
+"""
+django.db.models — ORM 公共 API 聚合导出。
+
+聚合 fields、query、constraints、signals 等子模块符号到 __all__。
+"""
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
 from django.db.models.aggregates import *  # NOQA

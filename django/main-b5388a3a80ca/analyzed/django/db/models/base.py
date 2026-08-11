@@ -62,9 +62,15 @@ from django.db.models.utils import AltersData, make_model_tuple
 from django.utils.encoding import force_str
 from django.utils.hashable import make_hashable
 from django.utils.text import capfirst, get_text_list
+"""
+django.db.models.base — Model 元类与实例核心实现。
+
+ModelBase 构建模型类；Model 提供 save/delete/refresh 与校验入口。
+"""
 from django.utils.translation import gettext_lazy as _
 
 
+# 延迟加载字段占位符（deferred() 查询）
 class Deferred:
     def __repr__(self):
         return "<Deferred field>"
@@ -99,6 +105,7 @@ def _has_contribute_to_class(value):
     return not inspect.isclass(value) and hasattr(value, "contribute_to_class")
 
 
+# 模型元类：组装 _meta、字段 contribute_to_class 与信号
 class ModelBase(type):
     """Metaclass for all models."""
 
@@ -466,6 +473,7 @@ class ModelBase(type):
         return cls._meta.default_manager
 
 
+# 实例 __dict__ 上 _state.fields_cache 描述符
 class ModelStateFieldsCacheDescriptor:
     def __get__(self, instance, cls=None):
         if instance is None:
@@ -474,6 +482,7 @@ class ModelStateFieldsCacheDescriptor:
         return res
 
 
+# 实例 _state.fetch_mode 描述符
 class ModelStateFetchModeDescriptor:
     def __get__(self, instance, cls=None):
         if instance is None:
@@ -482,6 +491,7 @@ class ModelStateFetchModeDescriptor:
         return res
 
 
+# 跟踪实例 db 状态：adding、fields_cache、fetch_mode 等
 class ModelState:
     """Store model instance state."""
 
@@ -505,6 +515,7 @@ class ModelState:
         self.fields_cache.clear()
 
 
+# Django ORM 模型基类：CRUD、校验、Manager 与 Meta 选项
 class Model(AltersData, metaclass=ModelBase):
     def __init__(self, *args, **kwargs):
         # Alias some things as locals to avoid repeat global lookups

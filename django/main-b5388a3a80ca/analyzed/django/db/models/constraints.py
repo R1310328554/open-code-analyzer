@@ -15,9 +15,16 @@ from django.db.models.sql.query import Query
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.utils.translation import gettext_lazy as _
 
-__all__ = ["BaseConstraint", "CheckConstraint", "Deferrable", "UniqueConstraint"]
+"""
+django.db.models.constraints — 数据库与模型层约束。
+
+CHECK 与 UNIQUE 约束的 DDL 生成、deconstruct 与 full_clean 校验。
+"""
+
+__all__ = ["BaseConstraint", "CheckConstraint", "Deferrable", "UniqueConstraint"]__all__ = ["BaseConstraint", "CheckConstraint", "Deferrable", "UniqueConstraint"]
 
 
+# 约束基类：name、violation 消息与 schema_editor SQL 钩子
 class BaseConstraint:
     default_violation_error_message = _("Constraint “%(name)s” is violated.")
     violation_error_code = None
@@ -132,6 +139,7 @@ class BaseConstraint:
         return self.__class__(*args, **kwargs)
 
 
+# CHECK 约束：Q/表达式条件在库表与 Python 校验
 class CheckConstraint(BaseConstraint):
     def __init__(
         self,
@@ -257,6 +265,7 @@ class CheckConstraint(BaseConstraint):
         return path, args, kwargs
 
 
+# 唯一约束 DEFERRED/IMMEDIATE 可延迟检查
 class Deferrable(Enum):
     DEFERRED = "deferred"
     IMMEDIATE = "immediate"
@@ -266,6 +275,7 @@ class Deferrable(Enum):
         return f"{self.__class__.__qualname__}.{self._name_}"
 
 
+# UNIQUE：字段/表达式、部分索引、include 与 nulls_distinct
 class UniqueConstraint(BaseConstraint):
     def __init__(
         self,

@@ -1,3 +1,4 @@
+# 迁移操作优化器：合并相邻可折叠 Operation 直至稳定
 class MigrationOptimizer:
     """
     Power the optimization process, where you provide a list of Operations
@@ -9,6 +10,7 @@ class MigrationOptimizer:
     nothing.
     """
 
+    # 反复调用 optimize_inner 直到操作列表不再变化
     def optimize(self, operations, app_label):
         """
         Main optimization entry point. Pass in a list of Operation instances,
@@ -37,6 +39,7 @@ class MigrationOptimizer:
                 return result
             operations = result
 
+    # 扫描每对操作尝试 reduce；遇不可跨越边界则停止
     def optimize_inner(self, operations, app_label):
         """Inner optimization loop."""
         new_operations = []

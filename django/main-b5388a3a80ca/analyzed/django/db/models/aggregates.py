@@ -1,4 +1,9 @@
 """
+django.db.models.aggregates — SQL 聚合函数表达式。
+
+定义 COUNT/SUM/AVG 等聚合及其 FILTER、ORDER BY、DISTINCT 扩展。
+"""
+"""
 Classes to represent the definitions of aggregate functions.
 """
 
@@ -37,6 +42,7 @@ __all__ = [
 ]
 
 
+# FILTER (WHERE ...) 子句包装
 class AggregateFilter(Func):
     arity = 1
     template = " FILTER (WHERE %(expressions)s)"
@@ -59,6 +65,7 @@ class AggregateFilter(Func):
         return self.arg_joiner.join(str(arg) for arg in self.source_expressions)
 
 
+# 聚合内 ORDER BY 子句（如 STRING_AGG）
 class AggregateOrderBy(OrderByList):
     template = " ORDER BY %(expressions)s"
 
@@ -72,6 +79,7 @@ class AggregateOrderBy(OrderByList):
         return super().as_sql(compiler, connection, **extra_context)
 
 
+# 聚合基类：distinct/filter/default/order_by 与 resolve 校验
 class Aggregate(Func):
     template = "%(function)s(%(distinct)s%(expressions)s%(order_by)s)%(filter)s"
     contains_aggregate = True
@@ -223,6 +231,7 @@ class Aggregate(Func):
         return options
 
 
+# ANY_VALUE：MySQL 等返回组内任意值
 class AnyValue(Aggregate):
     function = "ANY_VALUE"
     name = "AnyValue"
@@ -237,6 +246,7 @@ class AnyValue(Aggregate):
         return super().as_sql(compiler, connection, **extra_context)
 
 
+# AVG 平均值；支持 DISTINCT
 class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
     function = "AVG"
     name = "Avg"
@@ -244,6 +254,7 @@ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
     arity = 1
 
 
+# 位聚合基类：BIT_AND/OR/XOR 及 default 后端限制
 class BitAggregate(Aggregate):
     arity = 1
 
@@ -277,21 +288,25 @@ class BitAggregate(Aggregate):
         )
 
 
+# 按位与聚合
 class BitAnd(BitAggregate):
     function = "BIT_AND"
     name = "BitAnd"
 
 
+# 按位或聚合
 class BitOr(BitAggregate):
     function = "BIT_OR"
     name = "BitOr"
 
 
+# 按位异或聚合
 class BitXor(BitAggregate):
     function = "BIT_XOR"
     name = "BitXor"
 
 
+# COUNT；* 映射 Star，空结果集默认 0
 class Count(Aggregate):
     function = "COUNT"
     name = "Count"
@@ -325,18 +340,21 @@ class Count(Aggregate):
         return result
 
 
+# MAX 最大值
 class Max(Aggregate):
     function = "MAX"
     name = "Max"
     arity = 1
 
 
+# MIN 最小值
 class Min(Aggregate):
     function = "MIN"
     name = "Min"
     arity = 1
 
 
+# 标准差：STDDEV_POP 或 STDDEV_SAMP
 class StdDev(NumericOutputFieldMixin, Aggregate):
     name = "StdDev"
     arity = 1
@@ -349,6 +367,7 @@ class StdDev(NumericOutputFieldMixin, Aggregate):
         return {**super()._get_repr_options(), "sample": self.function == "STDDEV_SAMP"}
 
 
+# StringAgg 分隔符；MySQL 用 SEPARATOR 语法
 class StringAggDelimiter(Func):
     arity = 1
     template = "%(expressions)s"
@@ -368,6 +387,7 @@ class StringAggDelimiter(Func):
         )
 
 
+# 字符串连接聚合；Oracle LISTAGG、MySQL GROUP_CONCAT 适配
 class StringAgg(Aggregate):
     template = "%(function)s(%(distinct)s%(expressions)s%(order_by)s)%(filter)s"
     function = "STRING_AGG"
@@ -449,6 +469,7 @@ class StringAgg(Aggregate):
         return self.as_sql(compiler, connection, **extra_context)
 
 
+# SUM 求和；支持 DISTINCT
 class Sum(FixDurationInputMixin, Aggregate):
     function = "SUM"
     name = "Sum"
@@ -456,6 +477,7 @@ class Sum(FixDurationInputMixin, Aggregate):
     arity = 1
 
 
+# 方差：VAR_POP 或 VAR_SAMP
 class Variance(NumericOutputFieldMixin, Aggregate):
     name = "Variance"
     arity = 1

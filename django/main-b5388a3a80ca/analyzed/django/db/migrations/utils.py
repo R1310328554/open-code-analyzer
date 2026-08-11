@@ -4,11 +4,17 @@ from collections import namedtuple
 
 from django.db.models.fields.related import RECURSIVE_RELATIONSHIP_CONSTANT
 
+"""
+django.db.migrations.utils — 迁移辅助工具。
+
+关系解析、字段引用检测与迁移文件名时间戳生成。
+"""
 FieldReference = namedtuple("FieldReference", "to through")
 
 COMPILED_REGEX_TYPE = type(re.compile(""))
 
 
+# 可序列化的 regex 包装：仅保留 pattern 与 flags
 class RegexObject:
     def __init__(self, obj):
         self.pattern = obj.pattern
@@ -20,10 +26,12 @@ class RegexObject:
         return self.pattern == other.pattern and self.flags == other.flags
 
 
+# 生成 YYYYMMDD_HHMM 格式迁移文件名时间戳
 def get_migration_name_timestamp():
     return datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
 
+# 将模型类或字符串解析为 (app_label, model_name) 元组
 def resolve_relation(model, app_label=None, model_name=None):
     """
     Turn a model class or model reference string and return a model tuple.
@@ -50,6 +58,7 @@ def resolve_relation(model, app_label=None, model_name=None):
     return model._meta.app_label, model._meta.model_name
 
 
+# 判断 field 是否引用给定 model/field 上下文
 def field_references(
     model_tuple,
     field,
@@ -107,6 +116,7 @@ def field_references(
     return FieldReference(references_to, references_through)
 
 
+# 生成引用指定模型/字段的所有 (model_state, name, field, ref)
 def get_references(state, model_tuple, field_tuple=()):
     """
     Generator of (model_state, name, field, reference) referencing
@@ -124,6 +134,7 @@ def get_references(state, model_tuple, field_tuple=()):
                 yield model_state, name, field, reference
 
 
+# 是否有任何模型状态引用该字段
 def field_is_referenced(state, model_tuple, field_tuple):
     """Return whether `field_tuple` is referenced by any state models."""
     return next(get_references(state, model_tuple, field_tuple), None) is not None

@@ -18,6 +18,11 @@ from django.db.migrations.operations.base import Operation
 from django.db.migrations.utils import COMPILED_REGEX_TYPE, RegexObject
 from django.db.models.deletion import DatabaseOnDelete
 from django.utils.functional import LazyObject, Promise
+"""
+django.db.migrations.serializer — 迁移文件值序列化。
+
+将 Field、Operation、常量等 Python 对象转为可写入 migrations 模块的源码字符串。
+"""
 from django.utils.version import get_docs_version
 
 FUNCTION_TYPES = (types.FunctionType, types.BuiltinFunctionType, types.MethodType)
@@ -30,6 +35,7 @@ if isinstance(functools._lru_cache_wrapper, type):
     FUNCTION_TYPES += (functools._lru_cache_wrapper,)
 
 
+# 序列化器抽象基类
 class BaseSerializer:
     def __init__(self, value):
         self.value = value
@@ -40,6 +46,7 @@ class BaseSerializer:
         )
 
 
+# 序列/集合类基类：逐项序列化后按 _format 拼接
 class BaseSequenceSerializer(BaseSerializer):
     def _format(self):
         raise NotImplementedError(
@@ -57,27 +64,32 @@ class BaseSequenceSerializer(BaseSerializer):
         return value % (", ".join(strings)), imports
 
 
+# 无序集合：先按 repr 排序再序列化以保证确定性
 class BaseUnorderedSequenceSerializer(BaseSequenceSerializer):
     def __init__(self, value):
         super().__init__(sorted(value, key=repr))
 
 
+# 直接用 repr 序列化的简单类型
 class BaseSimpleSerializer(BaseSerializer):
     def serialize(self):
         return repr(self.value), set()
 
 
+# 序列化 models.Choices 枚举成员
 class ChoicesSerializer(BaseSerializer):
     def serialize(self):
         return serializer_factory(self.value.value).serialize()
 
 
+# 序列化 DatabaseOnDelete 外键删除策略
 class DatabaseOnDeleteSerializer(BaseSerializer):
     def serialize(self):
         path = self.value.__class__.__module__
         return f"{path}.{self.value.__name__}", {f"import {path}"}
 
 
+# 序列化 datetime.date/time/timedelta
 class DateTimeSerializer(BaseSerializer):
     """For datetime.*, except datetime.datetime."""
 
@@ -85,6 +97,7 @@ class DateTimeSerializer(BaseSerializer):
         return repr(self.value), {"import datetime"}
 
 
+# 序列化 datetime.datetime；非 UTC 时区先转为 UTC
 class DatetimeDatetimeSerializer(BaseSerializer):
     """For datetime.datetime."""
 
@@ -95,11 +108,13 @@ class DatetimeDatetimeSerializer(BaseSerializer):
         return repr(self.value), set(imports)
 
 
+# 序列化 decimal.Decimal
 class DecimalSerializer(BaseSerializer):
     def serialize(self):
         return repr(self.value), {"from decimal import Decimal"}
 
 
+# 序列化支持 deconstruct() 的可解构对象
 class DeconstructibleSerializer(BaseSerializer):
     @staticmethod
     def serialize_deconstructed(path, args, kwargs):
@@ -140,6 +155,7 @@ class DeconstructibleSerializer(BaseSerializer):
         return self.serialize_deconstructed(*self.value.deconstruct())
 
 
+# 序列化 dict，键值排序保证稳定输出
 class DictionarySerializer(BaseSerializer):
     def serialize(self):
         imports = set()
@@ -153,6 +169,7 @@ class DictionarySerializer(BaseSerializer):
         return "{%s}" % (", ".join("%s: %s" % (k, v) for k, v in strings)), imports
 
 
+# 序列化 enum.Enum/Flag 成员
 class EnumSerializer(BaseSerializer):
     def serialize(self):
         enum_class = self.value.__class__
@@ -172,6 +189,7 @@ class EnumSerializer(BaseSerializer):
         )
 
 
+# 序列化 float；NaN/Inf 用 float("...") 形式
 class FloatSerializer(BaseSimpleSerializer):
     def serialize(self):
         if math.isnan(self.value) or math.isinf(self.value):
@@ -179,11 +197,13 @@ class FloatSerializer(BaseSimpleSerializer):
         return super().serialize()
 
 
+# 序列化 frozenset
 class FrozensetSerializer(BaseUnorderedSequenceSerializer):
     def _format(self):
         return "frozenset([%s])"
 
 
+# 序列化函数/方法引用（禁止 lambda 与无模块函数）
 class FunctionTypeSerializer(BaseSerializer):
     def serialize(self):
         if getattr(self.value, "__self__", None) and isinstance(
@@ -212,6 +232,7 @@ class FunctionTypeSerializer(BaseSerializer):
         )
 
 
+# 序列化 functools.partial/partialmethod
 class FunctoolsPartialSerializer(BaseSerializer):
     def serialize(self):
         partial_name = self.value.__class__.__name__
@@ -222,6 +243,7 @@ class FunctoolsPartialSerializer(BaseSerializer):
         )
 
 
+# 序列化 types.GenericAlias（如 list[int]）
 class GenericAliasSerializer(BaseSerializer):
     def serialize(self):
         imports = set()
@@ -233,6 +255,7 @@ class GenericAliasSerializer(BaseSerializer):
         return repr(self.value), imports
 
 
+# 序列化一般可迭代对象为元组字面量
 class IterableSerializer(BaseSerializer):
     def serialize(self):
         imports = set()
@@ -247,12 +270,14 @@ class IterableSerializer(BaseSerializer):
         return value % (", ".join(strings)), imports
 
 
+# 序列化 models.Field 实例
 class ModelFieldSerializer(DeconstructibleSerializer):
     def serialize(self):
         attr_name, path, args, kwargs = self.value.deconstruct()
         return self.serialize_deconstructed(path, args, kwargs)
 
 
+# 序列化 Manager 或 QuerySet.as_manager()
 class ModelManagerSerializer(DeconstructibleSerializer):
     def serialize(self):
         as_manager, manager_path, qs_path, args, kwargs = self.value.deconstruct()
@@ -263,6 +288,7 @@ class ModelManagerSerializer(DeconstructibleSerializer):
             return self.serialize_deconstructed(manager_path, args, kwargs)
 
 
+# 序列化迁移 Operation 为 OperationWriter 输出
 class OperationSerializer(BaseSerializer):
     def serialize(self):
         from django.db.migrations.writer import OperationWriter
@@ -273,11 +299,13 @@ class OperationSerializer(BaseSerializer):
         return string.rstrip(","), imports
 
 
+# 序列化 os.PathLike 为 fspath 字符串
 class PathLikeSerializer(BaseSerializer):
     def serialize(self):
         return repr(os.fspath(self.value)), {}
 
 
+# 序列化 pathlib 路径；Concrete 转为 Pure 保证跨平台
 class PathSerializer(BaseSerializer):
     def serialize(self):
         # Convert concrete paths to pure paths to avoid issues with migrations
@@ -286,6 +314,7 @@ class PathSerializer(BaseSerializer):
         return "pathlib.%s%r" % (prefix, self.value), {"import pathlib"}
 
 
+# 序列化 compiled regex 为 re.compile(...)
 class RegexSerializer(BaseSerializer):
     def serialize(self):
         regex_pattern, pattern_imports = serializer_factory(
@@ -302,11 +331,13 @@ class RegexSerializer(BaseSerializer):
         return "re.compile(%s)" % ", ".join(args), imports
 
 
+# 序列化 list 为 [...]
 class SequenceSerializer(BaseSequenceSerializer):
     def _format(self):
         return "[%s]"
 
 
+# 序列化 set；空集用 set() 避免与 {} 混淆
 class SetSerializer(BaseUnorderedSequenceSerializer):
     def _format(self):
         # Serialize as a set literal except when value is empty because {}
@@ -314,6 +345,7 @@ class SetSerializer(BaseUnorderedSequenceSerializer):
         return "{%s}" if self.value else "set(%s)"
 
 
+# 序列化 SettingsReference 为 settings.SETTING
 class SettingsReferenceSerializer(BaseSerializer):
     def serialize(self):
         return "settings.%s" % self.value.setting_name, {
@@ -321,6 +353,7 @@ class SettingsReferenceSerializer(BaseSerializer):
         }
 
 
+# 序列化 tuple；单元素元组保留尾逗号
 class TupleSerializer(BaseSequenceSerializer):
     def _format(self):
         # When len(value)==0, the empty tuple should be serialized as "()",
@@ -328,6 +361,7 @@ class TupleSerializer(BaseSequenceSerializer):
         return "(%s)" if len(self.value) != 1 else "(%s,)"
 
 
+# 序列化 type 对象（含 models.Model 等特殊路径）
 class TypeSerializer(BaseSerializer):
     def serialize(self):
         special_cases = [
@@ -347,16 +381,19 @@ class TypeSerializer(BaseSerializer):
                 }
 
 
+# 序列化 uuid.UUID
 class UUIDSerializer(BaseSerializer):
     def serialize(self):
         return "uuid.%s" % repr(self.value), {"import uuid"}
 
 
+# 序列化 zoneinfo.ZoneInfo
 class ZoneInfoSerializer(BaseSerializer):
     def serialize(self):
         return repr(self.value), {"import zoneinfo"}
 
 
+# 类型到序列化器类的注册表；register/unregister 扩展
 class Serializer:
     _registry = {
         # Some of these are order-dependent.
@@ -398,6 +435,7 @@ class Serializer:
         cls._registry.pop(type_)
 
 
+# 按值类型分派到对应 Serializer 实例
 def serializer_factory(value):
     if isinstance(value, Promise):
         value = str(value)

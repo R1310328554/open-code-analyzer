@@ -1,8 +1,14 @@
+"""
+django.db.migrations.operations.special — 特殊迁移操作。
+
+分离数据库/状态变更、执行原始 SQL 与 Python 代码等非标准 schema 操作。
+"""
 from django.db import router
 
 from .base import Operation, OperationCategory
 
 
+# 将数据库操作与 ProjectState 变更拆成两组独立子操作
 class SeparateDatabaseAndState(Operation):
     """
     Take two lists of operations - ones that will be used for the database,
@@ -63,6 +69,7 @@ class SeparateDatabaseAndState(Operation):
         return "Custom state/database change combination"
 
 
+# 执行原始 SQL；可选 reverse_sql 与 state_operations 同步模型状态
 class RunSQL(Operation):
     """
     Run some raw SQL. A reverse SQL statement may be provided.
@@ -139,6 +146,7 @@ class RunSQL(Operation):
                 schema_editor.execute(statement, params=None)
 
 
+# 在迁移上下文中运行可调用代码；提供 apps 与 schema_editor
 class RunPython(Operation):
     """
     Run Python code in a context suitable for doing versioned ORM operations.

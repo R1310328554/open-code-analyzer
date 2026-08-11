@@ -19,6 +19,11 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from django.utils.version import get_docs_version
 
+"""
+django.db.migrations.state — 迁移过程中的项目/模型状态。
+
+ProjectState 与 ModelState 描述 schema 快照；StateApps 提供临时模型注册表。
+"""
 from .exceptions import InvalidBasesError
 from .utils import resolve_relation
 
@@ -92,6 +97,7 @@ def get_related_models_recursive(model):
     return seen - {(model._meta.app_label, model._meta.model_name)}
 
 
+# 全项目迁移状态：models 字典与跨 app 关系解析
 class ProjectState:
     """
     Represent the entire project's overall state. This is the item that is
@@ -604,6 +610,7 @@ class ProjectState:
         return self.models == other.models and self.real_apps == other.real_apps
 
 
+# 迁移用 AppConfig 桩：仅 label 与 models 字典
 class AppConfigStub(AppConfig):
     """Stub of an AppConfig. Only provides a label and a dict of models."""
 
@@ -620,6 +627,7 @@ class AppConfigStub(AppConfig):
         self.models = self.apps.all_models[self.label]
 
 
+# 动态 Apps 子类：支持 render/unregister 与 bulk_update
 class StateApps(Apps):
     """
     Subclass of the global Apps registry class to better handle dynamic model
@@ -734,6 +742,7 @@ class StateApps(Apps):
             pass
 
 
+# 单个模型的可变更快照；render 后生成临时 Model 类
 class ModelState:
     """
     Represent a Django Model. Don't use the actual Model class as it's not

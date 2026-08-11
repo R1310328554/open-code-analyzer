@@ -4,9 +4,16 @@ from enum import property as enum_property
 
 from django.utils.functional import Promise
 
-__all__ = ["Choices", "IntegerChoices", "TextChoices"]
+"""
+django.db.models.enums — 模型字段用枚举选项。
+
+Choices 元类自动生成 label 与 choices/labels/values 属性。
+"""
+
+__all__ = ["Choices", "IntegerChoices", "TextChoices"]__all__ = ["Choices", "IntegerChoices", "TextChoices"]
 
 
+# Choices 元类：从 (value, label) 元组解析成员标签
 class ChoicesType(EnumType):
     """A metaclass for creating a enum choices."""
 
@@ -51,6 +58,7 @@ class ChoicesType(EnumType):
         return [value for value, _ in cls.choices]
 
 
+# 枚举选项基类：.label 与 .choices 类属性
 class Choices(enum.Enum, metaclass=ChoicesType):
     """Class for creating enumerated choices."""
 
@@ -65,12 +73,14 @@ class Choices(enum.Enum, metaclass=ChoicesType):
         return f"{self.__class__.__qualname__}.{self._name_}"
 
 
+# 整型枚举选项（IntegerField choices）
 class IntegerChoices(Choices, IntEnum):
     """Class for creating enumerated integer choices."""
 
     pass
 
 
+# 字符串枚举选项；成员值默认为 name
 class TextChoices(Choices, StrEnum):
     """Class for creating enumerated string choices."""
 

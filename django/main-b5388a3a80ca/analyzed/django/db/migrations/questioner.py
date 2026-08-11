@@ -9,9 +9,15 @@ from django.db.models import NOT_PROVIDED
 from django.utils import timezone
 from django.utils.version import get_docs_version
 
+"""
+django.db.migrations.questioner — 自动检测器交互问答。
+
+makemigrations 遇到歧义时向用户或默认值询问初始迁移、重命名、合并等决策。
+"""
 from .loader import MigrationLoader
 
 
+# 问答基类：默认非交互，子类覆盖 ask_* 方法
 class MigrationQuestioner:
     """
     Give the autodetector responses to questions it might have.
@@ -87,6 +93,7 @@ class MigrationQuestioner:
         return None
 
 
+# 命令行交互：布尔/选项输入与 Python 默认值求值
 class InteractiveMigrationQuestioner(MigrationQuestioner):
     def __init__(
         self, defaults=None, specified_apps=None, dry_run=None, prompt_output=None
@@ -294,6 +301,7 @@ class InteractiveMigrationQuestioner(MigrationQuestioner):
         return None
 
 
+# CI/脚本模式：无法提问时记录日志并退出或返回 NOT_PROVIDED
 class NonInteractiveMigrationQuestioner(MigrationQuestioner):
     def __init__(
         self,
