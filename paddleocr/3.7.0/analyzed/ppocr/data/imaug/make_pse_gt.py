@@ -22,9 +22,11 @@ import numpy as np
 import pyclipper
 from shapely.geometry import Polygon
 
+# PSENet 渐进式尺度扩展：生成多层收缩核与训练掩码
 __all__ = ["MakePseGt"]
 
 
+    # 按 shrink 比例生成 gt_kernels 金字塔与 gt_text/mask 监督
 class MakePseGt(object):
     def __init__(self, kernel_num=7, size=640, min_shrink_ratio=0.4, **kwargs):
         self.kernel_num = kernel_num

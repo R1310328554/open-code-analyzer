@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 
 import os
 
+# LaTeX 公式 OCR 图像增强：训练/测试变换与尺寸规范化
 os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
 import math
@@ -33,6 +34,7 @@ import albumentations as A
 from PIL import Image
 
 
+    # 公式训练增强：轻量几何/噪声/灰度，可选位图二值化
 class LatexTrainTransform:
     def __init__(self, bitmap_prob=0.04, **kwargs):
         # your init code
@@ -77,6 +79,7 @@ class LatexTrainTransform:
         return data
 
 
+    # 公式测试预处理：仅转灰度，保持与训练分布一致
 class LatexTestTransform:
     def __init__(self, **kwargs):
         # your init code
@@ -93,6 +96,7 @@ class LatexTestTransform:
         return data
 
 
+    # 按 min/max 尺寸裁剪空白并缩放，保证公式区域在限定框内
 class MinMaxResize:
     def __init__(self, min_dimensions=[32, 32], max_dimensions=[672, 192], **kwargs):
         # your init code
@@ -164,6 +168,7 @@ class MinMaxResize:
             return data
 
 
+    # 公式输入格式化：16 对齐填充并转为 CHW 单通道张量
 class LatexImageFormat:
     def __init__(self, **kwargs):
         # your init code

@@ -19,9 +19,11 @@ from __future__ import unicode_literals
 
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
+# RandAugment 识别增强：随机叠加 PIL 几何与色彩变换
 import random
 
 
+    # 底层 RandAugment：按 magnitude 随机选 num_layers 种变换
 class RawRandAugment(object):
     def __init__(self, num_layers=2, magnitude=5, fillcolor=(128, 128, 128), **kwargs):
         self.num_layers = num_layers
@@ -111,6 +113,7 @@ class RawRandAugment(object):
         return img
 
 
+    # 识别流水线包装：以 prob 概率对 data["image"] 应用 RawRandAugment
 class RandAugment(RawRandAugment):
     """RandAugment wrapper to auto fit different img types"""
 

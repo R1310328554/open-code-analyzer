@@ -32,9 +32,11 @@ import warnings
 
 warnings.simplefilter("ignore")
 
+# DB 检测训练：由多边形生成阈值图（threshold_map）与有效区域掩码
 __all__ = ["MakeBorderMap"]
 
 
+    # 对每个文本框膨胀外边界，按到边距离生成可微阈值监督图
 class MakeBorderMap(object):
     def __init__(self, shrink_ratio=0.4, thresh_min=0.3, thresh_max=0.7, **kwargs):
         self.shrink_ratio = shrink_ratio

@@ -29,9 +29,11 @@ from .abinet_aug import (
     ParseQDeterioration,
 )
 from paddle import get_device
+# 文本识别图像增强与缩放：TIA/BDA 及多架构专用 resize 算子
 from paddle.vision.transforms import Compose
 
 
+    # 通用识别增强：TIA 扭曲 + 裁剪/模糊/HSV/噪声/反色
 class RecAug(object):
     def __init__(
         self,
@@ -66,6 +68,7 @@ class RecAug(object):
         return data
 
 
+    # BDA 基础增强：随机裁剪、高斯模糊、抖动与反色
 class BaseDataAugmentation(object):
     def __init__(
         self,
@@ -113,6 +116,7 @@ class BaseDataAugmentation(object):
         return data
 
 
+    # ABINet 专用几何/退化/色彩增强组合
 class ABINetRecAug(object):
     def __init__(
         self, geometry_p=0.5, deterioration_p=0.25, colorjitter_p=0.25, **kwargs
@@ -145,6 +149,7 @@ class ABINetRecAug(object):
         return data
 
 
+    # 对比学习：按概率横向拼接 ext_data 扩展标签
 class RecConAug(object):
     def __init__(
         self,
@@ -193,6 +198,7 @@ class RecConAug(object):
         return data
 
 
+    # SVTR 识别增强：SVTRGeometry 与退化变换
 class SVTRRecAug(object):
     def __init__(
         self,
@@ -231,6 +237,7 @@ class SVTRRecAug(object):
         return data
 
 
+    # ParseQ 识别增强：ParseQ 专用退化算子
 class ParseQRecAug(object):
     def __init__(
         self,
@@ -271,6 +278,7 @@ class ParseQRecAug(object):
         return data
 
 
+    # 方向分类：resize_norm_img 缩放到固定形状
 class ClsResizeImg(object):
     def __init__(self, image_shape, **kwargs):
         self.image_shape = image_shape
@@ -282,6 +290,7 @@ class ClsResizeImg(object):
         return data
 
 
+    # 通用识别缩放：中英文 valid_ratio 与 padding 支持
 class RecResizeImg(object):
     def __init__(
         self,
@@ -311,6 +320,7 @@ class RecResizeImg(object):
         return data
 
 
+    # 视觉-语言识别缩放：固定 H×W 线性 resize
 class VLRecResizeImg(object):
     def __init__(
         self,
@@ -346,6 +356,7 @@ class VLRecResizeImg(object):
         return data
 
 
+    # RFL 灰度识别缩放与归一化
 class RFLRecResizeImg(object):
     def __init__(self, image_shape, padding=True, interpolation=1, **kwargs):
         self.image_shape = image_shape
@@ -376,6 +387,7 @@ class RFLRecResizeImg(object):
         return data
 
 
+    # SRN 缩放并生成 encoder/GSRM 位置与注意力偏置
 class SRNRecResizeImg(object):
     def __init__(self, image_shape, num_heads, max_text_length, **kwargs):
         self.image_shape = image_shape
@@ -400,6 +412,7 @@ class SRNRecResizeImg(object):
         return data
 
 
+    # SAR 缩放：返回 resized_shape、pad_shape、valid_ratio
 class SARRecResizeImg(object):
     def __init__(self, image_shape, width_downsample_ratio=0.25, **kwargs):
         self.image_shape = image_shape
@@ -419,6 +432,7 @@ class SARRecResizeImg(object):
         return data
 
 
+    # PREN 硬 resize 至目标尺寸并 [-1,1] 归一化
 class PRENResizeImg(object):
     def __init__(self, image_shape, **kwargs):
         """
@@ -439,6 +453,7 @@ class PRENResizeImg(object):
         return data
 
 
+    # SPIN 灰度 resize 与 mean/std 归一化
 class SPINRecResizeImg(object):
     def __init__(
         self,
@@ -486,6 +501,7 @@ class SPINRecResizeImg(object):
         return data
 
 
+    # 灰度识别：PIL/OpenCV resize 与可选 padding
 class GrayRecResizeImg(object):
     def __init__(
         self,
@@ -539,6 +555,7 @@ class GrayRecResizeImg(object):
         return data
 
 
+    # ABINet 专用 resize_norm_img_abinet
 class ABINetRecResizeImg(object):
     def __init__(self, image_shape, **kwargs):
         self.image_shape = image_shape
@@ -553,6 +570,7 @@ class ABINetRecResizeImg(object):
         return data
 
 
+    # SVTR 识别缩放与 valid_ratio
 class SVTRRecResizeImg(object):
     def __init__(self, image_shape, padding=True, **kwargs):
         self.image_shape = image_shape
@@ -569,6 +587,7 @@ class SVTRRecResizeImg(object):
         return data
 
 
+    # RobustScanner：SAR 式缩放并附加 word_positons
 class RobustScannerRecResizeImg(object):
     def __init__(
         self, image_shape, max_text_length, width_downsample_ratio=0.25, **kwargs

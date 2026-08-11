@@ -18,9 +18,11 @@ import numpy as np
 import random
 from PIL import Image
 
+# 自监督旋转预训练：生成 0°/90°/180°/270° 四向归一化图像栈
 from .rec_img_aug import resize_norm_img
 
 
+    # 输出 image 为 N×C×H×W 栈与旋转角 label，供 SSL 分类头
 class SSLRotateResize(object):
     def __init__(
         self, image_shape, padding=False, select_all=True, mode="train", **kwargs

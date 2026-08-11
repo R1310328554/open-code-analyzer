@@ -28,6 +28,7 @@ import random
 from paddle import get_device
 
 from shapely.geometry import Polygon, box as shapely_box
+# 检测训练随机裁剪：在保留文本前提下裁剪并缩放/填充至固定尺寸
 from shapely import intersection
 
 
@@ -184,6 +185,7 @@ def clip_poly_to_rect(poly, x, y, w, h):
         return None
 
 
+    # 通用随机裁剪：校验 care 框、裁剪多边形并同步缩放坐标
 class RandomCrop(object):
     def __init__(
         self,
@@ -463,6 +465,7 @@ def crop_area(im, text_polys, min_crop_side_ratio, max_tries):
     return 0, 0, w, h
 
 
+    # EAST 风格裁剪：沿文本间隙选区域再缩放填充
 class EastRandomCropData(object):
     def __init__(
         self,
@@ -523,6 +526,7 @@ class EastRandomCropData(object):
         return data
 
 
+    # 按主键 mask 随机裁剪多字段（图像与监督图同步）
 class RandomCropImgMask(object):
     def __init__(self, size, main_key, crop_keys, p=3 / 8, **kwargs):
         self.size = size

@@ -26,9 +26,11 @@ import cv2
 from shapely.geometry import Polygon
 import pyclipper
 
+# DB/EAST 等检测：由 ICDAR 多边形生成收缩二值图与 ignore 掩码
 __all__ = ["MakeShrinkMap"]
 
 
+    # 多边形向内偏移生成 shrink_map，过小/无效框写入 shrink_mask
 class MakeShrinkMap(object):
     r"""
     Making binary mask from detection data with ICDAR format.

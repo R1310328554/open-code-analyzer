@@ -22,9 +22,11 @@ import json
 import sys
 import os
 
+# SAST 单阶段任意形状文本检测训练样本生成
 __all__ = ["SASTProcessTrain"]
 
 
+    # 裁剪/缩放/旋转并生成 score_map、border_map 等 SAST 监督
 class SASTProcessTrain(object):
     def __init__(
         self,

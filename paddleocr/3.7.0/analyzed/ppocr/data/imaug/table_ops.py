@@ -21,9 +21,11 @@ from __future__ import unicode_literals
 
 import sys
 import cv2
+# 表格识别数据增强：单元格 mask 生成与图像缩放/填充
 import numpy as np
 
 
+    # 按单元格 bbox 投影切分并生成表格结构 mask
 class GenTableMask(object):
     """gen table mask"""
 
@@ -191,6 +193,7 @@ class GenTableMask(object):
         return data
 
 
+    # 长边限制缩放，可选同步 bboxes 与 shape 元信息
 class ResizeTableImage(object):
     def __init__(self, max_len, resize_bboxes=False, infer_mode=False, **kwargs):
         super(ResizeTableImage, self).__init__()
@@ -214,6 +217,7 @@ class ResizeTableImage(object):
         return data
 
 
+    # 表格图像零填充至固定 pad 尺寸
 class PaddingTableImage(object):
     def __init__(self, size, **kwargs):
         super(PaddingTableImage, self).__init__()

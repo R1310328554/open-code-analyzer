@@ -25,9 +25,11 @@ import numpy as np
 import math
 import random
 from PIL import Image
+# 通用图像算子：解码、归一化、缩放与检测/识别/KIE 测试尺寸适配
 from paddle import get_device
 
 
+    # 字节流解码为 ndarray，支持 RGB/GRAY 与 CHW 输出
 class DecodeImage(object):
     """decode image"""
 
@@ -69,6 +71,7 @@ class DecodeImage(object):
         return data
 
 
+    # 按 mean/std 与 scale 归一化图像张量
 class NormalizeImage(object):
     """normalize image such as subtract mean, divide std"""
 
@@ -94,6 +97,7 @@ class NormalizeImage(object):
         return data
 
 
+    # HWC 图像转为 CHW 通道优先格式
 class ToCHWImage(object):
     """convert hwc image to chw image"""
 
@@ -110,6 +114,7 @@ class ToCHWImage(object):
         return data
 
 
+    # 加载 fastText 模型，为样本附加 fast_label 特征
 class Fasttext(object):
     def __init__(self, path="None", **kwargs):
         import fasttext
@@ -123,6 +128,7 @@ class Fasttext(object):
         return data
 
 
+    # 流水线末端：按 keep_keys 抽取字段为 list 供 DataLoader 批处理
 class KeepKeys(object):
     def __init__(self, keep_keys, **kwargs):
         self.keep_keys = keep_keys
@@ -134,6 +140,7 @@ class KeepKeys(object):
         return data_list
 
 
+    # 图像零填充至固定尺寸或 32 倍数边界
 class Pad(object):
     def __init__(self, size=None, size_div=32, **kwargs):
         if size is not None and not isinstance(size, (int, list, tuple)):
@@ -175,6 +182,7 @@ class Pad(object):
         return data
 
 
+    # 固定尺寸缩放，同步缩放 polys 坐标
 class Resize(object):
     def __init__(self, size=(640, 640), **kwargs):
         self.size = size
@@ -205,6 +213,7 @@ class Resize(object):
         return data
 
 
+    # 检测推理缩放：limit_side/image_shape/resize_long 多种策略
 class DetResizeForTest(object):
     def __init__(self, **kwargs):
         super(DetResizeForTest, self).__init__()
@@ -347,6 +356,7 @@ class DetResizeForTest(object):
         return img, [ratio_h, ratio_w]
 
 
+    # 端到端检测测试缩放，TotalText 等数据集专用比例
 class E2EResizeForTest(object):
     def __init__(self, **kwargs):
         super(E2EResizeForTest, self).__init__()
@@ -417,6 +427,7 @@ class E2EResizeForTest(object):
         return im, (ratio_h, ratio_w)
 
 
+    # KIE 任务：1024 画布内等比缩放并同步 points 坐标
 class KieResize(object):
     def __init__(self, **kwargs):
         super(KieResize, self).__init__()
@@ -469,6 +480,7 @@ class KieResize(object):
         return points
 
 
+    # 超分识别：LR/HR 双路 ResizeNormalize
 class SRResize(object):
     def __init__(
         self,
@@ -509,6 +521,7 @@ class SRResize(object):
         return data
 
 
+    # PIL 缩放到指定尺寸并归一化为 CHW float
 class ResizeNormalize(object):
     def __init__(self, size, interpolation=Image.BICUBIC):
         self.size = size
@@ -521,6 +534,7 @@ class ResizeNormalize(object):
         return img_numpy
 
 
+    # 三通道灰度图转为单通道 CHW，可选反色
 class GrayImageChannelFormat(object):
     """
     format gray scale image's channel: (3,h,w) -> (1,h,w)
@@ -545,6 +559,7 @@ class GrayImageChannelFormat(object):
         return data
 
 
+    # 检测训练随机透视：同步变换 image 与 polys
 class RandomPerspective(object):
     """Random perspective transform for OCR detection training.
 

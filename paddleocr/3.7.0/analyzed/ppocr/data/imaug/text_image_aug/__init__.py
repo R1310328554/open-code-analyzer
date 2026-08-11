@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文本图像增强（TIA）子包：导出透视、扭曲、拉伸三种识别增强函数
 from .augment import tia_perspective, tia_distort, tia_stretch
 
+# tia_* 供 RecAug 等识别流水线调用，模拟相机/扫描畸变
 __all__ = ["tia_distort", "tia_stretch", "tia_perspective"]

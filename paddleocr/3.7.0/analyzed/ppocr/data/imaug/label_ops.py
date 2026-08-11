@@ -30,9 +30,11 @@ from random import sample
 from collections import defaultdict
 
 from ppocr.utils.logging import get_logger
+# OCR 标签编解码算子集合：检测/识别/表格/KIE/VQA 等任务的标签预处理
 from ppocr.data.imaug.vqa.augment import order_by_tbyx
 
 
+    # 方向/场景分类标签编码：字符串标签映射为类别索引
 class ClsLabelEncode(object):
     def __init__(self, label_list, **kwargs):
         self.label_list = label_list
@@ -46,6 +48,7 @@ class ClsLabelEncode(object):
         return data
 
 
+    # 文本检测标签解析：JSON 标注转为 polys、texts、ignore_tags 数组
 class DetLabelEncode(object):
     def __init__(self, **kwargs):
         pass
@@ -102,6 +105,7 @@ class DetLabelEncode(object):
         return ex_boxes
 
 
+    # 识别标签编码基类：加载字符字典，提供文本到索引的 encode 接口
 class BaseRecLabelEncode(object):
     """Convert between text-label and text-index"""
 
@@ -170,6 +174,7 @@ class BaseRecLabelEncode(object):
         return text_list
 
 
+    # CTC 识别标签编码：定长索引序列与 label_ace 字符频次统计
 class CTCLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -200,6 +205,7 @@ class CTCLabelEncode(BaseRecLabelEncode):
         return dict_character
 
 
+    # 端到端检测推理标签：解析多边形并对每条文本做字符索引编码
 class E2ELabelEncodeTest(BaseRecLabelEncode):
     def __init__(
         self, max_text_length, character_dict_path=None, use_space_char=False, **kwargs
@@ -241,6 +247,7 @@ class E2ELabelEncodeTest(BaseRecLabelEncode):
         return data
 
 
+    # 端到端检测训练标签：解析 JSON 为 polys/texts/ignore_tags
 class E2ELabelEncodeTrain(object):
     def __init__(self, **kwargs):
         pass
@@ -270,6 +277,7 @@ class E2ELabelEncodeTrain(object):
         return data
 
 
+    # 关键信息抽取：框间几何关系、文本索引与类别/边矩阵填充
 class KieLabelEncode(object):
     def __init__(
         self, character_dict_path, class_path, norm=10, directed=False, **kwargs
@@ -448,6 +456,7 @@ class KieLabelEncode(object):
         return self.list_to_numpy(ann_infos)
 
 
+    # Attention 解码识别：SOS/EOS 包裹的定长字符索引序列
 class AttnLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -496,6 +505,7 @@ class AttnLabelEncode(BaseRecLabelEncode):
         return idx
 
 
+    # RFL 模型识别标签编码，继承基类字典与长度约束
 class RFLLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -554,6 +564,7 @@ class RFLLabelEncode(BaseRecLabelEncode):
         return idx
 
 
+    # SEED 语义增强识别标签编码
 class SEEDLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -588,6 +599,7 @@ class SEEDLabelEncode(BaseRecLabelEncode):
         return data
 
 
+    # SRN 结构识别网络标签编码
 class SRNLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -634,6 +646,7 @@ class SRNLabelEncode(BaseRecLabelEncode):
         return idx
 
 
+    # 表格结构识别 Attention 标签：HTML/单元格序列编码
 class TableLabelEncode(AttnLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -782,6 +795,7 @@ class TableLabelEncode(AttnLabelEncode):
         return add_empty_bbox_token_list
 
 
+    # TableMaster 表格识别专用标签编码
 class TableMasterLabelEncode(TableLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -826,6 +840,7 @@ class TableMasterLabelEncode(TableLabelEncode):
         return dict_character
 
 
+    # 表格单元格边界框坐标编码与归一化
 class TableBoxEncode(object):
     def __init__(self, in_box_format="xyxy", out_box_format="xyxy", **kwargs):
         assert out_box_format in ["xywh", "xyxy", "xyxyxyxy"]
@@ -864,6 +879,7 @@ class TableBoxEncode(object):
         return new_bboxes
 
 
+    # SAR 二维 Attention 识别标签编码
 class SARLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -907,6 +923,7 @@ class SARLabelEncode(BaseRecLabelEncode):
         return [self.padding_idx]
 
 
+    # SATRN 识别标签编码
 class SATRNLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -966,6 +983,7 @@ class SATRNLabelEncode(BaseRecLabelEncode):
         return [self.padding_idx]
 
 
+    # PREN 并行识别标签编码
 class PRENLabelEncode(BaseRecLabelEncode):
     def __init__(
         self, max_text_length, character_dict_path, use_space_char=False, **kwargs
@@ -1011,6 +1029,7 @@ class PRENLabelEncode(BaseRecLabelEncode):
         return data
 
 
+    # 文档 VQA：OCR token 与问题 token 联合编码
 class VQATokenLabelEncode(object):
     """
     Label encode for NLP VQA methods
@@ -1273,6 +1292,7 @@ class VQATokenLabelEncode(object):
         return gt_label
 
 
+    # 多任务识别：同一字典下多路标签并行编码
 class MultiLabelEncode(BaseRecLabelEncode):
     def __init__(
         self,
@@ -1318,6 +1338,7 @@ class MultiLabelEncode(BaseRecLabelEncode):
         return data_out
 
 
+    # NRTR 无 RNN 识别标签编码
 class NRTRLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1347,6 +1368,7 @@ class NRTRLabelEncode(BaseRecLabelEncode):
         return dict_character
 
 
+    # ParseQ 并行解码识别标签编码
 class ParseQLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1379,6 +1401,7 @@ class ParseQLabelEncode(BaseRecLabelEncode):
         return dict_character
 
 
+    # ViTSTR 视觉 Transformer 识别标签编码
 class ViTSTRLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1414,6 +1437,7 @@ class ViTSTRLabelEncode(BaseRecLabelEncode):
         return dict_character
 
 
+    # ABINet 语言模型辅助识别标签编码
 class ABINetLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1448,6 +1472,7 @@ class ABINetLabelEncode(BaseRecLabelEncode):
         return dict_character
 
 
+    # 超分辨率识别分支标签编码
 class SRLabelEncode(BaseRecLabelEncode):
     def __init__(
         self, max_text_length, character_dict_path=None, use_space_char=False, **kwargs
@@ -1495,6 +1520,7 @@ class SRLabelEncode(BaseRecLabelEncode):
         return data
 
 
+    # SPIN 语义推理识别标签编码
 class SPINLabelEncode(AttnLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1533,6 +1559,7 @@ class SPINLabelEncode(AttnLabelEncode):
         return data
 
 
+    # 视觉-语言多模态识别：主/副文本双路标签
 class VLLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1593,6 +1620,7 @@ class VLLabelEncode(BaseRecLabelEncode):
         return data
 
 
+    # CenterNet 类检测标签：解析多边形与转录文本
 class CTLabelEncode(object):
     def __init__(self, **kwargs):
         pass
@@ -1619,6 +1647,7 @@ class CTLabelEncode(object):
         return data
 
 
+    # CAN 计数/算术表达式识别：词级序列编码
 class CANLabelEncode(BaseRecLabelEncode):
     def __init__(
         self,
@@ -1651,6 +1680,7 @@ class CANLabelEncode(BaseRecLabelEncode):
         return data
 
 
+    # CPPD 并行点解码识别：字符节点与顺序辅助标签
 class CPPDLabelEncode(BaseRecLabelEncode):
     """Convert between text-label and text-index"""
 
@@ -1779,6 +1809,7 @@ class CPPDLabelEncode(BaseRecLabelEncode):
         return text_list, text_node_index, text_node_num
 
 
+    # LaTeX 公式 OCR：公式 token 序列与图像配对编码
 class LatexOCRLabelEncode(object):
     def __init__(
         self,
@@ -1888,6 +1919,7 @@ class LatexOCRLabelEncode(object):
         )
 
 
+    # 显式字符串枚举基类，供截断/填充策略枚举继承
 class ExplicitEnum(str, Enum):
     """
     Enum with more explicit error message for missing values.
@@ -1900,6 +1932,7 @@ class ExplicitEnum(str, Enum):
         )
 
 
+    # 超长文本截断策略枚举（仅最长/仅最短/最长优先等）
 class TruncationStrategy(ExplicitEnum):
     """
     Possible values for the `truncation` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for tab-completion in
@@ -1912,6 +1945,7 @@ class TruncationStrategy(ExplicitEnum):
     DO_NOT_TRUNCATE = "do_not_truncate"
 
 
+    # 批次填充策略枚举（最长/最长截断等）
 class PaddingStrategy(ExplicitEnum):
     """
     Possible values for the `padding` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for tab-completion in an
@@ -1923,6 +1957,7 @@ class PaddingStrategy(ExplicitEnum):
     DO_NOT_PAD = "do_not_pad"
 
 
+    # UniMERNet 数学公式识别：tokenizer 截断与填充
 class UniMERNetLabelEncode(object):
 
     SPECIAL_TOKENS_ATTRIBUTES = [

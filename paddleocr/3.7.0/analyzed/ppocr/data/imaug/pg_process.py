@@ -20,9 +20,11 @@ from ppocr.utils.e2e_utils.extract_textpoint_fast import (
     sort_and_expand_with_direction_v2,
 )
 
+# PGNet 端到端训练：TCL 中心线、CTC 标签与方向图生成
 __all__ = ["PGProcessTrain"]
 
 
+    # 训练样本处理：裁剪/缩放/填充并生成 tcl_maps、border_maps 等监督
 class PGProcessTrain(object):
     def __init__(
         self,

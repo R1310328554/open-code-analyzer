@@ -18,6 +18,7 @@ https://github.com/WenmuZhou/DBNet.pytorch/blob/master/data_loader/modules/iaa_a
 import os
 
 # Prevent automatic updates in Albumentations for stability in augmentation behavior
+# 检测数据增强：将 Imgaug 风格配置映射为 Albumentations，同步变换图像与多边形
 os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
 import numpy as np
@@ -31,6 +32,7 @@ IS_ALBU_NEW_VERSION = ALBU_VERSION >= version.parse("1.4.15")
 
 
 # Custom resize transformation mimicking Imgaug's behavior with scaling
+    # 仿 Imgaug 的随机缩放变换，关键点（多边形顶点）同比例缩放
 class ImgaugLikeResize(DualTransform):
     def __init__(self, scale_range=(0.5, 3.0), interpolation=1, p=1.0):
         super(ImgaugLikeResize, self).__init__(p)
@@ -64,6 +66,7 @@ class ImgaugLikeResize(DualTransform):
 
 
 # Builder class to translate custom augmenter arguments into Albumentations-compatible format
+    # 递归解析增强配置字典/列表，构建 Albumentations Compose 流水线
 class AugmenterBuilder(object):
     def __init__(self):
         # Map common Imgaug transformations to equivalent Albumentations transforms
@@ -179,6 +182,7 @@ class AugmenterBuilder(object):
 
 
 # Wrapper class for image and polygon transformations using Imgaug-style augmentation
+    # 检测训练增强入口：输入 data 含 image/polys，输出同步变换后的样本
 class IaaAugment:
     def __init__(self, augmenter_args=None, **kwargs):
         if augmenter_args is None:
