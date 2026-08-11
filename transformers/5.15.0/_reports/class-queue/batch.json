@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:08:55Z",
-  "files": [
-    "src/transformers/models/florence2/__init__.py",
-    "src/transformers/models/florence2/configuration_florence2.py",
-    "src/transformers/models/florence2/modeling_florence2.py",
-    "src/transformers/models/florence2/modular_florence2.py",
-    "src/transformers/models/florence2/processing_florence2.py",
-    "src/transformers/models/fnet/__init__.py",
-    "src/transformers/models/fnet/configuration_fnet.py",
-    "src/transformers/models/fnet/modeling_fnet.py",
-    "src/transformers/models/fnet/tokenization_fnet.py",
-    "src/transformers/models/focalnet/__init__.py",
-    "src/transformers/models/focalnet/configuration_focalnet.py",
-    "src/transformers/models/focalnet/modeling_focalnet.py",
-    "src/transformers/models/fsmt/__init__.py",
-    "src/transformers/models/fsmt/configuration_fsmt.py",
-    "src/transformers/models/fsmt/modeling_fsmt.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1869,
-  "done": 795
+  "done": 810
 }
