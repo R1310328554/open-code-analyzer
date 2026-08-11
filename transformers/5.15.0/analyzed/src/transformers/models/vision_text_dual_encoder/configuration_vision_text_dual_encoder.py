@@ -23,6 +23,8 @@ from ..clip.configuration_clip import CLIPVisionConfig
 from ..siglip.configuration_siglip import SiglipVisionConfig
 
 
+# VisionTextDualEncoder 配置：vision/text 子配置、投影维度与 logit 温度初值
+
 VISION_MODEL_CONFIGS = {
     "clip_vision_model": CLIPVisionConfig,
     "chinese_clip_vision_model": ChineseCLIPVisionConfig,
@@ -32,6 +34,7 @@ VISION_MODEL_CONFIGS = {
 
 @auto_docstring
 @strict
+# VisionTextDualEncoderConfig：图文双塔配置：vision/text 子配置、projection_dim 与 logit_scale 初值
 class VisionTextDualEncoderConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -67,6 +70,7 @@ class VisionTextDualEncoderConfig(PreTrainedConfig):
     projection_dim: int = 512
     logit_scale_init_value: int | float = 2.6592
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if "vision_config" not in kwargs or "text_config" not in kwargs:
             raise ValueError(
@@ -91,6 +95,7 @@ class VisionTextDualEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @classmethod
+    # from_vision_text_configs：由 vision/text 配置构建双塔组合配置
     def from_vision_text_configs(cls, vision_config: PreTrainedConfig, text_config: PreTrainedConfig, **kwargs):
         r"""
         Instantiate a [`VisionTextDualEncoderConfig`] (or a derived class) from text model configuration and vision

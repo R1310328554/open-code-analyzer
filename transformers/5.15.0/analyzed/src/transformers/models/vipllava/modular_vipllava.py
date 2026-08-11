@@ -32,18 +32,24 @@ from ...utils.generic import can_return_tuple
 from .configuration_vipllava import VipLlavaConfig
 
 
+# VipLlava 模块化实现：复用 LLaVA 组件并扩展多层视觉特征投影逻辑
+
 logger = logging.get_logger(__name__)
 
 
+# VipLlavaModelOutputWithPast：VipLlava 基模型输出：last_hidden_state 与 past_key_values
 class VipLlavaModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# VipLlavaCausalLMOutputWithPast：VipLlava 因果 LM 输出：loss、logits 与 KV cache
 class VipLlavaCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# VipLlavaMultiModalProjector：VipLlava 多模投影：多层 CLIP 特征拼接后经 MLP 映射至 LLM 维
 class VipLlavaMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VipLlavaConfig):
         super().__init__()
         num_feature_layers = 1 if isinstance(config.vision_feature_layers, int) else len(config.vision_feature_layers)
@@ -59,6 +65,7 @@ class VipLlavaMultiModalProjector(nn.Module):
         self.act = ACT2FN[config.projector_hidden_act]
         self.linear_2 = nn.Linear(config.text_config.hidden_size, config.text_config.hidden_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.projector_layernorm(hidden_states)
         hidden_states = self.linear_1(hidden_states)
@@ -67,15 +74,18 @@ class VipLlavaMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# VipLlavaPreTrainedModel：VipLlava 预训练基类：权重初始化与 generation 模块绑定
 class VipLlavaPreTrainedModel(LlavaPreTrainedModel):
     pass
 
 
+# VipLlavaModel：VipLlava 基模型：视觉塔 + 投影层 + Llama 文本解码器
 class VipLlavaModel(LlavaModel):
     @can_return_tuple
     @auto_docstring(
         custom_intro="Obtains image last hidden states from the vision tower and apply multimodal projection."
     )
+    # get_image_features：提取图像特征：vision_model pooler 经 visual_projection 投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -114,6 +124,7 @@ class VipLlavaModel(LlavaModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -170,8 +181,10 @@ class VipLlavaModel(LlavaModel):
         return output
 
 
+# VipLlavaForConditionalGeneration：VipLlava 条件生成：图像 token 替换 + 自回归文本解码
 class VipLlavaForConditionalGeneration(LlavaForConditionalGeneration):
     @auto_docstring
+    # get_image_features：提取图像特征：vision_model pooler 经 visual_projection 投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -191,6 +204,7 @@ class VipLlavaForConditionalGeneration(LlavaForConditionalGeneration):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

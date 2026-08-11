@@ -21,11 +21,14 @@ from ...utils import auto_docstring, logging
 from ..auto.configuration_auto import AutoConfig
 
 
+# VisionEncoderDecoder 配置：encoder/decoder 子配置组合，自动开启 cross-attention
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring
 @strict
+# VisionEncoderDecoderConfig：视觉-文本编解码配置：encoder/decoder 子配置与 is_encoder_decoder 标志
 class VisionEncoderDecoderConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -63,6 +66,7 @@ class VisionEncoderDecoderConfig(PreTrainedConfig):
 
     is_encoder_decoder: bool = True
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if "encoder" not in kwargs or "decoder" not in kwargs:
             raise ValueError(
@@ -80,6 +84,7 @@ class VisionEncoderDecoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @classmethod
+    # from_encoder_decoder_configs：由 encoder/decoder 配置构建组合配置，自动开启 cross-attention
     def from_encoder_decoder_configs(
         cls, encoder_config: PreTrainedConfig, decoder_config: PreTrainedConfig, **kwargs
     ) -> PreTrainedConfig:

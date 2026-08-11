@@ -29,6 +29,9 @@ from .configuration_vision_encoder_decoder import VisionEncoderDecoderConfig
 
 
 # Copied from transformers.models.encoder_decoder.modeling_encoder_decoder.shift_tokens_right
+# VisionEncoderDecoder 建模：ViT 等视觉编码 + 因果 LM 解码器的 seq2seq 图像到文本
+
+# shift_tokens_right：右移 decoder 输入：labels 转 decoder_input_ids，首 token 为 decoder_start
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -51,6 +54,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# VisionEncoderDecoderModel：视觉编解码模型：AutoModel 编码 pixel_values，因果 LM 解码生成文本
 class VisionEncoderDecoderModel(PreTrainedModel, GenerationMixin):
     r"""
     [`VisionEncoderDecoderModel`] is a generic model class that will be instantiated as a transformer architecture with
@@ -67,6 +71,7 @@ class VisionEncoderDecoderModel(PreTrainedModel, GenerationMixin):
     _supports_flash_attn = True
     _supports_sdpa = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -143,16 +148,20 @@ class VisionEncoderDecoderModel(PreTrainedModel, GenerationMixin):
 
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.decoder.get_input_embeddings()
 
+    # get_output_embeddings：获取输出嵌入：返回 LM 头权重层
     def get_output_embeddings(self):
         return self.decoder.get_output_embeddings()
 
+    # set_output_embeddings：设置输出嵌入：替换 LM 头权重
     def set_output_embeddings(self, new_embeddings):
         return self.decoder.set_output_embeddings(new_embeddings)
 
     @classmethod
+    # from_encoder_decoder_pretrained：从预训练 encoder/decoder 权重加载组合模型
     def from_encoder_decoder_pretrained(
         cls,
         encoder_pretrained_model_name_or_path: str | None = None,
@@ -299,6 +308,7 @@ class VisionEncoderDecoderModel(PreTrainedModel, GenerationMixin):
         return cls(encoder=encoder, decoder=decoder, config=config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -452,6 +462,7 @@ class VisionEncoderDecoderModel(PreTrainedModel, GenerationMixin):
             encoder_attentions=encoder_outputs.attentions,
         )
 
+    # prepare_decoder_input_ids_from_labels：由 labels 构造 decoder_input_ids：右移并替换 -100
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
 

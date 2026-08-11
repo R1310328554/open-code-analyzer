@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ViLT 配置：视觉-语言 Transformer 隐藏维、patch 尺寸与多模态词表超参
+
 @auto_docstring(checkpoint="dandelin/vilt-b32-mlm")
 @strict
+# ViltConfig：ViLT 主配置：BERT 风格文本词表、384 patch 与 modality type 嵌入维
 class ViltConfig(PreTrainedConfig):
     r"""
     modality_type_vocab_size (`int`, *optional*, defaults to 2):
@@ -73,6 +76,7 @@ class ViltConfig(PreTrainedConfig):
     num_images: int = -1
     pad_token_id: int | None = None
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         kwargs.pop("tie_word_embeddings", None)
         self.tie_word_embeddings = True  # force it

@@ -35,12 +35,15 @@ from ..auto import AutoModel
 from .configuration_vipllava import VipLlavaConfig
 
 
+# VipLlava 建模：多层 CLIP 特征拼接投影 + Llama 解码器条件文本生成
+
 @auto_docstring(
     custom_intro="""
     Base class for VipLlava outputs, with hidden states and attentions.
     """
 )
 @dataclass
+# VipLlavaModelOutputWithPast：VipLlava 基模型输出：last_hidden_state 与 past_key_values
 class VipLlavaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -62,6 +65,7 @@ class VipLlavaModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# VipLlavaCausalLMOutputWithPast：VipLlava 因果 LM 输出：loss、logits 与 KV cache
 class VipLlavaCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -86,7 +90,9 @@ class VipLlavaCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# VipLlavaMultiModalProjector：VipLlava 多模投影：多层 CLIP 特征拼接后经 MLP 映射至 LLM 维
 class VipLlavaMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VipLlavaConfig):
         super().__init__()
         num_feature_layers = 1 if isinstance(config.vision_feature_layers, int) else len(config.vision_feature_layers)
@@ -102,6 +108,7 @@ class VipLlavaMultiModalProjector(nn.Module):
         self.act = ACT2FN[config.projector_hidden_act]
         self.linear_2 = nn.Linear(config.text_config.hidden_size, config.text_config.hidden_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.projector_layernorm(hidden_states)
         hidden_states = self.linear_1(hidden_states)
@@ -111,6 +118,7 @@ class VipLlavaMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# VipLlavaPreTrainedModel：VipLlava 预训练基类：权重初始化与 generation 模块绑定
 class VipLlavaPreTrainedModel(PreTrainedModel):
     config: VipLlavaConfig
     base_model_prefix = "model"
@@ -131,7 +139,9 @@ class VipLlavaPreTrainedModel(PreTrainedModel):
     The VipLlava model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# VipLlavaModel：VipLlava 基模型：视觉塔 + 投影层 + Llama 文本解码器
 class VipLlavaModel(VipLlavaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VipLlavaConfig):
         super().__init__(config)
         self.vision_tower = AutoModel.from_config(config.vision_config)
@@ -144,6 +154,7 @@ class VipLlavaModel(VipLlavaPreTrainedModel):
     @auto_docstring(
         custom_intro="Obtains image last hidden states from the vision tower and apply multimodal projection."
     )
+    # get_image_features：提取图像特征：vision_model pooler 经 visual_projection 投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -206,6 +217,7 @@ class VipLlavaModel(VipLlavaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -267,19 +279,23 @@ class VipLlavaModel(VipLlavaPreTrainedModel):
     The VIPLLAVA model which consists of a vision backbone and a language model.
     """
 )
+# VipLlavaForConditionalGeneration：VipLlava 条件生成：图像 token 替换 + 自回归文本解码
 class VipLlavaForConditionalGeneration(VipLlavaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VipLlavaConfig):
         super().__init__(config)
         self.model = VipLlavaModel(config)
         self.lm_head = nn.Linear(config.text_config.hidden_size, config.text_config.vocab_size, bias=False)
         self.post_init()
 
+    # get_output_embeddings：获取输出嵌入：返回 LM 头权重层
     def get_output_embeddings(self) -> nn.Module:
         return self.lm_head
 
     @auto_docstring
+    # get_image_features：提取图像特征：vision_model pooler 经 visual_projection 投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -299,6 +315,7 @@ class VipLlavaForConditionalGeneration(VipLlavaPreTrainedModel, GenerationMixin)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -34,10 +34,13 @@ from ...utils import (
 
 
 # Set maximum size based on the typical aspect ratio of the COCO dataset
+# ViLT Torchvision 图像处理器：按形状分组批处理、缩放/归一化与 batch 级 padding
+
 MAX_LONGER_EDGE = 1333
 MAX_SHORTER_EDGE = 800
 
 
+# ViltImageProcessorKwargs：ViLT 图像处理参数：size_divisor 控制缩放后高宽 32 整除
 class ViltImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -49,6 +52,7 @@ class ViltImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# ViltImageProcessor：ViLT Torchvision 后端：按形状分组缩放/归一化，高效 batch padding
 class ViltImageProcessor(TorchvisionBackend):
     valid_kwargs = ViltImageProcessorKwargs
     resample = PILImageResampling.BICUBIC
@@ -63,6 +67,7 @@ class ViltImageProcessor(TorchvisionBackend):
     default_to_square = False
     model_input_names = ["pixel_values", "pixel_mask"]
 
+    # resize：缩放图像：最短边对齐并限制长边，高宽整除 size_divisor
     def resize(
         self,
         images: "torch.Tensor",
@@ -115,6 +120,7 @@ class ViltImageProcessor(TorchvisionBackend):
         # Resize the image
         return super().resize(images, SizeDict(height=new_heights, width=new_widths), resample=resample)
 
+    # _pad_batch：batch 填充：对齐最大高宽并生成 pixel_mask
     def _pad_batch(
         self,
         images: list["torch.Tensor"],
@@ -175,6 +181,7 @@ class ViltImageProcessor(TorchvisionBackend):
 
         return padded_images, pixel_masks
 
+    # _preprocess：内部预处理：缩放/归一化/填充并返回 BatchFeature
     def _preprocess(
         self,
         images: list["torch.Tensor"],

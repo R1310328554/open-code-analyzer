@@ -26,15 +26,19 @@ from ..clip.modeling_clip import CLIPOutput, CLIPVisionConfig, CLIPVisionModel
 from .configuration_vision_text_dual_encoder import VisionTextDualEncoderConfig
 
 
+# VisionTextDualEncoder 建模：独立视觉/文本塔 + 投影层，对比学习图文相似度
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.clip.modeling_clip.contrastive_loss
+# contrastive_loss：对比损失：对角线为正样本的 cross_entropy
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss
+# image_text_contrastive_loss：图文对比损失：caption→image 与 image→caption 双向 CE 均值
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
@@ -42,6 +46,7 @@ def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# VisionTextDualEncoderModel：图文双塔模型：独立视觉/文本编码 + 投影，CLIP 风格对比学习
 class VisionTextDualEncoderModel(PreTrainedModel):
     config: VisionTextDualEncoderConfig
     base_model_prefix = "vision_text_dual_encoder"
@@ -49,6 +54,7 @@ class VisionTextDualEncoderModel(PreTrainedModel):
     _supports_flash_attn = True
     _supports_sdpa = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: VisionTextDualEncoderConfig | None = None,
@@ -104,6 +110,7 @@ class VisionTextDualEncoderModel(PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # get_text_features：提取文本特征：text_model pooler 经 text_projection 投影
     def get_text_features(
         self,
         input_ids: torch.Tensor,
@@ -141,6 +148,7 @@ class VisionTextDualEncoderModel(PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # get_image_features：提取图像特征：vision_model pooler 经 visual_projection 投影
     def get_image_features(
         self, pixel_values: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -169,6 +177,7 @@ class VisionTextDualEncoderModel(PreTrainedModel):
         return vision_outputs
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -292,6 +301,7 @@ class VisionTextDualEncoderModel(PreTrainedModel):
         )
 
     @classmethod
+    # from_vision_text_pretrained：从预训练视觉/文本模型加载双塔并随机初始化投影层
     def from_vision_text_pretrained(
         cls,
         vision_model_name_or_path: str | None = None,

@@ -38,10 +38,13 @@ from ...utils import (
 
 
 # Set maximum size based on the typical aspect ratio of the COCO dataset
+# ViLT PIL 图像处理器：COCO 比例缩放、32 整除、ImageNet 归一化与 pixel_mask 填充
+
 MAX_LONGER_EDGE = 1333
 MAX_SHORTER_EDGE = 800
 
 
+# max_across_indices：跨索引取最大值：对可迭代值的各维度逐列求 max
 def max_across_indices(values: Iterable[Any]) -> list[Any]:
     """
     Return the maximum value across all indices of an iterable of values.
@@ -49,6 +52,7 @@ def max_across_indices(values: Iterable[Any]) -> list[Any]:
     return [max(values_i) for values_i in zip(*values)]
 
 
+# make_pixel_mask：生成像素掩码：有效区域为 1，padding 区域为 0
 def make_pixel_mask(
     image: np.ndarray, output_size: tuple[int, int], input_data_format: str | ChannelDimension | None = None
 ) -> np.ndarray:
@@ -67,6 +71,7 @@ def make_pixel_mask(
     return mask
 
 
+# get_resize_output_image_size：计算缩放输出尺寸：保持 COCO 长宽比并整除 size_divisor
 def get_resize_output_image_size(
     input_image: np.ndarray,
     shorter: int = 800,
@@ -99,6 +104,7 @@ def get_resize_output_image_size(
 
 
 # Adapted from transformers.models.vilt.image_processing_vilt.ViltImageProcessorKwargs
+# ViltImageProcessorKwargs：ViLT 图像处理参数：size_divisor 控制缩放后高宽 32 整除
 class ViltImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -110,6 +116,7 @@ class ViltImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# ViltImageProcessorPil：ViLT PIL 后端处理器：最短边缩放、归一化与 batch padding 生成 pixel_mask
 class ViltImageProcessorPil(PilBackend):
     valid_kwargs = ViltImageProcessorKwargs
     resample = PILImageResampling.BICUBIC
@@ -124,6 +131,7 @@ class ViltImageProcessorPil(PilBackend):
     default_to_square = False
     model_input_names = ["pixel_values", "pixel_mask"]
 
+    # resize：缩放图像：最短边对齐并限制长边，高宽整除 size_divisor
     def resize(
         self,
         image: np.ndarray,
@@ -157,6 +165,7 @@ class ViltImageProcessorPil(PilBackend):
 
         return super().resize(image, SizeDict(height=output_size[0], width=output_size[1]), resample=resample)
 
+    # _pad_batch：batch 填充：对齐最大高宽并生成 pixel_mask
     def _pad_batch(
         self,
         images: list[np.ndarray],
@@ -205,6 +214,7 @@ class ViltImageProcessorPil(PilBackend):
 
         return padded_images, pixel_masks
 
+    # _preprocess：内部预处理：缩放/归一化/填充并返回 BatchFeature
     def _preprocess(
         self,
         images: list[np.ndarray],

@@ -19,8 +19,11 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# VipLlava 配置：CLIP 视觉塔 + Llama 文本塔、多层视觉特征与投影层超参
+
 @auto_docstring(checkpoint="llava-hf/vip-llava-7b-hf")
 @strict
+# VipLlavaConfig：VipLlava 多模态配置：vision/text 子配置、多层视觉特征索引与投影维
 class VipLlavaConfig(PreTrainedConfig):
     r"""
     projector_layernorm_eps (`float`, *optional*, defaults to 1e-05):
@@ -64,6 +67,7 @@ class VipLlavaConfig(PreTrainedConfig):
     image_seq_length: int = 576
     tie_word_embeddings: bool = False
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "clip_vision_model")

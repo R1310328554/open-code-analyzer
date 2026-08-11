@@ -19,6 +19,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# ViLT 处理器：image_processor + tokenizer 联合封装，默认文本 padding=False
+
+# ViltProcessorKwargs：ViLT 处理器参数：文本默认 add_special_tokens、padding=False
 class ViltProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -35,9 +38,11 @@ class ViltProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# ViltProcessor：ViLT 多模态处理器：image_processor 与 tokenizer 联合调用
 class ViltProcessor(ProcessorMixin):
     valid_processor_kwargs = ViltProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 

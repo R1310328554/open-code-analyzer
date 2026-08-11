@@ -38,6 +38,8 @@ from ...utils import auto_docstring, logging
 from .configuration_vilt import ViltConfig
 
 
+# ViLT 建模：图文 patch 嵌入、联合 Transformer 编码与 MLM/QA/检索/分类下游头
+
 logger = logging.get_logger(__name__)
 
 
@@ -47,6 +49,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# ViltForImagesAndTextClassificationOutput：ViLT 多图文本分类输出：logits 与可选 hidden_states/attentions
 class ViltForImagesAndTextClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -65,6 +68,7 @@ class ViltForImagesAndTextClassificationOutput(ModelOutput):
     attentions: list[tuple[torch.FloatTensor]] | None = None
 
 
+# ViltEmbeddings：ViLT 联合嵌入：文本 token + 视觉 patch 拼接并加 modality/position 编码
 class ViltEmbeddings(nn.Module):
     """
     Construct the text and patch embeddings.
@@ -74,6 +78,7 @@ class ViltEmbeddings(nn.Module):
     Patch embeddings are equivalent to ViT embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -89,6 +94,7 @@ class ViltEmbeddings(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.config = config
 
+    # visual_embed：视觉嵌入：patch 投影 + 位置编码，按 pixel_mask 采样/截断 patch 数
     def visual_embed(self, pixel_values, pixel_mask, max_image_length=200):
         _, _, ph, pw = self.patch_embeddings.projection.weight.shape
 
@@ -177,6 +183,7 @@ class ViltEmbeddings(nn.Module):
 
         return x, x_mask, (patch_index, (height, width))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids,
@@ -219,9 +226,11 @@ class ViltEmbeddings(nn.Module):
         return embeddings, masks
 
 
+# TextEmbeddings：ViLT 文本嵌入：word/type/position Embedding 求和
 class TextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -234,6 +243,7 @@ class TextEmbeddings(nn.Module):
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
         self.token_type_ids = nn.Buffer(torch.zeros(self.position_ids.size(), dtype=torch.long), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -269,11 +279,13 @@ class TextEmbeddings(nn.Module):
         return embeddings
 
 
+# ViltPatchEmbeddings：ViLT patch 嵌入：Conv2d 切 patch 并展平为 token 序列
 class ViltPatchEmbeddings(nn.Module):
     """
     Image to Patch Embedding.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -289,6 +301,7 @@ class ViltPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -300,7 +313,9 @@ class ViltPatchEmbeddings(nn.Module):
         return x
 
 
+# ViltSelfAttention：ViLT 自注意力：多头缩放点积，支持 attention_mask
 class ViltSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -319,6 +334,7 @@ class ViltSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask=None, output_attentions=False):
         input_shape = hidden_states.shape[:-1]
         hidden_shape = (*input_shape, -1, self.attention_head_size)
@@ -352,29 +368,35 @@ class ViltSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Vilt
+# ViltSelfOutput：ViLT 注意力输出投影：Linear + Dropout 残差前处理
 class ViltSelfOutput(nn.Module):
     """
     The residual connection is defined in ViltLayer instead of here (as is the case with other models), due to the
     layernorm applied before each block.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViltConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
 
+# ViltAttention：ViLT 注意力模块：SelfAttention + SelfOutput 组合
 class ViltAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.attention = ViltSelfAttention(config)
         self.output = ViltSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask=None, output_attentions=False):
         self_outputs = self.attention(hidden_states, attention_mask, output_attentions)
 
@@ -385,7 +407,9 @@ class ViltAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViT->Vilt
+# ViltIntermediate：ViLT FFN 中间层：Linear 扩展 hidden 维并 GELU 激活
 class ViltIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViltConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -394,6 +418,7 @@ class ViltIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -401,12 +426,15 @@ class ViltIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViT->Vilt
+# ViltOutput：ViLT FFN 输出层：Linear 投影回 hidden_size + Dropout
 class ViltOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViltConfig):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -414,9 +442,11 @@ class ViltOutput(nn.Module):
         return hidden_states
 
 
+# ViltLayer：ViLT Transformer 层：自注意力 + FFN 双残差，支持梯度检查点
 class ViltLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -427,6 +457,7 @@ class ViltLayer(GradientCheckpointingLayer):
         self.layernorm_before = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.layernorm_after = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask=None, output_attentions=False):
         self_attention_outputs = self.attention(
             self.layernorm_before(hidden_states),  # in ViLT, layernorm is applied before self-attention
@@ -451,13 +482,16 @@ class ViltLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# ViltEncoder：ViLT 编码器：堆叠 ViltLayer，处理图文联合 token 序列
 class ViltEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([ViltLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -493,6 +527,7 @@ class ViltEncoder(nn.Module):
 
 
 @auto_docstring
+# ViltPreTrainedModel：ViLT 预训练基类：权重初始化、注意力实现与模块绑定
 class ViltPreTrainedModel(PreTrainedModel):
     config: ViltConfig
     base_model_prefix = "vilt"
@@ -500,6 +535,7 @@ class ViltPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
     _no_split_modules = ["ViltEmbeddings", "ViltSelfAttention"]
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, TextEmbeddings):
@@ -508,7 +544,9 @@ class ViltPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ViltModel：ViLT 基模型：patch+文本嵌入 + 编码器，可选 pooler 输出
 class ViltModel(ViltPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -526,13 +564,16 @@ class ViltModel(ViltPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.embeddings.text_embeddings.word_embeddings
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value):
         self.embeddings.text_embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -648,12 +689,15 @@ class ViltModel(ViltPreTrainedModel):
         )
 
 
+# ViltPooler：ViLT 池化层：取 [CLS] 隐状态经 Linear+Tanh 得句子表示
 class ViltPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -668,11 +712,13 @@ class ViltPooler(nn.Module):
     ViLT Model with a language modeling head on top as done during pretraining.
     """
 )
+# ViltForMaskedLM：ViLT 掩码语言建模：MLM 头预测被 mask 的 token
 class ViltForMaskedLM(ViltPreTrainedModel):
     _tied_weights_keys = {
         "mlm_score.decoder.weight": "vilt.embeddings.text_embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -682,14 +728,17 @@ class ViltForMaskedLM(ViltPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_output_embeddings：获取输出嵌入：返回 LM 头权重层
     def get_output_embeddings(self):
         return self.mlm_score.decoder
 
+    # set_output_embeddings：设置输出嵌入：替换 LM 头权重
     def set_output_embeddings(self, new_embeddings):
         self.mlm_score.decoder = new_embeddings
         self.mlm_score.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -805,7 +854,9 @@ class ViltForMaskedLM(ViltPreTrainedModel):
         )
 
 
+# ViltPredictionHeadTransform：ViLT MLM 头变换：Dense + LayerNorm + 激活
 class ViltPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -815,6 +866,7 @@ class ViltPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -822,13 +874,16 @@ class ViltPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# ViltMLMHead：ViLT MLM 预测头：变换层 + 解码器权重绑定 Linear
 class ViltMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.transform = ViltPredictionHeadTransform(config)
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = self.transform(x)
         x = self.decoder(x)
@@ -841,7 +896,9 @@ class ViltMLMHead(nn.Module):
     token) for visual question answering, e.g. for VQAv2.
     """
 )
+# ViltForQuestionAnswering：ViLT 视觉问答：span 预测 start/end logits
 class ViltForQuestionAnswering(ViltPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -860,6 +917,7 @@ class ViltForQuestionAnswering(ViltPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -954,7 +1012,9 @@ class ViltForQuestionAnswering(ViltPreTrainedModel):
     token) for image-to-text or text-to-image retrieval, e.g. MSCOCO and F30K.
     """
 )
+# ViltForImageAndTextRetrieval：ViLT 图文检索：ITM 二分类匹配分数
 class ViltForImageAndTextRetrieval(ViltPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -967,6 +1027,7 @@ class ViltForImageAndTextRetrieval(ViltPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1053,7 +1114,9 @@ class ViltForImageAndTextRetrieval(ViltPreTrainedModel):
     Vilt Model transformer with a classifier head on top for natural language visual reasoning, e.g. NLVR2.
     """
 )
+# ViltForImagesAndTextClassification：ViLT 多图文本分类：多图 token 拼接 + 分类头
 class ViltForImagesAndTextClassification(ViltPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1073,6 +1136,7 @@ class ViltForImagesAndTextClassification(ViltPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1195,7 +1259,9 @@ class ViltForImagesAndTextClassification(ViltPreTrainedModel):
 
 
 @auto_docstring
+# ViltForTokenClassification：ViLT  token 分类：序列标注下游头（如 NER）
 class ViltForTokenClassification(ViltPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1209,6 +1275,7 @@ class ViltForTokenClassification(ViltPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
