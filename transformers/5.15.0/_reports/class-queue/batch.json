@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:17:20Z",
-  "files": [
-    "src/transformers/models/siglip/image_processing_pil_siglip.py",
-    "src/transformers/models/siglip/image_processing_siglip.py",
-    "src/transformers/models/siglip/modeling_siglip.py",
-    "src/transformers/models/siglip/processing_siglip.py",
-    "src/transformers/models/siglip/tokenization_siglip.py",
-    "src/transformers/models/siglip2/__init__.py",
-    "src/transformers/models/siglip2/configuration_siglip2.py",
-    "src/transformers/models/siglip2/image_processing_pil_siglip2.py",
-    "src/transformers/models/siglip2/image_processing_siglip2.py",
-    "src/transformers/models/siglip2/modeling_siglip2.py",
-    "src/transformers/models/siglip2/modular_siglip2.py",
-    "src/transformers/models/siglip2/processing_siglip2.py",
-    "src/transformers/models/siglip2/tokenization_siglip2.py",
-    "src/transformers/models/slanet/__init__.py",
-    "src/transformers/models/slanet/configuration_slanet.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 579,
-  "done": 2085
+  "done": 2100
 }
