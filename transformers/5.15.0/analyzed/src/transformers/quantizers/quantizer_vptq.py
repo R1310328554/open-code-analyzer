@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# VPTQ 量化器：Vector Post-Training Quantization 预量化加载
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -30,6 +31,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# VptqHfQuantizer：VPTQ 量化器：VPTQ 库预量化 checkpoint 推理加载
 class VptqHfQuantizer(HfQuantizer):
     """
     Quantizer of the VPTQ method. Enables the loading of prequantized models.

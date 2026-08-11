@@ -16,6 +16,7 @@ Tokenization classes for python tokenizers. For fast tokenizers (provided by Hug
 tokenization_utils_tokenizers.py
 """
 
+# Python 分词后端：Trie 切分 added tokens 与慢速 tokenizer 基类
 import bisect
 import unicodedata
 from collections import OrderedDict
@@ -42,6 +43,7 @@ ADDED_TOKENS_FILE = "added_tokens.json"
 TOKENIZER_CONFIG_FILE = "tokenizer_config.json"
 
 
+# Trie：前缀树：added tokens 最长匹配切分
 class Trie:
     """
     Trie in Python. Creates a Trie out of a list of words. The trie is used to split on `added_tokens` in one pass
@@ -273,6 +275,7 @@ class Trie:
         return tokens
 
 
+# ExtensionsTrie：扩展 Trie：给定前缀枚举所有词表扩展
 class ExtensionsTrie(Trie):
     def __init__(self, *args):
         super().__init__(*args)
@@ -397,6 +400,7 @@ def _insert_one_token_to_ordered_list(token_list: list[str], new_token: str):
 
 
 @add_end_docstrings(INIT_TOKENIZER_DOCSTRING)
+# PythonBackend：Python 慢速分词基类：Trie 特殊 token 与 vocab 管理
 class PythonBackend(PreTrainedTokenizerBase):
     """
     Base class for all slow tokenizers.

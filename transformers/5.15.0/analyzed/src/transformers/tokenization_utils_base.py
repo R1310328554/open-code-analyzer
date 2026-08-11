@@ -18,6 +18,7 @@ fronting encoding methods) Special token mixing (host the special tokens logic) 
 of output with special method for the Fast tokenizers)
 """
 
+# 分词基类：BatchEncoding、截断策略与 PreTrainedTokenizerBase
 from __future__ import annotations
 
 import copy
@@ -151,6 +152,7 @@ FULL_TOKENIZER_FILE = "tokenizer.json"
 _re_tokenizer_file = re.compile(r"tokenizer\.(.*)\.json")
 
 
+# TruncationStrategy：截断策略枚举：only_first/only_second/longest_first
 class TruncationStrategy(ExplicitEnum):
     """
     Possible values for the `truncation` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for tab-completion in
@@ -163,6 +165,7 @@ class TruncationStrategy(ExplicitEnum):
     DO_NOT_TRUNCATE = "do_not_truncate"
 
 
+# CharSpan：字符跨度 NamedTuple：原文 start/end 索引
 class CharSpan(NamedTuple):
     """
     Character span in the original string.
@@ -176,6 +179,7 @@ class CharSpan(NamedTuple):
     end: int
 
 
+# TokenSpan：Token 跨度 NamedTuple：编码序列 start/end 索引
 class TokenSpan(NamedTuple):
     """
     Token span in an encoded string (list of tokens).
@@ -192,6 +196,7 @@ class TokenSpan(NamedTuple):
 _V = TypeVar("_V", default=Any)
 
 
+# BatchEncoding：分词输出容器：UserDict + 张量转换与 offset 映射
 class BatchEncoding(UserDict, Generic[_V]):
     """
     Holds the output of the [`~tokenization_utils_base.PreTrainedTokenizerBase.__call__`],
@@ -959,6 +964,7 @@ INIT_TOKENIZER_DOCSTRING = r"""
 
 
 @add_end_docstrings(INIT_TOKENIZER_DOCSTRING)
+# PreTrainedTokenizerBase：分词器抽象基类：encode/pad/truncation 与 Hub 保存
 class PreTrainedTokenizerBase(PushToHubMixin):
     """
     Base class for all tokenizer backends.

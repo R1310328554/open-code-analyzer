@@ -1778,6 +1778,7 @@ def set_model_for_less_flaky_test(model):
                         setattr(module, attr, 1.0)
 
 
+# CaptureStd：标准流捕获上下文：stdout/stderr 重放与 out/err 属性
 class CaptureStd:
     """
     Context manager to capture:
@@ -1885,6 +1886,7 @@ class CaptureStd:
 # disable the stream you don't need to test.
 
 
+# CaptureStdout：stdout 捕获：仅捕获标准输出
 class CaptureStdout(CaptureStd):
     """Same as CaptureStd but captures only stdout"""
 
@@ -1892,6 +1894,7 @@ class CaptureStdout(CaptureStd):
         super().__init__(err=False, replay=replay)
 
 
+# CaptureStderr：stderr 捕获：仅捕获标准错误
 class CaptureStderr(CaptureStd):
     """Same as CaptureStd but captures only stderr"""
 
@@ -1899,6 +1902,7 @@ class CaptureStderr(CaptureStd):
         super().__init__(out=False, replay=replay)
 
 
+# CaptureLogger：logging 流捕获：收集 logger 输出到 out
 class CaptureLogger:
     """
     Context manager to capture `logging` streams
@@ -1963,6 +1967,7 @@ def LoggingLevel(level):
         transformers_logging.set_verbosity(orig_level)
 
 
+# TemporaryHubRepo：临时 Hub 仓库：上下文退出时自动删除
 class TemporaryHubRepo:
     """Create a temporary Hub repository and return its `RepoUrl` object. This is similar to
     `tempfile.TemporaryDirectory` and can be used as a context manager. For example:
@@ -2017,6 +2022,7 @@ def ExtendSysPath(path: str | os.PathLike) -> Iterator[None]:
         sys.path.remove(path)
 
 
+# TestCasePlus：增强 TestCase：仓库路径解析与 skip 装饰器辅助
 class TestCasePlus(unittest.TestCase):
     """
     This class extends *unittest.TestCase* with additional features.
@@ -2507,6 +2513,7 @@ def pytest_terminal_summary_main(tr, id):
 import asyncio  # noqa
 
 
+# _RunOutput：异步子进程结果：returncode/stdout/stderr
 class _RunOutput:
     def __init__(self, returncode, stdout, stderr):
         self.returncode = returncode
@@ -2661,6 +2668,7 @@ def to_2tuple(x):
 
 
 # These utils relate to ensuring the right error message is received when running scripts
+# SubprocessCallException：子进程命令失败异常
 class SubprocessCallException(Exception):
     pass
 
@@ -2682,6 +2690,7 @@ def run_command(command: list[str], return_stdout=False):
         ) from e
 
 
+# RequestCounter：HTTP 请求计数器：统计 GET/HEAD 等 Hub 调用
 class RequestCounter:
     """
     Helper class that will count all requests made online.
@@ -2934,6 +2943,7 @@ made as a print would otherwise fail the corresponding line.
 To skip cuda tests, make sure to call `SKIP_CUDA_DOCTEST=1 pytest --doctest-modules <path_to_files_to_test>
 """
 
+# 测试工具：unittest 扩展、设备跳过、doctest 与 CI 辅助
 
 def preprocess_string(string, skip_cuda_tests):
     """Prepare a docstring or a `.md` file to be run by doctest.
@@ -2964,6 +2974,7 @@ def preprocess_string(string, skip_cuda_tests):
     return modified_string
 
 
+# HfDocTestParser：HF doctest 解析器：black 格式代码块与 cuda 跳过
 class HfDocTestParser(doctest.DocTestParser):
     """
     Overwrites the DocTestParser from doctest to properly parse the codeblocks that are formatted with black. This
@@ -3010,6 +3021,7 @@ class HfDocTestParser(doctest.DocTestParser):
         return super().parse(string, name)
 
 
+# HfDoctestModule：pytest doctest 模块：使用 HfDocTestParser 发现测试
 class HfDoctestModule(Module):
     """
     Overwrites the `DoctestModule` of the pytest package to make sure the HFDocTestParser is used when discovering
@@ -3373,6 +3385,7 @@ def unpack_device_properties(
     return device_type, major, minor
 
 
+# Expectations：设备期望字典：按 GPU 类型/驱动版本匹配测试阈值
 class Expectations(UserDict[PackedDeviceProperties, Any]):
     def get_expectation(self) -> Any:
         """
@@ -4283,6 +4296,7 @@ def read_json_file(file):
 
 
 # ANSI color codes for terminal output
+# Colors：终端 ANSI 颜色码：训练 CI 日志着色
 class Colors:
     """ANSI color codes for terminal output formatting."""
 
@@ -4307,6 +4321,7 @@ class Colors:
     BRIGHT_CYAN = "\033[96m"
 
 
+# ColoredFormatter：彩色日志格式化：按级别与 logger 名着色
 class ColoredFormatter(logging.Formatter):
     """Custom formatter that adds colors based on log level."""
 
@@ -4416,6 +4431,7 @@ MemoryStats = collections.namedtuple(
 )
 
 
+# CPUMemoryMonitor：CPU 内存监控：进程 RSS 峰值与系统内存占比
 class CPUMemoryMonitor:
     """Monitor CPU memory usage for the current process."""
 

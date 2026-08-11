@@ -1,3 +1,4 @@
+# Safetensors 转换：Hub 上自动触发 .bin → safetensors PR
 from typing import Optional
 
 import httpx

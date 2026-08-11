@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# MXFP4 量化器：fbgemm/Triton 内核 FP4 权重加载与 MoE 专家反序列化
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -40,6 +41,7 @@ logger = logging.get_logger(__name__)
 triton_kernels_hub = None
 
 
+# Mxfp4HfQuantizer：MXFP4 量化器：replace_with_mxfp4_linear 与 Triton 内核
 class Mxfp4HfQuantizer(HfQuantizer):
     """
     FP4 quantization using fbgemm kernels

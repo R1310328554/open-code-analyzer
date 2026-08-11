@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# SpQR 量化器：GPU 上加载 SpQR 预量化模型
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -31,6 +32,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# SpQRHfQuantizer：SpQR 量化器：replace_with_spqr_linear 加载预量化权重
 class SpQRHfQuantizer(HfQuantizer):
     """
     Quantizer of the SpQR method. Enables the loading of prequantized models.

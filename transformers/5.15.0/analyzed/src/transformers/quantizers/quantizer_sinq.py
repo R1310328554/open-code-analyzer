@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# SINQ 量化器：权重级 SINQ/A-SINQ 量化与模块替换
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# SinqHfQuantizer：SINQ 量化器：sinq/asinq 权重级 ConversionOps 与多模态后处理
 class SinqHfQuantizer(HfQuantizer):
     """
     HF v5 quantizer for SINQ.

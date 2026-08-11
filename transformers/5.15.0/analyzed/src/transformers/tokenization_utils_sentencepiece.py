@@ -15,6 +15,7 @@
 SentencePiece-based tokenization class for loading from sentencepiece.model files.
 """
 
+# SentencePiece 分词：.model 加载与词表抽取
 import os
 from shutil import copyfile
 
@@ -42,6 +43,7 @@ SPIECE_UNDERLINE = "▁"
 
 
 @add_end_docstrings(INIT_TOKENIZER_DOCSTRING)
+# SentencePieceBackend：SentencePiece 分词基类：加载 .model 与 added tokens
 class SentencePieceBackend(PreTrainedTokenizer):
     """
     Base class for SentencePiece-based tokenizers that load from sentencepiece.model files.
@@ -286,6 +288,7 @@ class SentencePieceBackend(PreTrainedTokenizer):
         )
 
 
+# SentencePieceExtractor：SentencePiece 词表抽取：vocab/merges/scores 导出
 class SentencePieceExtractor:
     """
     Extractor implementation for SentencePiece trained models. https://github.com/google/sentencepiece

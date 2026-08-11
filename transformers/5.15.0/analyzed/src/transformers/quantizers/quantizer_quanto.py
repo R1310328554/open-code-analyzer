@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Quanto 量化器：optimum-quanto 库 int/float 权重量化
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -35,6 +36,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# QuantoHfQuantizer：Quanto 量化器：replace_with_quanto_layers 替换线性层
 class QuantoHfQuantizer(HfQuantizer):
     """
     Quantizer for the quanto library

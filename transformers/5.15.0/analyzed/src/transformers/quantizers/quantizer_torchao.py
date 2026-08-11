@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# TorchAO 量化器：PyTorch AO 库 safetensors 量化权重
 import json
 import re
 from typing import TYPE_CHECKING
@@ -56,6 +57,7 @@ def _fuzzy_match_size(config_name: str) -> str | None:
     return match.group(1) if match else None
 
 
+# TorchAoHfQuantizer：TorchAO 量化器：flatten_tensor_state_dict 与 int4/int8 权重
 class TorchAoHfQuantizer(HfQuantizer):
     """
     Quantizer for torchao: https://github.com/pytorch/ao/

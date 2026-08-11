@@ -16,6 +16,7 @@
 Time series distributional output classes and utilities.
 """
 
+# 时间序列工具：概率分布输出头与仿射变换包装
 from collections.abc import Callable
 
 import torch
@@ -31,6 +32,7 @@ from torch.distributions import (
 )
 
 
+# AffineTransformed：仿射变换分布包装：loc/scale 调整均值与方差
 class AffineTransformed(TransformedDistribution):
     def __init__(self, base_distribution: Distribution, loc=None, scale=None, event_dim=0):
         self.scale = 1.0 if scale is None else scale
@@ -60,6 +62,7 @@ class AffineTransformed(TransformedDistribution):
         return self.variance.sqrt()
 
 
+# ParameterProjection：参数投影层：Linear 映射到分布参数字典
 class ParameterProjection(nn.Module):
     def __init__(
         self, in_features: int, args_dim: dict[str, int], domain_map: Callable[..., tuple[torch.Tensor]], **kwargs
@@ -75,6 +78,7 @@ class ParameterProjection(nn.Module):
         return self.domain_map(*params_unbounded)
 
 
+# LambdaLayer：Lambda 包装层：将函数注入 nn.Module forward
 class LambdaLayer(nn.Module):
     def __init__(self, function):
         super().__init__()
@@ -84,6 +88,7 @@ class LambdaLayer(nn.Module):
         return self.function(x, *args)
 
 
+# DistributionOutput：分布输出抽象基类：domain_map 与 event_shape
 class DistributionOutput:
     distribution_class: type
     in_features: int
@@ -161,6 +166,7 @@ class DistributionOutput:
         return (x + torch.sqrt(torch.square(x) + 4.0)) / 2.0
 
 
+# StudentTOutput：Student-t 分布输出：df/loc/scale 参数投影
 class StudentTOutput(DistributionOutput):
     """
     Student-T distribution output class.
@@ -176,6 +182,7 @@ class StudentTOutput(DistributionOutput):
         return df.squeeze(-1), loc.squeeze(-1), scale.squeeze(-1)
 
 
+# NormalOutput：正态分布输出：loc/scale 参数投影
 class NormalOutput(DistributionOutput):
     """
     Normal distribution output class.
@@ -190,6 +197,7 @@ class NormalOutput(DistributionOutput):
         return loc.squeeze(-1), scale.squeeze(-1)
 
 
+# NegativeBinomialOutput：负二项分布输出：total_count/logits 缩放
 class NegativeBinomialOutput(DistributionOutput):
     """
     Negative Binomial distribution output class.

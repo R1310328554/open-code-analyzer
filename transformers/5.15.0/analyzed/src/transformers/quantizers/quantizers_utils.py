@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 量化器工具：模块名解析、跳过转换判断与设备上下文
 import re
 from contextlib import contextmanager
 from typing import Any

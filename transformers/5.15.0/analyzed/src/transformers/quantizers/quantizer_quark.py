@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Quark 量化器：AMD Quark 预量化 checkpoint 加载与键名映射
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -39,6 +40,7 @@ CHECKPOINT_KEYS = {
 }
 
 
+# QuarkHfQuantizer：Quark 量化器：QParamsLinear 量化器 scale/zero_point 映射
 class QuarkHfQuantizer(HfQuantizer):
     """
     Quark quantizer (https://quark.docs.amd.com/latest/).

@@ -154,7 +154,9 @@ ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
             - **length** -- The length of the inputs (when `return_length=True`)
 """
 
+# Mistral 分词：mistral-common 官方 tokenizer 后端封装
 
+# MistralTokenizerType：Mistral tokenizer 类型枚举：spm/tekken
 class MistralTokenizerType(str, Enum):
     """Enum for the different type of tokenizer."""
 
@@ -183,6 +185,7 @@ _VALID_INIT_KWARGS = {"_from_auto", "backend", "files_loaded"}
 
 
 @requires(backends=("mistral-common",))
+# MistralCommonBackend：mistral-common 后端：官方 MistralTokenizer HF 兼容封装
 class MistralCommonBackend(PreTrainedTokenizerBase):
     """
     Class to wrap `mistral-common` tokenizers.
