@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:21:27Z",
   "files": [
-    "django/core/checks/urls.py",
-    "django/core/exceptions.py",
-    "django/core/files/__init__.py",
-    "django/core/files/base.py",
-    "django/core/files/images.py",
-    "django/core/files/locks.py",
-    "django/core/files/move.py",
-    "django/core/files/storage/__init__.py",
-    "django/core/files/storage/base.py",
-    "django/core/files/storage/filesystem.py",
-    "django/core/files/storage/handler.py",
-    "django/core/files/storage/memory.py",
-    "django/core/files/storage/mixins.py",
-    "django/core/files/temp.py",
-    "django/core/files/uploadedfile.py",
     "django/core/files/uploadhandler.py",
     "django/core/files/utils.py",
     "django/core/handlers/__init__.py",
@@ -33,5 +18,5 @@
     "django/core/mail/backends/smtp.py"
   ],
   "remaining_pending": 342,
-  "done": 570
+  "done": 585
 }
