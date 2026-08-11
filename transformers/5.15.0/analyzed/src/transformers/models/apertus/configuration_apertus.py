@@ -27,6 +27,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="swiss-ai/Apertus-8B-Instruct-2509")
 @strict
+# ApertusConfig：Apertus-8B 架构超参（default_theta=12M、GQA、RMSNorm）
 class ApertusConfig(PreTrainedConfig):
     r"""
     ```python
@@ -97,3 +98,5 @@ class ApertusConfig(PreTrainedConfig):
 
 
 __all__ = ["ApertusConfig"]
+# 模块 src/transformers/models/apertus/configuration_apertus.py：Transformers 5.15.0 wave7b 中文文档注释。
+

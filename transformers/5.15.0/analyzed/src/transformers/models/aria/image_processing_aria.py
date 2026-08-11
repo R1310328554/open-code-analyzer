@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# AriaImageProcessorKwargs：max/min 尺寸、split_resolutions 等预处理参数
 class AriaImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_size (`int`, *optional*, defaults to `self.max_image_size`):
@@ -49,6 +50,7 @@ class AriaImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# AriaImageProcessor：基于 Torchvision 的 Aria 图像处理器
 class AriaImageProcessor(TorchvisionBackend):
     model_input_names = ["pixel_values", "pixel_mask", "num_crops"]
     valid_kwargs = AriaImageProcessorKwargs
@@ -64,12 +66,14 @@ class AriaImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_normalize = True
 
+# __init__：默认 split_resolutions 由 490 倍数网格生成
     def __init__(self, **kwargs: Unpack[AriaImageProcessorKwargs]):
         if kwargs.get("split_resolutions") is None:
             default_resolutions = [(1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (2, 4), (2, 3), (2, 2), (2, 1), (3, 1), (3, 2), (4, 1), (4, 2), (5, 1), (6, 1), (7, 1), (8, 1)]  # fmt: skip
             kwargs["split_resolutions"] = [[el[0] * 490, el[1] * 490] for el in default_resolutions]
         super().__init__(**kwargs)
 
+# _get_padding_size：计算居中 padding（left/top/right/bottom）
     def _get_padding_size(self, original_resolution: tuple, target_resolution: tuple) -> list[int]:
         """Get padding size for patching, returns [left, top, right, bottom] for tvF.pad."""
         original_height, original_width = original_resolution
@@ -78,6 +82,7 @@ class AriaImageProcessor(TorchvisionBackend):
         paste_y, r_y = divmod(target_height - original_height, 2)
         return [paste_x, paste_y, paste_x + r_x, paste_y + r_y]
 
+# _resize_for_patching：等比缩放至目标分辨率
     def _resize_for_patching(
         self,
         image: "torch.Tensor",
@@ -90,6 +95,7 @@ class AriaImageProcessor(TorchvisionBackend):
         )
         return self.resize(image, SizeDict(height=new_height, width=new_width), resample)
 
+# _pad_for_patching：填充至 patch 网格对齐尺寸
     def _pad_for_patching(
         self,
         image: "torch.Tensor",
@@ -100,6 +106,7 @@ class AriaImageProcessor(TorchvisionBackend):
         padding = self._get_padding_size(new_resolution, target_resolution)
         return tvF.pad(image, padding=padding)
 
+# get_image_patches：按 grid_pinpoints 选最优分辨率并切分为 patch 列表
     def get_image_patches(
         self,
         image: "torch.Tensor",
@@ -133,6 +140,7 @@ class AriaImageProcessor(TorchvisionBackend):
         patches = divide_to_patches(padded_image, patch_size=patch_size)
         return patches
 
+# _preprocess：批量图像缩放/归一化/分块，输出 pixel_values 与 num_crops
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -202,6 +210,7 @@ class AriaImageProcessor(TorchvisionBackend):
             tensor_type=return_tensors,
         )
 
+# get_number_of_image_patches：给定尺寸预估 patch 数量（供 token 预算）
     def get_number_of_image_patches(self, height: int, width: int, images_kwargs: dict | None = None) -> int:
         """
         A utility that returns number of image patches for a given image size.

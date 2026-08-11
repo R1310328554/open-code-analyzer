@@ -40,6 +40,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_apertus import ApertusConfig
 
 
+# ApertusMLP：SwiGLU 风格前馈（gate/up/down 投影 + relu2）
 class ApertusMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -57,6 +58,7 @@ class ApertusMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# ApertusRMSNorm：Root Mean Square LayerNorm
 class ApertusRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -77,6 +79,7 @@ class ApertusRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# ApertusRotaryEmbedding：RoPE 频率缓存与 cos/sin 输出
 class ApertusRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: ApertusConfig, device=None):
@@ -142,6 +145,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE 旋转应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -205,6 +209,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# ApertusAttention：GQA 自注意力（eager/SDPA/Flash 分发）
 class ApertusAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -276,6 +281,7 @@ class ApertusAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ApertusDecoderLayer：Decoder 单层（Attn + MLP + 残差）
 class ApertusDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ApertusConfig, layer_idx: int):
         super().__init__()
@@ -319,6 +325,7 @@ class ApertusDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ApertusPreTrainedModel：权重初始化与 _no_split_modules
 class ApertusPreTrainedModel(PreTrainedModel):
     config: ApertusConfig
     base_model_prefix = "model"
@@ -338,6 +345,7 @@ class ApertusPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ApertusModel：堆叠 DecoderLayer 的因果 LM 骨干
 class ApertusModel(ApertusPreTrainedModel):
     def __init__(self, config: ApertusConfig):
         super().__init__(config)
@@ -412,6 +420,7 @@ class ApertusModel(ApertusPreTrainedModel):
 
 
 @auto_docstring
+# ApertusForCausalLM：因果语言建模 head + 生成接口
 class ApertusForCausalLM(ApertusPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -491,6 +500,7 @@ class ApertusForCausalLM(ApertusPreTrainedModel, GenerationMixin):
         )
 
 
+# ApertusForTokenClassification：逐 token 分类 head
 class ApertusForTokenClassification(GenericForTokenClassification, ApertusPreTrainedModel):
     pass
 

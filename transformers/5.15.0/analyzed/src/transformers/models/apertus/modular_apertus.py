@@ -45,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="swiss-ai/Apertus-8B-Instruct-2509")
 @strict
+# ApertusConfig：modular 中 Apertus 超参定义（@strict 校验）
 class ApertusConfig(PreTrainedConfig):
     r"""
     ```python
@@ -114,6 +115,7 @@ class ApertusConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# ApertusMLP：复用 Nemotron MLP（relu2 激活）
 class ApertusMLP(NemotronMLP):
     def __init__(self, config):
         super().__init__(config)
@@ -131,6 +133,7 @@ class ApertusRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# ApertusAttention：继承 LlamaAttention 的 GQA 实现
 class ApertusAttention(LlamaAttention):
     def __init__(self, config: ApertusConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -180,6 +183,7 @@ class ApertusAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# ApertusDecoderLayer：继承 Llama 解码层结构
 class ApertusDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: ApertusConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -224,10 +228,12 @@ class ApertusPreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# ApertusModel：继承 LlamaModel 骨干
 class ApertusModel(LlamaModel):
     pass
 
 
+# ApertusForCausalLM：因果 LM head 薄包装
 class ApertusForCausalLM(LlamaForCausalLM):
     def forward(self, **super_kwargs):
         r"""
@@ -255,6 +261,7 @@ class ApertusForCausalLM(LlamaForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# ApertusForTokenClassification：token 分类 head 薄包装
 class ApertusForTokenClassification(LlamaForTokenClassification):
     pass
 

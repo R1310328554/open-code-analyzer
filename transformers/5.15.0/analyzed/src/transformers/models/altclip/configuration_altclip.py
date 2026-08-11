@@ -27,6 +27,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPTextConfig：AltCLIP 文本塔超参（vocab、层数、project_dim 映射维度）
 class AltCLIPTextConfig(PreTrainedConfig):
     r"""
     project_dim (`int`, *optional*, defaults to 768):
@@ -68,6 +69,7 @@ class AltCLIPTextConfig(PreTrainedConfig):
     type_vocab_size: int = 1
     project_dim: int = 768
 
+# validate_architecture：@strict 校验 hidden_size 与 attention head 数可整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
@@ -79,6 +81,7 @@ class AltCLIPTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPVisionConfig：AltCLIP 视觉塔超参（patch、层数、投影维度）
 class AltCLIPVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -124,6 +127,7 @@ class AltCLIPVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPConfig：联合 text_config + vision_config 的双塔 CLIP 总配置
 class AltCLIPConfig(PreTrainedConfig):
     r"""
     Example:

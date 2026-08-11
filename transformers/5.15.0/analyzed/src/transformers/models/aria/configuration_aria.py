@@ -28,6 +28,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="rhymes-ai/Aria")
 @strict
+# AriaTextConfig：MoE 文本塔超参（专家数、topk、shared experts）
 class AriaTextConfig(PreTrainedConfig):
     r"""
     moe_num_experts (`int`, *optional*, defaults to 8):
@@ -90,6 +91,7 @@ class AriaTextConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：@strict 校验 MoE 与 attention 维度约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
@@ -101,6 +103,7 @@ class AriaTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="rhymes-ai/Aria")
 @strict
+# AriaConfig：text_config + vision 相关字段的多模态总配置
 class AriaConfig(PreTrainedConfig):
     r"""
     projector_patch_to_query_dict (`dict`, *optional*):

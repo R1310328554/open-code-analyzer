@@ -33,6 +33,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
 @strict
+# ArceeConfig：继承 LlamaConfig 并覆盖 AFM-4.5B 默认超参
 class ArceeConfig(LlamaConfig):
     r"""
     ```python
@@ -82,26 +83,31 @@ class ArceeConfig(LlamaConfig):
     pretraining_tp = AttributeError()
 
 
+# ArceeMLP：复用 Nemotron relu2 MLP
 class ArceeMLP(NemotronMLP):
     pass
 
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
+# ArceeForCausalLM：因果 LM 薄包装
 class ArceeForCausalLM(LlamaForCausalLM):
     pass
 
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
+# ArceeForSequenceClassification：序列分类薄包装
 class ArceeForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
+# ArceeForQuestionAnswering：QA 薄包装
 class ArceeForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
+# ArceeForTokenClassification：token 分类薄包装
 class ArceeForTokenClassification(LlamaForTokenClassification):
     pass
 

@@ -40,6 +40,7 @@ from .configuration_altclip import AltCLIPConfig, AltCLIPTextConfig, AltCLIPVisi
 
 @auto_docstring
 @dataclass
+# AltCLIPOutput：双塔前向输出（logits、text/vision embeds、对比 loss）
 class AltCLIPOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -72,6 +73,7 @@ class AltCLIPOutput(ModelOutput):
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# AltRobertaEmbeddings：RoBERTa 词/位置/类型嵌入与 LayerNorm
 class AltRobertaEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -174,6 +176,7 @@ class AltRobertaEmbeddings(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# eager_attention_forward：AltCLIP 文本侧 eager 注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -196,6 +199,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# AltRobertaSelfAttention：RoBERTa 自注意力（QKV 投影 + softmax）
 class AltRobertaSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -265,6 +269,7 @@ class AltRobertaSelfOutput(nn.Module):
         return hidden_states
 
 
+# AltRobertaAttention：自注意力 + 输出投影残差块
 class AltRobertaAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -316,6 +321,7 @@ class AltRobertaOutput(nn.Module):
         return hidden_states
 
 
+# AltRobertaLayer：单层 Transformer（Attn + FFN + 残差）
 class AltRobertaLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -349,6 +355,7 @@ class AltRobertaLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# AltRobertaEncoder：堆叠 AltRobertaLayer 的文本编码器
 class AltRobertaEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -398,6 +405,7 @@ class AltRobertaPooler(nn.Module):
         return pooled_output
 
 
+# AltCLIPAttention：视觉塔多头自注意力
 class AltCLIPAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -471,6 +479,7 @@ class AltCLIPMLP(nn.Module):
         return hidden_states
 
 
+# AltCLIPEncoderLayer：视觉 Transformer 单层
 class AltCLIPEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AltCLIPVisionConfig):
         super().__init__()
@@ -504,6 +513,7 @@ class AltCLIPEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# AltCLIPEncoder：堆叠视觉编码层
 class AltCLIPEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -538,6 +548,7 @@ class AltCLIPEncoder(nn.Module):
         )
 
 
+# AltCLIPVisionEmbeddings：patch 嵌入 + 位置编码
 class AltCLIPVisionEmbeddings(nn.Module):
     def __init__(self, config: AltCLIPVisionConfig):
         super().__init__()
@@ -622,6 +633,7 @@ class AltCLIPVisionEmbeddings(nn.Module):
 
 
 @auto_docstring
+# AltCLIPPreTrainedModel：AltCLIP 系列权重初始化与 attention 接口
 class AltCLIPPreTrainedModel(PreTrainedModel):
     config: AltCLIPConfig
     base_model_prefix = "altclip"
@@ -679,6 +691,7 @@ class AltCLIPPreTrainedModel(PreTrainedModel):
     The vision model from ALTCLIP without any head or projection on top.
     """
 )
+# AltCLIPVisionModel：仅视觉塔的 AltCLIP 编码器
 class AltCLIPVisionModel(AltCLIPPreTrainedModel):
     config: AltCLIPVisionConfig
     main_input_name = "pixel_values"
@@ -753,6 +766,7 @@ class AltCLIPVisionModel(AltCLIPPreTrainedModel):
     .. _*Attention is all you need*: https://huggingface.co/papers/1706.03762
     """
 )
+# AltRobertaModel：RoBERTa 骨干（pooler 可选）
 class AltRobertaModel(AltCLIPPreTrainedModel):
     config: AltCLIPTextConfig
     input_modalities = ("text",)
@@ -832,6 +846,7 @@ class AltRobertaModel(AltCLIPPreTrainedModel):
         )
 
 
+# AltCLIPTextModel：文本塔 + 投影至对比空间
 class AltCLIPTextModel(AltCLIPPreTrainedModel):
     config: AltCLIPTextConfig
     input_modalities = ("text",)
@@ -903,10 +918,12 @@ class AltCLIPTextModel(AltCLIPPreTrainedModel):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-altclip.html
+# contrastive_loss：对称 InfoNCE 对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文相似度矩阵上的双向对比损失
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
@@ -925,6 +942,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# AltCLIPModel：完整双塔模型，计算图文相似度与可选 loss
 class AltCLIPModel(AltCLIPPreTrainedModel):
     config: AltCLIPConfig
 

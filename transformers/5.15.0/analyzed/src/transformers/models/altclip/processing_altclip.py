@@ -20,7 +20,9 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# AltCLIPProcessor：ProcessorMixin 包装 image_processor + tokenizer
 class AltCLIPProcessor(ProcessorMixin):
+# __init__：将图像与文本预处理器注册到 ProcessorMixin
     def __init__(self, image_processor=None, tokenizer=None):
         super().__init__(image_processor, tokenizer)
 

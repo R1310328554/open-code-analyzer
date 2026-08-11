@@ -57,6 +57,7 @@ from ..roberta.modeling_roberta import (
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPTextConfig：基于 CLIPTextConfig 扩展 project_dim 等字段
 class AltCLIPTextConfig(CLIPTextConfig):
     r"""
     project_dim (`int`, *optional*, defaults to 768):
@@ -98,6 +99,7 @@ class AltCLIPTextConfig(CLIPTextConfig):
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPVisionConfig：基于 CLIPVisionConfig 的视觉塔配置
 class AltCLIPVisionConfig(CLIPVisionConfig):
     r"""
     Example:
@@ -118,6 +120,7 @@ class AltCLIPVisionConfig(CLIPVisionConfig):
 
 @auto_docstring(checkpoint="BAAI/AltCLIP")
 @strict
+# AltCLIPConfig：双塔联合配置，含 text/vision 子配置
 class AltCLIPConfig(CLIPConfig):
     r"""
     Example:
@@ -154,6 +157,7 @@ class AltRobertaEmbeddings(RobertaEmbeddings):
     pass
 
 
+# AltRobertaSelfAttention：复用 ChineseCLIP 文本自注意力实现
 class AltRobertaSelfAttention(ChineseCLIPTextSelfAttention):
     def __init__(self, config):
         super().__init__(config)
@@ -305,6 +309,7 @@ class AltCLIPVisionModel(CLIPVisionModel):
     .. _*Attention is all you need*: https://huggingface.co/papers/1706.03762
     """
 )
+# AltRobertaModel：modular 中 RoBERTa 文本骨干定义
 class AltRobertaModel(AltCLIPPreTrainedModel):
     config: AltCLIPTextConfig
     input_modalities = ("text",)
@@ -384,6 +389,7 @@ class AltRobertaModel(AltCLIPPreTrainedModel):
         )
 
 
+# AltCLIPTextModel：文本编码 + 投影层
 class AltCLIPTextModel(AltCLIPPreTrainedModel):
     config: AltCLIPTextConfig
     input_modalities = ("text",)
@@ -453,6 +459,7 @@ class AltCLIPTextModel(AltCLIPPreTrainedModel):
         )
 
 
+# AltCLIPModel：继承 ChineseCLIPModel 的完整双塔实现
 class AltCLIPModel(ChineseCLIPModel, AltCLIPPreTrainedModel):
     config: AltCLIPConfig
 

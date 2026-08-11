@@ -28,6 +28,7 @@ from ...modeling_rope_utils import RopeParameters
 
 @auto_docstring(checkpoint="arcee-ai/AFM-4.5B")
 @strict
+# ArceeConfig：AFM-4.5B 架构超参（vocab、层数、rope_parameters）
 class ArceeConfig(PreTrainedConfig):
     r"""
     ```python
@@ -88,6 +89,7 @@ class ArceeConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：@strict 校验 hidden_size 与 num_heads 可整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
