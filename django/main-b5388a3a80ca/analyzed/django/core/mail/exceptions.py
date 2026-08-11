@@ -1,6 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 
 
+# settings.MAILERS 条目配置错误时抛出
 class InvalidMailer(ImproperlyConfigured):
     """A settings.MAILERS entry has a configuration error."""
 
@@ -10,6 +11,7 @@ class InvalidMailer(ImproperlyConfigured):
         super().__init__(msg)
 
 
+# 请求的 MAILERS 别名未定义
 class MailerDoesNotExist(InvalidMailer, KeyError):
     """The requested alias is not defined in settings.MAILERS."""
 

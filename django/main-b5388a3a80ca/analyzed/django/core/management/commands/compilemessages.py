@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management.utils import find_command, is_ignored_path, popen_wrapper
 
 
+# 检测 .po 文件是否含 BOM（Django 仅支持无 BOM 的 UTF-8）
 def has_bom(fn):
     with fn.open("rb") as f:
         sample = f.read(4)
@@ -17,6 +18,7 @@ def has_bom(fn):
     )
 
 
+# 检测目录是否可写（用于生成 .mo 文件）
 def is_dir_writable(path):
     try:
         with tempfile.NamedTemporaryFile(dir=path):
@@ -26,6 +28,7 @@ def is_dir_writable(path):
     return True
 
 
+# compilemessages 命令：调用 msgfmt 将 .po 编译为 .mo
 class Command(BaseCommand):
     help = "Compiles .po files to .mo files for use with builtin gettext support."
 
@@ -139,6 +142,7 @@ class Command(BaseCommand):
         if self.has_errors:
             raise CommandError("compilemessages generated one or more errors.")
 
+    # 线程池并行编译各 locale 下的 .po 文件
     def compile_messages(self, locations):
         """
         Locations is a list of tuples: [(directory, file), ...]

@@ -26,6 +26,7 @@ from django.core.management.color import color_style
 from django.utils import autoreload
 
 
+# 扫描 management/commands 目录，返回可用命令名列表
 def find_commands(management_dir):
     """
     Given a path to a management directory, return a list of all the command
@@ -39,6 +40,7 @@ def find_commands(management_dir):
     ]
 
 
+# 按应用名与命令名导入并实例化 Command 类
 def load_command_class(app_name, name):
     """
     Given a command name and an application name, return the Command
@@ -49,7 +51,9 @@ def load_command_class(app_name, name):
     return module.Command()
 
 
+# 缓存命令名到应用名的映射（core 命令 + 已安装应用）
 @functools.cache
+def get_commands():@functools.cache
 def get_commands():
     """
     Return a dictionary mapping command names to their callback applications.
@@ -80,6 +84,7 @@ def get_commands():
     return commands
 
 
+# 编程式调用管理命令的主入口 API
 def call_command(command_name, *args, **options):
     """
     Call the given command, with the given options and args/kwargs.
@@ -195,6 +200,7 @@ def call_command(command_name, *args, **options):
     return command.execute(*args, **defaults)
 
 
+# django-admin / manage.py 命令行调度核心
 class ManagementUtility:
     """
     Encapsulate the logic of the django-admin and manage.py utilities.
@@ -208,6 +214,7 @@ class ManagementUtility:
         self.settings_exception = None
         self.style = color_style()
 
+    # 生成主帮助文本或仅命令名列表
     def main_help_text(self, commands_only=False):
         """Return the script's main help text, as a string."""
         if commands_only:
@@ -244,6 +251,7 @@ class ManagementUtility:
 
         return "\n".join(usage)
 
+    # 加载子命令类，未知命令时给出拼写建议
     def fetch_command(self, subcommand):
         """
         Try to fetch the given subcommand, printing a message with the
@@ -275,6 +283,7 @@ class ManagementUtility:
             sys.exit(1)
         return klass
 
+    # 为 BASH 自动补全输出子命令与选项
     def autocomplete(self):
         """
         Output completion suggestions for BASH.
@@ -350,6 +359,7 @@ class ManagementUtility:
         # For more details see #25420.
         sys.exit(0)
 
+    # 解析 argv、setup Django 并执行子命令
     def execute(self):
         """
         Given the command-line arguments, figure out which subcommand is being
@@ -434,6 +444,7 @@ class ManagementUtility:
             self.fetch_command(subcommand).run_from_argv(self.argv)
 
 
+# 从命令行 argv 启动 ManagementUtility
 def execute_from_command_line(argv=None):
     """Run a ManagementUtility."""
     utility = ManagementUtility(argv)

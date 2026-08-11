@@ -1,4 +1,6 @@
 """
+# 终端彩色输出方案：检测 TTY 与 Windows 控制台支持
+Sets up the terminal color scheme."""
 Sets up the terminal color scheme.
 """
 
@@ -25,6 +27,7 @@ else:
     HAS_COLORAMA = True
 
 
+# 判断当前终端是否支持 ANSI 彩色输出
 def supports_color():
     """
     Return True if the running system's terminal supports color,
@@ -67,10 +70,12 @@ def supports_color():
     )
 
 
+# 终端样式对象：各 role 对应 termcolors 着色函数
 class Style:
     pass
 
 
+# 从 DJANGO_COLORS 配置字符串创建 Style 对象
 def make_style(config_string=""):
     """
     Create a Style object from the given config_string.
@@ -104,6 +109,7 @@ def make_style(config_string=""):
 
 
 @functools.cache
+# 返回无彩色方案（nocolor 调色板）
 def no_style():
     """
     Return a Style object with no color scheme.
@@ -111,6 +117,7 @@ def no_style():
     return make_style("nocolor")
 
 
+# 返回 Django 默认或强制彩色 Style
 def color_style(force_color=False):
     """
     Return a Style object from the Django color scheme.

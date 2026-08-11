@@ -23,10 +23,12 @@ except ImportError:
     has_lzma = False
 
 
+# 代理模型无法序列化时的警告类
 class ProxyModelWarning(Warning):
     pass
 
 
+# dumpdata 命令：将数据库内容导出为 fixture 序列化格式
 class Command(BaseCommand):
     help = (
         "Output the contents of the database as a fixture of the given format "
@@ -181,6 +183,7 @@ class Command(BaseCommand):
 
             raise CommandError("Unknown serialization format: %s" % format)
 
+        # 收集待序列化对象；count_only 时仅统计数量
         def get_objects(count_only=False):
             """
             Collate the objects to be serialized. If count_only is True, just

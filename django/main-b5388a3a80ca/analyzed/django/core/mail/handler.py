@@ -8,7 +8,9 @@ DEFAULT_MAILER_ALIAS = "default"
 DEFAULT_MAILER_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 
+# MAILERS 配置处理器：按别名懒加载并缓存邮件后端实例
 class MailersHandler:
+    # 按别名返回邮件连接，等价于 create_connection
     def __getitem__(self, /, alias):
         return self.create_connection(alias)
 
@@ -24,6 +26,7 @@ class MailersHandler:
         except MailerDoesNotExist:
             return default
 
+    # 返回 default 别名的邮件后端
     @property
     def default(self):
         return self[DEFAULT_MAILER_ALIAS]
@@ -41,6 +44,7 @@ class MailersHandler:
         return hasattr(settings, "MAILERS")
 
     # RemovedInDjango70Warning: _deprecated_kwargs.
+    # 导入 BACKEND 类并以 OPTIONS 实例化邮件后端
     def create_connection(self, alias, /, *, _deprecated_kwargs=None):
         # RemovedInDjango70Warning.
         if not self._is_configured and alias == DEFAULT_MAILER_ALIAS:

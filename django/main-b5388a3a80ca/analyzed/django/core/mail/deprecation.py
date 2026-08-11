@@ -1,4 +1,5 @@
-# RemovedInDjango70Warning: this entire file.
+# 邮件 MAILERS 迁移相关弃用警告与辅助函数（独立文件避免循环导入）
+# RemovedInDjango70Warning: this entire file.# RemovedInDjango70Warning: this entire file.
 # Mailers-related deprecation warnings and helpers used in multiple places.
 # (In a separate file to avoid circular import problems.)
 import warnings
@@ -25,6 +26,7 @@ NO_DEFAULT_MAILER_WARNING = (
 )
 
 
+# 检测与 using 参数不兼容的旧式 connection/fail_silently/auth 参数
 def report_using_incompatibility(
     connection=None, fail_silently=False, auth_user=None, auth_password=None
 ):
@@ -40,6 +42,7 @@ def report_using_incompatibility(
         )
 
 
+# 未配置 MAILERS 时发出 Django 7.0 默认发件器移除警告
 def warn_about_default_mailers_if_needed():
     if not hasattr(settings, "MAILERS"):
         # If a warning about migrating to MAILERS was not already

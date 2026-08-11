@@ -1,11 +1,13 @@
 from django.core.management.base import BaseCommand
 
 
+# 将模块命名空间转为大写设置项字典
 def module_to_dict(module, omittable=lambda k: k.startswith("_") or not k.isupper()):
     """Convert a module namespace to a Python dictionary."""
     return {k: repr(getattr(module, k)) for k in dir(module) if not omittable(k)}
 
 
+# diffsettings 命令：对比当前设置与 Django 默认值
 class Command(BaseCommand):
     help = """Displays differences between the current settings.py and Django's
     default settings."""
@@ -61,6 +63,7 @@ class Command(BaseCommand):
         }[options["output"]]
         return "\n".join(output_func(user_settings, default_settings, **options))
 
+    # hash 格式输出：非默认项后跟 ### 标记
     def output_hash(self, user_settings, default_settings, **options):
         # Inspired by Postfix's "postconf -n".
         output = []
@@ -73,6 +76,7 @@ class Command(BaseCommand):
                 output.append("### %s = %s" % (key, user_settings[key]))
         return output
 
+    # unified 格式输出：- 默认 + 当前 差异行
     def output_unified(self, user_settings, default_settings, **options):
         output = []
         for key in sorted(user_settings):

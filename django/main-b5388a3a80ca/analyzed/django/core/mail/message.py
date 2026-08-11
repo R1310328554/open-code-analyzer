@@ -73,6 +73,7 @@ ADDRESS_HEADERS = {
 
 
 # RemovedInDjango70Warning.
+# 禁止多行邮件头以防头注入（Django 7.0 弃用）
 def forbid_multi_line_headers(name, val, encoding):
     """Forbid multi-line headers to prevent header injection."""
     warnings.warn(
@@ -104,6 +105,7 @@ def forbid_multi_line_headers(name, val, encoding):
 
 
 # RemovedInDjango70Warning.
+# 格式化 (name, address) 元组或地址字符串（Django 7.0 弃用）
 def sanitize_address(addr, encoding):
     """
     Format a pair of (name, address) or an email address string.
@@ -160,6 +162,7 @@ def sanitize_address(addr, encoding):
 
 
 # RemovedInDjango70Warning.
+# MIME 混入：重写 as_string/as_bytes 避免 From 行被转义
 class MIMEMixin:
     def as_string(self, unixfrom=False, linesep="\n"):
         """Return the entire formatted message as a string.
@@ -189,6 +192,7 @@ class MIMEMixin:
 
 
 # RemovedInDjango70Warning.
+# 安全 MIME 消息：设置头时校验 ASCII 与单行
 class SafeMIMEMessage(MIMEMixin, MIMEMessage):
     def __setitem__(self, name, val):
         # Per RFC 2046 Section 5.2.1, message/rfc822 attachment headers must be
@@ -198,7 +202,9 @@ class SafeMIMEMessage(MIMEMixin, MIMEMessage):
 
 
 # RemovedInDjango70Warning.
+# 安全 MIME 文本：设置头与 payload 时校验编码
 class SafeMIMEText(MIMEMixin, MIMEText):
+    # 初始化收件人列表、正文、附件与额外头
     def __init__(self, _text, _subtype="plain", _charset=None):
         self.encoding = _charset
         MIMEText.__init__(self, _text, _subtype=_subtype, _charset=_charset)
@@ -221,6 +227,7 @@ class SafeMIMEText(MIMEMixin, MIMEText):
 
 
 # RemovedInDjango70Warning.
+# 安全 MIME 多部分：设置头时校验编码
 class SafeMIMEMultipart(MIMEMixin, MIMEMultipart):
     def __init__(
         self, _subtype="mixed", boundary=None, _subparts=None, encoding=None, **_params
@@ -237,6 +244,7 @@ EmailAlternative = namedtuple("EmailAlternative", ["content", "mimetype"])
 EmailAttachment = namedtuple("EmailAttachment", ["filename", "content", "mimetype"])
 
 
+# 邮件消息容器：封装主题、正文、收件人与附件
 class EmailMessage:
     """A container for email information."""
 
@@ -336,6 +344,7 @@ class EmailMessage:
         warn_about_external_use(msg, RemovedInDjango70Warning)
         self._connection = value
 
+    # 构建 email.message.EmailMessage 对象
     def message(self, *, policy=email.policy.default):
         msg = email.message.EmailMessage(policy=policy)
         self._add_bodies(msg)
@@ -372,6 +381,7 @@ class EmailMessage:
         self._idna_encode_address_header_domains(msg)
         return msg
 
+    # 返回 to/cc/bcc 合并后的全部收件人列表
     def recipients(self):
         """
         Return a list of all recipients of the email (includes direct
@@ -379,6 +389,7 @@ class EmailMessage:
         """
         return [email for email in (self.to + self.cc + self.bcc) if email]
 
+    # 通过 MAILERS 别名或旧式 connection 发送邮件
     def send(self, fail_silently=False, *, using=None):
         """Send the email message."""
         if not self.recipients():
@@ -416,6 +427,7 @@ class EmailMessage:
 
         return connection.send_messages([self])
 
+    # 附加文件或 MIMEPart 到邮件
     def attach(self, filename=None, content=None, mimetype=None):
         """
         Attach a file with the given filename and content. The filename can
@@ -468,6 +480,7 @@ class EmailMessage:
 
             self.attachments.append(EmailAttachment(filename, content, mimetype))
 
+    # 从文件系统读取并附加文件
     def attach_file(self, path, mimetype=None):
         """
         Attach a file from the filesystem.
@@ -484,6 +497,7 @@ class EmailMessage:
             content = file.read()
             self.attach(path.name, content, mimetype)
 
+    # 将正文写入 EmailMessage 对象
     def _add_bodies(self, msg):
         if self.body or not self.attachments:
             encoding = self.encoding or settings.DEFAULT_CHARSET
@@ -492,6 +506,7 @@ class EmailMessage:
             )
             msg.set_content(body, subtype=self.content_subtype, charset=encoding)
 
+    # 将所有附件添加到 MIME 消息
     def _add_attachments(self, msg):
         if self.attachments:
             if hasattr(self, "mixed_subtype"):
@@ -565,6 +580,7 @@ class EmailMessage:
             if values:
                 msg[header] = ", ".join(str(v) for v in values)
 
+    # 非 SMTPUTF8 时对地址头域名做 IDNA 编码
     def _idna_encode_address_header_domains(self, msg):
         """
         If msg.policy does not permit utf8 in headers, IDNA encode all
@@ -597,6 +613,7 @@ class EmailMessage:
                     )
 
 
+# 多部分替代邮件：支持 text/html 等多格式正文
 class EmailMultiAlternatives(EmailMessage):
     """
     A version of EmailMessage that makes it easy to send multipart/alternative
@@ -651,6 +668,7 @@ class EmailMultiAlternatives(EmailMessage):
             EmailAlternative(*alternative) for alternative in (alternatives or [])
         ]
 
+    # 添加 multipart/alternative 替代内容
     def attach_alternative(self, content, mimetype):
         """Attach an alternative content representation."""
         if content is None or mimetype is None:
@@ -681,6 +699,7 @@ class EmailMultiAlternatives(EmailMessage):
                     msg.add_alternative(content, maintype=maintype, subtype=subtype)
         return msg
 
+    # 检查正文及 text/* 替代内容是否包含指定文本
     def body_contains(self, text):
         """
         Checks that ``text`` occurs in the email body and in all attached MIME

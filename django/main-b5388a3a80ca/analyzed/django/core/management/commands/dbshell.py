@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS, connections
 
 
+# dbshell 命令：启动指定数据库的命令行客户端
 class Command(BaseCommand):
     help = (
         "Runs the command-line client for specified database, or the "
@@ -25,6 +26,7 @@ class Command(BaseCommand):
         parameters = parser.add_argument_group("parameters")
         parameters.add_argument("parameters", nargs="*")
 
+    # 委托 connection.client.runshell 执行数据库 shell
     def handle(self, **options):
         connection = connections[options["database"]]
         try:

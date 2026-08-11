@@ -12,6 +12,7 @@ from django.db import (
 )
 
 
+# createcachetable 命令：为数据库缓存后端创建表
 class Command(BaseCommand):
     help = "Creates the tables needed to use the SQL cache backend."
 
@@ -54,6 +55,7 @@ class Command(BaseCommand):
                 if isinstance(cache, BaseDatabaseCache):
                     self.create_table(db, cache._table, dry_run)
 
+    # 生成并执行 CREATE TABLE 及索引 SQL
     def create_table(self, database, tablename, dry_run):
         cache = BaseDatabaseCache(tablename, {})
         if not router.allow_migrate_model(database, cache.cache_model_class):

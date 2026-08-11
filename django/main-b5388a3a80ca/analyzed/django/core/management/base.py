@@ -1,4 +1,6 @@
 """
+# 管理命令基类：django-admin / manage.py 可执行命令的编写框架
+Base classes for writing management commands (named commands which can"""
 Base classes for writing management commands (named commands which can
 be executed through ``django-admin`` or ``manage.py``).
 """
@@ -20,6 +22,7 @@ from django.utils.version import PY314, PY315
 ALL_CHECKS = "__all__"
 
 
+# 管理命令执行出错时抛出，会被格式化为 stderr 消息
 class CommandError(Exception):
     """
     Exception class indicating a problem while executing a management
@@ -38,6 +41,7 @@ class CommandError(Exception):
         super().__init__(*args, **kwargs)
 
 
+# 系统检查发现不可恢复错误时抛出
 class SystemCheckError(CommandError):
     """
     The system check framework detected unrecoverable errors.
@@ -46,6 +50,7 @@ class SystemCheckError(CommandError):
     pass
 
 
+# 定制 ArgumentParser：改进错误消息，编程调用时不 SystemExit
 class CommandParser(ArgumentParser):
     """
     Customized ArgumentParser class to improve some error messages and prevent
@@ -89,6 +94,7 @@ class CommandParser(ArgumentParser):
         return super().add_subparsers(**kwargs)
 
 
+# 处理 --settings 与 --pythonpath 全局选项
 def handle_default_options(options):
     """
     Include any default options that all commands should accept here
@@ -101,6 +107,7 @@ def handle_default_options(options):
         sys.path.insert(0, options.pythonpath)
 
 
+# 装饰器：命令执行期间停用翻译
 def no_translations(handle_func):
     """Decorator that forces a command to run with translations deactivated."""
 
@@ -119,6 +126,7 @@ def no_translations(handle_func):
     return wrapper
 
 
+# 帮助格式化：命令专属参数排在通用参数之前
 class DjangoHelpFormatter(HelpFormatter):
     """
     Customized formatter so that command-specific arguments appear in the
@@ -148,6 +156,7 @@ class DjangoHelpFormatter(HelpFormatter):
         super().add_arguments(self._reordered_actions(actions))
 
 
+# stdout/stderr 包装：支持彩色 style_func 输出
 class OutputWrapper:
     """
     Wrapper around stdout/stderr
@@ -190,6 +199,7 @@ class OutputWrapper:
 TextIOBase.register(OutputWrapper)
 
 
+# 所有管理命令的基类：解析参数、系统检查与 handle 调度
 class BaseCommand:
     """
     The base class from which all management commands ultimately
@@ -306,6 +316,7 @@ class BaseCommand:
         """
         return django.get_version()
 
+    # 创建含通用选项（verbosity/settings 等）的 ArgumentParser
     def create_parser(self, prog_name, subcommand, **kwargs):
         """
         Create and return the ``ArgumentParser`` which will be used to
@@ -407,6 +418,7 @@ class BaseCommand:
         parser = self.create_parser(prog_name, subcommand)
         parser.print_help()
 
+    # 从命令行 argv 解析并执行命令
     def run_from_argv(self, argv):
         """
         Set up any environment changes requested (e.g., Python path
@@ -443,6 +455,7 @@ class BaseCommand:
                 # configured settings).
                 pass
 
+    # 执行系统检查后调用 handle 并输出结果
     def execute(self, *args, **options):
         """
         Try to execute this command, performing system checks if needed (as
@@ -485,6 +498,7 @@ class BaseCommand:
             return {}
         return {"tags": self.requires_system_checks}
 
+    # 运行系统检查框架，严重问题抛出 SystemCheckError
     def check(
         self,
         app_configs=None,
@@ -587,6 +601,7 @@ class BaseCommand:
             else:
                 self.stdout.write(msg)
 
+    # 磁盘迁移与数据库不一致时打印警告
     def check_migrations(self):
         """
         Print a warning if the set of migrations on disk don't match the
@@ -620,6 +635,7 @@ class BaseCommand:
                 self.style.NOTICE("Run 'python manage.py migrate' to apply them.")
             )
 
+    # 子类必须实现的命令逻辑入口
     def handle(self, *args, **options):
         """
         The actual logic of the command. Subclasses must implement
@@ -630,6 +646,7 @@ class BaseCommand:
         )
 
 
+# 按应用标签逐个调用 handle_app_config 的命令基类
 class AppCommand(BaseCommand):
     """
     A management command which takes one or more installed application labels
@@ -675,6 +692,7 @@ class AppCommand(BaseCommand):
         )
 
 
+# 按任意标签逐个调用 handle_label 的命令基类
 class LabelCommand(BaseCommand):
     """
     A management command which takes one or more arbitrary arguments

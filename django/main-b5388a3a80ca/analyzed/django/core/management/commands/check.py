@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connections
 
 
+# check 命令：对整个 Django 项目运行系统检查
 class Command(BaseCommand):
     help = "Checks the entire Django project for potential problems."
 
@@ -49,6 +50,7 @@ class Command(BaseCommand):
             help="Run database related checks against these aliases.",
         )
 
+    # 按标签/部署选项调用 self.check 并显示结果
     def handle(self, *app_labels, **options):
         include_deployment_checks = options["deploy"]
         if options["list_tags"]:
