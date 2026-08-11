@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# ViTMatte 配置：抠图模型 VitDet backbone + ConvStream/Fusion 通道数
+
+
 @auto_docstring(checkpoint="hustvl/vitmatte-small-composition-1k")
 @strict
+# VitMatteConfig：ViTMatte 主配置：backbone、convstream 与 fusion 隐藏维度
 class VitMatteConfig(PreTrainedConfig):
     r"""
     batch_norm_eps (`float`, *optional*, defaults to 1e-05):

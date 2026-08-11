@@ -30,7 +30,12 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# ViTMatte PIL 图像处理器：RGB+trimap 拼接、ImageNet 归一化与 32 整除 padding
+
+
 # Adapted from transformers.models.vitmatte.image_processing_vitmatte.VitMatteImageProcessorKwargs
+# VitMatteImageProcessorKwargs：ViTMatte 处理器参数：size_divisor 等
+# VitMatteImageProcessorKwargs：ViTMatte 处理器参数：size_divisor 等
 class VitMatteImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -40,6 +45,7 @@ class VitMatteImageProcessorKwargs(ImagesKwargs, total=False):
     size_divisor: int
 
 
+# VitMatteImageProcessorPil：ViTMatte PIL 后端：图像与 trimap 联合预处理
 @auto_docstring
 class VitMatteImageProcessorPil(PilBackend):
     do_rescale = True

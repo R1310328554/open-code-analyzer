@@ -36,10 +36,15 @@ from ..vit.modeling_vit import (
 from .configuration_vit_msn import ViTMSNConfig
 
 
+# ViT MSN 模块化实现：继承 ViT 组件，覆盖嵌入零初始化与 forward
+
+
+# ViTMSNPatchEmbeddings：复用 ViT patch 嵌入
 class ViTMSNPatchEmbeddings(ViTPatchEmbeddings):
     pass
 
 
+# ViTMSNEmbeddings：零初始化 CLS 与位置编码的 MSN 嵌入层
 class ViTMSNEmbeddings(ViTEmbeddings):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -53,18 +58,22 @@ class ViTMSNEmbeddings(ViTEmbeddings):
         self.position_embeddings = nn.Parameter(torch.zeros(1, num_patches + 1, config.hidden_size))
 
 
+# ViTMSNAttention：复用 ViT 自注意力
 class ViTMSNAttention(ViTAttention):
     pass
 
 
+# ViTMSNMLP：复用 ViT FFN
 class ViTMSNMLP(ViTMLP):
     pass
 
 
+# ViTMSNLayer：复用 ViT Transformer 层
 class ViTMSNLayer(ViTLayer):
     pass
 
 
+# ViTMSNPreTrainedModel：MSN 预训练基类，零初始化嵌入权重
 class ViTMSNPreTrainedModel(ViTPreTrainedModel):
     base_model_prefix = "vit"
 
@@ -78,6 +87,7 @@ class ViTMSNPreTrainedModel(ViTPreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# ViTMSNModel：MSN 基模型，移除 pooler，支持 bool_masked_pos
 @auto_docstring
 class ViTMSNModel(ViTModel):
     def __init__(self, config: ViTMSNConfig, use_mask_token: bool = False) -> None:
@@ -143,6 +153,7 @@ class ViTMSNModel(ViTModel):
         return BaseModelOutput(last_hidden_state=sequence_output)
 
 
+# ViTMSNForImageClassification：MSN 图像分类：[CLS] + Linear 分类头
 @auto_docstring
 class ViTMSNForImageClassification(ViTMSNPreTrainedModel):
     def __init__(self, config: ViTMSNConfig) -> None:

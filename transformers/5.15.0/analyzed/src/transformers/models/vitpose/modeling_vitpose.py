@@ -30,14 +30,19 @@ from .configuration_vitpose import VitPoseConfig
 
 logger = logging.get_logger(__name__)
 
+# VitPose 建模：ViT backbone + 热图解码头进行 2D 人体姿态估计
+
 # General docstring
 
 
+# VitPoseForPoseEstimation：VitPose 姿态估计完整模型：backbone + 热图解码头
 @auto_docstring(
     custom_intro="""
     Class for outputs of pose estimation models.
     """
 )
+# VitPoseEstimatorOutput：姿态估计输出：heatmaps 与 hidden_states
+# VitPoseEstimatorOutput：姿态估计输出：heatmaps 与 hidden_states
 @dataclass
 class VitPoseEstimatorOutput(ModelOutput):
     r"""
@@ -57,6 +62,7 @@ class VitPoseEstimatorOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# VitPosePreTrainedModel：VitPose 预训练基类：trunc_normal 初始化
 @auto_docstring
 class VitPosePreTrainedModel(PreTrainedModel):
     config: VitPoseConfig
@@ -75,6 +81,7 @@ class VitPosePreTrainedModel(PreTrainedModel):
                 init.zeros_(module.bias)
 
 
+# flip_back：水平翻转热图还原，并按 flip_pairs 交换左右关键点
 def flip_back(output_flipped, flip_pairs, target_type="gaussian-heatmap"):
     """Flip the flipped heatmaps back to the original form.
 
@@ -117,6 +124,7 @@ def flip_back(output_flipped, flip_pairs, target_type="gaussian-heatmap"):
     return output_flipped_back
 
 
+# VitPoseSimpleDecoder：简单解码头：ReLU + 双线性上采样 + 3x3 conv 出热图
 class VitPoseSimpleDecoder(nn.Module):
     """
     Simple decoding head consisting of a ReLU activation, 4x upsampling and a 3x3 convolution, turning the
@@ -144,6 +152,7 @@ class VitPoseSimpleDecoder(nn.Module):
         return heatmaps
 
 
+# VitPoseClassicDecoder：经典解码头：两层反卷积 + 1x1 conv 出热图
 class VitPoseClassicDecoder(nn.Module):
     """
     Classic decoding head consisting of a 2 deconvolutional blocks, followed by a 1x1 convolution layer,
@@ -182,6 +191,7 @@ class VitPoseClassicDecoder(nn.Module):
         return heatmaps
 
 
+# VitPoseForPoseEstimation：VitPose 姿态估计完整模型：backbone + 热图解码头
 @auto_docstring(
     custom_intro="""
     The VitPose model with a pose estimation head on top.

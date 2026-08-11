@@ -20,8 +20,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# VitDet 配置：检测用 ViT backbone，窗口/相对位置注意力与残差块索引
+
+
 @auto_docstring(checkpoint="google/vitdet-base-patch16-224")
 @strict
+# VitDetConfig：VitDet 主配置：hidden_size、窗口注意力块与 drop_path 等
 class VitDetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     pretrain_image_size (`int`, *optional*, defaults to 224):

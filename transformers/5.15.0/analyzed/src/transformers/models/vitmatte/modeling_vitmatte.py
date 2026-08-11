@@ -25,11 +25,17 @@ from ...utils import ModelOutput, auto_docstring
 from .configuration_vitmatte import VitMatteConfig
 
 
+# ViTMatte 建模：VitDet backbone + 细节捕获模块进行图像抠图
+
+
+# VitMatteForImageMatting：ViTMatte 抠图完整模型：backbone + DetailCaptureModule
 @auto_docstring(
     custom_intro="""
     Class for outputs of image matting models.
     """
 )
+# ImageMattingOutput：抠图模型输出容器：alphas 与 hidden_states
+# ImageMattingOutput：抠图模型输出容器：alphas 与 hidden_states
 @dataclass
 class ImageMattingOutput(ModelOutput):
     r"""
@@ -49,6 +55,7 @@ class ImageMattingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# VitMattePreTrainedModel：ViTMatte 预训练基类，BatchNorm 专用初始化
 @auto_docstring
 class VitMattePreTrainedModel(PreTrainedModel):
     config: VitMatteConfig
@@ -70,6 +77,7 @@ class VitMattePreTrainedModel(PreTrainedModel):
                 init.zeros_(module.num_batches_tracked)
 
 
+# VitMatteBasicConv3x3：Conv3x3 + BatchNorm2d + ReLU 基础卷积块
 class VitMatteBasicConv3x3(nn.Module):
     """
     Basic convolution layers including: Conv3x3, BatchNorm2d, ReLU layers.
@@ -96,6 +104,7 @@ class VitMatteBasicConv3x3(nn.Module):
         return hidden_state
 
 
+# VitMatteConvStream：多层 3x3 卷积流，逐级提取细节特征图
 class VitMatteConvStream(nn.Module):
     """
     Simple ConvStream containing a series of basic conv3x3 layers to extract detail features.
@@ -131,6 +140,7 @@ class VitMatteConvStream(nn.Module):
         return out_dict
 
 
+# VitMatteFusionBlock：上采样 ViT 特征并与 ConvStream 细节图拼接融合
 class VitMatteFusionBlock(nn.Module):
     """
     Simple fusion block to fuse features from ConvStream and Plain Vision Transformer.
@@ -148,6 +158,7 @@ class VitMatteFusionBlock(nn.Module):
         return out
 
 
+# VitMatteHead：抠图头：conv3x3 + conv1x1 输出单通道 alpha
 class VitMatteHead(nn.Module):
     """
     Simple Matting Head, containing only conv3x3 and conv1x1 layers.
@@ -172,6 +183,7 @@ class VitMatteHead(nn.Module):
         return hidden_state
 
 
+# VitMatteDetailCaptureModule：细节捕获：ConvStream 与 backbone 特征逐级融合解码
 class VitMatteDetailCaptureModule(nn.Module):
     """
     Simple and lightweight Detail Capture Module for ViT Matting.
@@ -213,6 +225,7 @@ class VitMatteDetailCaptureModule(nn.Module):
         return alphas
 
 
+# VitMatteForImageMatting：ViTMatte 抠图完整模型：backbone + DetailCaptureModule
 @auto_docstring(
     custom_intro="""
     ViTMatte framework leveraging any vision backbone e.g. for ADE20k, CityScapes.

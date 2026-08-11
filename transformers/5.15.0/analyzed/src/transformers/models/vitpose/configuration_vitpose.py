@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# VitPose 配置：2D 人体姿态估计 backbone 与 decoder 类型
+
+
 @auto_docstring(checkpoint="usyd-community/vitpose-base-simple")
 @strict
+# VitPoseConfig：VitPose 主配置：scale_factor、use_simple_decoder 与 backbone
 class VitPoseConfig(PreTrainedConfig):
     r"""
     scale_factor (`int`, *optional*, defaults to 4):

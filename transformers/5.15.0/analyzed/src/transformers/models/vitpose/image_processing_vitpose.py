@@ -52,6 +52,10 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# VitPose Torchvision 图像处理器：bbox 仿射裁剪、分组批处理与 DARK 后处理
+
+
+# VitPoseImageProcessorKwargs：VitPose 处理器 kwargs：仿射变换与 normalize_factor
 class VitPoseImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_affine_transform (`bool`, *optional*):
@@ -65,6 +69,7 @@ class VitPoseImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # inspired by https://github.com/ViTAE-Transformer/ViTPose/blob/d5216452796c90c6bc29f5c5ec0bdba94366768a/mmpose/datasets/datasets/base/kpt_2d_sview_rgb_img_top_down_dataset.py#L132
+# box_to_center_and_scale：COCO bbox 编码为中心点与归一化 scale
 def box_to_center_and_scale(
     box: tuple | list | np.ndarray,
     image_width: int,
@@ -109,6 +114,7 @@ def box_to_center_and_scale(
     return center, scale
 
 
+# get_warp_matrix：无偏数据处理的仿射变换矩阵
 def get_warp_matrix(theta: float, size_input: np.ndarray, size_dst: np.ndarray, size_target: np.ndarray):
     """
     Calculate the transformation matrix under the constraint of unbiased. Paper ref: Huang et al. The Devil is in the
@@ -146,6 +152,7 @@ def get_warp_matrix(theta: float, size_input: np.ndarray, size_dst: np.ndarray, 
     return matrix
 
 
+# scipy_warp_affine：scipy 实现的仿射图像变换
 def scipy_warp_affine(src, M, size):
     """
     This function implements cv2.warpAffine function using affine_transform in scipy. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.affine_transform.html and https://docs.opencv.org/4.x/d4/d61/tutorial_warp_affine.html for more details.
@@ -172,6 +179,7 @@ def scipy_warp_affine(src, M, size):
     return new_src
 
 
+# get_keypoint_predictions：热图 argmax 提取关键点与分数
 def get_keypoint_predictions(heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Get keypoint predictions from score maps.
 
@@ -205,6 +213,7 @@ def get_keypoint_predictions(heatmaps: np.ndarray) -> tuple[np.ndarray, np.ndarr
     return preds, scores
 
 
+# post_dark_unbiased_data_processing：DARK 无偏后处理 refine 坐标
 def post_dark_unbiased_data_processing(coords: np.ndarray, batch_heatmaps: np.ndarray, kernel: int = 3) -> np.ndarray:
     """DARK post-processing. Implemented by unbiased_data_processing.
 
@@ -265,6 +274,7 @@ def post_dark_unbiased_data_processing(coords: np.ndarray, batch_heatmaps: np.nd
     return coords
 
 
+# transform_preds：热图坐标映射回原图尺度
 def transform_preds(coords: np.ndarray, center: np.ndarray, scale: np.ndarray, output_size: np.ndarray) -> np.ndarray:
     """Get final keypoint predictions from heatmaps and apply scaling and
     translation to map them back to the image.
@@ -313,6 +323,7 @@ def transform_preds(coords: np.ndarray, center: np.ndarray, scale: np.ndarray, o
     return target_coords
 
 
+# coco_to_pascal_voc：COCO xywh 转 Pascal VOC xyxy
 def coco_to_pascal_voc(bboxes: np.ndarray) -> np.ndarray:
     """
     Converts bounding boxes from the COCO format to the Pascal VOC format.
@@ -333,6 +344,7 @@ def coco_to_pascal_voc(bboxes: np.ndarray) -> np.ndarray:
     return bboxes
 
 
+# VitPoseImageProcessor：VitPose Torchvision 后端：仿射裁剪与姿态后处理
 @auto_docstring
 class VitPoseImageProcessor(TorchvisionBackend):
     """Torchvision backend for VitPose with affine transform."""

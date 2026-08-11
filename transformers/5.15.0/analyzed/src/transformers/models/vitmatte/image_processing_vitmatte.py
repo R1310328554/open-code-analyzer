@@ -32,6 +32,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# ViTMatte Torchvision 图像处理器：按形状分组批处理 RGB+trimap
+
+
+# VitMatteImageProcessorKwargs：ViTMatte 处理器 kwargs：size_divisor 等
 class VitMatteImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -41,6 +45,7 @@ class VitMatteImageProcessorKwargs(ImagesKwargs, total=False):
     size_divisor: int
 
 
+# VitMatteImageProcessor：ViTMatte Torchvision 后端：融合 rescale/normalize 与 padding
 @auto_docstring
 class VitMatteImageProcessor(TorchvisionBackend):
     do_rescale = True

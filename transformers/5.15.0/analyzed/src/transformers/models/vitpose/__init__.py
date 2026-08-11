@@ -25,5 +25,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # vitpose 包：延迟加载 VitPose 配置、图像处理与姿态估计建模
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

@@ -36,6 +36,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_vit_msn import ViTMSNConfig
 
 
+# ViT MSN 建模：掩码孪生网络 ViT backbone，零初始化 token/位置编码，支持 MIM 与 ImageNet 分类
+
+
+# ViTMSNPatchEmbeddings：MSN patch 嵌入：Conv2d 分 patch 投影为 token 序列
 class ViTMSNPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -66,6 +70,7 @@ class ViTMSNPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# ViTMSNEmbeddings：MSN 嵌入层：CLS/位置/mask token，零初始化（对比 ViT 的 randn）
 class ViTMSNEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -158,6 +163,7 @@ class ViTMSNEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -186,6 +192,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ViTMSNAttention：MSN 自注意力：多头缩放点积，支持 eager/SDPA 后端
 class ViTMSNAttention(nn.Module):
     def __init__(self, config: ViTMSNConfig):
         super().__init__()
@@ -235,6 +242,7 @@ class ViTMSNAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ViTMSNMLP：MSN FFN：两层 Linear + 激活前馈
 class ViTMSNMLP(nn.Module):
     def __init__(self, config: ViTMSNConfig):
         super().__init__()
@@ -251,6 +259,7 @@ class ViTMSNMLP(nn.Module):
         return hidden_states
 
 
+# ViTMSNLayer：MSN Transformer 层：Pre-LN 自注意力 + FFN 双残差
 class ViTMSNLayer(GradientCheckpointingLayer):
     def __init__(self, config: ViTMSNConfig):
         super().__init__()
@@ -283,6 +292,7 @@ class ViTMSNLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ViTMSNPreTrainedModel：MSN 预训练基类：零初始化嵌入、注意力实现选择
 @auto_docstring
 class ViTMSNPreTrainedModel(PreTrainedModel):
     config: ViTMSNConfig
@@ -313,6 +323,7 @@ class ViTMSNPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# ViTMSNModel：MSN 基模型：patch 嵌入 + Transformer 编码器
 @auto_docstring
 class ViTMSNModel(ViTMSNPreTrainedModel):
     def __init__(self, config: ViTMSNConfig, use_mask_token: bool = False) -> None:
@@ -383,6 +394,7 @@ class ViTMSNModel(ViTMSNPreTrainedModel):
         return BaseModelOutput(last_hidden_state=sequence_output)
 
 
+# ViTMSNForImageClassification：MSN 图像分类：[CLS] token + Linear 分类头
 @auto_docstring
 class ViTMSNForImageClassification(ViTMSNPreTrainedModel):
     def __init__(self, config: ViTMSNConfig) -> None:

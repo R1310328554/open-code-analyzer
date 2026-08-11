@@ -33,6 +33,10 @@ from .configuration_vitdet import VitDetConfig
 logger = logging.get_logger(__name__)
 
 
+# VitDet 建模：目标检测 ViT backbone，支持窗口/全局注意力与相对位置编码
+
+
+# VitDetEmbeddings：VitDet patch 嵌入 + 可选绝对位置编码
 class VitDetEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -121,6 +125,7 @@ class VitDetEmbeddings(nn.Module):
         return embeddings
 
 
+# get_rel_pos：按 query/key 空间尺寸提取相对位置嵌入
 @torch.jit.script_if_tracing  # nn.functional.interpolate's `size` needs to be dynamic.
 def get_rel_pos(q_size, k_size, rel_pos):
     """
@@ -158,6 +163,7 @@ def get_rel_pos(q_size, k_size, rel_pos):
     return rel_pos_resized[relative_coords.long()]
 
 
+# add_decomposed_relative_positions：MViTv2 分解式相对位置偏置加入注意力图
 def add_decomposed_relative_positions(attn, queries, rel_pos_h, rel_pos_w, q_size, k_size):
     """
     Calculate decomposed Relative Positional Embeddings as introduced in
@@ -199,6 +205,7 @@ def add_decomposed_relative_positions(attn, queries, rel_pos_h, rel_pos_w, q_siz
     return attn
 
 
+# VitDetAttention：多头自注意力，可选分解式相对位置嵌入
 class VitDetAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
@@ -261,6 +268,7 @@ class VitDetAttention(nn.Module):
         return outputs
 
 
+# VitDetLayerNorm：通道维 LayerNorm（ConvNeXt 风格，适用于 NCHW 特征图）
 class VitDetLayerNorm(nn.Module):
     """
     A LayerNorm variant, popularized by Transformers, that performs point-wise mean and variance normalization over the
@@ -283,6 +291,7 @@ class VitDetLayerNorm(nn.Module):
         return x
 
 
+# VitDetResBottleneckBlock：1x1-3x3-1x1 瓶颈残差块
 class VitDetResBottleneckBlock(nn.Module):
     """
     The standard bottleneck residual block without the last activation layer. It contains 3 conv layers with kernels
@@ -322,6 +331,7 @@ class VitDetResBottleneckBlock(nn.Module):
         return out
 
 
+# VitDetMlp：VitDet FFN：Linear + 激活 + Dropout
 class VitDetMlp(nn.Module):
     def __init__(self, config, in_features: int, hidden_features: int) -> None:
         super().__init__()
@@ -340,6 +350,7 @@ class VitDetMlp(nn.Module):
         return x
 
 
+# window_partition：将特征图划分为非重叠窗口（必要时 padding）
 def window_partition(hidden_state, window_size):
     """
     Partition into non-overlapping windows with padding if needed.
@@ -371,6 +382,7 @@ def window_partition(hidden_state, window_size):
     return windows, (padded_height, padded_width)
 
 
+# window_unpartition：窗口还原为完整特征图并去除 padding
 def window_unpartition(windows, window_size, pad_height_width, height_width):
     """
     Window unpartition into original sequences and removing padding.
@@ -400,6 +412,7 @@ def window_unpartition(windows, window_size, pad_height_width, height_width):
     return hidden_state[:, :height, :width, :].contiguous()
 
 
+# VitDetDropPath：随机深度 DropPath，训练时按概率丢弃残差分支
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->VitDetDropPath
 class VitDetDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
@@ -425,6 +438,7 @@ class VitDetDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# VitDetLayer：VitDet Transformer 块，可选窗口注意力与额外瓶颈残差
 class VitDetLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -505,6 +519,7 @@ class VitDetLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# VitDetEncoder：堆叠 VitDetLayer 的编码器，支持梯度检查点
 class VitDetEncoder(nn.Module):
     def __init__(self, config: VitDetConfig) -> None:
         super().__init__()
@@ -561,6 +576,7 @@ class VitDetEncoder(nn.Module):
         )
 
 
+# VitDetPreTrainedModel：VitDet 预训练基类：trunc_normal 初始化与相对位置权重
 @auto_docstring
 class VitDetPreTrainedModel(PreTrainedModel):
     config: VitDetConfig
@@ -596,6 +612,7 @@ class VitDetPreTrainedModel(PreTrainedModel):
             init.zeros_(module.norm3.bias)
 
 
+# VitDetModel：VitDet 完整模型：嵌入 + 编码器输出 NCHW 特征
 @auto_docstring
 class VitDetModel(VitDetPreTrainedModel):
     def __init__(self, config: VitDetConfig):
@@ -668,6 +685,7 @@ class VitDetModel(VitDetPreTrainedModel):
         )
 
 
+# VitDetBackbone：VitDet backbone，输出多 stage 特征图供 Mask R-CNN 等检测框架
 @auto_docstring(
     custom_intro="""
     ViTDet backbone, to be used with frameworks like Mask R-CNN.
