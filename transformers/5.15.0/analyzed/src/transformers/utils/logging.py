@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Logging utilities."""
+# 日志工具：verbosity/tqdm 进度条与 library root logger
 
 import functools
 import logging
@@ -358,6 +359,7 @@ def info_once(self, *args, **kwargs):
 logging.Logger.info_once = info_once  # type: ignore[unresolved-attribute]
 
 
+# EmptyTqdm：空 tqdm 占位：进度条禁用时无操作迭代器
 class EmptyTqdm:
     """Dummy tqdm which doesn't do anything."""
 
@@ -382,6 +384,7 @@ class EmptyTqdm:
         return
 
 
+# _tqdm_cls：tqdm 工厂：按 _tqdm_active 选择真实 tqdm 或 EmptyTqdm
 class _tqdm_cls:
     def __call__(self, *args, **kwargs):
         factory = tqdm_lib.tqdm if _tqdm_active else EmptyTqdm

@@ -15,6 +15,7 @@
 Contains the logic for automatic additional output capture with our forward decorators.
 This mostly describe the hooks used and the logic to make capture thread/context safe.
 """
+# 输出捕获：forward hook 注册与 torch.compile 兼容的 CompileableContextVar
 
 from __future__ import annotations
 
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
 _CAN_RECORD_REGISTRY = {}
 
 
+# OutputRecorder：输出录制配置：目标层/hook index/初始 hidden state
 @dataclass
 @requires(backends=("torch",))
 class OutputRecorder:
@@ -57,6 +59,7 @@ class OutputRecorder:
     capture_initial_hidden_state: bool = True
 
 
+# CompileableContextVar：可编译 ContextVar：dynamo 编译时退化为全局变量
 class CompileableContextVar:
     """
     Convenience wrapper around a ContextVar for usage with `torch.compile`.

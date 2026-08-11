@@ -14,6 +14,7 @@
 """
 Generic utilities
 """
+# 通用工具：ModelOutput/枚举/张量检测/forward 装饰器
 
 from __future__ import annotations
 
@@ -412,6 +413,7 @@ def safe_load_json_file(json_file: str):
     return config_dict
 
 
+# ModelOutput：模型输出基类：dataclass 有序字典，支持 pytree 注册
 class ModelOutput(OrderedDict):
     """
     Base class for all model outputs as dataclass. Has a `__getitem__` that allows indexing by integer or slice (like a
@@ -564,6 +566,7 @@ def _model_output_unflatten(
     return output_type(**dict(zip(context, values)))
 
 
+# ExplicitEnum：显式枚举：缺失值时给出清晰错误信息
 class ExplicitEnum(str, Enum):
     """
     Enum with more explicit error message for missing values.
@@ -576,6 +579,7 @@ class ExplicitEnum(str, Enum):
         )
 
 
+# PaddingStrategy：填充策略枚举：longest/max_length/do_not_pad
 class PaddingStrategy(ExplicitEnum):
     """
     Possible values for the `padding` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for tab-completion in an
@@ -587,6 +591,7 @@ class PaddingStrategy(ExplicitEnum):
     DO_NOT_PAD = "do_not_pad"
 
 
+# TensorType：张量类型枚举：pt/np/mlx 返回格式
 class TensorType(ExplicitEnum):
     """
     Possible values for the `return_tensors` argument in [`PreTrainedTokenizerBase.__call__`]. Useful for
@@ -598,6 +603,7 @@ class TensorType(ExplicitEnum):
     MLX = "mlx"
 
 
+# ContextManagers：上下文管理器组合：ExitStack 批量 enter/exit
 class ContextManagers:
     """
     Wrapper for `contextlib.ExitStack` which enters a collection of context managers. Adaptation of `ContextManagers`
@@ -825,6 +831,7 @@ def filter_out_non_signature_kwargs(extra: list | None = None):
     return decorator
 
 
+# TransformersKwargs：forward 可选 kwargs TypedDict：hidden_states/attn 等
 class TransformersKwargs(TypedDict, total=False):
     """
     Keyword arguments to be passed to the forward pass of a `PreTrainedModel`.
@@ -1094,6 +1101,7 @@ def no_inherit_decorator(obj: T) -> T:
     return obj
 
 
+# GeneralInterface：类级+局部映射字典：库级与文件级函数注册
 class GeneralInterface(MutableMapping):
     """
     Dict-like object keeping track of a class-wide mapping, as well as a local one. Allows to have library-wide

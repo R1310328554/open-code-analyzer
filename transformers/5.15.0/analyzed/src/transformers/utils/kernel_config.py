@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 内核映射配置：KernelConfig 管理 layers 到 Hub 内核仓库映射
 
 from ..utils import PushToHubMixin
 
@@ -96,6 +97,7 @@ def add_to_mapping_local(layer_name, device, repo_name, mode, compatible_mapping
     }
 
 
+# KernelConfig：内核配置：device/mode 到 LayerRepository 映射与 push
 class KernelConfig(PushToHubMixin):
     """
     Kernel configuration class. This class is used to configure the kernel mapping for a model.

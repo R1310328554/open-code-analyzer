@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PEFT 工具：adapter 配置查找与 peft 最低版本校验
 import importlib
 import importlib.metadata
 import os

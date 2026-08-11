@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 网络调试：httpx 请求追踪、阶段耗时与 pytest xdist 聚合
 
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ import httpx
 from .generic import strtobool
 
 
+# _NetworkRequestTrace：单次 httpx 请求追踪：各阶段耗时与响应元数据
 class _NetworkRequestTrace:
     def __init__(self, request: httpx.Request):
         self.request = request
@@ -104,6 +106,7 @@ class _NetworkRequestTrace:
         }
 
 
+# _NetworkDebugProfiler：网络调试分析器：patch httpx.Client.send 并汇总报告
 class _NetworkDebugProfiler:
     def __init__(self):
         self._records = []
@@ -418,6 +421,7 @@ def _format_network_debug_report(max_requests: int = 20, max_routes: int = 10) -
     return "\n".join(lines)
 
 
+# NetworkDebugPlugin：pytest 插件：xdist 协调与 NETWORK_DEBUG_REPORT 环境变量
 class NetworkDebugPlugin:
     """Pytest plugin that handles all network debug orchestration including xdist coordination."""
 

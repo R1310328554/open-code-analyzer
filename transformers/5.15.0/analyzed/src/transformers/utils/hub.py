@@ -14,6 +14,7 @@
 """
 Hub utilities: utilities related to download and cache models
 """
+# Hub 工具：模型下载/缓存/push_to_hub 与 HfApi 封装
 
 import errno
 import json
@@ -89,6 +90,7 @@ def hf_api() -> HfApi:
     return _hf_api
 
 
+# DownloadKwargs：下载参数字典 TypedDict：cache_dir/token/revision 等
 class DownloadKwargs(TypedDict, total=False):
     cache_dir: str | os.PathLike | None
     force_download: bool
@@ -646,6 +648,7 @@ def has_file(
         return has_file_in_cache
 
 
+# PushToHubMixin：推送 Mixin：save_pretrained + push_to_hub 上传逻辑
 class PushToHubMixin:
     """
     A Mixin containing the functionality to push a model or tokenizer to the hub.
@@ -949,6 +952,7 @@ def create_and_tag_model_card(repo_id: str, tags: list[str] | None = None, token
     return model_card
 
 
+# PushInProgress：推送进度跟踪：聚合 Future 任务并等待/取消
 class PushInProgress:
     """
     Internal class to keep track of a push in progress (which might contain multiple `Future` jobs).

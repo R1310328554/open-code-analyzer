@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 超参试验短名：TrialShortNamer 生成/解析 Optuna 风格 trial 名
 
 import copy
 import re
 
 
+# TrialShortNamer：超参短名生成器：词缩写+非默认值拼接 trial 标识
 class TrialShortNamer:
     PREFIX = "hp"
     DEFAULTS = {}

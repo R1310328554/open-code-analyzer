@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Notebook 进度条：Jupyter HTML 进度条与训练指标表格
 
 import os
 import re
@@ -67,6 +68,7 @@ def text_to_html_table(items):
     return html_code
 
 
+# NotebookProgressBar：Notebook 进度条：HTML progress 与 ETA 估算
 class NotebookProgressBar:
     """
     A progress bar for display in a notebook.
@@ -216,6 +218,7 @@ class NotebookProgressBar:
             self.output.update(disp.HTML(""))
 
 
+# NotebookTrainingTracker：训练追踪器：继承进度条并渲染 metrics 表格
 class NotebookTrainingTracker(NotebookProgressBar):
     """
     An object tracking the updates of an ongoing training with progress bars and a nice table reporting metrics.
@@ -294,6 +297,7 @@ class NotebookTrainingTracker(NotebookProgressBar):
         self.display()
 
 
+# NotebookProgressCallback：TrainerCallback：Notebook 中训练/评估进度展示
 class NotebookProgressCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that displays the progress of training or evaluation, optimized for Jupyter Notebooks or

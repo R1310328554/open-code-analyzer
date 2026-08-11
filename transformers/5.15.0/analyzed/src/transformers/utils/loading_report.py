@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 权重加载报告：LoadStateDictInfo 汇总 missing/unexpected/mismatch
 import logging
 import re
 import shutil
@@ -133,6 +134,7 @@ def _get_terminal_width(default=80):
         return default
 
 
+# LoadStateDictInfo：state_dict 加载诊断 dataclass：缺失/多余/形状不匹配
 @dataclass
 class LoadStateDictInfo:
     """
