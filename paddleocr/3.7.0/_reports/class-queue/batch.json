@@ -15,23 +15,8 @@
     "ppocr/losses/rec_enhanced_ctc_loss.py",
     "ppocr/losses/rec_latexocr_loss.py",
     "ppocr/losses/rec_multi_loss.py",
-    "ppocr/losses/rec_nrtr_loss.py",
-    "ppocr/losses/rec_parseq_loss.py",
-    "ppocr/losses/rec_ppformulanet_loss.py",
-    "ppocr/losses/rec_pren_loss.py",
-    "ppocr/losses/rec_rfl_loss.py",
-    "ppocr/losses/rec_sar_loss.py",
-    "ppocr/losses/rec_satrn_loss.py",
-    "ppocr/losses/rec_spin_att_loss.py",
-    "ppocr/losses/rec_srn_loss.py",
-    "ppocr/losses/rec_unimernet_loss.py",
-    "ppocr/losses/rec_vl_loss.py",
-    "ppocr/losses/stroke_focus_loss.py",
-    "ppocr/losses/table_att_loss.py",
-    "ppocr/losses/table_master_loss.py",
-    "ppocr/losses/text_focus_loss.py",
-    "ppocr/losses/vqa_token_layoutlm_loss.py"
+    "ppocr/losses/rec_nrtr_loss.py"
   ],
   "remaining_pending": 242,
-  "done": 330
+  "done": 345
 }
