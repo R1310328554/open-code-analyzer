@@ -47,8 +47,12 @@ from ..modernbert.modeling_modernbert import (
 logger = logging.get_logger(__name__)
 
 
+# ModernBERT 解码器 modular 源：复用 ModernBERT 组件的因果解码器
+
+# ModernBertDecoderConfig：blab-jhu/test-32m-dec 因果解码器超参
 @auto_docstring(checkpoint="blab-jhu/test-32m-dec")
 @strict
+# ModernBertDecoderConfig：blab-jhu/test-32m-dec 因果解码器超参
 class ModernBertDecoderConfig(PreTrainedConfig):
     r"""
     initializer_cutoff_factor (`float`, *optional*, defaults to 2.0):
@@ -165,18 +169,22 @@ class ModernBertDecoderConfig(PreTrainedConfig):
         return kwargs
 
 
+# ModernBertDecoderEmbeddings：ModernBERT 解码器词嵌入 + 位置嵌入
 class ModernBertDecoderEmbeddings(ModernBertEmbeddings):
     pass
 
 
+# ModernBertDecoderMLP：ModernBERT 解码器前馈 MLP（GeGLU 激活）
 class ModernBertDecoderMLP(ModernBertMLP):
     pass
 
 
+# ModernBertDecoderRotaryEmbedding：ModernBERT 解码器 RoPE 位置编码
 class ModernBertDecoderRotaryEmbedding(ModernBertRotaryEmbedding):
     pass
 
 
+# eager_attention_forward：ModernBERT eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: "ModernBertDecoderAttention",
     query: torch.Tensor,
@@ -206,6 +214,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ModernBertDecoderAttention：ModernBERT 解码器因果自注意力（RoPE + 滑动窗口）
 class ModernBertDecoderAttention(nn.Module):
     """Performs causal multi-headed self attention for ModernBERT decoder.
 
@@ -281,6 +290,7 @@ class ModernBertDecoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ModernBertDecoderLayer：ModernBERT 解码器单层（因果注意力 + MLP）
 class ModernBertDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ModernBertDecoderConfig, layer_idx: int | None = None):
         super().__init__()
@@ -327,11 +337,13 @@ class ModernBertDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ModernBertDecoderPredictionHead：ModernBERT 解码器 LM 预测头
 class ModernBertDecoderPredictionHead(ModernBertPredictionHead):
     pass
 
 
 @auto_docstring
+# ModernBertDecoderPreTrainedModel：ModernBERT 解码器预训练基类
 class ModernBertDecoderPreTrainedModel(ModernBertPreTrainedModel):
     _skip_keys_device_placement = ["past_key_values"]
     _no_split_modules = ["ModernBertDecoderLayer"]
@@ -398,6 +410,7 @@ class ModernBertDecoderPreTrainedModel(ModernBertPreTrainedModel):
 
 
 @auto_docstring
+# ModernBertDecoderModel：ModernBERT 因果 Transformer 解码器主干
 class ModernBertDecoderModel(ModernBertDecoderPreTrainedModel):
     def __init__(self, config: ModernBertDecoderConfig):
         super().__init__(config)
@@ -490,6 +503,7 @@ class ModernBertDecoderModel(ModernBertDecoderPreTrainedModel):
     The ModernBert Decoder Model with a language modeling head on top for causal language modeling (CLM).
     """
 )
+# ModernBertDecoderForCausalLM：ModernBERT 解码器因果语言建模
 class ModernBertDecoderForCausalLM(ModernBertDecoderPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"decoder.weight": "model.embeddings.tok_embeddings.weight"}
 
@@ -600,6 +614,7 @@ class ModernBertDecoderForCausalLM(ModernBertDecoderPreTrainedModel, GenerationM
     each row of the batch).
     """
 )
+# ModernBertDecoderForSequenceClassification：ModernBERT 解码器序列分类
 class ModernBertDecoderForSequenceClassification(ModernBertDecoderPreTrainedModel):
     def __init__(self, config: ModernBertDecoderConfig):
         super().__init__(config)

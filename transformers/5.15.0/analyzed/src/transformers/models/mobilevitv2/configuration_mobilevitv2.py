@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MobileViTV2 配置：线性注意力混合 CNN-Transformer 与语义分割 ASPP 超参
+
+# MobileViTV2Config：apple/mobilevitv2-1.0 混合 CNN-Transformer V2 超参
 @auto_docstring(checkpoint="apple/mobilevitv2-1.0")
 @strict
+# MobileViTV2Config：apple/mobilevitv2-1.0 混合 CNN-Transformer V2 超参
 class MobileViTV2Config(PreTrainedConfig):
     r"""
     aspp_out_channels (`int`, *optional*, defaults to 512):

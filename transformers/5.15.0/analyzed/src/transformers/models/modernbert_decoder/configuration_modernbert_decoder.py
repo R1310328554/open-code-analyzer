@@ -26,8 +26,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ModernBERT 解码器配置：因果 RoPE 解码器与滑动窗口注意力超参
+
+# ModernBertDecoderConfig：blab-jhu/test-32m-dec 因果解码器超参
 @auto_docstring(checkpoint="blab-jhu/test-32m-dec")
 @strict
+# ModernBertDecoderConfig：blab-jhu/test-32m-dec 因果解码器超参
 class ModernBertDecoderConfig(PreTrainedConfig):
     r"""
     initializer_cutoff_factor (`float`, *optional*, defaults to 2.0):

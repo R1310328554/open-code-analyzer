@@ -27,8 +27,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# ModernVBERT 配置：ModernBERT 文本编码器 + SmolVLM 视觉塔多模态超参
+
+# ModernVBertConfig：ModernVBERT/modernvbert 视觉-语言多模态联合超参
 @auto_docstring(checkpoint="ModernVBERT/modernvbert")
 @strict
+# ModernVBertConfig：ModernVBERT/modernvbert 视觉-语言多模态联合超参
 class ModernVBertConfig(PreTrainedConfig):
     r"""
     pixel_shuffle_factor (`int | None`, *optional*, defaults to 4):

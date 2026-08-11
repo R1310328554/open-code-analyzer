@@ -27,8 +27,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ModernBERT 配置：RoPE + 局部/全局注意力窗口的高效 BERT 编码器超参
+
+# ModernBertConfig：answerdotai/ModernBERT-base 高效 BERT 编码器超参
 @auto_docstring(checkpoint="answerdotai/ModernBERT-base")
 @strict
+# ModernBertConfig：answerdotai/ModernBERT-base 高效 BERT 编码器超参
 class ModernBertConfig(PreTrainedConfig):
     r"""
     initializer_cutoff_factor (`float`, *optional*, defaults to 2.0):

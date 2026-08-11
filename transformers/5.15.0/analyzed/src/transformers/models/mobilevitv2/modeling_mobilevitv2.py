@@ -36,7 +36,10 @@ from .configuration_mobilevitv2 import MobileViTV2Config
 logger = logging.get_logger(__name__)
 
 
+# MobileViTV2 建模：线性自注意力混合架构，支持分类与 DeepLabV3 语义分割
+
 # Copied from transformers.models.mobilevit.modeling_mobilevit.make_divisible
+# make_divisible：将通道数向上取整为 divisor 的倍数
 def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -> int:
     """
     Ensure that all layers have a channel count that is divisible by `divisor`.
@@ -50,11 +53,13 @@ def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -
     return int(new_value)
 
 
+# clip：将数值裁剪到 [min_val, max_val] 区间
 def clip(value: float, min_val: float = float("-inf"), max_val: float = float("inf")) -> float:
     return max(min_val, min(max_val, value))
 
 
 # Copied from transformers.models.mobilevit.modeling_mobilevit.MobileViTConvLayer with MobileViT->MobileViTV2
+# MobileViTV2ConvLayer：MobileViTV2 卷积 + BatchNorm + 激活组合层
 class MobileViTV2ConvLayer(nn.Module):
     def __init__(
         self,
@@ -120,6 +125,7 @@ class MobileViTV2ConvLayer(nn.Module):
 
 
 # Copied from transformers.models.mobilevit.modeling_mobilevit.MobileViTInvertedResidual with MobileViT->MobileViTV2
+# MobileViTV2InvertedResidual：MobileViTV2 倒残差块（expand → depthwise → project）
 class MobileViTV2InvertedResidual(nn.Module):
     """
     Inverted residual block (MobileNetv2): https://huggingface.co/papers/1801.04381
@@ -169,6 +175,7 @@ class MobileViTV2InvertedResidual(nn.Module):
 
 
 # Copied from transformers.models.mobilevit.modeling_mobilevit.MobileViTMobileNetLayer with MobileViT->MobileViTV2
+# MobileViTV2MobileNetLayer：MobileViTV2 MobileNet 骨干阶段（多倒残差堆叠）
 class MobileViTV2MobileNetLayer(nn.Module):
     def __init__(
         self, config: MobileViTV2Config, in_channels: int, out_channels: int, stride: int = 1, num_stages: int = 1
@@ -192,6 +199,7 @@ class MobileViTV2MobileNetLayer(nn.Module):
         return features
 
 
+# MobileViTV2LinearSelfAttention：MobileViTV2 线性复杂度自注意力（无 softmax）
 class MobileViTV2LinearSelfAttention(nn.Module):
     """
     This layer applies a self-attention with linear complexity, as described in MobileViTV2 paper:
@@ -255,6 +263,7 @@ class MobileViTV2LinearSelfAttention(nn.Module):
         return out
 
 
+# MobileViTV2FFN：MobileViTV2 Transformer 前馈网络（FFN multiplier 扩展）
 class MobileViTV2FFN(nn.Module):
     def __init__(
         self,
@@ -296,6 +305,7 @@ class MobileViTV2FFN(nn.Module):
         return hidden_states
 
 
+# MobileViTV2TransformerLayer：MobileViTV2 单层 Transformer（线性注意力 + FFN）
 class MobileViTV2TransformerLayer(nn.Module):
     def __init__(
         self,
@@ -323,6 +333,7 @@ class MobileViTV2TransformerLayer(nn.Module):
         return layer_output
 
 
+# MobileViTV2Transformer：MobileViTV2 局部 patch Transformer 堆叠
 class MobileViTV2Transformer(nn.Module):
     def __init__(self, config: MobileViTV2Config, n_layers: int, d_model: int) -> None:
         super().__init__()
@@ -347,6 +358,7 @@ class MobileViTV2Transformer(nn.Module):
         return hidden_states
 
 
+# MobileViTV2Layer：MobileViTV2 混合层（局部 Transformer + 全局卷积融合）
 class MobileViTV2Layer(GradientCheckpointingLayer):
     """
     MobileViTV2 layer: https://huggingface.co/papers/2206.02680
@@ -461,6 +473,7 @@ class MobileViTV2Layer(GradientCheckpointingLayer):
         return features
 
 
+# MobileViTV2Encoder：MobileViTV2 编码器（MobileNet 骨干 + MobileViTV2 层序列）
 class MobileViTV2Encoder(nn.Module):
     def __init__(self, config: MobileViTV2Config) -> None:
         super().__init__()
@@ -564,6 +577,7 @@ class MobileViTV2Encoder(nn.Module):
 
 
 @auto_docstring
+# MobileViTV2PreTrainedModel：MobileViTV2 预训练基类与权重初始化
 class MobileViTV2PreTrainedModel(PreTrainedModel):
     config: MobileViTV2Config
     base_model_prefix = "mobilevitv2"
@@ -587,6 +601,7 @@ class MobileViTV2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MobileViTV2Model：MobileViTV2 混合 CNN-Transformer 主干
 class MobileViTV2Model(MobileViTV2PreTrainedModel):
     def __init__(self, config: MobileViTV2Config, expand_output: bool = True):
         r"""
@@ -666,6 +681,7 @@ class MobileViTV2Model(MobileViTV2PreTrainedModel):
     ImageNet.
     """
 )
+# MobileViTV2ForImageClassification：MobileViTV2 图像分类（全局池化 + 线性头）
 class MobileViTV2ForImageClassification(MobileViTV2PreTrainedModel):
     def __init__(self, config: MobileViTV2Config) -> None:
         super().__init__(config)
@@ -723,6 +739,7 @@ class MobileViTV2ForImageClassification(MobileViTV2PreTrainedModel):
 
 
 # Copied from transformers.models.mobilevit.modeling_mobilevit.MobileViTASPPPooling with MobileViT->MobileViTV2
+# MobileViTV2ASPPPooling：MobileViTV2 ASPP 全局平均池化分支
 class MobileViTV2ASPPPooling(nn.Module):
     def __init__(self, config: MobileViTV2Config, in_channels: int, out_channels: int) -> None:
         super().__init__()
@@ -747,6 +764,7 @@ class MobileViTV2ASPPPooling(nn.Module):
         return features
 
 
+# MobileViTV2ASPP：MobileViTV2 空洞空间金字塔池化（多 atrous rate）
 class MobileViTV2ASPP(nn.Module):
     """
     ASPP module defined in DeepLab papers: https://huggingface.co/papers/1606.00915, https://huggingface.co/papers/1706.05587
@@ -808,6 +826,7 @@ class MobileViTV2ASPP(nn.Module):
 
 
 # Copied from transformers.models.mobilevit.modeling_mobilevit.MobileViTDeepLabV3 with MobileViT->MobileViTV2
+# MobileViTV2DeepLabV3：MobileViTV2 DeepLabV3 语义分割解码头
 class MobileViTV2DeepLabV3(nn.Module):
     """
     DeepLabv3 architecture: https://huggingface.co/papers/1706.05587
@@ -841,6 +860,7 @@ class MobileViTV2DeepLabV3(nn.Module):
     MobileViTV2 model with a semantic segmentation head on top, e.g. for Pascal VOC.
     """
 )
+# MobileViTV2ForSemanticSegmentation：MobileViTV2 语义分割（DeepLabV3 + ASPP）
 class MobileViTV2ForSemanticSegmentation(MobileViTV2PreTrainedModel):
     def __init__(self, config: MobileViTV2Config) -> None:
         super().__init__(config)

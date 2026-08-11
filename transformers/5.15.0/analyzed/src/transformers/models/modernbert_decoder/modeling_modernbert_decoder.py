@@ -46,6 +46,9 @@ from .configuration_modernbert_decoder import ModernBertDecoderConfig
 logger = logging.get_logger(__name__)
 
 
+# ModernBERT 解码器建模：因果 Transformer 解码器与 LM/分类任务头
+
+# ModernBertDecoderEmbeddings：ModernBERT 解码器词嵌入 + 位置嵌入
 class ModernBertDecoderEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -68,6 +71,7 @@ class ModernBertDecoderEmbeddings(nn.Module):
         return hidden_states
 
 
+# ModernBertDecoderMLP：ModernBERT 解码器前馈 MLP（GeGLU 激活）
 class ModernBertDecoderMLP(nn.Module):
     """Applies the GLU at the end of each ModernBertDecoder layer.
 
@@ -88,6 +92,7 @@ class ModernBertDecoderMLP(nn.Module):
         return self.Wo(self.drop(self.act(input) * gate))
 
 
+# ModernBertDecoderRotaryEmbedding：ModernBERT 解码器 RoPE 位置编码
 class ModernBertDecoderRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: ModernBertDecoderConfig, device=None):
@@ -160,6 +165,7 @@ class ModernBertDecoderRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -168,6 +174,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -194,6 +201,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# eager_attention_forward：ModernBERT eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: "ModernBertDecoderAttention",
     query: torch.Tensor,
@@ -223,6 +231,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ModernBertDecoderAttention：ModernBERT 解码器因果自注意力（RoPE + 滑动窗口）
 class ModernBertDecoderAttention(nn.Module):
     """Performs causal multi-headed self attention for ModernBERT decoder.
 
@@ -298,6 +307,7 @@ class ModernBertDecoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ModernBertDecoderLayer：ModernBERT 解码器单层（因果注意力 + MLP）
 class ModernBertDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ModernBertDecoderConfig, layer_idx: int | None = None):
         super().__init__()
@@ -344,6 +354,7 @@ class ModernBertDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ModernBertDecoderPredictionHead：ModernBERT 解码器 LM 预测头
 class ModernBertDecoderPredictionHead(nn.Module):
     def __init__(self, config: ModernBertDecoderConfig):
         super().__init__()
@@ -357,6 +368,7 @@ class ModernBertDecoderPredictionHead(nn.Module):
 
 
 @auto_docstring
+# ModernBertDecoderPreTrainedModel：ModernBERT 解码器预训练基类
 class ModernBertDecoderPreTrainedModel(PreTrainedModel):
     config: ModernBertDecoderConfig
     base_model_prefix = "model"
@@ -428,6 +440,7 @@ class ModernBertDecoderPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ModernBertDecoderModel：ModernBERT 因果 Transformer 解码器主干
 class ModernBertDecoderModel(ModernBertDecoderPreTrainedModel):
     def __init__(self, config: ModernBertDecoderConfig):
         super().__init__(config)
@@ -520,6 +533,7 @@ class ModernBertDecoderModel(ModernBertDecoderPreTrainedModel):
     The ModernBert Decoder Model with a language modeling head on top for causal language modeling (CLM).
     """
 )
+# ModernBertDecoderForCausalLM：ModernBERT 解码器因果语言建模
 class ModernBertDecoderForCausalLM(ModernBertDecoderPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"decoder.weight": "model.embeddings.tok_embeddings.weight"}
 
@@ -630,6 +644,7 @@ class ModernBertDecoderForCausalLM(ModernBertDecoderPreTrainedModel, GenerationM
     each row of the batch).
     """
 )
+# ModernBertDecoderForSequenceClassification：ModernBERT 解码器序列分类
 class ModernBertDecoderForSequenceClassification(ModernBertDecoderPreTrainedModel):
     def __init__(self, config: ModernBertDecoderConfig):
         super().__init__(config)

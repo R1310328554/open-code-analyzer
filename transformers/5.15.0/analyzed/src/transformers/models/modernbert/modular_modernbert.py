@@ -49,8 +49,12 @@ from ..gemma3.modeling_gemma3 import Gemma3RotaryEmbedding, rotate_half
 logger = logging.get_logger(__name__)
 
 
+# ModernBERT modular 源：Gemma3 RoPE + 局部/全局滑动窗口注意力编码器
+
+# ModernBertConfig：answerdotai/ModernBERT-base 高效 BERT 编码器超参
 @auto_docstring(checkpoint="answerdotai/ModernBERT-base")
 @strict
+# ModernBertConfig：answerdotai/ModernBERT-base 高效 BERT 编码器超参
 class ModernBertConfig(PreTrainedConfig):
     r"""
     initializer_cutoff_factor (`float`, *optional*, defaults to 2.0):
@@ -189,6 +193,7 @@ class ModernBertConfig(PreTrainedConfig):
         self.local_attention = value * 2
 
 
+# ModernBertEmbeddings：ModernBERT 词嵌入 + 位置嵌入（无 token type）
 class ModernBertEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -211,6 +216,7 @@ class ModernBertEmbeddings(nn.Module):
         return hidden_states
 
 
+# ModernBertMLP：ModernBERT 前馈 MLP（GeGLU 激活 + 可选 dropout）
 class ModernBertMLP(nn.Module):
     """Applies the GLU at the end of each ModernBERT layer.
 
@@ -231,6 +237,7 @@ class ModernBertMLP(nn.Module):
         return self.Wo(self.drop(self.act(input) * gate))
 
 
+# ModernBertRotaryEmbedding：ModernBERT 旋转位置编码（RoPE）
 class ModernBertRotaryEmbedding(Gemma3RotaryEmbedding):
     def __init__(self, config: ModernBertConfig, device=None):
         super().__init__(config)
@@ -242,6 +249,7 @@ class ModernBertRotaryEmbedding(Gemma3RotaryEmbedding):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -269,6 +277,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# ModernBertAttention：ModernBERT 多头自注意力（RoPE + 局部/全局窗口）
 class ModernBertAttention(nn.Module):
     """Performs multi-headed self attention on a batch of unpadded sequences.
 
@@ -350,6 +359,7 @@ class ModernBertAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ModernBertEncoderLayer：ModernBERT 编码器单层（注意力 + MLP + 残差）
 class ModernBertEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ModernBertConfig, layer_idx: int | None = None):
         super().__init__()
@@ -383,6 +393,7 @@ class ModernBertEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ModernBertPreTrainedModel：ModernBERT 预训练基类与截断正态初始化
 class ModernBertPreTrainedModel(PreTrainedModel):
     config: ModernBertConfig
     base_model_prefix = "model"
@@ -458,6 +469,7 @@ class ModernBertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ModernBertModel：ModernBERT 双向 Transformer 编码器主干
 class ModernBertModel(ModernBertPreTrainedModel):
     def __init__(self, config: ModernBertConfig):
         super().__init__(config)
@@ -527,6 +539,7 @@ class ModernBertModel(ModernBertPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# ModernBertPredictionHead：ModernBERT MLM 预测头（Dense + GELU + LayerNorm）
 class ModernBertPredictionHead(nn.Module):
     def __init__(self, config: ModernBertConfig):
         super().__init__()
@@ -544,6 +557,7 @@ class ModernBertPredictionHead(nn.Module):
     The ModernBert Model with a decoder head on top that is used for masked language modeling.
     """
 )
+# ModernBertForMaskedLM：ModernBERT 掩码语言建模
 class ModernBertForMaskedLM(ModernBertPreTrainedModel):
     _tied_weights_keys = {"decoder.weight": "model.embeddings.tok_embeddings.weight"}
 
@@ -615,6 +629,7 @@ class ModernBertForMaskedLM(ModernBertPreTrainedModel):
     The ModernBert Model with a sequence classification head on top that performs pooling.
     """
 )
+# ModernBertForSequenceClassification：ModernBERT 序列分类
 class ModernBertForSequenceClassification(ModernBertPreTrainedModel):
     def __init__(self, config: ModernBertConfig):
         super().__init__(config)
@@ -706,6 +721,7 @@ class ModernBertForSequenceClassification(ModernBertPreTrainedModel):
     The ModernBert Model with a token classification head on top, e.g. for Named Entity Recognition (NER) tasks.
     """
 )
+# ModernBertForTokenClassification：ModernBERT 词元分类
 class ModernBertForTokenClassification(ModernBertPreTrainedModel):
     def __init__(self, config: ModernBertConfig):
         super().__init__(config)
@@ -761,6 +777,7 @@ class ModernBertForTokenClassification(ModernBertPreTrainedModel):
 
 
 @auto_docstring
+# ModernBertForQuestionAnswering：ModernBERT 抽取式问答
 class ModernBertForQuestionAnswering(ModernBertPreTrainedModel):
     def __init__(self, config: ModernBertConfig):
         super().__init__(config)
@@ -818,6 +835,7 @@ class ModernBertForQuestionAnswering(ModernBertPreTrainedModel):
     The ModernBert Model with a multiple choice classification head on top (a linear layer on top of the pooled output and a softmax) e.g. for RocStories/SWAG tasks.
     """
 )
+# ModernBertForMultipleChoice：ModernBERT 多项选择
 class ModernBertForMultipleChoice(ModernBertPreTrainedModel):
     def __init__(self, config: ModernBertConfig):
         super().__init__(config)

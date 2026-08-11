@@ -41,8 +41,12 @@ from ..smolvlm.modeling_smolvlm import SmolVLMModel, SmolVLMPreTrainedModel
 logger = logging.get_logger(__name__)
 
 
+# ModernVBERT modular 源：SmolVLM 视觉 + ModernBERT 文本联合多模态
+
+# ModernVBertConfig：ModernVBERT/modernvbert 视觉-语言多模态联合超参
 @auto_docstring(checkpoint="ModernVBERT/modernvbert")
 @strict
+# ModernVBertConfig：ModernVBERT/modernvbert 视觉-语言多模态联合超参
 class ModernVBertConfig(PreTrainedConfig):
     r"""
     pixel_shuffle_factor (`int | None`, *optional*, defaults to 4):
@@ -100,6 +104,7 @@ class ModernVBertConfig(PreTrainedConfig):
 
 
 @dataclass
+# ModernVBertBaseModelOutput：ModernVBERT 基础模型输出容器（含 image_hidden_states）
 class ModernVBertBaseModelOutput(BaseModelOutput):
     """
     Base class for ModernVBERT model's outputs.
@@ -130,6 +135,7 @@ class ModernVBertBaseModelOutput(BaseModelOutput):
 
 
 @dataclass
+# ModernVBertMaskedLMOutput：ModernVBERT 掩码语言建模输出容器
 class ModernVBertMaskedLMOutput(MaskedLMOutput):
     """
     Base class for ModernVBERT model's outputs with masked language modeling loss.
@@ -160,6 +166,7 @@ class ModernVBertMaskedLMOutput(MaskedLMOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# ModernVBertConnector：ModernVBERT 视觉-文本连接器（pixel shuffle + 投影）
 class ModernVBertConnector(nn.Module):
     """
     Connector module for ModernVBERT. It performs a pixel shuffle operation followed by a linear projection to match the text model's hidden size.
@@ -200,6 +207,7 @@ class ModernVBertConnector(nn.Module):
 
 
 @auto_docstring
+# ModernVBertPreTrainedModel：ModernVBERT 预训练基类与权重初始化
 class ModernVBertPreTrainedModel(SmolVLMPreTrainedModel):
     config_class = ModernVBertConfig
     _no_split_modules = []
@@ -247,6 +255,7 @@ class ModernVBertPreTrainedModel(SmolVLMPreTrainedModel):
     [*ModernVBERT: Towards Smaller Visual Document Retrievers*](https://arxiv.org/abs/2510.01149).
     """
 )
+# ModernVBertModel：ModernVBERT 视觉-语言多模态联合主干
 class ModernVBertModel(SmolVLMModel):
     def __init__(self, config: ModernVBertConfig):
         super().__init__(config)
@@ -327,11 +336,13 @@ class ModernVBertModel(SmolVLMModel):
         )
 
 
+# ModernVBertPredictionHead：ModernVBERT MLM 预测头
 class ModernVBertPredictionHead(ModernBertPredictionHead):
     pass
 
 
 @auto_docstring
+# ModernVBertForMaskedLM：ModernVBERT 掩码语言建模（图文联合）
 class ModernVBertForMaskedLM(ModernVBertPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embeddings.tok_embeddings.weight"}
 
@@ -422,6 +433,7 @@ class ModernVBertForMaskedLM(ModernVBertPreTrainedModel):
     The ModernVBert Model with a sequence classification head on top that performs pooling.
     """
 )
+# ModernVBertForSequenceClassification：ModernVBERT 序列分类
 class ModernVBertForSequenceClassification(ModernVBertPreTrainedModel):
     def __init__(self, config: ModernVBertConfig):
         super().__init__(config)
@@ -538,6 +550,7 @@ class ModernVBertForSequenceClassification(ModernVBertPreTrainedModel):
     The ModernVBert Model with a token classification head on top, e.g. for Named Entity Recognition (NER) tasks.
     """
 )
+# ModernVBertForTokenClassification：ModernVBERT 词元分类
 class ModernVBertForTokenClassification(ModernVBertPreTrainedModel):
     def __init__(self, config: ModernVBertConfig):
         super().__init__(config)
