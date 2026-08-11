@@ -13,6 +13,8 @@
 # limitations under the License.
 """Pix2Struct modeling file"""
 
+# Pix2Struct 建模：patch 视觉编码器 + T5 文本解码器 seq2seq
+
 import math
 from collections.abc import Callable
 
@@ -50,7 +52,9 @@ logger = logging.get_logger(__name__)
 
 
 # Adapted from transformers.models.t5.modeling_t5.T5LayerNorm with T5->Pix2Struct
+# Pix2StructLayerNorm：T5 风格无偏 LayerNorm（无均值减法）
 class Pix2StructLayerNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps=1e-6):
         """
         Construct a layernorm module in the T5 style. No bias and no subtraction of mean.
@@ -59,6 +63,7 @@ class Pix2StructLayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         # T5 uses a layer_norm which only scales and doesn't shift, which is also known as Root Mean
         # Square Layer Normalization https://huggingface.co/papers/1910.07467 thus variance is calculated
@@ -75,6 +80,7 @@ class Pix2StructLayerNorm(nn.Module):
         return self.weight * hidden_states
 
 
+# Pix2StructVisionEmbeddings：Pix2Struct 视觉 patch 嵌入层
 class Pix2StructVisionEmbeddings(nn.Module):
     r"""
     Construct the embeddings from patch. In `Pix2Struct` the input is different from classic Vision-transformer models.
@@ -82,6 +88,7 @@ class Pix2StructVisionEmbeddings(nn.Module):
     is represented by a vector of `hidden_size` values.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructConfig) -> None:
         super().__init__()
         self.patch_projection = nn.Linear(config.patch_embed_hidden_size, config.hidden_size)
@@ -91,6 +98,7 @@ class Pix2StructVisionEmbeddings(nn.Module):
 
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：模块前向计算
     def forward(self, flattened_patches: torch.Tensor) -> torch.Tensor:
         # the row and column indices are stored in the first and second position of the flattened_patches
         # flattened_patches: `batch_size`, `seq_len`, `hidden_size` + 2
@@ -111,7 +119,9 @@ class Pix2StructVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# Pix2StructVisionAttention：Pix2Struct 视觉塔相对位置自注意力
 class Pix2StructVisionAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -131,6 +141,7 @@ class Pix2StructVisionAttention(nn.Module):
 
         self.gradient_checkpointing = False
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states,
@@ -172,7 +183,9 @@ class Pix2StructVisionAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5DenseGatedActDense->Pix2StructVisionMlp,T5Config->Pix2StructVisionConfig,config.d_model->config.hidden_size,dropout_rate->dropout_rate
+# Pix2StructVisionMlp：Pix2Struct 视觉塔前馈 MLP
 class Pix2StructVisionMlp(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructVisionConfig):
         super().__init__()
         self.wi_0 = nn.Linear(config.hidden_size, config.d_ff, bias=False)
@@ -181,6 +194,7 @@ class Pix2StructVisionMlp(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_gelu = self.act(self.wi_0(hidden_states))
         hidden_linear = self.wi_1(hidden_states)
@@ -201,7 +215,9 @@ class Pix2StructVisionMlp(nn.Module):
         return hidden_states
 
 
+# Pix2StructVisionLayer：Pix2Struct 视觉 Transformer 编码层
 class Pix2StructVisionLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructConfig) -> None:
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -211,6 +227,7 @@ class Pix2StructVisionLayer(GradientCheckpointingLayer):
         self.pre_mlp_layer_norm = Pix2StructLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.pre_attention_layer_norm = Pix2StructLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -238,13 +255,16 @@ class Pix2StructVisionLayer(GradientCheckpointingLayer):
         return layer_output, attn_weights
 
 
+# Pix2StructVisionEncoder：Pix2Struct 视觉 Transformer 编码器堆叠
 class Pix2StructVisionEncoder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructVisionConfig) -> None:
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([Pix2StructVisionLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -276,6 +296,7 @@ class Pix2StructVisionEncoder(nn.Module):
 
 
 @auto_docstring
+# Pix2StructPreTrainedModel：Pix2Struct 预训练基类与权重初始化
 class Pix2StructPreTrainedModel(PreTrainedModel):
     config: Pix2StructConfig
     input_modalities = ("image", "text")
@@ -287,6 +308,7 @@ class Pix2StructPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
     @property
+    # dummy_inputs：返回模型 dummy 输入（测试/导出用）
     def dummy_inputs(self):
         input_ids = torch.tensor(DUMMY_INPUTS)
         input_mask = torch.tensor(DUMMY_MASK)
@@ -298,6 +320,7 @@ class Pix2StructPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -367,6 +390,7 @@ class Pix2StructPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.bias)
 
     # Copied from transformers.models.t5.modeling_t5.T5PreTrainedModel._shift_right with T5->Pix2Struct
+    # _shift_right：decoder 输入右移一位（teacher forcing）
     def _shift_right(self, input_ids):
         decoder_start_token_id = self.config.decoder_start_token_id
         pad_token_id = self.config.pad_token_id
@@ -390,6 +414,7 @@ class Pix2StructPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Pix2StructVisionModel：Pix2Struct 视觉编码器完整模型
 class Pix2StructVisionModel(Pix2StructPreTrainedModel):
     config: Pix2StructVisionConfig
     main_input_name = "flattened_patches"
@@ -397,6 +422,7 @@ class Pix2StructVisionModel(Pix2StructPreTrainedModel):
     supports_gradient_checkpointing = True
     _no_split_modules = ["Pix2StructVisionLayer"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructVisionConfig):
         super().__init__(config)
         self.config = config
@@ -409,10 +435,12 @@ class Pix2StructVisionModel(Pix2StructPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.embeddings.patch_projection
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         flattened_patches: torch.Tensor | None = None,
@@ -494,7 +522,9 @@ class Pix2StructVisionModel(Pix2StructPreTrainedModel):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5->Pix2StructText,d_model->hidden_size
+# Pix2StructTextDenseGatedActDense：Pix2Struct 文本门控激活 FFN
 class Pix2StructTextDenseGatedActDense(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructTextConfig):
         super().__init__()
         self.wi_0 = nn.Linear(config.hidden_size, config.d_ff, bias=False)
@@ -503,6 +533,7 @@ class Pix2StructTextDenseGatedActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_gelu = self.act(self.wi_0(hidden_states))
         hidden_linear = self.wi_1(hidden_states)
@@ -523,7 +554,9 @@ class Pix2StructTextDenseGatedActDense(nn.Module):
         return hidden_states
 
 
+# Pix2StructTextLayerFF：Pix2Struct 文本前馈层（DenseGatedActDense 封装）
 class Pix2StructTextLayerFF(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructTextConfig):
         super().__init__()
         self.DenseReluDense = Pix2StructTextDenseGatedActDense(config)
@@ -532,6 +565,7 @@ class Pix2StructTextLayerFF(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
 
     # Copied from transformers.models.t5.modeling_t5.T5LayerFF.forward
+    # forward：模块前向计算
     def forward(self, hidden_states):
         forwarded_states = self.layer_norm(hidden_states)
         forwarded_states = self.DenseReluDense(forwarded_states)
@@ -540,6 +574,7 @@ class Pix2StructTextLayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -572,7 +607,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Pix2StructTextAttention：Pix2Struct 文本相对位置注意力基类
 class Pix2StructTextAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: Pix2StructTextConfig,
@@ -613,6 +650,7 @@ class Pix2StructTextAttention(nn.Module):
 
     @staticmethod
     # Copied from transformers.models.t5.modeling_t5.T5Attention._relative_position_bucket
+    # _relative_position_bucket：相对位置→bucket 索引映射
     def _relative_position_bucket(relative_position, bidirectional=True, num_buckets=32, max_distance=128):
         """
         Adapted from Mesh Tensorflow:
@@ -661,6 +699,7 @@ class Pix2StructTextAttention(nn.Module):
         return relative_buckets
 
     # Adapted from transformers.models.t5.modeling_t5.T5Attention.compute_bias
+    # compute_bias：计算相对位置注意力偏置 embedding
     def compute_bias(self, query_length, key_length, device=None, past_seen_tokens=0):
         """Compute binned relative position bias"""
         if device is None:
@@ -679,6 +718,7 @@ class Pix2StructTextAttention(nn.Module):
         return values
 
     # Adapted from transformers.models.t5.modeling_t5.T5Attention.forward
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states,
@@ -774,7 +814,9 @@ class Pix2StructTextAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerSelfAttention with T5LayerNorm->Pix2StructLayerNorm,T5Attention->Pix2StructTextAttention,T5LayerSelfAttention->Pix2StructTextLayerSelfAttention,self.SelfAttention->self.attention,config.d_model->config.hidden_size
+# Pix2StructTextLayerSelfAttention：Pix2Struct 文本自注意力层
 class Pix2StructTextLayerSelfAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
         self.attention = Pix2StructTextAttention(
@@ -786,6 +828,7 @@ class Pix2StructTextLayerSelfAttention(nn.Module):
         self.layer_norm = Pix2StructLayerNorm(config.hidden_size, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states,
@@ -807,7 +850,9 @@ class Pix2StructTextLayerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerCrossAttention with T5LayerNorm->Pix2StructLayerNorm,T5Attention->Pix2StructTextAttention,T5LayerCrossAttention->Pix2StructTextLayerCrossAttention,self.EncDecAttention->self.attention,config.d_model->config.hidden_size
+# Pix2StructTextLayerCrossAttention：Pix2Struct 文本交叉注意力层
 class Pix2StructTextLayerCrossAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.attention = Pix2StructTextAttention(
@@ -816,6 +861,7 @@ class Pix2StructTextLayerCrossAttention(nn.Module):
         self.layer_norm = Pix2StructLayerNorm(config.hidden_size, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states,
@@ -838,7 +884,9 @@ class Pix2StructTextLayerCrossAttention(nn.Module):
         return layer_output, position_bias, attn_weights
 
 
+# Pix2StructTextBlock：Pix2Struct 文本解码块（SelfAttn + CrossAttn + FFN）
 class Pix2StructTextBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
 
@@ -855,6 +903,7 @@ class Pix2StructTextBlock(GradientCheckpointingLayer):
 
         self.mlp = Pix2StructTextLayerFF(config)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states,
@@ -923,6 +972,7 @@ class Pix2StructTextBlock(GradientCheckpointingLayer):
     The standalone text decoder of Pix2Struct
     """
 )
+# Pix2StructTextModel：Pix2Struct T5 风格文本解码器堆叠
 class Pix2StructTextModel(Pix2StructPreTrainedModel):
     config: Pix2StructTextConfig
     input_modalities = ("text",)
@@ -930,6 +980,7 @@ class Pix2StructTextModel(Pix2StructPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "embed_tokens.weight"}
     supports_gradient_checkpointing = True
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
@@ -949,10 +1000,12 @@ class Pix2StructTextModel(Pix2StructPreTrainedModel):
         self.post_init()
         self.gradient_checkpointing = False
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1144,10 +1197,12 @@ class Pix2StructTextModel(Pix2StructPreTrainedModel):
     A conditional generation model with a language modeling head. Can be used for sequence generation tasks.
     """
 )
+# Pix2StructForConditionalGeneration：Pix2Struct 图文条件生成
 class Pix2StructForConditionalGeneration(Pix2StructPreTrainedModel, GenerationMixin):
     config: Pix2StructConfig
     main_input_name = "flattened_patches"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Pix2StructConfig):
         super().__init__(config)
 
@@ -1159,19 +1214,24 @@ class Pix2StructForConditionalGeneration(Pix2StructPreTrainedModel, GenerationMi
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.decoder.get_input_embeddings()
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, new_embeddings):
         self.decoder.set_input_embeddings(new_embeddings)
 
+    # get_output_embeddings：返回 lm_head 输出嵌入层
     def get_output_embeddings(self) -> nn.Module:
         return self.decoder.get_output_embeddings()
 
+    # set_output_embeddings：替换 lm_head 输出嵌入层
     def set_output_embeddings(self, new_embeddings):
         self.decoder.set_output_embeddings(new_embeddings)
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         flattened_patches: torch.FloatTensor | None = None,

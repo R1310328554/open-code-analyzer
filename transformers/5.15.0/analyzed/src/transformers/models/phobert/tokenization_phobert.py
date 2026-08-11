@@ -14,6 +14,8 @@
 # limitations under the License.
 """Tokenization classes for PhoBERT"""
 
+# PhoBERT 分词：越南语 Byte-Pair-Encoding 子词切分
+
 import os
 import re
 from shutil import copyfile
@@ -30,6 +32,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# get_pairs：BPE 获取词内相邻字符对集合
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -46,6 +49,7 @@ def get_pairs(word):
     return pairs
 
 
+# PhobertTokenizer：越南语 PhoBERT Byte-Pair-Encoding 分词器
 class PhobertTokenizer(PreTrainedTokenizer):
     """
     Construct a PhoBERT tokenizer. Based on Byte-Pair-Encoding.
@@ -97,6 +101,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
 
     vocab_files_names = VOCAB_FILES_NAMES
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         vocab_file,
@@ -141,6 +146,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
             **kwargs,
         )
 
+    # build_inputs_with_special_tokens：在序列首尾插入特殊 token
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -167,6 +173,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
         sep = [self.sep_token_id]
         return cls + token_ids_0 + sep + sep + token_ids_1 + sep
 
+    # get_special_tokens_mask：标记序列中特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -195,6 +202,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
             return [1] + ([0] * len(token_ids_0)) + [1]
         return [1] + ([0] * len(token_ids_0)) + [1, 1] + ([0] * len(token_ids_1)) + [1]
 
+    # create_token_type_ids_from_sequences：构造 segment type id 序列
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -220,12 +228,15 @@ class PhobertTokenizer(PreTrainedTokenizer):
         return len(cls + token_ids_0 + sep + sep + token_ids_1 + sep) * [0]
 
     @property
+    # vocab_size：词表大小
     def vocab_size(self):
         return len(self.encoder)
 
+    # get_vocab：返回词表字典（token→id）
     def get_vocab(self):
         return dict(self.encoder, **self.added_tokens_encoder)
 
+    # bpe：对单个 token 执行 BPE 合并迭代
     def bpe(self, token):
         if token in self.cache:
             return self.cache[token]
@@ -270,6 +281,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
         self.cache[token] = word
         return word
 
+    # _tokenize：将文本切分为 token 列表
     def _tokenize(self, text):
         """Tokenize a string."""
         split_tokens = []
@@ -280,19 +292,23 @@ class PhobertTokenizer(PreTrainedTokenizer):
             split_tokens.extend(list(self.bpe(token).split(" ")))
         return split_tokens
 
+    # _convert_token_to_id：token 字符串→整数 id
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         return self.encoder.get(token, self.encoder.get(self.unk_token))
 
+    # _convert_id_to_token：整数 id→token 字符串
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         return self.decoder.get(index, self.unk_token)
 
+    # convert_tokens_to_string：token 列表解码为字符串
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         out_string = " ".join(tokens).replace("@@ ", "").strip()
         return out_string
 
+    # save_vocabulary：保存词表到目录
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         if not os.path.isdir(save_directory):
             logger.error(f"Vocabulary path ({save_directory}) should be a directory")
@@ -322,6 +338,7 @@ class PhobertTokenizer(PreTrainedTokenizer):
     #     tokens_generated_so_far = re.sub('(@@ ?$)', '', string=tokens_generated_so_far)
     #     return ''.join(tokens_generated_so_far)
 
+    # add_from_file：从 merges 文件加载 BPE 合并规则
     def add_from_file(self, f):
         """
         Loads a pre-existing dictionary from a text file and adds its symbols to this instance.

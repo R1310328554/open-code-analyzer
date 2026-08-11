@@ -35,7 +35,11 @@ from ..auto import AutoModel
 from .configuration_pi0 import PI0Config
 
 
+# π0 建模：PaliGemma VLM + DiT 动作专家流匹配策略（自动生成）
+
+# PI0TimestepEmbeddings：扩散时间步正弦频率嵌入
 class PI0TimestepEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -49,6 +53,7 @@ class PI0TimestepEmbeddings(nn.Module):
         sinusoid_freq = 1.0 / period * 2 * math.pi
         return sinusoid_freq
 
+    # forward：模块前向计算
     def forward(self, time):
         device_type = time.device.type if isinstance(time.device.type, str) and time.device.type != "mps" else "cpu"
         with maybe_autocast(device_type=device_type, enabled=False):  # Force float32
@@ -58,7 +63,9 @@ class PI0TimestepEmbeddings(nn.Module):
         return time_embeds
 
 
+# PI0ActionTimeEmbedding：状态+噪声+时间步动作条件嵌入
 class PI0ActionTimeEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.sinusoid_embeds = PI0TimestepEmbeddings(config)
@@ -67,6 +74,7 @@ class PI0ActionTimeEmbedding(nn.Module):
         self.action_time_mlp_in = nn.Linear(2 * config.dit_config.hidden_size, config.dit_config.hidden_size)
         self.action_time_mlp_out = nn.Linear(config.dit_config.hidden_size, config.dit_config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, state, noise, timestep):
         state_embeds = self.state_proj(state)
         action_embeds = self.action_in_proj(noise)
@@ -81,6 +89,7 @@ class PI0ActionTimeEmbedding(nn.Module):
 
 
 @auto_docstring
+# PI0PreTrainedModel：π0 预训练基类与权重初始化
 class PI0PreTrainedModel(PreTrainedModel):
     config: PI0Config
     base_model_prefix = "model"
@@ -94,6 +103,7 @@ class PI0PreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
     input_modalities = ("image", "text")
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PI0TimestepEmbeddings):
@@ -101,19 +111,24 @@ class PI0PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PI0Model：π0 PaliGemma VLM + DiT 动作专家联合主干
 class PI0Model(PI0PreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PI0Config):
         super().__init__(config)
         self.dit = AutoModel.from_config(config.dit_config)
         self.vlm = AutoModel.from_config(config.vlm_config)
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.vlm.get_input_embeddings()
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, value):
         self.vlm.set_input_embeddings(value)
 
+    # embed_prefix：构造前缀嵌入（图像 token + 文本 token）
     def embed_prefix(self, input_ids, pixel_values, pixel_attention_mask, attention_mask=None):
         max_num_cameras = pixel_attention_mask.shape[1]
         pixel_values = pixel_values.flatten(0, 1)
@@ -140,6 +155,7 @@ class PI0Model(PI0PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         action_embeds: torch.Tensor,  # aka `suffix_emb` (noise + state + timestep)
@@ -218,11 +234,13 @@ class PI0Model(PI0PreTrainedModel):
         return dit_output
 
 
+# PI0ForConditionalGeneration：π0 条件动作生成（训练+推理）
 class PI0ForConditionalGeneration(PI0PreTrainedModel):
     """PI0 model with action projection heads and flow matching."""
 
     _tp_plan = {"action_out_proj": "colwise_gather_output"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PI0Config):
         super().__init__(config)
         self.model = PI0Model(config)
@@ -233,6 +251,7 @@ class PI0ForConditionalGeneration(PI0PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         state: torch.FloatTensor,
@@ -320,6 +339,7 @@ class PI0ForConditionalGeneration(PI0PreTrainedModel):
         )
 
     @torch.no_grad()
+    # sample_actions：流匹配推理采样动作序列
     def sample_actions(
         self,
         state: torch.FloatTensor,

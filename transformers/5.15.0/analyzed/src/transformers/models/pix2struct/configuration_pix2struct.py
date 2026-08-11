@@ -13,6 +13,8 @@
 # limitations under the License.
 """Pix2Struct model configuration"""
 
+# Pix2Struct 配置：Google 图文 seq2seq 视觉-语言模型超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -22,8 +24,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Pix2StructTextConfig：Pix2Struct T5 风格文本解码器超参
 @auto_docstring(checkpoint="google/pix2struct-base")
 @strict
+# Pix2StructTextConfig：Pix2Struct T5 风格文本解码器超参
 class Pix2StructTextConfig(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):
@@ -82,8 +86,10 @@ class Pix2StructTextConfig(PreTrainedConfig):
     add_cross_attention: bool = False
 
 
+# Pix2StructVisionConfig：Pix2Struct 视觉 patch 编码器超参
 @auto_docstring(checkpoint="google/pix2struct-base")
 @strict
+# Pix2StructVisionConfig：Pix2Struct 视觉 patch 编码器超参
 class Pix2StructVisionConfig(PreTrainedConfig):
     r"""
     patch_embed_hidden_size (`int`, *optional*, defaults to 768):
@@ -137,8 +143,10 @@ class Pix2StructVisionConfig(PreTrainedConfig):
     relative_attention_max_distance: int = 128
 
 
+# Pix2StructConfig：Pix2Struct 图文联合 seq2seq 超参
 @auto_docstring(checkpoint="google/pix2struct-base")
 @strict
+# Pix2StructConfig：Pix2Struct 图文联合 seq2seq 超参
 class Pix2StructConfig(PreTrainedConfig):
     r"""
     is_vqa (`bool`, *optional*, defaults to `False`):
@@ -178,6 +186,7 @@ class Pix2StructConfig(PreTrainedConfig):
     tie_word_embeddings: bool = False
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后解析子配置与默认参数
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = Pix2StructTextConfig(

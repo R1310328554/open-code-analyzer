@@ -24,8 +24,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# π0 配置：PaliGemma VLM + DiT 动作专家流匹配策略超参
+
+# PI0Config：Physical Intelligence π0 机器人流匹配策略模型超参
 @auto_docstring(checkpoint="lerobot/pi0_base")
 @strict
+# PI0Config：Physical Intelligence π0 机器人流匹配策略模型超参
 class PI0Config(PreTrainedConfig):
     r"""
     vlm_config (`dict`, *optional*):
@@ -81,6 +85,7 @@ class PI0Config(PreTrainedConfig):
     max_period: float = 4.0
     loss_reduction: str = "mean"
 
+    # __post_init__：初始化后解析子配置与默认参数
     def __post_init__(self, **kwargs):
         if isinstance(self.vlm_config, dict):
             vlm_model_type = self.vlm_config.get("model_type", "paligemma")
@@ -131,6 +136,7 @@ class PI0Config(PreTrainedConfig):
         self.vlm_config.text_config.use_bidirectional_attention = True
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验 VLM/DiT 子配置架构兼容性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.dit_config.hidden_size % 2 != 0:

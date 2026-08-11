@@ -13,6 +13,8 @@
 # limitations under the License.
 """PI0 model: PaliGemma + Action Expert with flow matching for robot action prediction."""
 
+# π0 modular 源：继承 SigLIP/PaliGemma 实现机器人动作流匹配策略
+
 import math
 from collections.abc import Callable
 
@@ -43,12 +45,14 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# PI0ImageProcessor：π0 224×224 图像预处理（SigLIP 风格 resize+pad）
 class PI0ImageProcessor(SiglipImageProcessor):
     size = {"max_height": 224, "max_width": 224}
     pad_size = {"height": 224, "width": 224}
     do_pad = True
 
 
+# PI0ProcessorKwargs：π0 联合处理器 kwargs 类型
 class PI0ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -62,7 +66,9 @@ class PI0ProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("vision", "torch"))
+# PI0Processor：π0 图像/文本/状态/动作联合处理器
 class PI0Processor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         self.height, self.width = image_processor.size["height"], image_processor.size["width"]
         state_mean = kwargs.get("state_mean", [-0.0419, 0.0354, 0.8257, 2.9083, -0.5562, -0.1665, 0.0283, -0.0286])
@@ -100,6 +106,7 @@ class PI0Processor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput | list[ImageInput] | list[list[ImageInput]] | None,
@@ -190,12 +197,14 @@ class PI0Processor(ProcessorMixin):
         return BatchFeature(data=model_inputs, tensor_type=return_tensors)
 
     @property
+    # model_input_names：返回模型期望的输入字段名列表
     def model_input_names(self):
         return super().model_input_names + ["pixel_attention_mask"]
 
 
 @auto_docstring(checkpoint="lerobot/pi0_base")
 @strict
+# PI0Config：Physical Intelligence π0 机器人流匹配策略模型超参
 class PI0Config(PreTrainedConfig):
     r"""
     vlm_config (`dict`, *optional*):
@@ -251,6 +260,7 @@ class PI0Config(PreTrainedConfig):
     max_period: float = 4.0
     loss_reduction: str = "mean"
 
+    # __post_init__：初始化后解析子配置与默认参数
     def __post_init__(self, **kwargs):
         if isinstance(self.vlm_config, dict):
             vlm_model_type = self.vlm_config.get("model_type", "paligemma")
@@ -301,13 +311,16 @@ class PI0Config(PreTrainedConfig):
         self.vlm_config.text_config.use_bidirectional_attention = True
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验 VLM/DiT 子配置架构兼容性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.dit_config.hidden_size % 2 != 0:
             raise ValueError(f"DiT hidden dim=({self.config.dit_config.hidden_size}) must be divisible by 2")
 
 
+# blockwise_bidirectional_mask：块级双向 attention mask 工厂函数
 def blockwise_bidirectional_mask(block_boundaries: torch.Tensor) -> Callable:
+    # inner_mask：块内双向、块间因果的 attention mask 判定
     def inner_mask(batch_idx: int, head_idx: int, q_idx: int, kv_idx: int) -> bool:
         q_block = torch.bucketize(q_idx, block_boundaries)
         kv_block = torch.bucketize(kv_idx, block_boundaries)
@@ -316,7 +329,9 @@ def blockwise_bidirectional_mask(block_boundaries: torch.Tensor) -> Callable:
     return inner_mask
 
 
+# PI0TimestepEmbeddings：扩散时间步正弦频率嵌入
 class PI0TimestepEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -330,6 +345,7 @@ class PI0TimestepEmbeddings(nn.Module):
         sinusoid_freq = 1.0 / period * 2 * math.pi
         return sinusoid_freq
 
+    # forward：模块前向计算
     def forward(self, time):
         device_type = time.device.type if isinstance(time.device.type, str) and time.device.type != "mps" else "cpu"
         with maybe_autocast(device_type=device_type, enabled=False):  # Force float32
@@ -339,7 +355,9 @@ class PI0TimestepEmbeddings(nn.Module):
         return time_embeds
 
 
+# PI0ActionTimeEmbedding：状态+噪声+时间步动作条件嵌入
 class PI0ActionTimeEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.sinusoid_embeds = PI0TimestepEmbeddings(config)
@@ -348,6 +366,7 @@ class PI0ActionTimeEmbedding(nn.Module):
         self.action_time_mlp_in = nn.Linear(2 * config.dit_config.hidden_size, config.dit_config.hidden_size)
         self.action_time_mlp_out = nn.Linear(config.dit_config.hidden_size, config.dit_config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, state, noise, timestep):
         state_embeds = self.state_proj(state)
         action_embeds = self.action_in_proj(noise)
@@ -362,6 +381,7 @@ class PI0ActionTimeEmbedding(nn.Module):
 
 
 @auto_docstring
+# PI0PreTrainedModel：π0 预训练基类与权重初始化
 class PI0PreTrainedModel(PreTrainedModel):
     config: PI0Config
     base_model_prefix = "model"
@@ -375,6 +395,7 @@ class PI0PreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
     input_modalities = ("image", "text")
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PI0TimestepEmbeddings):
@@ -382,19 +403,24 @@ class PI0PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PI0Model：π0 PaliGemma VLM + DiT 动作专家联合主干
 class PI0Model(PI0PreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PI0Config):
         super().__init__(config)
         self.dit = AutoModel.from_config(config.dit_config)
         self.vlm = AutoModel.from_config(config.vlm_config)
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.vlm.get_input_embeddings()
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, value):
         self.vlm.set_input_embeddings(value)
 
+    # embed_prefix：构造前缀嵌入（图像 token + 文本 token）
     def embed_prefix(self, input_ids, pixel_values, pixel_attention_mask, attention_mask=None):
         max_num_cameras = pixel_attention_mask.shape[1]
         pixel_values = pixel_values.flatten(0, 1)
@@ -421,6 +447,7 @@ class PI0Model(PI0PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         action_embeds: torch.Tensor,  # aka `suffix_emb` (noise + state + timestep)
@@ -499,11 +526,13 @@ class PI0Model(PI0PreTrainedModel):
         return dit_output
 
 
+# PI0ForConditionalGeneration：π0 条件动作生成（训练+推理）
 class PI0ForConditionalGeneration(PI0PreTrainedModel):
     """PI0 model with action projection heads and flow matching."""
 
     _tp_plan = {"action_out_proj": "colwise_gather_output"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PI0Config):
         super().__init__(config)
         self.model = PI0Model(config)
@@ -514,6 +543,7 @@ class PI0ForConditionalGeneration(PI0PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         state: torch.FloatTensor,
@@ -601,6 +631,7 @@ class PI0ForConditionalGeneration(PI0PreTrainedModel):
         )
 
     @torch.no_grad()
+    # sample_actions：流匹配推理采样动作序列
     def sample_actions(
         self,
         state: torch.FloatTensor,

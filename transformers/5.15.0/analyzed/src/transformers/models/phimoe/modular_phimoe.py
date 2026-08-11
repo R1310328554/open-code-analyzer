@@ -14,6 +14,8 @@
 
 """PyTorch Phimoe model."""
 
+# Phimoe modular 源：继承 Mixtral/Llama 实现 SparseMixer 路由 MoE
+
 from collections.abc import Callable
 
 import torch
@@ -37,7 +39,9 @@ from ..mixtral.modeling_mixtral import (
 from .configuration_phimoe import PhimoeConfig
 
 
+# PhimoeRotaryEmbedding：Phi-3.5-MoE 长上下文 RoPE（含 mscale 缩放）
 class PhimoeRotaryEmbedding(MixtralRotaryEmbedding):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhimoeConfig, device=None):
         nn.Module.__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -53,6 +57,7 @@ class PhimoeRotaryEmbedding(MixtralRotaryEmbedding):
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
         self.original_inv_freq = nn.Buffer(inv_freq.clone(), persistent=False)
 
+    # forward：模块前向计算
     def forward(self, x, position_ids=None):
         mscale = None
         seq_len = torch.max(position_ids) + 1
@@ -78,12 +83,15 @@ class PhimoeRotaryEmbedding(MixtralRotaryEmbedding):
         return cos.to(x.dtype), sin.to(x.dtype)
 
 
+# PhimoeAttention：Phi-MoE 多头自注意力（GQA + RoPE）
 class PhimoeAttention(LlamaAttention):
     pass
 
 
+# PhimoeMultiplier：SparseMixer 自定义 autograd 路由梯度估计
 class PhimoeMultiplier(torch.autograd.Function):
     @staticmethod
+    # forward：模块前向计算
     def forward(
         ctx,
         scores: torch.Tensor,
@@ -144,6 +152,7 @@ class PhimoeMultiplier(torch.autograd.Function):
         )
 
 
+# sparsemixer：SparseMixer top-k 专家路由（Gumbel 采样 + Heun 梯度）
 def sparsemixer(scores, jitter_eps, training, top_k=2):
     """
     Sparse mixer function to select top-k experts and compute multipliers.
@@ -267,11 +276,14 @@ def sparsemixer(scores, jitter_eps, training, top_k=2):
     )
 
 
+# PhimoeExperts：MoE 专家权重集合（3D 张量存储 gate/up/down）
 class PhimoeExperts(MixtralExperts):
     pass
 
 
+# PhimoeTopKRouter：Phi-MoE top-k 专家路由线性层
 class PhimoeTopKRouter(nn.Linear):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhimoeConfig):
         super().__init__(config.hidden_size, config.num_local_experts, bias=False)
         self.router_jitter_noise = config.router_jitter_noise
@@ -279,6 +291,7 @@ class PhimoeTopKRouter(nn.Linear):
         self.top_k = config.num_experts_per_tok
         self.num_experts = config.num_local_experts
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if self.training and self.input_jitter_noise > 0:
             hidden_states *= torch.empty_like(hidden_states).uniform_(
@@ -291,6 +304,7 @@ class PhimoeTopKRouter(nn.Linear):
         return router_logits, routing_weights, selected_experts
 
 
+# PhimoeSparseMoeBlock：Phi-MoE 稀疏 MoE 块（SparseMixer 路由）
 class PhimoeSparseMoeBlock(nn.Module):
     """
     This implementation is
@@ -303,6 +317,7 @@ class PhimoeSparseMoeBlock(nn.Module):
     and memory on padding.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.hidden_dim = config.hidden_size
@@ -313,6 +328,7 @@ class PhimoeSparseMoeBlock(nn.Module):
         self.experts = PhimoeExperts(config)
         self.input_jitter_noise = config.input_jitter_noise
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         if self.training and self.input_jitter_noise > 0:
@@ -327,7 +343,9 @@ class PhimoeSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# PhimoeDecoderLayer：Phi-MoE 解码器单层（Attn + MoE + 残差）
 class PhimoeDecoderLayer(MixtralDecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhimoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
 
@@ -338,6 +356,7 @@ class PhimoeDecoderLayer(MixtralDecoderLayer):
         )
 
 
+# PhimoePreTrainedModel：Phi-MoE 预训练基类与权重初始化
 class PhimoePreTrainedModel(MixtralPreTrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(PhimoeTopKRouter, index=0),
@@ -346,13 +365,17 @@ class PhimoePreTrainedModel(MixtralPreTrainedModel):
     }
 
 
+# PhimoeModel：Phi-MoE Transformer 解码器堆叠主干
 class PhimoeModel(MixtralModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PhimoeConfig):
         super().__init__(config)
         self.norm = nn.LayerNorm(config.hidden_size, eps=config.rms_norm_eps, elementwise_affine=True)
 
 
+# PhimoeForCausalLM：Phi-MoE 因果语言建模
 class PhimoeForCausalLM(MixtralForCausalLM):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=self.config.lm_head_bias)
@@ -396,6 +419,7 @@ class PhimoeForCausalLM(MixtralForCausalLM):
         return model_inputs
 
 
+# PhimoeForSequenceClassification：Phi-MoE 序列分类
 class PhimoeForSequenceClassification(GenericForSequenceClassification, PhimoePreTrainedModel): ...
 
 

@@ -22,7 +22,10 @@ from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILIma
 from ...utils import auto_docstring
 
 
+# π0 图像处理：224×224 resize+pad 与 ImageNet 归一化
+
 @auto_docstring
+# PI0ImageProcessor：π0 224×224 图像预处理（SigLIP 风格 resize+pad）
 class PI0ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

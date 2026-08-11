@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Pix2Struct."""
 
+# Pix2Struct Torchvision 图像处理：header 渲染 + patch 提取与展平
+
 import io
 import textwrap
 from typing import Union
@@ -34,6 +36,7 @@ from ...utils.import_utils import requires_backends
 DEFAULT_FONT_PATH = "ybelkada/fonts"
 
 
+# Pix2StructImageProcessorKwargs：Pix2Struct 图像预处理 kwargs 类型
 class Pix2StructImageProcessorKwargs(ImagesKwargs, total=False):
     """
     max_patches (`int`, *optional*):
@@ -54,6 +57,7 @@ class Pix2StructImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from https://github.com/google-research/pix2struct/blob/0e1779af0f4db4b652c1d92b3bbd2550a7399123/pix2struct/preprocessing/preprocessing_utils.py#L106
+# render_text：将 header 文本渲染到图像顶部（VQA 任务）
 def render_text(
     text: str,
     text_size: int = 36,
@@ -126,6 +130,7 @@ def render_text(
 
 # Disable as it causes issues with torch.compile
 @torch.compiler.disable
+# torch_extract_patches：提取并展平图像 patch 为序列
 def torch_extract_patches(image_tensor, patch_height, patch_width):
     """
     Extract patches from image tensor. Returns tensor of shape (batch, rows, columns, patch_height*patch_width*channels).
@@ -148,6 +153,7 @@ def torch_extract_patches(image_tensor, patch_height, patch_width):
 
 
 @auto_docstring
+# Pix2StructImageProcessor：Pix2Struct Torchvision 后端图像预处理
 class Pix2StructImageProcessor(TorchvisionBackend):
     rescale_factor = None
     do_normalize = True
@@ -182,6 +188,7 @@ class Pix2StructImageProcessor(TorchvisionBackend):
         # so we skip the default validation
         pass
 
+    # render_header：在图像上渲染 header 文本区域
     def render_header(
         self,
         image: "torch.Tensor",
@@ -238,6 +245,7 @@ class Pix2StructImageProcessor(TorchvisionBackend):
 
         return result
 
+    # normalize：按 Pix2Struct 规范对图像/patch 归一化
     def normalize(self, images: "torch.Tensor") -> "torch.Tensor":
         """
         Normalize batched images using per-image mean and standard deviation.
@@ -259,6 +267,7 @@ class Pix2StructImageProcessor(TorchvisionBackend):
 
         return (images - mean) / adjusted_stddev
 
+    # extract_flattened_patches：提取展平 patch 序列（受 max_patches 限制）
     def extract_flattened_patches(
         self,
         images: "torch.Tensor",
@@ -329,6 +338,7 @@ class Pix2StructImageProcessor(TorchvisionBackend):
         return result
 
     @auto_docstring
+    # preprocess：图像预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -381,6 +391,7 @@ class Pix2StructImageProcessor(TorchvisionBackend):
 
         return self._preprocess(images, **kwargs)
 
+    # _preprocess：图像预处理流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

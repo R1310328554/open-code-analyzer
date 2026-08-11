@@ -33,6 +33,9 @@ from ...utils.import_utils import requires
 logger = logging.get_logger(__name__)
 
 
+# π0 处理器：图像/文本/状态/动作四模态联合预处理
+
+# PI0ProcessorKwargs：π0 联合处理器 kwargs 类型
 class PI0ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -46,7 +49,9 @@ class PI0ProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("vision", "torch"))
+# PI0Processor：π0 图像/文本/状态/动作联合处理器
 class PI0Processor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         self.height, self.width = image_processor.size["height"], image_processor.size["width"]
         state_mean = kwargs.get("state_mean", [-0.0419, 0.0354, 0.8257, 2.9083, -0.5562, -0.1665, 0.0283, -0.0286])
@@ -84,6 +89,7 @@ class PI0Processor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput | list[ImageInput] | list[list[ImageInput]] | None,
@@ -174,6 +180,7 @@ class PI0Processor(ProcessorMixin):
         return BatchFeature(data=model_inputs, tensor_type=return_tensors)
 
     @property
+    # model_input_names：返回模型期望的输入字段名列表
     def model_input_names(self):
         return super().model_input_names + ["pixel_attention_mask"]
 
