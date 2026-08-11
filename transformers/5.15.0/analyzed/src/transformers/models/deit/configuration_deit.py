@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DeiTConfig：patch16-224、12 层、768 hidden，含 distillation 超参
 @auto_docstring(checkpoint="facebook/deit-base-distilled-patch16-224")
 @strict
+# DeiTConfig：encoder_stride/pooler 与 teacher 模型配置
 class DeiTConfig(PreTrainedConfig):
     r"""
     encoder_stride (`int`, *optional*, defaults to 16):

@@ -51,6 +51,7 @@ from .configuration_deimv2 import Deimv2Config
     """
 )
 @dataclass
+# Deimv2DecoderOutput：解码器中间隐状态与 reference points
 class Deimv2DecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -86,6 +87,7 @@ class Deimv2DecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# Deimv2ModelOutput：编解码联合输出与 encoder 提案
 class Deimv2ModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -145,6 +147,7 @@ class Deimv2ModelOutput(ModelOutput):
     """
 )
 @dataclass
+# Deimv2EncoderOutput：混合编码器多尺度特征输出
 class Deimv2EncoderOutput(ModelOutput):
     r"""
     feature_maps (`list[torch.FloatTensor]`):
@@ -157,6 +160,7 @@ class Deimv2EncoderOutput(ModelOutput):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Deimv2RMSNorm：RMS 归一化层
 class Deimv2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -177,6 +181,7 @@ class Deimv2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Deimv2SwiGLUFFN：SwiGLU 前馈网络
 class Deimv2SwiGLUFFN(nn.Module):
     def __init__(self, config: Deimv2Config):
         super().__init__()
@@ -295,6 +300,7 @@ def multi_scale_deformable_attention_v2(
     return output.transpose(1, 2).contiguous()
 
 
+# Deimv2MultiscaleDeformableAttention：v2 多尺度可变形交叉注意力
 class Deimv2MultiscaleDeformableAttention(nn.Module):
     def __init__(self, config: Deimv2Config):
         """
@@ -419,6 +425,7 @@ class Deimv2ConvNormLayer(nn.Module):
         return hidden_state
 
 
+# Deimv2RepVggBlock：RepVGG 风格重参数化卷积块
 class Deimv2RepVggBlock(nn.Module):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
@@ -438,6 +445,7 @@ class Deimv2RepVggBlock(nn.Module):
         return self.activation(y)
 
 
+# Deimv2CSPRepLayer：CSP + Rep 层，用于 HGNet 特征提取
 class Deimv2CSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
@@ -468,6 +476,7 @@ class Deimv2CSPRepLayer(nn.Module):
         return self.conv2(residual + hidden_states)
 
 
+# Deimv2RepNCSPELAN5：ELAN 风格多分支 CSP 模块
 class Deimv2RepNCSPELAN5(nn.Module):
     """
     Rep(VGG) N(etwork) CSP (Cross Stage Partial) ELAN (Efficient Layer Aggregation Network) block.
@@ -611,6 +620,7 @@ class Deimv2SelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Deimv2EncoderLayer：transformer 编码层（自注意力 + FFN）
 class Deimv2EncoderLayer(nn.Module):
     def __init__(self, config: Deimv2Config):
         super().__init__()
@@ -730,6 +740,7 @@ def build_2d_sinusoidal_position_embedding(
     return pos_embed.to(dtype)
 
 
+# Deimv2SinePositionEmbedding：2D 正弦位置编码
 class Deimv2SinePositionEmbedding(nn.Module):
     """
     2D sinusoidal position embedding used in RT-DETR hybrid encoder.
@@ -768,6 +779,7 @@ class Deimv2SinePositionEmbedding(nn.Module):
         ).unsqueeze(0)
 
 
+# Deimv2AIFILayer：All-in-FPN 特征交互层
 class Deimv2AIFILayer(nn.Module):
     """
     AIFI (Attention-based Intra-scale Feature Interaction) layer used in RT-DETR hybrid encoder.
@@ -844,6 +856,7 @@ class Deimv2SpatialTuningAdapter(nn.Module):
         return hidden_states_2, hidden_states_3, hidden_states_4
 
 
+# Deimv2Integral：分布积分将离散 bin 转为连续框偏移
 class Deimv2Integral(nn.Module):
     """
     A static layer that calculates integral results from a distribution.
@@ -869,6 +882,7 @@ class Deimv2Integral(nn.Module):
         return pred_corners
 
 
+# Deimv2LQE：Location Quality Estimator 定位质量评分网络
 class Deimv2LQE(nn.Module):
     def __init__(self, config: Deimv2Config):
         super().__init__()
@@ -886,6 +900,7 @@ class Deimv2LQE(nn.Module):
         return scores
 
 
+# Deimv2DecoderLayer：自注意力 + 可变形交叉注意力 + SwiGLU FFN
 class Deimv2DecoderLayer(nn.Module):
     def __init__(self, config: Deimv2Config):
         super().__init__()
@@ -980,6 +995,7 @@ class Deimv2DecoderLayer(nn.Module):
 
 
 @auto_docstring
+# Deimv2PreTrainedModel：DEIMv2 权重初始化与骨干冻结
 class Deimv2PreTrainedModel(PreTrainedModel):
     config: Deimv2Config
     base_model_prefix = "deimv2"
@@ -1127,6 +1143,7 @@ def replace_batch_norm(model):
 
 
 # This follows DFineConvEncoder, with optional projections added after the backbone features.
+# Deimv2ConvEncoder：HGNetv2 卷积骨干编码器
 class Deimv2ConvEncoder(Deimv2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1155,6 +1172,7 @@ class Deimv2ConvEncoder(Deimv2PreTrainedModel):
         return [proj(feat) for proj, feat in zip(self.encoder_input_proj, features)]
 
 
+# Deimv2DINOv3ConvEncoder：DINOv3 ViT 特征 + 卷积 neck
 class Deimv2DINOv3ConvEncoder(Deimv2PreTrainedModel):
     def __init__(self, config: Deimv2Config):
         super().__init__(config)
@@ -1201,6 +1219,7 @@ class Deimv2DINOv3ConvEncoder(Deimv2PreTrainedModel):
         return outputs
 
 
+# Deimv2LiteEncoder：轻量骨干编码器变体
 class Deimv2LiteEncoder(Deimv2PreTrainedModel):
     # LiteEncoder has no transformer layers, so hidden_states are recorded from the conv projections.
     _can_record_outputs = {
@@ -1259,6 +1278,7 @@ def fuse_feature_maps(feature_map_1: torch.Tensor, feature_map_2: torch.Tensor, 
     return torch.cat([feature_map_1, feature_map_2], dim=1)
 
 
+# Deimv2HybridEncoder：多骨干融合 + AIFI + 特征金字塔
 class Deimv2HybridEncoder(Deimv2PreTrainedModel):
     """
     DEIMv2 variant of DFineHybridEncoder. Uses element-wise sum fusion (`fuse_feature_maps`) instead of
@@ -1406,6 +1426,7 @@ def distance2bbox(points, distance: torch.Tensor, reg_scale: float) -> torch.Ten
     return corners_to_center_format(bboxes)
 
 
+# Deimv2Decoder：对比去噪 query + 分布引导框迭代 refine
 class Deimv2Decoder(Deimv2PreTrainedModel):
     """
     D-FINE Decoder implementing Fine-grained Distribution Refinement (FDR).
@@ -1562,6 +1583,7 @@ class Deimv2Decoder(Deimv2PreTrainedModel):
         )
 
 
+# get_contrastive_denoising_training_group：构造对比去噪正负 query 组
 def get_contrastive_denoising_training_group(
     targets,
     num_classes,
@@ -1690,6 +1712,7 @@ def get_contrastive_denoising_training_group(
     RT-DETR Model (consisting of a backbone and encoder-decoder) outputting raw hidden states without any head on top.
     """
 )
+# Deimv2Model：HybridEncoder + Decoder 完整检测骨干
 class Deimv2Model(Deimv2PreTrainedModel):
     def __init__(self, config: Deimv2Config):
         super().__init__(config)
@@ -1985,6 +2008,7 @@ class Deimv2Model(Deimv2PreTrainedModel):
     """
 )
 @dataclass
+# Deimv2ObjectDetectionOutput：检测 loss_dict、logits 与 pred_boxes
 class Deimv2ObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -2063,6 +2087,7 @@ class Deimv2ObjectDetectionOutput(ModelOutput):
     decoded into scores and classes.
     """
 )
+# Deimv2ForObjectDetection：Varifocal/GIoU/FGL/DDF 组合损失检测头
 class Deimv2ForObjectDetection(Deimv2PreTrainedModel):
     _no_split_modules = None  # Restrictions are collected from self.model during post_init.
     _tied_weights_keys = {

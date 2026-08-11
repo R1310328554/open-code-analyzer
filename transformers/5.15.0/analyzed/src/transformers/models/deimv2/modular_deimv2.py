@@ -58,6 +58,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="Intellindust/DEIMv2_HGNetv2_N_COCO")
 @strict
+# Deimv2Config：继承 DFineConfig，增加 LQE/reg_scale 与对比去噪参数
 class Deimv2Config(DFineConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):
@@ -192,10 +193,12 @@ class Deimv2Config(DFineConfig):
     encoder_has_trailing_conv: bool = True
 
 
+# Deimv2DecoderOutput：复用 DFine 解码输出
 class Deimv2DecoderOutput(DFineDecoderOutput):
     pass
 
 
+# Deimv2ModelOutput：复用 DFine 模型输出
 class Deimv2ModelOutput(DFineModelOutput):
     pass
 
@@ -218,10 +221,12 @@ class Deimv2EncoderOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# Deimv2RMSNorm：继承 Llama RMSNorm
 class Deimv2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Deimv2SwiGLUFFN：继承 Llama SwiGLU 前馈
 class Deimv2SwiGLUFFN(LlamaMLP):
     def __init__(self, config: Deimv2Config):
         nn.Module.__init__(self)
@@ -242,6 +247,7 @@ class Deimv2MLP(DFineMLP):
     pass
 
 
+# Deimv2MultiscaleDeformableAttention：复用 DFine 可变形注意力
 class Deimv2MultiscaleDeformableAttention(DFineMultiscaleDeformableAttention):
     pass
 
@@ -250,10 +256,12 @@ class Deimv2ConvNormLayer(DFineConvNormLayer):
     pass
 
 
+# Deimv2RepVggBlock：RepVGG 块 modular 源
 class Deimv2RepVggBlock(DFineRepVggBlock):
     pass
 
 
+# Deimv2CSPRepLayer：CSP Rep 层 modular 定义
 class Deimv2CSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
@@ -284,6 +292,7 @@ class Deimv2CSPRepLayer(nn.Module):
         return self.conv2(residual + hidden_states)
 
 
+# Deimv2RepNCSPELAN5：ELAN CSP 模块 modular 源
 class Deimv2RepNCSPELAN5(nn.Module):
     """
     Rep(VGG) N(etwork) CSP (Cross Stage Partial) ELAN (Efficient Layer Aggregation Network) block.
@@ -322,6 +331,7 @@ class Deimv2EncoderLayer(DFineEncoderLayer):
     pass
 
 
+# Deimv2AIFILayer：All-in-FPN 交互层
 class Deimv2AIFILayer(DFineAIFILayer):
     pass
 
@@ -352,14 +362,17 @@ def fuse_feature_maps(feature_map_1: torch.Tensor, feature_map_2: torch.Tensor, 
     return torch.cat([feature_map_1, feature_map_2], dim=1)
 
 
+# Deimv2Integral：分布积分框回归
 class Deimv2Integral(DFineIntegral):
     pass
 
 
+# Deimv2LQE：定位质量估计 modular 源
 class Deimv2LQE(DFineLQE):
     pass
 
 
+# Deimv2DecoderLayer：继承 DFine 解码层
 class Deimv2DecoderLayer(DFineDecoderLayer):
     def __init__(self, config: Deimv2Config):
         super().__init__(config)
@@ -424,6 +437,7 @@ class Deimv2DecoderLayer(DFineDecoderLayer):
         return hidden_states
 
 
+# Deimv2PreTrainedModel：DEIMv2 预训练基类
 class Deimv2PreTrainedModel(DFinePreTrainedModel):
     _no_split_modules = [r"Deimv2HybridEncoder", r"Deimv2LiteEncoder", r"Deimv2DecoderLayer"]
 
@@ -441,6 +455,7 @@ class Deimv2PreTrainedModel(DFinePreTrainedModel):
 
 
 # This follows DFineConvEncoder, with optional projections added after the backbone features.
+# Deimv2ConvEncoder：HGNet 卷积编码器 modular 源
 class Deimv2ConvEncoder(Deimv2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -469,6 +484,7 @@ class Deimv2ConvEncoder(Deimv2PreTrainedModel):
         return [proj(feat) for proj, feat in zip(self.encoder_input_proj, features)]
 
 
+# Deimv2DINOv3ConvEncoder：DINOv3 骨干编码器
 class Deimv2DINOv3ConvEncoder(Deimv2PreTrainedModel):
     def __init__(self, config: Deimv2Config):
         super().__init__(config)
@@ -515,6 +531,7 @@ class Deimv2DINOv3ConvEncoder(Deimv2PreTrainedModel):
         return outputs
 
 
+# Deimv2LiteEncoder：轻量编码器 modular 源
 class Deimv2LiteEncoder(Deimv2PreTrainedModel):
     # LiteEncoder has no transformer layers, so hidden_states are recorded from the conv projections.
     _can_record_outputs = {
@@ -566,6 +583,7 @@ class Deimv2LiteEncoder(Deimv2PreTrainedModel):
         return Deimv2EncoderOutput(feature_maps=outputs)
 
 
+# Deimv2HybridEncoder：混合编码器，扩展 RepNCSPELAN5 等模块
 class Deimv2HybridEncoder(DFineHybridEncoder):
     """
     DEIMv2 variant of DFineHybridEncoder. Uses element-wise sum fusion (`fuse_feature_maps`) instead of
@@ -650,12 +668,14 @@ class Deimv2HybridEncoder(DFineHybridEncoder):
         return Deimv2EncoderOutput(feature_maps=pan_feature_maps)
 
 
+# Deimv2Decoder：继承 DFine 解码器
 class Deimv2Decoder(DFineDecoder):
     def __init__(self, config: Deimv2Config):
         super().__init__(config=config)
         self.query_pos_head = Deimv2MLP(4, config.d_model, config.d_model, 3, config.decoder_activation_function)
 
 
+# Deimv2Model：DEIMv2 完整模型 modular 源
 class Deimv2Model(DFineModel):
     def __init__(self, config: Deimv2Config):
         Deimv2PreTrainedModel.__init__(self, config)
@@ -864,6 +884,7 @@ class Deimv2Model(DFineModel):
         )
 
 
+# Deimv2ForObjectDetection：检测任务头
 class Deimv2ForObjectDetection(DFineForObjectDetection):
     _no_split_modules = None  # Restrictions are collected from self.model during post_init.
 

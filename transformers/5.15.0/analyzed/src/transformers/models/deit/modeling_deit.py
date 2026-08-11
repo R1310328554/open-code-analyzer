@@ -37,6 +37,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_deit import DeiTConfig
 
 
+# DeiTPatchEmbeddings：图像 patch 线性投影与展平
 class DeiTPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -67,6 +68,7 @@ class DeiTPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# DeiTEmbeddings：patch + CLS + distillation token 嵌入与位置编码
 class DeiTEmbeddings(nn.Module):
     """
     Construct the CLS token, distillation token, position and patch embeddings. Optionally, also the mask token.
@@ -166,6 +168,7 @@ class DeiTEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：ViT 缩放点积自注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -194,6 +197,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DeiTAttention：多头自注意力（QKV 线性 + 输出投影）
 class DeiTAttention(nn.Module):
     def __init__(self, config: DeiTConfig):
         super().__init__()
@@ -243,6 +247,7 @@ class DeiTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeiTMLP：GELU 前馈 MLP
 class DeiTMLP(nn.Module):
     def __init__(self, config: DeiTConfig):
         super().__init__()
@@ -259,6 +264,7 @@ class DeiTMLP(nn.Module):
         return hidden_states
 
 
+# DeiTLayer：Pre-LN 自注意力 + MLP 残差块
 class DeiTLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeiTConfig):
         super().__init__()
@@ -292,6 +298,7 @@ class DeiTLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DeiTPreTrainedModel：ViT 风格权重初始化
 class DeiTPreTrainedModel(PreTrainedModel):
     config: DeiTConfig
     base_model_prefix = "deit"
@@ -328,6 +335,7 @@ class DeiTPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# DeiTPooler：CLS token 池化 + tanh 激活
 class DeiTPooler(nn.Module):
     def __init__(self, config: DeiTConfig):
         super().__init__()
@@ -344,6 +352,7 @@ class DeiTPooler(nn.Module):
 
 
 @auto_docstring
+# DeiTModel：堆叠 DeiTLayer + pooler，输出 last_hidden_state
 class DeiTModel(DeiTPreTrainedModel):
     def __init__(self, config: DeiTConfig, add_pooling_layer: bool = True, use_mask_token: bool = False):
         r"""
@@ -411,6 +420,7 @@ class DeiTModel(DeiTPreTrainedModel):
     </Tip>
     """
 )
+# DeiTForMaskedImageModeling：随机 patch 掩码重建预训练头
 class DeiTForMaskedImageModeling(DeiTPreTrainedModel):
     def __init__(self, config: DeiTConfig):
         super().__init__(config)
@@ -522,6 +532,7 @@ class DeiTForMaskedImageModeling(DeiTPreTrainedModel):
     </Tip>
     """
 )
+# DeiTForImageClassification：CLS token 线性分类头
 class DeiTForImageClassification(DeiTPreTrainedModel):
     def __init__(self, config: DeiTConfig):
         super().__init__(config)
@@ -581,6 +592,7 @@ class DeiTForImageClassification(DeiTPreTrainedModel):
     """
 )
 @dataclass
+# DeiTForImageClassificationWithTeacherOutput：student/teacher 双 logits 输出
 class DeiTForImageClassificationWithTeacherOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, config.num_labels)`):
@@ -611,6 +623,7 @@ class DeiTForImageClassificationWithTeacherOutput(ModelOutput):
            supported.
     """
 )
+# DeiTForImageClassificationWithTeacher：蒸馏分类，CLS + distillation token 双头
 class DeiTForImageClassificationWithTeacher(DeiTPreTrainedModel):
     def __init__(self, config: DeiTConfig) -> None:
         super().__init__(config)

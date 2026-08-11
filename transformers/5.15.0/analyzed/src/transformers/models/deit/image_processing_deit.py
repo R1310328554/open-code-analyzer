@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# DeiTImageProcessor：Torchvision 后端，默认 256→224 中心裁剪流程
 class DeiTImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

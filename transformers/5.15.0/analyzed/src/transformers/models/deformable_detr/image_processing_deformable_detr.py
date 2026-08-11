@@ -51,6 +51,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DeformableDetrImageProcessorKwargs：format 与 do_convert_annotations 等预处理参数
 class DeformableDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -69,6 +70,7 @@ SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationForma
 
 
 # inspired by https://github.com/facebookresearch/deformable_detr/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：COCO 多边形分割转二值 mask 张量
 def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: torch.device) -> torch.Tensor:
     """
     Convert a COCO polygon annotation to a mask.
@@ -104,6 +106,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: to
 
 
 # inspired by https://github.com/facebookresearch/deformable_detr/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：COCO 检测标注转为 DETR 中心点归一化框格式
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -168,6 +171,7 @@ def prepare_coco_detection_annotation(
     return new_target
 
 
+# masks_to_boxes：由实例 mask 计算轴对齐边界框
 def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
     """
     Compute the bounding boxes around the provided panoptic segmentation masks.
@@ -216,6 +220,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# prepare_coco_panoptic_annotation：COCO 全景分割标注预处理
 def prepare_coco_panoptic_annotation(
     image: torch.Tensor,
     target: dict,
@@ -266,6 +271,7 @@ def prepare_coco_panoptic_annotation(
 
 
 @auto_docstring
+# DeformableDetrImageProcessor：Torchvision 后端，resize/pad/normalize 与 COCO 标注同步变换
 class DeformableDetrImageProcessor(TorchvisionBackend):
     valid_kwargs = DeformableDetrImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -297,6 +303,7 @@ class DeformableDetrImageProcessor(TorchvisionBackend):
 
         super().__init__(**kwargs)
 
+# prepare_annotation：按 format 分发检测或全景标注准备逻辑
     def prepare_annotation(
         self,
         image: torch.Tensor,
@@ -329,6 +336,7 @@ class DeformableDetrImageProcessor(TorchvisionBackend):
             raise ValueError(f"Format {format} is not supported.")
         return target
 
+# resize：保持宽高比缩放图像与可选标注
     def resize(
         self,
         image: torch.Tensor,
@@ -481,6 +489,7 @@ class DeformableDetrImageProcessor(TorchvisionBackend):
                 new_annotation[key] = value
         return new_annotation
 
+# pad：填充至固定尺寸并更新标注坐标
     def pad(
         self,
         image: torch.Tensor,
@@ -512,6 +521,7 @@ class DeformableDetrImageProcessor(TorchvisionBackend):
         return image, pixel_mask, annotation
 
     @auto_docstring
+# preprocess：批量图像预处理入口，输出 pixel_values 与 labels
     def preprocess(
         self,
         images: ImageInput,
@@ -646,6 +656,7 @@ class DeformableDetrImageProcessor(TorchvisionBackend):
             ]
         return encoded_inputs
 
+# post_process_object_detection：logits/boxes 转 top-k 像素坐标检测结果
     def post_process_object_detection(
         self, outputs, threshold: float = 0.5, target_sizes: TensorType | list[tuple] = None, top_k: int = 100
     ):

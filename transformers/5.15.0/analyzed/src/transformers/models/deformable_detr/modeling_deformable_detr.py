@@ -55,6 +55,7 @@ from .configuration_deformable_detr import DeformableDetrConfig
     """
 )
 @dataclass
+# DeformableDetrDecoderOutput：解码器输出，含中间层隐状态与 reference points
 class DeformableDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -75,6 +76,7 @@ class DeformableDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     """
 )
 @dataclass
+# DeformableDetrModelOutput：编解码器联合输出与两阶段 encoder 提案 logits
 class DeformableDetrModelOutput(ModelOutput):
     r"""
     init_reference_points (`torch.FloatTensor` of shape  `(batch_size, num_queries, 4)`):
@@ -113,6 +115,7 @@ class DeformableDetrModelOutput(ModelOutput):
     """
 )
 @dataclass
+# DeformableDetrObjectDetectionOutput：检测 loss、logits、pred_boxes 与辅助层输出
 class DeformableDetrObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -169,6 +172,7 @@ class DeformableDetrObjectDetectionOutput(ModelOutput):
 
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
+# MultiScaleDeformableAttention：CUDA/CPU 多尺度可变形注意力内核封装
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -223,6 +227,7 @@ class MultiScaleDeformableAttention(nn.Module):
         return output.transpose(1, 2).contiguous()
 
 
+# DeformableDetrFrozenBatchNorm2d：推理用冻结 BatchNorm（保留 running stats）
 class DeformableDetrFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -262,6 +267,7 @@ class DeformableDetrFrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# replace_batch_norm：将 backbone 中 BN 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `DeformableDetrFrozenBatchNorm2d`.
@@ -286,6 +292,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# DeformableDetrConvEncoder：ResNet 骨干 + 多尺度 1×1 投影与位置编码
 class DeformableDetrConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -338,6 +345,7 @@ class DeformableDetrConvEncoder(nn.Module):
         return out
 
 
+# DeformableDetrSinePositionEmbedding：正弦 2D 位置编码（按 valid_ratio 缩放）
 class DeformableDetrSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -415,6 +423,7 @@ class DeformableDetrSinePositionEmbedding(nn.Module):
         )
 
 
+# DeformableDetrLearnedPositionEmbedding：可学习 row/col 位置嵌入
 class DeformableDetrLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -445,6 +454,7 @@ class DeformableDetrLearnedPositionEmbedding(nn.Module):
         return pos
 
 
+# eager_attention_forward：标准缩放点积自注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -473,6 +483,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DeformableDetrSelfAttention：encoder 自注意力（多头 + 可选 mask）
 class DeformableDetrSelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -539,6 +550,7 @@ class DeformableDetrSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeformableDetrMultiscaleDeformableAttention：decoder 跨尺度可变形交叉注意力
 class DeformableDetrMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
@@ -646,6 +658,7 @@ class DeformableDetrMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# DeformableDetrMLP：encoder/decoder 前馈 MLP
 class DeformableDetrMLP(nn.Module):
     def __init__(self, config: DeformableDetrConfig, hidden_size: int, intermediate_size: int):
         super().__init__()
@@ -663,6 +676,7 @@ class DeformableDetrMLP(nn.Module):
         return hidden_states
 
 
+# DeformableDetrEncoderLayer：自注意力 + FFN 编码层
 class DeformableDetrEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__()
@@ -733,6 +747,7 @@ class DeformableDetrEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DeformableDetrDecoderLayer：自注意力 + 可变形交叉注意力 + FFN
 class DeformableDetrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__()
@@ -829,6 +844,7 @@ class DeformableDetrDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DeformableDetrPreTrainedModel：权重初始化与 backbone 冻结工具
 class DeformableDetrPreTrainedModel(PreTrainedModel):
     config: DeformableDetrConfig
     base_model_prefix = "model"
@@ -884,6 +900,7 @@ class DeformableDetrPreTrainedModel(PreTrainedModel):
             init.normal_(module.level_embed)
 
 
+# DeformableDetrEncoder：堆叠编码层，输出多尺度 memory
 class DeformableDetrEncoder(DeformableDetrPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -992,6 +1009,7 @@ class DeformableDetrEncoder(DeformableDetrPreTrainedModel):
         return reference_points
 
 
+# inverse_sigmoid：reference point 反 sigmoid 变换
 def inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
@@ -999,6 +1017,7 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# DeformableDetrDecoder：object queries 迭代 refine 与 reference points 更新
 class DeformableDetrDecoder(DeformableDetrPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`DeformableDetrDecoderLayer`].
@@ -1141,6 +1160,7 @@ class DeformableDetrDecoder(DeformableDetrPreTrainedModel):
     hidden-states without any specific head on top.
     """
 )
+# DeformableDetrModel：encoder-decoder 骨干，支持 two_stage 区域提案
 class DeformableDetrModel(DeformableDetrPreTrainedModel):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__(config)
@@ -1513,6 +1533,7 @@ class DeformableDetrModel(DeformableDetrPreTrainedModel):
         )
 
 
+# DeformableDetrMLPPredictionHead：分类/框回归 MLP 预测头
 class DeformableDetrMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -1538,6 +1559,7 @@ class DeformableDetrMLPPredictionHead(nn.Module):
     top, for tasks such as COCO detection.
     """
 )
+# DeformableDetrForObjectDetection：匈牙利匹配 + 辅助 loss 的目标检测头
 class DeformableDetrForObjectDetection(DeformableDetrPreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization

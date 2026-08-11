@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# DeiTImageProcessorPil：PIL 后端 DeiT 图像处理器
 class DeiTImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

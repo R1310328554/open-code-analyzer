@@ -36,6 +36,7 @@ from ..vit.modeling_vit import (
 from .configuration_deit import DeiTConfig
 
 
+# DeiTEmbeddings：ViT 嵌入 + distillation token 与位置编码扩展
 class DeiTEmbeddings(ViTEmbeddings):
     """
     Construct the CLS token, distillation token, position and patch embeddings. Optionally, also the mask token.
@@ -130,6 +131,7 @@ class DeiTEmbeddings(ViTEmbeddings):
         return embeddings
 
 
+# DeiTPreTrainedModel：继承 ViT 预训练基类
 class DeiTPreTrainedModel(ViTPreTrainedModel):
     _no_split_modules = ["DeiTEmbeddings", "DeiTLayer"]
 
@@ -144,10 +146,12 @@ class DeiTPreTrainedModel(ViTPreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# DeiTModel：DeiT 骨干，复用 ViT 编码器堆叠
 class DeiTModel(ViTModel):
     pass
 
 
+# DeiTForMaskedImageModeling：继承 ViT MIM 头
 class DeiTForMaskedImageModeling(ViTForMaskedImageModeling):
     @can_return_tuple
     @auto_docstring
@@ -228,6 +232,7 @@ class DeiTForMaskedImageModeling(ViTForMaskedImageModeling):
         )
 
 
+# DeiTForImageClassification：标准图像分类头
 class DeiTForImageClassification(ViTForImageClassification):
     pass
 
@@ -238,6 +243,7 @@ class DeiTForImageClassification(ViTForImageClassification):
     """
 )
 @dataclass
+# DeiTForImageClassificationWithTeacherOutput：蒸馏双 logits 输出
 class DeiTForImageClassificationWithTeacherOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, config.num_labels)`):
@@ -268,6 +274,7 @@ class DeiTForImageClassificationWithTeacherOutput(ModelOutput):
            supported.
     """
 )
+# DeiTForImageClassificationWithTeacher：知识蒸馏分类 modular 源
 class DeiTForImageClassificationWithTeacher(DeiTPreTrainedModel):
     def __init__(self, config: DeiTConfig) -> None:
         super().__init__(config)

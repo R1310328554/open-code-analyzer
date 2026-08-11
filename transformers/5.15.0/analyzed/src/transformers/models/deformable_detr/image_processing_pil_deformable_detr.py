@@ -60,6 +60,7 @@ if is_torch_available():
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# DeformableDetrImageProcessorKwargs：PIL 后端预处理关键字参数
 class DeformableDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -75,6 +76,7 @@ class DeformableDetrImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # inspired by https://github.com/facebookresearch/deformable_detr/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：PIL 路径下多边形转 mask 数组
 def convert_coco_poly_to_mask(segmentations, height: int, width: int) -> np.ndarray:
     """
     Convert a COCO polygon annotation to a mask.
@@ -110,6 +112,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int) -> np.ndar
 
 
 # inspired by https://github.com/facebookresearch/deformable_detr/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：COCO 检测标注 NumPy 格式转换
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -170,6 +173,7 @@ def prepare_coco_detection_annotation(
     return new_target
 
 
+# masks_to_boxes：NumPy mask 批量求边界框
 def masks_to_boxes(masks: np.ndarray) -> np.ndarray:
     """
     Compute the bounding boxes around the provided panoptic segmentation masks.
@@ -218,6 +222,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# prepare_coco_panoptic_annotation：全景分割 PIL 标注准备
 def prepare_coco_panoptic_annotation(
     image: np.ndarray,
     target: dict,
@@ -260,6 +265,7 @@ def prepare_coco_panoptic_annotation(
 
 
 @auto_docstring
+# DeformableDetrImageProcessorPil：PIL 后端图像处理器，接口与 Torchvision 版对齐
 class DeformableDetrImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -674,6 +680,7 @@ class DeformableDetrImageProcessorPil(PilBackend):
         return encoded_inputs
 
     @requires(backends=("torch",))
+# post_process_object_detection：PIL 后端检测结果后处理
     def post_process_object_detection(
         self, outputs, threshold: float = 0.5, target_sizes: TensorType | list[tuple] = None, top_k: int = 100
     ):

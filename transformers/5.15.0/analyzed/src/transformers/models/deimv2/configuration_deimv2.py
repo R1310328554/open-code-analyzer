@@ -28,8 +28,10 @@ from ..auto import AutoConfig
 
 # TODO: Attribute map assignment logic should be fixed in modular
 # as well as super() call parsing because otherwise we cannot re-write args after initialization
+# Deimv2Config：300 queries、3 特征层、对比去噪与 fine-grained localization loss
 @auto_docstring(checkpoint="Intellindust/DEIMv2_HGNetv2_N_COCO")
 @strict
+# Deimv2Config：matcher/focal loss 系数、reg_scale/max_num_bins 与 LQE 超参
 class Deimv2Config(PreTrainedConfig):
     r"""
     initializer_bias_prior_prob (`float`, *optional*):

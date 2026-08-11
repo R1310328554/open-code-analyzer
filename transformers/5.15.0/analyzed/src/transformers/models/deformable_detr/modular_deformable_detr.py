@@ -60,6 +60,7 @@ from .configuration_deformable_detr import DeformableDetrConfig
 logger = logging.get_logger(__name__)
 
 
+# DeformableDetrImageProcessor：扩展 DETR 处理器，top-k sigmoid 检测后处理
 class DeformableDetrImageProcessor(DetrImageProcessor):
     def post_process_object_detection(
         self, outputs, threshold: float = 0.5, target_sizes: TensorType | list[tuple] = None, top_k: int = 100
@@ -130,6 +131,7 @@ class DeformableDetrImageProcessor(DetrImageProcessor):
         raise NotImplementedError("Panoptic segmentation post-processing is not implemented for Deformable DETR yet.")
 
 
+# DeformableDetrImageProcessorPil：PIL 版 Deformable DETR 后处理
 class DeformableDetrImageProcessorPil(DetrImageProcessorPil):
     @requires(backends=("torch",))
     def post_process_object_detection(
@@ -202,6 +204,7 @@ class DeformableDetrImageProcessorPil(DetrImageProcessorPil):
         raise NotImplementedError("Panoptic segmentation post-processing is not implemented for Deformable DETR yet.")
 
 
+# DeformableDetrDecoderOutput：继承 DETR 解码输出，增加 reference points
 class DeformableDetrDecoderOutput(DetrDecoderOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -220,6 +223,7 @@ class DeformableDetrDecoderOutput(DetrDecoderOutput):
     """
 )
 @dataclass
+# DeformableDetrModelOutput：modular 源定义的编解码联合输出
 class DeformableDetrModelOutput(ModelOutput):
     r"""
     init_reference_points (`torch.FloatTensor` of shape  `(batch_size, num_queries, 4)`):
@@ -252,6 +256,7 @@ class DeformableDetrModelOutput(ModelOutput):
     enc_outputs_coord_logits: torch.FloatTensor | None = None
 
 
+# DeformableDetrObjectDetectionOutput：检测任务输出 dataclass
 class DeformableDetrObjectDetectionOutput(DetrObjectDetectionOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -302,6 +307,7 @@ def inverse_sigmoid(x, eps=1e-5):
 
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
+# MultiScaleDeformableAttention：可变形注意力算子 modular 封装
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -356,6 +362,7 @@ class MultiScaleDeformableAttention(nn.Module):
         return output.transpose(1, 2).contiguous()
 
 
+# DeformableDetrConvEncoder：DETR 卷积编码器 + 多尺度特征投影
 class DeformableDetrConvEncoder(DetrConvEncoder):
     def __init__(self, config):
         nn.Module.__init__()
@@ -388,6 +395,7 @@ class DeformableDetrConvEncoder(DetrConvEncoder):
                         parameter.requires_grad_(False)
 
 
+# DeformableDetrSinePositionEmbedding：正弦位置编码 modular 源
 class DeformableDetrSinePositionEmbedding(DetrSinePositionEmbedding):
     def build_sine_position_embedding(
         shape: torch.Size,
@@ -432,14 +440,17 @@ class DeformableDetrSinePositionEmbedding(DetrSinePositionEmbedding):
         return pos
 
 
+# DeformableDetrLearnedPositionEmbedding：可学习位置嵌入
 class DeformableDetrLearnedPositionEmbedding(DetrLearnedPositionEmbedding):
     pass
 
 
+# DeformableDetrSelfAttention：复用 DETR 自注意力
 class DeformableDetrSelfAttention(DetrSelfAttention):
     pass
 
 
+# DeformableDetrMultiscaleDeformableAttention：decoder 可变形交叉注意力 modular 源
 class DeformableDetrMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
@@ -547,10 +558,12 @@ class DeformableDetrMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# DeformableDetrMLP：继承 DETR 前馈 MLP
 class DeformableDetrMLP(DetrMLP):
     pass
 
 
+# DeformableDetrEncoderLayer：DETR 编码层 modular 扩展
 class DeformableDetrEncoderLayer(DetrEncoderLayer):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__()
@@ -605,6 +618,7 @@ class DeformableDetrEncoderLayer(DetrEncoderLayer):
         )
 
 
+# DeformableDetrDecoderLayer：替换交叉注意力为可变形版本
 class DeformableDetrDecoderLayer(DetrDecoderLayer):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__()
@@ -687,6 +701,7 @@ class DeformableDetrDecoderLayer(DetrDecoderLayer):
 
 
 @auto_docstring
+# DeformableDetrPreTrainedModel：Deformable DETR 预训练基类
 class DeformableDetrPreTrainedModel(PreTrainedModel):
     config: DeformableDetrConfig
     base_model_prefix = "model"
@@ -742,6 +757,7 @@ class DeformableDetrPreTrainedModel(PreTrainedModel):
             init.normal_(module.level_embed)
 
 
+# DeformableDetrEncoder：多尺度 encoder 与 reference points 生成
 class DeformableDetrEncoder(DetrEncoder):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -841,6 +857,7 @@ class DeformableDetrEncoder(DetrEncoder):
         return reference_points
 
 
+# DeformableDetrDecoder：迭代框 refine 解码器 modular 源
 class DeformableDetrDecoder(DeformableDetrPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`DeformableDetrDecoderLayer`].
@@ -983,6 +1000,7 @@ class DeformableDetrDecoder(DeformableDetrPreTrainedModel):
     hidden-states without any specific head on top.
     """
 )
+# DeformableDetrModel：完整 Deformable DETR 模型
 class DeformableDetrModel(DeformableDetrPreTrainedModel):
     def __init__(self, config: DeformableDetrConfig):
         super().__init__(config)
@@ -1355,6 +1373,7 @@ class DeformableDetrModel(DeformableDetrPreTrainedModel):
         )
 
 
+# DeformableDetrMLPPredictionHead：检测预测头
 class DeformableDetrMLPPredictionHead(DetrMLPPredictionHead):
     pass
 
@@ -1365,6 +1384,7 @@ class DeformableDetrMLPPredictionHead(DetrMLPPredictionHead):
     top, for tasks such as COCO detection.
     """
 )
+# DeformableDetrForObjectDetection：目标检测任务封装
 class DeformableDetrForObjectDetection(DeformableDetrPreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # We can't initialize the model on meta device as some weights are modified during the initialization
