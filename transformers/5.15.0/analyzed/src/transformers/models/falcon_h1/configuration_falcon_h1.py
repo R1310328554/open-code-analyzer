@@ -20,8 +20,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# FalconH1Config：TII Falcon-H1 混合架构默认 checkpoint 超参
 @auto_docstring(checkpoint="tiiuae/Falcon-H1-1.5B-Deep-Instruct")
 @strict
+# FalconH1Config：混合 Transformer 注意力与 Mamba2 SSM 的 Falcon-H1 超参
 class FalconH1Config(PreTrainedConfig):
     r"""
     num_logits_to_keep (`int` or `None`, *optional*, defaults to 1):
@@ -101,6 +103,7 @@ class FalconH1Config(PreTrainedConfig):
     attention_bias: bool = False
     mlp_bias: bool = False
 
+    # __post_init__：补全 GQA 头数、Mamba 维度与 μP 乘子默认值
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -119,6 +122,7 @@ class FalconH1Config(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验 Mamba 头维与 intermediate 可整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         mamba_intermediate = self.mamba_expand * self.hidden_size if self.mamba_d_ssm is None else self.mamba_d_ssm
@@ -130,6 +134,7 @@ class FalconH1Config(PreTrainedConfig):
             raise ValueError("The dimensions for the Mamba head state do not match the model intermediate_size")
 
     @property
+    # layers_block_type：各层均为 hybrid（Attention+Mamba）块类型
     def layers_block_type(self):
         return ["hybrid" for i in range(self.num_hidden_layers)]
 

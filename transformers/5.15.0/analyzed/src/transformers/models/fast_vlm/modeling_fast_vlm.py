@@ -36,6 +36,7 @@ from ..auto import AutoModel
 from .configuration_fast_vlm import FastVlmConfig
 
 
+# FastVlmMultiModalProjector：视觉特征到 LLM 隐空间的投影 MLP
 class FastVlmMultiModalProjector(nn.Module):
     def __init__(self, config: FastVlmConfig):
         super().__init__()
@@ -57,6 +58,7 @@ class FastVlmMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# FastVlmPreTrainedModel：FastVLM 预训练基类
 class FastVlmPreTrainedModel(PreTrainedModel):
     config: FastVlmConfig
     base_model_prefix = "model"
@@ -78,6 +80,7 @@ class FastVlmPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# FastVlmModelOutputWithPast：含 past_key_values 的多模态输出
 class FastVlmModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -98,6 +101,7 @@ class FastVlmModelOutputWithPast(BaseModelOutputWithPast):
     The FastVlm model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# FastVlmModel：FastVLM 多模态主干（图像嵌入 + 文本解码）
 class FastVlmModel(FastVlmPreTrainedModel):
     def __init__(self, config: FastVlmConfig):
         super().__init__(config)
@@ -226,6 +230,7 @@ class FastVlmModel(FastVlmPreTrainedModel):
     """
 )
 @dataclass
+# FastVlmCausalLMOutputWithPast：条件生成输出（logits + KV 缓存）
 class FastVlmCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -255,6 +260,7 @@ class FastVlmCausalLMOutputWithPast(ModelOutput):
     The FastVlm model which consists of a vision backbone and a language model.
     """
 )
+# FastVlmForConditionalGeneration：图文条件生成模型
 class FastVlmForConditionalGeneration(FastVlmPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

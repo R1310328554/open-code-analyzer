@@ -49,6 +49,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_falcon_h1 import FalconH1Config
 
 
+# FalconH1RotaryEmbedding：RoPE 旋转位置编码
 class FalconH1RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: FalconH1Config, device=None):
@@ -106,6 +107,7 @@ class FalconH1RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 半维旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -114,6 +116,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -139,6 +142,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 场景下重复 KV 头以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -151,6 +155,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式注意力前向计算
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -177,6 +182,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# FalconH1Attention：多头自注意力（支持 GQA 与 RoPE）
 class FalconH1Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -245,6 +251,7 @@ class FalconH1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# FalconH1RMSNormGated：门控 RMSNorm，用于 Mamba 分支归一化
 class FalconH1RMSNormGated(torch.nn.Module):
     def __init__(self, hidden_size, eps=1e-6, n_groups=1, norm_before_gate=True):
         super().__init__()
@@ -285,6 +292,7 @@ class FalconH1RMSNormGated(torch.nn.Module):
 # Helper methods for segment sum computation
 
 
+# pad_tensor_by_size：按 pad_size 在序列维填充张量
 def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     """
     Padding x tensor with `pad_size` on the seq_len dim (dim=1)
@@ -296,6 +304,7 @@ def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     return torch.nn.functional.pad(input_tensor, pad_shape, mode="constant", value=0)
 
 
+# reshape_into_chunks：将序列重塑为 chunk 供 Mamba 扫描
 def reshape_into_chunks(input_tensor, pad_size, chunk_size):
     """
     Padding input_tensor with `pad_size` on the seq_len dim (dim=1) and
@@ -316,6 +325,7 @@ def reshape_into_chunks(input_tensor, pad_size, chunk_size):
         )
 
 
+# segment_sum：分段前缀和，用于状态空间递推
 def segment_sum(input_tensor):
     """
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
@@ -336,6 +346,7 @@ def segment_sum(input_tensor):
     return tensor_segsum
 
 
+# apply_mask_to_padding_states：将 padding 位置的状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -349,6 +360,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果卷积 1D 增量更新（解码步）
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -369,6 +381,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果卷积 1D 全序列前向
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -392,6 +405,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_split_conv1d_scan_combined", "mamba_ssm")
+# mamba2_split_conv1d_scan_combined：Mamba2 卷积与扫描融合内核
 def mamba2_split_conv1d_scan_combined(
     zxbcdt: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -417,6 +431,7 @@ def mamba2_split_conv1d_scan_combined(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba2_selective_state_update：Mamba2 选择性状态单步更新
 def mamba2_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -479,6 +494,7 @@ def mamba2_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_chunk_scan_combined", "mamba_ssm")
+# mamba2_chunk_scan：Mamba2 分块并行扫描
 def mamba2_chunk_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -585,6 +601,7 @@ def mamba2_chunk_scan(
         mamba2_chunk_scan,
     ]
 )
+# FalconH1Mixer：Mamba2 状态空间混合层（因果卷积 + 分块扫描）
 class FalconH1Mixer(nn.Module):
     """
     FalconH1Mixer is identical to classic Mamba2 mixer classes but differs on two different things
@@ -822,6 +839,7 @@ class FalconH1Mixer(nn.Module):
         return contextualized_states
 
 
+# FalconH1MLP：SwiGLU 前馈网络
 class FalconH1MLP(nn.Module):
     def __init__(self, config: FalconH1Config):
         super().__init__()
@@ -841,6 +859,7 @@ class FalconH1MLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# FalconH1RMSNorm：RMS 层归一化
 class FalconH1RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -861,6 +880,7 @@ class FalconH1RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# FalconH1DecoderLayer：解码层（Attention + Mixer + MLP 残差堆叠）
 class FalconH1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: FalconH1Config, layer_idx: int):
         super().__init__()
@@ -943,6 +963,7 @@ class FalconH1DecoderLayer(GradientCheckpointingLayer):
         return (hidden_states,)
 
 
+# compute_mup_vector：按 μP 宽度乘子构造逐层缩放向量
 def compute_mup_vector(config):
     """
     Computes the MuP vector based on model configuration.
@@ -981,6 +1002,7 @@ def compute_mup_vector(config):
 
 
 @auto_docstring
+# FalconH1PreTrainedModel：Falcon-H1 预训练基类与权重初始化
 class FalconH1PreTrainedModel(PreTrainedModel):
     config: FalconH1Config
     base_model_prefix = "model"
@@ -1012,6 +1034,7 @@ class FalconH1PreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Adapted from transformers.models.jamba.modeling_jamba.JambaModel
+# FalconH1Model：Falcon-H1 主干（嵌入 + 解码层堆叠）
 class FalconH1Model(FalconH1PreTrainedModel):
     def __init__(self, config: FalconH1Config):
         super().__init__(config)
@@ -1106,6 +1129,7 @@ class FalconH1Model(FalconH1PreTrainedModel):
 
 
 @auto_docstring
+# FalconH1ForCausalLM：因果语言建模头（lm_head + 生成接口）
 class FalconH1ForCausalLM(FalconH1PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

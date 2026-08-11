@@ -44,6 +44,7 @@ from ...utils.import_utils import (
 from .configuration_falcon_mamba import FalconMambaConfig
 
 
+# FalconMambaWeightlessRMSNorm：无权重 RMSNorm（仅缩放）
 class FalconMambaWeightlessRMSNorm(torch.nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6):
         super().__init__()
@@ -61,6 +62,7 @@ class FalconMambaWeightlessRMSNorm(torch.nn.Module):
         return f"eps={self.eps}"
 
 
+# apply_mask_to_padding_states：将 padding 位置的状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/falcon_mamba/issues/66
@@ -74,6 +76,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果卷积 1D 增量更新（解码步）
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -94,6 +97,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果卷积 1D 全序列前向
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -117,6 +121,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_inner_fn", "mamba_ssm")
+# mamba_inner_fn：Mamba 内部融合前向（卷积 + SSM）
 def mamba_inner_fn(
     xz: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -141,6 +146,7 @@ def mamba_inner_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba_selective_state_update：Mamba 选择性状态更新
 def mamba_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -187,6 +193,7 @@ def mamba_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_scan_fn", "mamba_ssm")
+# mamba_selective_scan：Mamba 选择性扫描递推
 def mamba_selective_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -297,6 +304,7 @@ def mamba_selective_scan(
 @use_kernelized_func(
     [mamba_inner_fn, mamba_selective_scan, mamba_selective_state_update, causal_conv1d_fn, causal_conv1d_update]
 )
+# FalconMambaMixer：Falcon-Mamba 核心 Mamba 混合层
 class FalconMambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -521,6 +529,7 @@ class FalconMambaMixer(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# FalconMambaRMSNorm：RMS 层归一化
 class FalconMambaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -541,6 +550,7 @@ class FalconMambaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# FalconMambaBlock：Mamba 块（Mixer + Norm 残差）
 class FalconMambaBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -568,6 +578,7 @@ class FalconMambaBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# FalconMambaPreTrainedModel：Falcon-Mamba 预训练基类
 class FalconMambaPreTrainedModel(PreTrainedModel):
     config: FalconMambaConfig
     base_model_prefix = "backbone"
@@ -610,6 +621,7 @@ class FalconMambaPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# FalconMambaOutput：主干前向输出 dataclass
 class FalconMambaOutput(ModelOutput):
     r"""
     cache_params (`Cache`):
@@ -630,6 +642,7 @@ class FalconMambaOutput(ModelOutput):
     """
 )
 @dataclass
+# FalconMambaCausalLMOutput：因果 LM 输出（含 logits 与 loss）
 class FalconMambaCausalLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -650,6 +663,7 @@ class FalconMambaCausalLMOutput(ModelOutput):
 
 
 @auto_docstring
+# FalconMambaModel：Falcon-Mamba 主干模型
 class FalconMambaModel(FalconMambaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -740,6 +754,7 @@ class FalconMambaModel(FalconMambaPreTrainedModel):
     embeddings).
     """
 )
+# FalconMambaForCausalLM：因果语言建模包装
 class FalconMambaForCausalLM(FalconMambaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "backbone.embeddings.weight"}
 

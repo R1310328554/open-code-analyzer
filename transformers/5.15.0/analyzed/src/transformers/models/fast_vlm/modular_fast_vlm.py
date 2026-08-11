@@ -38,6 +38,7 @@ from ..llava.modeling_llava import (
 
 @auto_docstring(checkpoint="KamilaMila/FastVLM-7B")
 @strict
+# FastVlmConfig：FastVLM 多模态（视觉塔 + LLM）联合超参
 class FastVlmConfig(LlavaConfig):
     r"""
     Example:
@@ -113,6 +114,7 @@ class FastVlmConfig(LlavaConfig):
             )
 
 
+# FastVlmMultiModalProjector：视觉特征到 LLM 隐空间的投影 MLP
 class FastVlmMultiModalProjector(LlavaMultiModalProjector):
     def __init__(self, config: FastVlmConfig):
         nn.Module.__init__()
@@ -127,14 +129,17 @@ class FastVlmMultiModalProjector(LlavaMultiModalProjector):
         )
 
 
+# FastVlmPreTrainedModel：FastVLM 预训练基类
 class FastVlmPreTrainedModel(LlavaPreTrainedModel):
     pass
 
 
+# FastVlmModelOutputWithPast：含 past_key_values 的多模态输出
 class FastVlmModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# FastVlmModel：FastVLM 多模态主干（图像嵌入 + 文本解码）
 class FastVlmModel(LlavaModel):
     def __init__(self, config: FastVlmConfig):
         super().__init__(config)
@@ -228,6 +233,7 @@ class FastVlmModel(LlavaModel):
         )
 
 
+# FastVlmCausalLMOutputWithPast：条件生成输出（logits + KV 缓存）
 class FastVlmCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
@@ -237,6 +243,7 @@ class FastVlmCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     The FastVlm model which consists of a vision backbone and a language model.
     """
 )
+# FastVlmForConditionalGeneration：图文条件生成模型
 class FastVlmForConditionalGeneration(LlavaForConditionalGeneration):
     @can_return_tuple
     @auto_docstring

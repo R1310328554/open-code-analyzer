@@ -26,8 +26,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# FastVlmConfig：FastVLM-7B 视觉-语言多模态联合配置
 @auto_docstring(checkpoint="KamilaMila/FastVLM-7B")
 @strict
+# FastVlmConfig：FastVLM 多模态（视觉塔 + LLM）联合超参
 class FastVlmConfig(PreTrainedConfig):
     r"""
     Example:

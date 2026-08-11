@@ -61,10 +61,12 @@ from .configuration_falcon_h1 import FalconH1Config
 logger = logging.get_logger(__name__)
 
 
+# FalconH1RotaryEmbedding：RoPE 旋转位置编码
 class FalconH1RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# FalconH1Attention：多头自注意力（支持 GQA 与 RoPE）
 class FalconH1Attention(LlamaAttention):
     def __init__(self, config: FalconH1Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -111,6 +113,7 @@ class FalconH1Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# FalconH1RMSNormGated：门控 RMSNorm，用于 Mamba 分支归一化
 class FalconH1RMSNormGated(MambaRMSNormGated):
     def __init__(self, hidden_size, eps=1e-6, n_groups=1, norm_before_gate=True):
         super().__init__(hidden_size=hidden_size, eps=eps)
@@ -148,6 +151,7 @@ class FalconH1RMSNormGated(MambaRMSNormGated):
         return hidden_states.to(input_dtype)
 
 
+# FalconH1Mixer：Mamba2 状态空间混合层（因果卷积 + 分块扫描）
 class FalconH1Mixer(BambaMixer):
     """
     FalconH1Mixer is identical to classic Mamba2 mixer classes but differs on two different things
@@ -334,6 +338,7 @@ class FalconH1Mixer(BambaMixer):
         return contextualized_states
 
 
+# FalconH1MLP：SwiGLU 前馈网络
 class FalconH1MLP(LlamaMLP):
     def __init__(self, config: FalconH1Config):
         super().__init__(config)
@@ -345,10 +350,12 @@ class FalconH1MLP(LlamaMLP):
         return y
 
 
+# FalconH1RMSNorm：RMS 层归一化
 class FalconH1RMSNorm(LlamaRMSNorm):
     pass
 
 
+# FalconH1DecoderLayer：解码层（Attention + Mixer + MLP 残差堆叠）
 class FalconH1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: FalconH1Config, layer_idx: int):
         super().__init__()
@@ -432,6 +439,7 @@ class FalconH1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# FalconH1PreTrainedModel：Falcon-H1 预训练基类与权重初始化
 class FalconH1PreTrainedModel(PreTrainedModel):
     config: FalconH1Config
     base_model_prefix = "model"
@@ -461,6 +469,7 @@ class FalconH1PreTrainedModel(PreTrainedModel):
                 init.copy_(layer.mamba.mup_vector, mup_vector)
 
 
+# compute_mup_vector：按 μP 宽度乘子构造逐层缩放向量
 def compute_mup_vector(config):
     """
     Computes the MuP vector based on model configuration.
@@ -500,6 +509,7 @@ def compute_mup_vector(config):
 
 @auto_docstring
 # Adapted from transformers.models.jamba.modeling_jamba.JambaModel
+# FalconH1Model：Falcon-H1 主干（嵌入 + 解码层堆叠）
 class FalconH1Model(FalconH1PreTrainedModel):
     def __init__(self, config: FalconH1Config):
         super().__init__(config)
@@ -593,6 +603,7 @@ class FalconH1Model(FalconH1PreTrainedModel):
         )
 
 
+# FalconH1ForCausalLM：因果语言建模头（lm_head + 生成接口）
 class FalconH1ForCausalLM(LlamaForCausalLM):
     @staticmethod
     def create_masks_for_generate(config, inputs_embeds, attention_mask, past_key_values, position_ids=None, **_):

@@ -22,8 +22,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# FastSpeech2ConformerConfig：ESPnet FastSpeech2-Conformer TTS 默认超参
 @auto_docstring(checkpoint="espnet/fastspeech2_conformer")
 @strict
+# FastSpeech2ConformerConfig：FastSpeech2-Conformer TTS 编码器/解码器超参
 class FastSpeech2ConformerConfig(PreTrainedConfig):
     r"""
     encoder_num_attention_heads (`int`, *optional*, defaults to 2):
@@ -262,8 +264,10 @@ class FastSpeech2ConformerConfig(PreTrainedConfig):
             raise ValueError("Either use_masking or use_weighted_masking can be True, but not both.")
 
 
+# FastSpeech2ConformerHifiGanConfig：HiFi-GAN 声码器子配置
 @auto_docstring(checkpoint="espnet/fastspeech2_conformer_with_hifigan")
 @strict
+# FastSpeech2ConformerHifiGanConfig：HiFi-GAN 声码器超参
 class FastSpeech2ConformerHifiGanConfig(PreTrainedConfig):
     r"""
     model_in_dim (`int`, *optional*, defaults to 80):
@@ -323,8 +327,10 @@ class FastSpeech2ConformerHifiGanConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# FastSpeech2ConformerWithHifiGanConfig：TTS 与 HiFi-GAN 联合打包配置
 @auto_docstring(checkpoint="espnet/fastspeech2_conformer_with_hifigan")
 @strict
+# FastSpeech2ConformerWithHifiGanConfig：TTS + HiFi-GAN 联合配置
 class FastSpeech2ConformerWithHifiGanConfig(PreTrainedConfig):
     r"""
     model_config ([`FastSpeech2ConformerConfig | dict`], *optional*):

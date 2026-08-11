@@ -45,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="tiiuae/falcon-mamba-7b")
 @strict
+# FalconMambaConfig：纯 Mamba SSM 架构 Falcon-Mamba 超参
 class FalconMambaConfig(MambaConfig):
     r"""
     expand (`int`, *optional*, defaults to 2):
@@ -100,6 +101,7 @@ class FalconMambaConfig(MambaConfig):
         return ["linear_attention"] * self.num_hidden_layers
 
 
+# FalconMambaWeightlessRMSNorm：无权重 RMSNorm（仅缩放）
 class FalconMambaWeightlessRMSNorm(NanoChatRMSNorm):
     def __init__(self, hidden_size, eps: float = 1e-6):
         super().__init__(eps)
@@ -107,6 +109,7 @@ class FalconMambaWeightlessRMSNorm(NanoChatRMSNorm):
         self.weight = nn.Buffer(torch.ones(hidden_size, requires_grad=False), persistent=False)
 
 
+# FalconMambaMixer：Falcon-Mamba 核心 Mamba 混合层
 class FalconMambaMixer(MambaMixer):
     def __init__(self, config: FalconMambaConfig, layer_idx: int, initialize_mixer_weights: bool = True):
         super().__init__(config, layer_idx, initialize_mixer_weights)
@@ -264,27 +267,33 @@ class FalconMambaMixer(MambaMixer):
         return contextualized_states
 
 
+# FalconMambaRMSNorm：RMS 层归一化
 class FalconMambaRMSNorm(LlamaRMSNorm):
     pass
 
 
+# FalconMambaBlock：Mamba 块（Mixer + Norm 残差）
 class FalconMambaBlock(MambaBlock):
     pass
 
 
 @auto_docstring
+# FalconMambaPreTrainedModel：Falcon-Mamba 预训练基类
 class FalconMambaPreTrainedModel(MambaPreTrainedModel):
     pass
 
 
+# FalconMambaOutput：主干前向输出 dataclass
 class FalconMambaOutput(MambaOutput):
     pass
 
 
+# FalconMambaCausalLMOutput：因果 LM 输出（含 logits 与 loss）
 class FalconMambaCausalLMOutput(MambaCausalLMOutput):
     pass
 
 
+# FalconMambaModel：Falcon-Mamba 主干模型
 class FalconMambaModel(MambaModel, FalconMambaPreTrainedModel):
     def __init__(self, config):
         FalconMambaPreTrainedModel.__init__(self, config)
@@ -303,6 +312,7 @@ class FalconMambaModel(MambaModel, FalconMambaPreTrainedModel):
         raise AttributeError("Not needed for FalconMamba")
 
 
+# FalconMambaForCausalLM：因果语言建模包装
 class FalconMambaForCausalLM(MambaForCausalLM):
     pass
 

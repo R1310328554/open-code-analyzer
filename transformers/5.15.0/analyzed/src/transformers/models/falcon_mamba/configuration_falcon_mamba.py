@@ -25,8 +25,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FalconMambaConfig：TII Falcon-Mamba-7B 纯 SSM 架构超参
 @auto_docstring(checkpoint="tiiuae/falcon-mamba-7b")
 @strict
+# FalconMambaConfig：纯 Mamba SSM 架构 Falcon-Mamba 超参
 class FalconMambaConfig(PreTrainedConfig):
     r"""
     expand (`int`, *optional*, defaults to 2):

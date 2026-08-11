@@ -40,6 +40,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# FastSpeech2ConformerModelOutput：TTS 前向输出（频谱/时长等）
 class FastSpeech2ConformerModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -70,6 +71,7 @@ class FastSpeech2ConformerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# FastSpeech2ConformerWithHifiGanOutput：TTS+声码器联合输出（含波形）
 class FastSpeech2ConformerWithHifiGanOutput(FastSpeech2ConformerModelOutput):
     r"""
     waveform (`torch.FloatTensor` of shape `(batch_size, audio_length)`):
@@ -79,6 +81,7 @@ class FastSpeech2ConformerWithHifiGanOutput(FastSpeech2ConformerModelOutput):
     waveform: torch.FloatTensor | None = None
 
 
+# length_regulator：按时长标签扩展编码序列（语速调节）
 def length_regulator(encoded_embeddings, duration_labels, speaking_speed=1.0):
     """
     Length regulator for feed-forward Transformer.
@@ -126,6 +129,7 @@ def length_regulator(encoded_embeddings, duration_labels, speaking_speed=1.0):
     return hidden_states
 
 
+# FastSpeech2ConformerDurationPredictor：音素时长预测器
 class FastSpeech2ConformerDurationPredictor(nn.Module):
     """
     Duration predictor module.
@@ -186,6 +190,7 @@ class FastSpeech2ConformerDurationPredictor(nn.Module):
 
 
 # Copied from transformers.models.speecht5.modeling_speecht5.SpeechT5BatchNormConvLayer
+# FastSpeech2ConformerBatchNormConvLayer：BatchNorm + Conv1d 层
 class FastSpeech2ConformerBatchNormConvLayer(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -226,6 +231,7 @@ class FastSpeech2ConformerBatchNormConvLayer(nn.Module):
         return hidden_states
 
 
+# FastSpeech2ConformerSpeechDecoderPostnet：梅尔谱后处理 PostNet
 class FastSpeech2ConformerSpeechDecoderPostnet(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -244,6 +250,7 @@ class FastSpeech2ConformerSpeechDecoderPostnet(nn.Module):
         return outputs_before_postnet, outputs_after_postnet
 
 
+# FastSpeech2ConformerPredictorLayer：方差预测器单层（Conv+ReLU）
 class FastSpeech2ConformerPredictorLayer(nn.Module):
     def __init__(self, input_channels, num_chans, kernel_size, dropout_rate):
         super().__init__()
@@ -272,6 +279,7 @@ class FastSpeech2ConformerPredictorLayer(nn.Module):
         return hidden_states
 
 
+# FastSpeech2ConformerVariancePredictor：音高/能量/时长方差预测头
 class FastSpeech2ConformerVariancePredictor(nn.Module):
     def __init__(
         self,
@@ -325,6 +333,7 @@ class FastSpeech2ConformerVariancePredictor(nn.Module):
         return hidden_states
 
 
+# FastSpeech2ConformerVarianceEmbedding：离散方差标签嵌入
 class FastSpeech2ConformerVarianceEmbedding(nn.Module):
     def __init__(
         self,
@@ -351,6 +360,7 @@ class FastSpeech2ConformerVarianceEmbedding(nn.Module):
         return hidden_states
 
 
+# FastSpeech2ConformerAttention：Conformer 多头自注意力
 class FastSpeech2ConformerAttention(nn.Module):
     """
     Multi-Head attention layer with relative position encoding. Details can be found in
@@ -463,6 +473,7 @@ class FastSpeech2ConformerAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# FastSpeech2ConformerConvolutionModule：Conformer 深度可分离卷积模块
 class FastSpeech2ConformerConvolutionModule(nn.Module):
     def __init__(self, config: FastSpeech2ConformerConfig, module_config=None):
         """
@@ -535,6 +546,7 @@ class FastSpeech2ConformerConvolutionModule(nn.Module):
         return hidden_states.transpose(1, 2)
 
 
+# FastSpeech2ConformerEncoderLayer：Conformer 编码层（FFN+Attn+Conv）
 class FastSpeech2ConformerEncoderLayer(nn.Module):
     def __init__(self, config: FastSpeech2ConformerConfig, module_config):
         super().__init__()
@@ -652,6 +664,7 @@ class FastSpeech2ConformerEncoderLayer(nn.Module):
         return outputs
 
 
+# FastSpeech2ConformerMultiLayeredConv1d：多层 1D 卷积堆叠
 class FastSpeech2ConformerMultiLayeredConv1d(nn.Module):
     """
     Multi-layered conv1d for Transformer block.
@@ -698,6 +711,7 @@ class FastSpeech2ConformerMultiLayeredConv1d(nn.Module):
         return hidden_states
 
 
+# FastSpeech2ConformerRelPositionalEncoding：相对位置编码（正弦）
 class FastSpeech2ConformerRelPositionalEncoding(nn.Module):
     """
     Args:
@@ -767,6 +781,7 @@ class FastSpeech2ConformerRelPositionalEncoding(nn.Module):
         return self.dropout(hidden_states), self.dropout(pos_emb)
 
 
+# FastSpeech2ConformerEncoder：Conformer 编码器堆叠
 class FastSpeech2ConformerEncoder(nn.Module):
     """
     FastSpeech2ConformerEncoder encoder module.
@@ -867,6 +882,7 @@ class FastSpeech2ConformerEncoder(nn.Module):
         )
 
 
+# FastSpeech2ConformerLoss：TTS 训练损失（时长/梅尔/MSE 等）
 class FastSpeech2ConformerLoss(nn.Module):
     def __init__(self, config: FastSpeech2ConformerConfig):
         super().__init__()
@@ -978,6 +994,7 @@ class FastSpeech2ConformerLoss(nn.Module):
 
 
 @auto_docstring
+# FastSpeech2ConformerPreTrainedModel：FastSpeech2-Conformer 预训练基类
 class FastSpeech2ConformerPreTrainedModel(PreTrainedModel):
     config: FastSpeech2ConformerConfig
     base_model_prefix = "fastspeech2_conformer"
@@ -1018,6 +1035,7 @@ class FastSpeech2ConformerPreTrainedModel(PreTrainedModel):
     FastSpeech2Conformer Model.
     """
 )
+# FastSpeech2ConformerModel：FastSpeech2-Conformer TTS 主干
 class FastSpeech2ConformerModel(FastSpeech2ConformerPreTrainedModel):
     """
     FastSpeech 2 module.
@@ -1289,6 +1307,7 @@ class FastSpeech2ConformerModel(FastSpeech2ConformerPreTrainedModel):
 
 
 # Copied from transformers.models.speecht5.modeling_speecht5.HifiGanResidualBlock
+# HifiGanResidualBlock：HiFi-GAN 残差卷积块（多 dilation）
 class HifiGanResidualBlock(nn.Module):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5), leaky_relu_slope=0.1):
         super().__init__()
@@ -1357,6 +1376,7 @@ class HifiGanResidualBlock(nn.Module):
     """
 )
 # Copied from transformers.models.speecht5.modeling_speecht5.SpeechT5HifiGan with SpeechT5->FastSpeech2Conformer
+# FastSpeech2ConformerHifiGan：HiFi-GAN 神经声码器
 class FastSpeech2ConformerHifiGan(PreTrainedModel):
     config: FastSpeech2ConformerHifiGanConfig
     main_input_name = "spectrogram"
@@ -1480,6 +1500,7 @@ class FastSpeech2ConformerHifiGan(PreTrainedModel):
     The FastSpeech2ConformerModel with a FastSpeech2ConformerHifiGan vocoder head that performs text-to-speech (waveform).
     """
 )
+# FastSpeech2ConformerWithHifiGan：TTS 与 HiFi-GAN 端到端推理
 class FastSpeech2ConformerWithHifiGan(PreTrainedModel):
     config: FastSpeech2ConformerWithHifiGanConfig
 
