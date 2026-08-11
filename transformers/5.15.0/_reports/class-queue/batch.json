@@ -15,23 +15,8 @@
     "src/transformers/models/pix2struct/configuration_pix2struct.py",
     "src/transformers/models/pix2struct/image_processing_pil_pix2struct.py",
     "src/transformers/models/pix2struct/image_processing_pix2struct.py",
-    "src/transformers/models/pix2struct/modeling_pix2struct.py",
-    "src/transformers/models/pix2struct/processing_pix2struct.py",
-    "src/transformers/models/pixio/__init__.py",
-    "src/transformers/models/pixio/configuration_pixio.py",
-    "src/transformers/models/pixio/modeling_pixio.py",
-    "src/transformers/models/pixio/modular_pixio.py",
-    "src/transformers/models/pixtral/__init__.py",
-    "src/transformers/models/pixtral/configuration_pixtral.py",
-    "src/transformers/models/pixtral/image_processing_pil_pixtral.py",
-    "src/transformers/models/pixtral/image_processing_pixtral.py",
-    "src/transformers/models/pixtral/modeling_pixtral.py",
-    "src/transformers/models/pixtral/processing_pixtral.py",
-    "src/transformers/models/plbart/__init__.py",
-    "src/transformers/models/plbart/configuration_plbart.py",
-    "src/transformers/models/plbart/modeling_plbart.py",
-    "src/transformers/models/plbart/modular_plbart.py"
+    "src/transformers/models/pix2struct/modeling_pix2struct.py"
   ],
   "remaining_pending": 939,
-  "done": 1710
+  "done": 1725
 }
