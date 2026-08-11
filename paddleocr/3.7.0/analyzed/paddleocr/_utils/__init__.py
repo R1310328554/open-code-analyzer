@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# paddleocr 内部工具子包：CLI、语言集、弃用警告等（无公开重导出）# limitations under the License.

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PP-ChatOCRv4-doc：版面 OCR + 向量检索 + LLM/MLLM 键值信息抽取
 from .._utils.cli import (
     get_subcommand_args,
     str2bool,
@@ -20,6 +21,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # 文档智能问答流水线：visual_predict → build_vector → chat
 class PPChatOCRv4Doc(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -81,6 +83,7 @@ class PPChatOCRv4Doc(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "PP-ChatOCRv4-doc"
 
+        # 持久化向量索引供后续检索复用
     def save_vector(self, vector_info, save_path, retriever_config=None):
         return self.paddlex_pipeline.save_vector(
             vector_info=vector_info,
@@ -101,6 +104,7 @@ class PPChatOCRv4Doc(PaddleXPipelineWrapper):
             visual_info=visual_info, save_path=save_path
         )
 
+        # 版面解析与 OCR，yield 含 visual_info 与 layout_parsing_result
     def visual_predict_iter(
         self,
         input,
@@ -209,6 +213,7 @@ class PPChatOCRv4Doc(PaddleXPipelineWrapper):
             )
         )
 
+        # 将 visual_info 分块嵌入为检索向量
     def build_vector(
         self,
         visual_info,
@@ -233,6 +238,7 @@ class PPChatOCRv4Doc(PaddleXPipelineWrapper):
             mllm_chat_bot_config=mllm_chat_bot_config,
         )
 
+        # 结合向量检索与可选 MLLM 结果，按 key_list 抽取字段
     def chat(
         self,
         key_list,
@@ -421,6 +427,7 @@ class PPChatOCRv4Doc(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 pp_chatocrv4_doc：-k 指定抽取键，可选千帆/DocBee API
 class PPChatOCRv4DocCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

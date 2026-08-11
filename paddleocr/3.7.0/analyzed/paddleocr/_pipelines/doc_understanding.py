@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档理解流水线：图文+自然语言查询，返回结构化理解结果
 from paddlex.utils.pipeline_arguments import custom_type
 
 from .._utils.cli import (
@@ -23,6 +24,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # 绑定 DocUnderstanding 模型，输入 dict（image + query）
 class DocUnderstanding(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -43,6 +45,7 @@ class DocUnderstanding(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "doc_understanding"
 
+        # 将 input 交给 paddlex_pipeline.predict 并逐条 yield
     def predict_iter(self, input, **kwargs):
         return self.paddlex_pipeline.predict(input, **kwargs)
 
@@ -72,6 +75,7 @@ class DocUnderstanding(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 doc_understanding：校验 dict 输入并调用推理
 class DocUnderstandingCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     input_validator = staticmethod(custom_type(dict))
 

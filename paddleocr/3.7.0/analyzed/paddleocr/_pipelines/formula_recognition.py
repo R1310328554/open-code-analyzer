@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 公式识别流水线：版面检测 + 文档预处理 + 数学公式 LaTeX 识别
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -22,6 +23,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # 串联 LayoutDetection、DocPreprocessor 与 FormulaRecognition 子模块
 class FormulaRecognitionPipeline(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -57,6 +59,7 @@ class FormulaRecognitionPipeline(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "formula_recognition"
 
+        # 支持预置 layout_det_res 与运行时覆盖检测阈值/NMS 等参数
     def predict_iter(
         self,
         input,
@@ -176,6 +179,7 @@ class FormulaRecognitionPipeline(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 formula_recognition_pipeline：暴露全部子模型与 batch 配置
 class FormulaRecognitionPipelineCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格识别 V2：有线/无线表结构、单元格检测与可选 OCR 填充
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -22,6 +23,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # table_recognition_v2 流水线：分类表型后结构识别与 HTML 导出
 class TableRecognitionPipelineV2(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -69,6 +71,7 @@ class TableRecognitionPipelineV2(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "table_recognition_v2"
 
+        # 支持 overall_ocr_res/layout_det_res 复用上游结果
     def predict_iter(
         self,
         input,
@@ -266,6 +269,7 @@ class TableRecognitionPipelineV2(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 table_recognition_v2：表分类与各结构/单元格模型配置
 class TableRecognitionPipelineV2CLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

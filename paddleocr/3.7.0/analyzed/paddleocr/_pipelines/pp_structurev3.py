@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PP-StructureV3：文档结构化解析（版面+OCR+表格+公式+印章+图表）输出 Markdown
 import warnings
 from .._utils.cli import (
     add_simple_inference_args,
@@ -23,11 +24,13 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 from ._patch_layout_parsing import apply_patches as _apply_layout_parsing_patches
 
+  # 启动时对 paddlex layout_parsing 做兼容补丁
 _apply_layout_parsing_patches()
 
 _SUPPORTED_OCR_VERSIONS = ["PP-OCRv3", "PP-OCRv4", "PP-OCRv5"]
 
 
+    # 第三代文档结构分析：可配置各子流水线并导出块级 Markdown
 class PPStructureV3(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -145,6 +148,7 @@ class PPStructureV3(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "PP-StructureV3"
 
+        # 统一 predict 入口，支持表格 HTML 转换与 markdown_ignore_labels
     def predict_iter(
         self,
         input,
@@ -527,6 +531,7 @@ class PPStructureV3(PaddleXPipelineWrapper):
         }
         return create_config_from_structure(STRUCTURE)
 
+        # 未显式指定检测/识别模型时，按语言解析 PP-OCRv3–v5 默认模型
     def _get_ocr_model_names(self, lang, ppocr_version):
         LATIN_LANGS = [
             "af",
@@ -690,6 +695,7 @@ class PPStructureV3(PaddleXPipelineWrapper):
             return "PP-OCRv3_mobile_det", rec_model_name
 
 
+    # CLI 子命令 pp_structurev3：暴露全套子模块模型与功能开关
 class PPStructureV3CLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

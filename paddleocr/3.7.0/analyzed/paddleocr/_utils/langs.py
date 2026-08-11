@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Language code groupings shared across OCR pipelines."""
+"""
+OCR 流水线共享的语言代码分组：拉丁/阿拉伯/斯拉夫/天城文等脚本集合。
 
+Language code groupings shared across OCR pipelines.
+""""""Language code groupings shared across OCR pipelines."""
+
+    # 拉丁字母系语言代码，用于 PP-OCR 默认识别模型路由
 LATIN_LANGS = frozenset(
     {
         "af",
@@ -68,8 +73,11 @@ LATIN_LANGS = frozenset(
     }
 )
 
+    # 阿拉伯文系语言代码集合
 ARABIC_LANGS = frozenset({"ar", "fa", "ug", "ur", "ps", "ku", "sd", "bal"})
+    # 东斯拉夫语（俄/白/乌）语言代码
 ESLAV_LANGS = frozenset({"ru", "be", "uk"})
+    # 西里尔字母系语言代码，含中亚与高加索语种
 CYRILLIC_LANGS = frozenset(
     {
         "ru",
@@ -107,6 +115,7 @@ CYRILLIC_LANGS = frozenset(
         "kaa",
     }
 )
+    # 天城文系语言代码（印地语、马拉地语等）
 DEVANAGARI_LANGS = frozenset(
     {
         "hi",

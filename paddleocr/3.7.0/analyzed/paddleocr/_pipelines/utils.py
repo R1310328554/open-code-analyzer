@@ -13,7 +13,10 @@
 # limitations under the License.
 
 
+    # 将点分键扁平字典递归展开为 PaddleX 嵌套配置 dict
+    # 将点分键扁平字典递归展开为 PaddleX 嵌套配置 dict；unset 值跳过写入
 def create_config_from_structure(structure, *, unset=None, config=None):
+        # 顶层调用时创建空 dict，递归子调用复用同一 config 树
     if config is None:
         config = {}
     for k, v in structure.items():

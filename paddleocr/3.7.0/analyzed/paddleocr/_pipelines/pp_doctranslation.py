@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PP-DocTranslation：版面解析生成 Markdown 后由 LLM 翻译为目标语言
 from .._utils.cli import (
     get_subcommand_args,
     str2bool,
@@ -21,6 +22,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # 视觉解析 + 翻译两阶段：visual_predict 产出 md，translate 调用 Chat 模块
 class PPDocTranslation(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -101,6 +103,7 @@ class PPDocTranslation(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "PP-DocTranslation"
 
+        # 完整版面流水线（表格/公式/印章/图表等）并 yield 解析结果
     def visual_predict_iter(
         self,
         input,
@@ -245,6 +248,7 @@ class PPDocTranslation(PaddleXPipelineWrapper):
             )
         )
 
+        # 按 chunk 调用 LLM 翻译 Markdown 块，支持 glossary 与 few-shot
     def translate_iter(
         self,
         ori_md_info_list,
@@ -309,6 +313,7 @@ class PPDocTranslation(PaddleXPipelineWrapper):
             )
         )
 
+        # 从已有 Markdown 加载，跳过视觉解析阶段
     def load_from_markdown(self, input):
         return self.paddlex_pipeline.load_from_markdown(input)
 
@@ -559,6 +564,7 @@ class PPDocTranslation(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 pp_doctranslation：-i 输入 --target_language 目标语
 class PPDocTranslationCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 通用 OCR 流水线：兼容 PaddleOCR 2.x 接口，支持 PP-OCRv3–v6 多语言模型
 # TODO: Should we use a third-party CLI library to auto-generate command-line
 # arguments from the pipeline class, to reduce boilerplate and improve
 # maintainability?
@@ -63,6 +64,7 @@ _PPOCRV6_LANGS = frozenset({"ch", "chinese_cht", "en", "japan"}) | (
 
 
 # Be comptable with PaddleOCR 2.x interfaces
+    # 主 OCR 类：检测+识别+可选文档预处理与文本行方向分类
 class PaddleOCR(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -176,6 +178,7 @@ class PaddleOCR(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "OCR"
 
+        # 迭代 predict，可运行时覆盖检测/识别阈值与预处理开关
     def predict_iter(
         self,
         input,
@@ -236,6 +239,7 @@ class PaddleOCR(PaddleXPipelineWrapper):
             )
         )
 
+    # 2.x 兼容别名，委托 predict
     @deprecated("Please use `predict` instead.")
     def ocr(self, img, **kwargs):
         return self.predict(img, **kwargs)
@@ -315,6 +319,7 @@ class PaddleOCR(PaddleXPipelineWrapper):
         }
         return create_config_from_structure(STRUCTURE)
 
+        # 按语言与 PP-OCR 版本解析默认 det/rec 模型名
     def _get_ocr_model_names(self, lang, ppocr_version):
         SPECIFIC_LANGS = [
             "ch",
@@ -422,6 +427,7 @@ class PaddleOCR(PaddleXPipelineWrapper):
             return "PP-OCRv3_mobile_det", rec_model_name
 
 
+    # CLI 子命令 ocr：含 lang/ocr_version 与 2.x 废弃参数映射
 class PaddleOCRCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

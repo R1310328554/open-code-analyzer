@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 弃用机制：Python @deprecated 重导出、CLI 废弃选项 Action 与参数迁移警告
 import argparse
 import sys
 import warnings
@@ -19,10 +20,12 @@ import warnings
 from typing_extensions import deprecated as deprecated
 
 
+    # CLI 专用 DeprecationWarning 子类，便于过滤与展示
 class CLIDeprecationWarning(DeprecationWarning):
     pass
 
 
+    # 解析已废弃 CLI 选项时发出 CLIDeprecationWarning 仍写入 namespace
 class DeprecatedOptionAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         assert option_string
@@ -33,6 +36,7 @@ class DeprecatedOptionAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+    # 构造函数旧参数名警告，提示迁移到新参数名
 def warn_deprecated_param(name, new_name=None):
     msg = (
         f"The parameter `{name}` has been deprecated and will be removed in the future."

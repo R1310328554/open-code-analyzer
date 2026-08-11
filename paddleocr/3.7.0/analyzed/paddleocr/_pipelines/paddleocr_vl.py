@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleOCR-VL 文档解析：版面分析 + 视觉语言模型，输出 Markdown 结构化文档
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -22,6 +23,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+  # 支持的 VL 流水线版本，默认 v1.6
 _AVAILABLE_PIPELINE_VERSIONS = ["v1", "v1.5", "v1.6"]
 _DEFAULT_PIPELINE_VERSION = "v1.6"
 _SUPPORTED_VL_BACKENDS = [
@@ -34,6 +36,7 @@ _SUPPORTED_VL_BACKENDS = [
 ]
 
 
+    # 多版本 VL 流水线：布局检测、图表/印章识别与 VLM 块级理解
 class PaddleOCRVL(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -213,9 +216,11 @@ class PaddleOCRVL(PaddleXPipelineWrapper):
             )
         )
 
+        # 将多页 Markdown 片段合并为连续文档
     def concatenate_markdown_pages(self, markdown_list):
         return self.paddlex_pipeline.concatenate_markdown_pages(markdown_list)
 
+        # 跨页重组：合并表格、标题层级与可选 concatenate_pages
     def restructure_pages(
         self, res_list, merge_tables=True, relevel_titles=True, concatenate_pages=False
     ):
@@ -297,6 +302,7 @@ class PaddleOCRVL(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 doc_parser：含 VLM 采样参数与 genai 后端配置
 class PaddleOCRVLCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

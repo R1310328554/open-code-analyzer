@@ -12,15 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CLI 推理辅助：子命令参数解析、str2bool 与统一 predict_iter 执行循环
 import time
 
 from .logging import logger
 
 
+    # 将 CLI 字符串 true/yes/1 等解析为布尔值
 def str2bool(v, /):
     return v.lower() in ("true", "yes", "t", "y", "1")
 
 
+    # 从 argparse Namespace 剥离 subcommand/executor 后返回参数字典
 def get_subcommand_args(args):
     args = vars(args).copy()
     args.pop("subcommand")
@@ -28,6 +31,7 @@ def get_subcommand_args(args):
     return args
 
 
+    # 为 pipeline 子命令添加 -i/--input 与 --save_path 通用参数
 def add_simple_inference_args(subparser, *, input_help=None):
     if input_help is None:
         input_help = "Input path or URL."
@@ -45,6 +49,7 @@ def add_simple_inference_args(subparser, *, input_help=None):
     )
 
 
+    # 实例化 wrapper、迭代 predict_iter 并 print/save_all，finally 关闭资源
 def perform_simple_inference(wrapper_cls, params, predict_param_names=None):
     params = params.copy()
 

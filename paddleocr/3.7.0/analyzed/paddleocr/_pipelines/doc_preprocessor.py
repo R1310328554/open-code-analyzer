@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档预处理流水线：方向分类与文本图像矫正，供下游 OCR/版面解析复用
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -22,6 +23,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # 封装 doc_preprocessor 子图：可选文档方向校正与去弯曲
 class DocPreprocessor(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -48,6 +50,7 @@ class DocPreprocessor(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "doc_preprocessor"
 
+        # 迭代推理入口，透传 use_doc_orientation_classify / use_doc_unwarping
     def predict_iter(
         self,
         input,
@@ -102,6 +105,7 @@ class DocPreprocessor(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 doc_preprocessor：注册模型路径与开关并执行简单推理
 class DocPreprocessorCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):

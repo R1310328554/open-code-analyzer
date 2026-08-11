@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 印章识别流水线：版面定位印章区域后执行专用检测与文本识别
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -22,6 +23,7 @@ from .base import PaddleXPipelineWrapper, PipelineCLISubcommandExecutor
 from .utils import create_config_from_structure
 
 
+    # seal_recognition 子图：DocPreprocessor + Layout + SealOCR
 class SealRecognition(PaddleXPipelineWrapper):
     def __init__(
         self,
@@ -84,6 +86,7 @@ class SealRecognition(PaddleXPipelineWrapper):
     def _paddlex_pipeline_name(self):
         return "seal_recognition"
 
+        # 可传入 layout_det_res 跳过重复版面检测
     def predict_iter(
         self,
         input,
@@ -242,6 +245,7 @@ class SealRecognition(PaddleXPipelineWrapper):
         return create_config_from_structure(STRUCTURE)
 
 
+    # CLI 子命令 seal_recognition：印章检测/识别阈值与模型路径
 class SealRecognitionCLISubcommandExecutor(PipelineCLISubcommandExecutor):
     @property
     def subparser_name(self):
