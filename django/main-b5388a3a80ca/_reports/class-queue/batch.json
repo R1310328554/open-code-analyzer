@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:30:45Z",
   "files": [
-    "django/db/backends/base/operations.py",
-    "django/db/backends/base/schema.py",
-    "django/db/backends/base/validation.py",
-    "django/db/backends/ddl_references.py",
-    "django/db/backends/dummy/__init__.py",
-    "django/db/backends/dummy/base.py",
-    "django/db/backends/dummy/features.py",
-    "django/db/backends/mysql/__init__.py",
-    "django/db/backends/mysql/base.py",
-    "django/db/backends/mysql/client.py",
-    "django/db/backends/mysql/compiler.py",
-    "django/db/backends/mysql/creation.py",
-    "django/db/backends/mysql/features.py",
-    "django/db/backends/mysql/introspection.py",
-    "django/db/backends/mysql/operations.py",
     "django/db/backends/mysql/schema.py",
     "django/db/backends/mysql/validation.py",
     "django/db/backends/oracle/__init__.py",
@@ -33,5 +18,5 @@
     "django/db/backends/postgresql/base.py"
   ],
   "remaining_pending": 252,
-  "done": 660
+  "done": 675
 }
