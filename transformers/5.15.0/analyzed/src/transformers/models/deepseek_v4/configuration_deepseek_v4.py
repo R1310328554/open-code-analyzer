@@ -37,6 +37,7 @@ DEEPSEEK_V4_MLP_LAYER_TYPES = ("hash_moe", "moe")
 
 @auto_docstring(checkpoint="deepseek-ai/DeepSeek-V4-Flash-Base")
 @strict
+# DeepseekV4Config：layer_types、compress_rates、hc_mult、hash_moe 与 sliding_window
 class DeepseekV4Config(PreTrainedConfig):
     r"""
     scoring_func (`str`):
@@ -243,6 +244,7 @@ class DeepseekV4Config(PreTrainedConfig):
             if bad:
                 raise ValueError(f"`{name}` entries must be one of {allowed} for DeepSeek-V4; got {bad}.")
 
+# __post_init__：展开 compress_rate 别名、默认 mlp_layer_types 与 layer 调度
     def __post_init__(self, **kwargs):
         # Strip legacy V4 kwargs (V3-flavoured names that older checkpoints still ship)
         # before the parent's strict-validated init sees them, then fold each into the

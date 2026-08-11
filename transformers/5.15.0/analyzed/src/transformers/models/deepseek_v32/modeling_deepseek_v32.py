@@ -45,6 +45,7 @@ from .configuration_deepseek_v32 import DeepseekV32Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DeepseekV32RMSNorm：RMS 归一化
 class DeepseekV32RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -65,6 +66,7 @@ class DeepseekV32RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DeepseekV32RotaryEmbedding：动态 RoPE 与 YARN 外推
 class DeepseekV32RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DeepseekV32Config, device=None):
@@ -124,6 +126,7 @@ class DeepseekV32RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 半维旋转
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -132,6 +135,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：标准 RoPE 施加
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -157,6 +161,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# DeepseekV32Indexer：Lightning Indexer，对 KV 缓存打分并选 top-k 稀疏 mask
 class DeepseekV32Indexer(nn.Module):
     """
     DeepSeek Sparse Attention (DSA) indexer for selecting top-k tokens.
@@ -256,6 +261,7 @@ class DeepseekV32Indexer(nn.Module):
         return index_scores.topk(topk, dim=-1).indices.to(torch.int32)  # [B, S, topk]
 
 
+# repeat_kv：KV 头重复广播
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -268,6 +274,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -293,12 +300,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# yarn_get_mscale：YARN mscale 修正
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：写入 RoPE mscale
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -309,6 +318,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# apply_rotary_pos_emb_interleave：交错 RoPE
 def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     r"""
     Applies interleaved Rotary Position Embedding to the query and key tensors.
@@ -348,6 +358,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# DeepseekV32Attention：MLA 注意力 + Indexer 稀疏 mask 叠加
 class DeepseekV32Attention(nn.Module):
     """
     DeepSeek-V3 MLA, with a DSA indexer whose top-k sparse mask is folded into the attention mask.
@@ -493,6 +504,7 @@ class DeepseekV32Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeepseekV32MLP：dense SwiGLU 前馈
 class DeepseekV32MLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -509,6 +521,7 @@ class DeepseekV32MLP(nn.Module):
         return down_proj
 
 
+# DeepseekV32TopkRouter：MoE 路由门控
 class DeepseekV32TopkRouter(nn.Module):
     def __init__(self, config: DeepseekV32Config):
         super().__init__()
@@ -551,6 +564,7 @@ class DeepseekV32TopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# DeepseekV32Experts：MoE 专家并行计算
 class DeepseekV32Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -590,6 +604,7 @@ class DeepseekV32Experts(nn.Module):
         return final_hidden_states
 
 
+# DeepseekV32MoE：稀疏 MoE 前馈块
 class DeepseekV32MoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -614,6 +629,7 @@ class DeepseekV32MoE(nn.Module):
         return hidden_states
 
 
+# DeepseekV32DecoderLayer：DSA 注意力 + dense/MoE FFN
 class DeepseekV32DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeepseekV32Config, layer_idx: int):
         super().__init__()
@@ -661,6 +677,7 @@ class DeepseekV32DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DeepseekV32PreTrainedModel：V3.2 预训练基类
 class DeepseekV32PreTrainedModel(PreTrainedModel):
     config: DeepseekV32Config
     base_model_prefix = "model"
@@ -693,6 +710,7 @@ class DeepseekV32PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV32Model：V3.2 解码器骨干
 class DeepseekV32Model(DeepseekV32PreTrainedModel):
     def __init__(self, config: DeepseekV32Config):
         super().__init__(config)
@@ -770,6 +788,7 @@ class DeepseekV32Model(DeepseekV32PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV32ForCausalLM：因果 LM 生成接口
 class DeepseekV32ForCausalLM(DeepseekV32PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

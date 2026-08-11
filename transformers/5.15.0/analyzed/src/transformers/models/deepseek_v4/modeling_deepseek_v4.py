@@ -43,6 +43,7 @@ from .configuration_deepseek_v4 import DeepseekV4Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DeepseekV4RMSNorm：标准 RMS 归一化
 class DeepseekV4RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -63,6 +64,7 @@ class DeepseekV4RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DeepseekV4UnweightedRMSNorm：无学习权重的 RMSNorm（mHC 分支用）
 class DeepseekV4UnweightedRMSNorm(nn.Module):
     def __init__(self, eps: float = 1.0e-6):
         super().__init__()
@@ -72,6 +74,7 @@ class DeepseekV4UnweightedRMSNorm(nn.Module):
         return x * torch.rsqrt(x.float().square().mean(-1, keepdim=True) + self.eps).to(x.dtype)
 
 
+# DeepseekV4RotaryEmbedding：Laguna 风格动态 RoPE，主/压缩分支分离 theta
 class DeepseekV4RotaryEmbedding(nn.Module):
     """
     Multi-layer-type rotary embedding (Laguna pattern: partial rotary on top of
@@ -159,6 +162,7 @@ class DeepseekV4RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# DeepseekV4HCACache：HCA 重度压缩 KV 缓存，滑动窗 + 压缩 token
 class DeepseekV4HCACache(DynamicSlidingWindowLayer):
     r"""Cache layer for HCA blocks (paper §2.3.2). Holds the long-range compressor's
     buffer / running compressed entries / count on top of the sliding-window K=V
@@ -243,6 +247,7 @@ class DeepseekV4HCACache(DynamicSlidingWindowLayer):
         return self.compressed_kv[name]
 
 
+# DeepseekV4CSACache：CSA 中度压缩缓存，继承 HCA 并调整压缩率
 class DeepseekV4CSACache(DeepseekV4HCACache):
     r"""Cache layer for CSA blocks (paper §2.3.1). Extends :class:`DeepseekV4HCACache`
     by adding an `"indexer"` entry to the inherited `buffer_kv` / `buffer_gate` /
@@ -291,6 +296,7 @@ class DeepseekV4CSACache(DeepseekV4HCACache):
         return prior_kv, prior_gate
 
 
+# DeepseekV4GroupedLinear：按头组分组线性投影（o_groups）
 class DeepseekV4GroupedLinear(nn.Linear):
     """Block-diagonal grouped linear used by the grouped output projection
     The core attention's stacked output is `num_attention_heads* head_dim`-dim,
@@ -323,6 +329,7 @@ class DeepseekV4GroupedLinear(nn.Linear):
         return y.reshape(*input_shape, self.n_groups, -1)
 
 
+# rotate_half：RoPE 半维旋转
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -330,6 +337,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：V4 交错 RoPE 施加于尾部 rope 切片
 def apply_rotary_pos_emb(
     x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, unsqueeze_dim: int = 1
 ) -> torch.Tensor:
@@ -350,6 +358,7 @@ def apply_rotary_pos_emb(
     return torch.cat([nope, rotated], dim=-1)
 
 
+# DeepseekV4HCACompressor：HCA 键值压缩器，将历史 token 压为少量压缩态
 class DeepseekV4HCACompressor(nn.Module):
     """
     Heavily Compressed Attention compressor (paper §2.3.2, eqs. 20–23). compresses
@@ -434,6 +443,7 @@ class DeepseekV4HCACompressor(nn.Module):
         return compressed_kv, block_bias
 
 
+# DeepseekV4IndexerScorer：CSA 索引打分，选取稀疏注意力候选
 class DeepseekV4IndexerScorer(nn.Module):
     r"""Lightning-indexer scoring head: `∑_h w_{t,h} · ReLU(q_{t,h} · K^IComp_s)`."""
 
@@ -450,6 +460,7 @@ class DeepseekV4IndexerScorer(nn.Module):
         return (scores * weights.unsqueeze(-1)).sum(dim=2)  # [B, S, T]
 
 
+# DeepseekV4Indexer：CSA 稀疏索引模块，top-k 键选择
 class DeepseekV4Indexer(nn.Module):
     r"""Lightning Indexer (paper §2.3.1, eqs. 13–17). Used by Compressed Sparse
     Attention (CSA) to pick the top-`k` compressed KV blocks per query, with
@@ -577,6 +588,7 @@ class DeepseekV4Indexer(nn.Module):
         return index_scores.topk(top_k, dim=-1).indices
 
 
+# DeepseekV4CSACompressor：CSA 压缩分支，中等比率 KV 压缩
 class DeepseekV4CSACompressor(nn.Module):
     """Compressed Sparse Attention compressor (paper §2.3.1, eqs. 9–17). Compresses
     every `compress_rate_csa` (m=4) source tokens and runs a Lightning Indexer on
@@ -693,6 +705,7 @@ class DeepseekV4CSACompressor(nn.Module):
         return compressed_kv, block_bias[..., :compressed_len]
 
 
+# repeat_kv：GQA KV 头广播
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -705,6 +718,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：多分支（滑动/压缩/稀疏）注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -743,6 +757,7 @@ COMPRESSOR_CLASSES = {
 }
 
 
+# DeepseekV4Attention：组合滑动窗、CSA、HCA 与 Indexer 的复合注意力
 class DeepseekV4Attention(nn.Module):
     r"""
     Diff with classic attentions:
@@ -864,6 +879,7 @@ class DeepseekV4Attention(nn.Module):
         return output, attn_weights
 
 
+# DeepseekV4HyperConnection：mHC 流形约束超连接，Sinkhorn 双随机残差映射
 class DeepseekV4HyperConnection(nn.Module):
     r"""
     Manifold-Constrained Hyper-Connections
@@ -943,6 +959,7 @@ class DeepseekV4HyperConnection(nn.Module):
         return post, comb, collapsed
 
 
+# DeepseekV4HyperHead：mHC 扩展头，hc_mult 路并行残差
 class DeepseekV4HyperHead(nn.Module):
     """Final HC-stream collapse; used by `DeepseekV4Model` before the shared RMSNorm."""
 
@@ -962,6 +979,7 @@ class DeepseekV4HyperHead(nn.Module):
         return (pre.unsqueeze(-1) * x).sum(dim=2).to(x.dtype)
 
 
+# DeepseekV4MLP：dense SwiGLU，含 swiglu_limit 裁剪
 class DeepseekV4MLP(nn.Module):
     def __init__(self, config: DeepseekV4Config):
         super().__init__()
@@ -981,6 +999,7 @@ class DeepseekV4MLP(nn.Module):
 
 
 @use_experts_implementation
+# DeepseekV4Experts：标准 top-k 路由 MoE 专家
 class DeepseekV4Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -1021,6 +1040,7 @@ class DeepseekV4Experts(nn.Module):
         return self.act_fn(gate) * up
 
 
+# DeepseekV4TopKRouter：可配置 scoring_func 的 MoE 路由
 class DeepseekV4TopKRouter(nn.Module):
     def __init__(self, config: DeepseekV4Config):
         super().__init__()
@@ -1042,6 +1062,7 @@ class DeepseekV4TopKRouter(nn.Module):
         return logits, weights * self.routed_scaling_factor, indices
 
 
+# DeepseekV4HashRouter：Hash-MoE 冻结 tid→expert 查表路由
 class DeepseekV4HashRouter(nn.Module):
     r"""
     Hash routing for the first `mlp_layer_types == "hash_moe"` MoE layers (paper
@@ -1073,6 +1094,7 @@ class DeepseekV4HashRouter(nn.Module):
         return logits, weights * self.routed_scaling_factor, indices
 
 
+# DeepseekV4SparseMoeBlock：Hash 或 top-k MoE 稀疏 FFN 块
 class DeepseekV4SparseMoeBlock(nn.Module):
     def __init__(self, config: DeepseekV4Config, layer_idx: int):
         super().__init__()
@@ -1093,6 +1115,7 @@ class DeepseekV4SparseMoeBlock(nn.Module):
         return routed + self.shared_experts(residual)
 
 
+# DeepseekV4DecoderLayer：复合注意力 + mHC + MoE/dense FFN
 class DeepseekV4DecoderLayer(GradientCheckpointingLayer):
     r"""DeepSeek-V4 decoder block (paper §2). Differs from a classic residual block in
     two places:
@@ -1145,6 +1168,7 @@ class DeepseekV4DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DeepseekV4PreTrainedModel：V4 权重初始化、缓存与专家内核
 class DeepseekV4PreTrainedModel(PreTrainedModel):
     config: DeepseekV4Config
     base_model_prefix = "model"
@@ -1253,6 +1277,7 @@ class DeepseekV4PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV4Model：V4 解码器骨干，按 layer_types 调度注意力
 class DeepseekV4Model(DeepseekV4PreTrainedModel):
     def __init__(self, config: DeepseekV4Config):
         super().__init__(config)
@@ -1328,6 +1353,7 @@ class DeepseekV4Model(DeepseekV4PreTrainedModel):
         return MoeModelOutputWithPast(last_hidden_state=hidden_states, past_key_values=past_key_values)
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助 loss
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1411,6 +1437,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# DeepseekV4ForCausalLM：因果 LM，训练时叠加 router aux loss
 class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

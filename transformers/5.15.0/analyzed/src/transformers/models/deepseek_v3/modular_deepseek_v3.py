@@ -1,3 +1,5 @@
+# DeepSeek-V3 模块化实现：在 V2 MLA/MoE 基础上增加交错 RoPE 与 MTP 扩展点。
+
 from collections.abc import Callable
 
 import torch
@@ -33,18 +35,22 @@ from .configuration_deepseek_v3 import DeepseekV3Config
 logger = logging.get_logger(__name__)
 
 
+# DeepseekV3RMSNorm：复用 Llama RMSNorm
 class DeepseekV3RMSNorm(LlamaRMSNorm):
     pass
 
 
+# DeepseekV3RotaryEmbedding：Llama RoPE，支持 interleave 模式
 class DeepseekV3RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# DeepseekV3MLP：dense 层前馈，继承 Qwen2MoE MLP
 class DeepseekV3MLP(Qwen2MoeMLP):
     pass
 
 
+# apply_rotary_pos_emb_interleave：V3 交错 RoPE 工具函数
 def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     r"""
     Applies interleaved Rotary Position Embedding to the query and key tensors.
@@ -84,6 +90,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# DeepseekV3TopkRouter：继承 V2 路由，增加 norm_topk_prob
 class DeepseekV3TopkRouter(DeepseekV2TopkRouter):
     def __init__(self, config):
         super().__init__(config)
@@ -120,18 +127,21 @@ class DeepseekV3TopkRouter(DeepseekV2TopkRouter):
         return router_logits, topk_weights, topk_indices
 
 
+# DeepseekV3Experts：复用 Qwen2MoE 专家实现
 class DeepseekV3Experts(Qwen2MoeExperts):
     def __init__(self, config):
         super().__init__(config)
         self.num_experts = config.num_local_experts
 
 
+# DeepseekV3MoE：继承 V2 MoE 块
 class DeepseekV3MoE(DeepseekV2Moe):
     """
     A mixed expert module containing shared experts.
     """
 
 
+# DeepseekV3Attention：V3 MLA 注意力，覆盖 interleave RoPE 路径
 class DeepseekV3Attention(DeepseekV2Attention):
     """Multi-headed Latent Attention (MLA) from Deepseek V2"""
 
@@ -194,6 +204,7 @@ class DeepseekV3Attention(DeepseekV2Attention):
         return attn_output, attn_weights
 
 
+# DeepseekV3DecoderLayer：V3 解码层，按层选择 dense/MoE
 class DeepseekV3DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: DeepseekV3Config, layer_idx: int):
         nn.Module.__init__(self)
@@ -210,6 +221,7 @@ class DeepseekV3DecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# DeepseekV3PreTrainedModel：V3 预训练基类
 class DeepseekV3PreTrainedModel(LlamaPreTrainedModel):
     _keep_in_fp32_modules_strict = ["e_score_correction_bias"]
     _keys_to_ignore_on_load_unexpected = [r"model\.layers\.61.*"]
@@ -225,18 +237,22 @@ class DeepseekV3PreTrainedModel(LlamaPreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# DeepseekV3Model：V3 解码器模型
 class DeepseekV3Model(LlamaModel):
     pass
 
 
+# DeepseekV3ForCausalLM：因果 LM 与 MTP 扩展
 class DeepseekV3ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# DeepseekV3ForSequenceClassification：序列分类头
 class DeepseekV3ForSequenceClassification(GenericForSequenceClassification, DeepseekV3PreTrainedModel):
     pass
 
 
+# DeepseekV3ForTokenClassification：token 分类头
 class DeepseekV3ForTokenClassification(GenericForTokenClassification, DeepseekV3PreTrainedModel):
     pass
 

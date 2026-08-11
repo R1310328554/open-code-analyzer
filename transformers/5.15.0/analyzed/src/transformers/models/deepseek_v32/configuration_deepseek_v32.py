@@ -26,6 +26,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="deepseek-ai/DeepSeek-V3.2-Exp")
 @strict
+# DeepseekV32Config：index_topk/index_n_heads、mlp_layer_types 与 DSA 索引维度
 class DeepseekV32Config(PreTrainedConfig, RotaryEmbeddingConfigMixin):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -126,6 +127,7 @@ class DeepseekV32Config(PreTrainedConfig, RotaryEmbeddingConfigMixin):
     first_k_dense_replace: int = 3
     layer_types: list[str] | None = None
 
+# __post_init__：默认 mlp_layer_types 与 RoPE 参数校验
     def __post_init__(self, **kwargs):
         self.qk_head_dim = self.qk_nope_head_dim + self.qk_rope_head_dim
         # RoPE applies only to the rope slice, so point `head_dim` at it: the inherited (Llama) rotary

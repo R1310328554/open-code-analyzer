@@ -24,6 +24,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="bzantium/tiny-deepseek-v3")
 @strict
+# DeepseekV3Config：n_routed_experts、kv/q LoRA 秩、num_mtp_layers 与 PP/TP/EP 计划
 class DeepseekV3Config(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 8):
@@ -116,6 +117,7 @@ class DeepseekV3Config(PreTrainedConfig):
     attention_dropout: float | int | None = 0.0
     num_mtp_layers: int = 1
 
+# __post_init__：默认 num_key_value_heads 并校验架构参数
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

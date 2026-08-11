@@ -44,6 +44,7 @@ from .configuration_deepseek_v2 import DeepseekV2Config
 
 
 @use_experts_implementation
+# DeepseekV2Experts：MoE 专家 gate/up/down 权重以 3D 张量存储，按 top-k 路由计算
 class DeepseekV2Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -83,6 +84,7 @@ class DeepseekV2Experts(nn.Module):
         return final_hidden_states
 
 
+# DeepseekV2TopkRouter：线性门控路由，支持 greedy 与 group_limited_greedy
 class DeepseekV2TopkRouter(nn.Module):
     def __init__(self, config: DeepseekV2Config):
         super().__init__()
@@ -117,6 +119,7 @@ class DeepseekV2TopkRouter(nn.Module):
         return router_logits, topk_weights, topk_indices
 
 
+# DeepseekV2Moe：路由专家 + 共享专家 SwiGLU，残差相加
 class DeepseekV2Moe(nn.Module):
     def __init__(self, config: DeepseekV2Config):
         super().__init__()
@@ -137,6 +140,7 @@ class DeepseekV2Moe(nn.Module):
         return hidden_states
 
 
+# DeepseekV2MLP：标准 SwiGLU 前馈（gate/up/down 三线性）
 class DeepseekV2MLP(nn.Module):
     def __init__(self, config: DeepseekV2Config, hidden_size=None, intermediate_size=None):
         super().__init__()
@@ -154,6 +158,7 @@ class DeepseekV2MLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DeepseekV2RMSNorm：RMS 归一化，含可学习缩放
 class DeepseekV2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -174,6 +179,7 @@ class DeepseekV2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DeepseekV2RotaryEmbedding：动态 RoPE，支持 YARN 外推与 mscale
 class DeepseekV2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DeepseekV2Config, device=None):
@@ -227,6 +233,7 @@ class DeepseekV2RotaryEmbedding(nn.Module):
         return freqs_cis
 
 
+# repeat_kv：GQA/MLA 中将 KV 头重复至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -239,6 +246,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -264,6 +272,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_emb：对 Q/K 施加 cos/sin 旋转位置嵌入
 def apply_rotary_emb(
     xq: torch.Tensor,
     xk: torch.Tensor,
@@ -280,12 +289,14 @@ def apply_rotary_emb(
     return xq_out, xk_out
 
 
+# yarn_get_mscale：YARN 外推时的注意力尺度修正因子
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：将 mscale 写入 RoPE 参数供前向使用
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -296,6 +307,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# DeepseekV2Attention：MLA 潜注意力，低秩 Q/K/V 投影与分离 RoPE/非 RoPE 维
 class DeepseekV2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -417,6 +429,7 @@ class DeepseekV2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeepseekV2DecoderLayer：Pre-RMSNorm 自注意力 + MoE/dense FFN 残差块
 class DeepseekV2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DeepseekV2Config, layer_idx: int):
         super().__init__()
@@ -461,6 +474,7 @@ class DeepseekV2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DeepseekV2PreTrainedModel：MoE/MLA 权重初始化与 Flash/SDPA 支持
 class DeepseekV2PreTrainedModel(PreTrainedModel):
     config: DeepseekV2Config
     base_model_prefix = "model"
@@ -489,6 +503,7 @@ class DeepseekV2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV2Model：词嵌入 + 堆叠解码层 + 最终 RMSNorm
 class DeepseekV2Model(DeepseekV2PreTrainedModel):
     def __init__(self, config: DeepseekV2Config):
         super().__init__(config)
@@ -563,6 +578,7 @@ class DeepseekV2Model(DeepseekV2PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV2ForCausalLM：因果 LM 头，支持 generate 与 KV 缓存
 class DeepseekV2ForCausalLM(DeepseekV2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -637,6 +653,7 @@ class DeepseekV2ForCausalLM(DeepseekV2PreTrainedModel, GenerationMixin):
         )
 
 
+# DeepseekV2ForSequenceClassification：序列分类，池化末 token 隐状态
 class DeepseekV2ForSequenceClassification(GenericForSequenceClassification, DeepseekV2PreTrainedModel):
     pass
 

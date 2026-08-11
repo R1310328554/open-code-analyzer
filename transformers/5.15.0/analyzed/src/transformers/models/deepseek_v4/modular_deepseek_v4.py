@@ -43,6 +43,7 @@ from .configuration_deepseek_v4 import DeepseekV4Config
 logger = logging.get_logger(__name__)
 
 
+# apply_rotary_pos_emb：V4 modular 交错 RoPE 工具
 def apply_rotary_pos_emb(
     x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, unsqueeze_dim: int = 1
 ) -> torch.Tensor:
@@ -63,10 +64,12 @@ def apply_rotary_pos_emb(
     return torch.cat([nope, rotated], dim=-1)
 
 
+# DeepseekV4RMSNorm：复用 V3 RMSNorm
 class DeepseekV4RMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# DeepseekV4UnweightedRMSNorm：mHC 分支无权重 RMSNorm
 class DeepseekV4UnweightedRMSNorm(nn.Module):
     def __init__(self, eps: float = 1.0e-6):
         super().__init__()
@@ -76,6 +79,7 @@ class DeepseekV4UnweightedRMSNorm(nn.Module):
         return x * torch.rsqrt(x.float().square().mean(-1, keepdim=True) + self.eps).to(x.dtype)
 
 
+# DeepseekV4RotaryEmbedding：Laguna 动态 RoPE 基类
 class DeepseekV4RotaryEmbedding(LagunaRotaryEmbedding):
     """
     Multi-layer-type rotary embedding (Laguna pattern: partial rotary on top of
@@ -131,6 +135,7 @@ class DeepseekV4RotaryEmbedding(LagunaRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# DeepseekV4HCACache：HCA KV 缓存 modular 定义
 class DeepseekV4HCACache(DynamicSlidingWindowLayer):
     r"""Cache layer for HCA blocks (paper §2.3.2). Holds the long-range compressor's
     buffer / running compressed entries / count on top of the sliding-window K=V
@@ -215,6 +220,7 @@ class DeepseekV4HCACache(DynamicSlidingWindowLayer):
         return self.compressed_kv[name]
 
 
+# DeepseekV4CSACache：CSA 缓存，继承 HCA
 class DeepseekV4CSACache(DeepseekV4HCACache):
     r"""Cache layer for CSA blocks (paper §2.3.1). Extends :class:`DeepseekV4HCACache`
     by adding an `"indexer"` entry to the inherited `buffer_kv` / `buffer_gate` /
@@ -263,6 +269,7 @@ class DeepseekV4CSACache(DeepseekV4HCACache):
         return prior_kv, prior_gate
 
 
+# DeepseekV4GroupedLinear：分组输出投影
 class DeepseekV4GroupedLinear(nn.Linear):
     """Block-diagonal grouped linear used by the grouped output projection
     The core attention's stacked output is `num_attention_heads* head_dim`-dim,
@@ -295,6 +302,7 @@ class DeepseekV4GroupedLinear(nn.Linear):
         return y.reshape(*input_shape, self.n_groups, -1)
 
 
+# DeepseekV4HCACompressor：HCA 压缩器 modular 源
 class DeepseekV4HCACompressor(nn.Module):
     """
     Heavily Compressed Attention compressor (paper §2.3.2, eqs. 20–23). compresses
@@ -379,6 +387,7 @@ class DeepseekV4HCACompressor(nn.Module):
         return compressed_kv, block_bias
 
 
+# DeepseekV4IndexerScorer：CSA 索引打分器
 class DeepseekV4IndexerScorer(nn.Module):
     r"""Lightning-indexer scoring head: `∑_h w_{t,h} · ReLU(q_{t,h} · K^IComp_s)`."""
 
@@ -395,6 +404,7 @@ class DeepseekV4IndexerScorer(nn.Module):
         return (scores * weights.unsqueeze(-1)).sum(dim=2)  # [B, S, T]
 
 
+# DeepseekV4Indexer：CSA 稀疏索引 modular 源
 class DeepseekV4Indexer(nn.Module):
     r"""Lightning Indexer (paper §2.3.1, eqs. 13–17). Used by Compressed Sparse
     Attention (CSA) to pick the top-`k` compressed KV blocks per query, with
@@ -522,6 +532,7 @@ class DeepseekV4Indexer(nn.Module):
         return index_scores.topk(top_k, dim=-1).indices
 
 
+# DeepseekV4CSACompressor：CSA 压缩分支 modular 源
 class DeepseekV4CSACompressor(nn.Module):
     """Compressed Sparse Attention compressor (paper §2.3.1, eqs. 9–17). Compresses
     every `compress_rate_csa` (m=4) source tokens and runs a Lightning Indexer on
@@ -645,6 +656,7 @@ COMPRESSOR_CLASSES = {
 }
 
 
+# DeepseekV4Attention：复合注意力 modular 定义
 class DeepseekV4Attention(nn.Module):
     r"""
     Diff with classic attentions:
@@ -766,6 +778,7 @@ class DeepseekV4Attention(nn.Module):
         return output, attn_weights
 
 
+# DeepseekV4HyperConnection：Sinkhorn mHC 超连接
 class DeepseekV4HyperConnection(nn.Module):
     r"""
     Manifold-Constrained Hyper-Connections
@@ -845,6 +858,7 @@ class DeepseekV4HyperConnection(nn.Module):
         return post, comb, collapsed
 
 
+# DeepseekV4HyperHead：mHC 多头扩展
 class DeepseekV4HyperHead(nn.Module):
     """Final HC-stream collapse; used by `DeepseekV4Model` before the shared RMSNorm."""
 
@@ -864,6 +878,7 @@ class DeepseekV4HyperHead(nn.Module):
         return (pre.unsqueeze(-1) * x).sum(dim=2).to(x.dtype)
 
 
+# DeepseekV4MLP：继承 Llama SwiGLU
 class DeepseekV4MLP(LlamaMLP):
     def __init__(self, config: DeepseekV4Config):
         super().__init__(config)
@@ -876,6 +891,7 @@ class DeepseekV4MLP(LlamaMLP):
 
 
 @use_experts_implementation
+# DeepseekV4Experts：复用 Mixtral MoE 专家
 class DeepseekV4Experts(MixtralExperts):
     # GPT OSS style, no bias
 
@@ -910,6 +926,7 @@ class DeepseekV4Experts(MixtralExperts):
         return final
 
 
+# DeepseekV4TopKRouter：Mixtral 风格 top-k 路由
 class DeepseekV4TopKRouter(MixtralTopKRouter):
     def __init__(self, config: DeepseekV4Config):
         super().__init__(config)
@@ -927,6 +944,7 @@ class DeepseekV4TopKRouter(MixtralTopKRouter):
         return logits, weights * self.routed_scaling_factor, indices
 
 
+# DeepseekV4HashRouter：Hash-MoE 查表路由，冻结 expert 映射
 class DeepseekV4HashRouter(MixtralTopKRouter):
     r"""
     Hash routing for the first `mlp_layer_types == "hash_moe"` MoE layers (paper
@@ -954,6 +972,7 @@ class DeepseekV4HashRouter(MixtralTopKRouter):
         return logits, weights * self.routed_scaling_factor, indices
 
 
+# DeepseekV4SparseMoeBlock：Hash 或 routed MoE 块
 class DeepseekV4SparseMoeBlock(nn.Module):
     def __init__(self, config: DeepseekV4Config, layer_idx: int):
         super().__init__()
@@ -974,6 +993,7 @@ class DeepseekV4SparseMoeBlock(nn.Module):
         return routed + self.shared_experts(residual)
 
 
+# DeepseekV4DecoderLayer：V4 解码层 modular 源
 class DeepseekV4DecoderLayer(GradientCheckpointingLayer):
     r"""DeepSeek-V4 decoder block (paper §2). Differs from a classic residual block in
     two places:
@@ -1025,6 +1045,7 @@ class DeepseekV4DecoderLayer(GradientCheckpointingLayer):
         )
 
 
+# DeepseekV4PreTrainedModel：继承 Mixtral 预训练基类
 class DeepseekV4PreTrainedModel(MixtralPreTrainedModel):
     config_class = DeepseekV4Config
     base_model_prefix = "model"
@@ -1129,6 +1150,7 @@ class DeepseekV4PreTrainedModel(MixtralPreTrainedModel):
 
 
 @auto_docstring
+# DeepseekV4Model：Llama 骨架 + V4 层替换
 class DeepseekV4Model(LlamaModel):
     def __init__(self, config: DeepseekV4Config):
         super().__init__(config)
@@ -1196,6 +1218,7 @@ class DeepseekV4Model(LlamaModel):
         return MoeModelOutputWithPast(last_hidden_state=hidden_states, past_key_values=past_key_values)
 
 
+# DeepseekV4ForCausalLM：V4 因果 LM
 class DeepseekV4ForCausalLM(MixtralForCausalLM):
     pass
 

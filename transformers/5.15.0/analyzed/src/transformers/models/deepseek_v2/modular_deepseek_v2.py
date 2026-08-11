@@ -46,6 +46,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="deepseek-ai/DeepSeek-V2-Lite")
 @strict
+# DeepseekV2Config：扩展 LlamaConfig，含 MoE/MLA/YARN 与 TP/EP 分片计划
 class DeepseekV2Config(LlamaConfig):
     r"""
     first_k_dense_replace (`int`, *optional*, defaults to 0):
@@ -138,6 +139,7 @@ class DeepseekV2Config(LlamaConfig):
         super().__post_init__(**kwargs)
 
 
+# apply_rotary_emb：DeepSeek 专用 RoPE 施加（modular 源）
 def apply_rotary_emb(
     xq: torch.Tensor,
     xk: torch.Tensor,
@@ -154,10 +156,12 @@ def apply_rotary_emb(
     return xq_out, xk_out
 
 
+# DeepseekV2Experts：复用 Qwen2MoE 专家并行计算
 class DeepseekV2Experts(Qwen2MoeExperts):
     pass
 
 
+# DeepseekV2TopkRouter：扩展 top-k 路由，支持分组受限贪心
 class DeepseekV2TopkRouter(Qwen2MoeTopKRouter):
     def __init__(self, config: DeepseekV2Config):
         super().__init__(config)
@@ -189,6 +193,7 @@ class DeepseekV2TopkRouter(Qwen2MoeTopKRouter):
         return router_logits, topk_weights, topk_indices
 
 
+# DeepseekV2Moe：路由 MoE + 共享专家组合层
 class DeepseekV2Moe(nn.Module):
     def __init__(self, config: DeepseekV2Config):
         super().__init__()
@@ -209,6 +214,7 @@ class DeepseekV2Moe(nn.Module):
         return hidden_states
 
 
+# DeepseekV2MLP：继承 Llama SwiGLU 前馈
 class DeepseekV2MLP(LlamaMLP):
     def __init__(self, config: DeepseekV2Config, hidden_size=None, intermediate_size=None):
         super().__init__(config)
@@ -216,10 +222,12 @@ class DeepseekV2MLP(LlamaMLP):
         self.intermediate_size = config.intermediate_size if intermediate_size is None else intermediate_size
 
 
+# DeepseekV2RMSNorm：继承 Llama RMSNorm
 class DeepseekV2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# DeepseekV2RotaryEmbedding：继承 Llama 动态 RoPE，叠加 YARN
 class DeepseekV2RotaryEmbedding(LlamaRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -252,6 +260,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# DeepseekV2Attention：MLA 注意力 modular 定义，供代码生成
 class DeepseekV2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -373,6 +382,7 @@ class DeepseekV2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# DeepseekV2DecoderLayer：替换 MLP 为 MoE 的 Llama 解码层
 class DeepseekV2DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: DeepseekV2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -384,6 +394,7 @@ class DeepseekV2DecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = DeepseekV2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# DeepseekV2PreTrainedModel：DeepSeek-V2 预训练基类
 class DeepseekV2PreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -395,14 +406,17 @@ class DeepseekV2PreTrainedModel(LlamaPreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# DeepseekV2Model：DeepSeek-V2 解码器骨干
 class DeepseekV2Model(LlamaModel):
     pass
 
 
+# DeepseekV2ForCausalLM：因果语言建模头
 class DeepseekV2ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# DeepseekV2ForSequenceClassification：序列分类任务头
 class DeepseekV2ForSequenceClassification(LlamaForSequenceClassification):
     pass
 

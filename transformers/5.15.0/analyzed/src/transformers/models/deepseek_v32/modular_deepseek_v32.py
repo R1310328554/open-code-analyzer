@@ -57,6 +57,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="deepseek-ai/DeepSeek-V3.2-Exp")
 @strict
+# DeepseekV32Config：继承 Glm4MoeLite，扩展 DSA 索引与 mlp_layer_types
 class DeepseekV32Config(Glm4MoeLiteConfig, RotaryEmbeddingConfigMixin):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -164,14 +165,17 @@ class DeepseekV32Config(Glm4MoeLiteConfig, RotaryEmbeddingConfigMixin):
         super().__post_init__(**kwargs)
 
 
+# DeepseekV32RMSNorm：复用 V3 RMSNorm
 class DeepseekV32RMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# DeepseekV32RotaryEmbedding：复用 V3 RoPE
 class DeepseekV32RotaryEmbedding(DeepseekV3RotaryEmbedding):
     pass
 
 
+# DeepseekV32Indexer：modular 源定义的 Lightning 索引打分模块
 class DeepseekV32Indexer(nn.Module):
     """
     DeepSeek Sparse Attention (DSA) indexer for selecting top-k tokens.
@@ -271,6 +275,7 @@ class DeepseekV32Indexer(nn.Module):
         return index_scores.topk(topk, dim=-1).indices.to(torch.int32)  # [B, S, topk]
 
 
+# DeepseekV32Attention：在 V3 MLA 上注入 Indexer 稀疏 mask
 class DeepseekV32Attention(DeepseekV3Attention):
     """
     DeepSeek-V3 MLA, with a DSA indexer whose top-k sparse mask is folded into the attention mask.
@@ -355,10 +360,12 @@ class DeepseekV32Attention(DeepseekV3Attention):
         return attn_output, attn_weights
 
 
+# DeepseekV32DecoderLayer：Glm4MoeLite 解码层 + DSA 注意力
 class DeepseekV32DecoderLayer(Glm4MoeLiteDecoderLayer):
     pass
 
 
+# DeepseekV32PreTrainedModel：V3.2 预训练基类
 class DeepseekV32PreTrainedModel(DeepseekV3PreTrainedModel):
     _keep_in_fp32_modules = ["indexer.weights_proj"]
     _keep_in_fp32_modules_strict = ["e_score_correction_bias"]
@@ -368,6 +375,7 @@ class DeepseekV32PreTrainedModel(DeepseekV3PreTrainedModel):
     _supports_flex_attn = False
 
 
+# DeepseekV32Model：替换注意力为 DSA 的 V3 模型
 class DeepseekV32Model(DeepseekV3Model):
     def forward(
         self,
@@ -425,6 +433,7 @@ class DeepseekV32Model(DeepseekV3Model):
         )
 
 
+# DeepseekV32ForCausalLM：V3.2 因果 LM
 class DeepseekV32ForCausalLM(DeepseekV3ForCausalLM):
     pass
 
