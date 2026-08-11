@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Moonshine 配置：轻量 ASR 编解码器（Whisper 风格 Conv + Transformer）超参
+
+# MoonshineConfig：UsefulSensors/moonshine 轻量 ASR 编解码器默认超参
 @auto_docstring(checkpoint="UsefulSensors/moonshine-tiny")
 @strict
+# MoonshineConfig：UsefulSensors/moonshine 轻量 ASR 编解码器默认超参
 class MoonshineConfig(PreTrainedConfig):
     r"""
     encoder_num_key_value_heads (`int`, *optional*):
@@ -102,6 +106,7 @@ class MoonshineConfig(PreTrainedConfig):
     pad_token_id: int | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         if self.encoder_num_key_value_heads is None:
             self.encoder_num_key_value_heads = self.encoder_num_attention_heads

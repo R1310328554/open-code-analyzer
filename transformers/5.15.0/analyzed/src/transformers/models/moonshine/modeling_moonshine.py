@@ -47,12 +47,15 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_moonshine import MoonshineConfig
 
 
+# Moonshine 建模：轻量 ASR 编解码器（Conv 音频编码 + 因果文本解码）
+
 @auto_docstring(
     custom_intro="""
     Extends [~modeling_outputs.BaseModelOutput] to include the output attention mask since sequence length is not preserved in the model's forward.
     """
 )
 @dataclass
+# MoonshineEncoderModelOutput：编码器输出（含序列压缩后的 attention_mask）
 class MoonshineEncoderModelOutput(BaseModelOutput):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -66,6 +69,7 @@ class MoonshineEncoderModelOutput(BaseModelOutput):
     attention_mask: torch.Tensor | None = None
 
 
+# MoonshineEncoderMLP：编码器 FFN（GELU 激活，标准两层线性）
 class MoonshineEncoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -81,6 +85,7 @@ class MoonshineEncoderMLP(nn.Module):
         return hidden_states
 
 
+# MoonshineDecoderMLP：解码器 SwiGLU FFN（SiLU 门控 × 线性）
 class MoonshineDecoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -97,6 +102,7 @@ class MoonshineDecoderMLP(nn.Module):
         return hidden_states
 
 
+# MoonshineRotaryEmbedding：Moonshine 部分 RoPE 旋转位置编码
 class MoonshineRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MoonshineConfig, device=None):
@@ -117,6 +123,7 @@ class MoonshineRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 partial_rotary_factor 计算 RoPE 逆频率
     def compute_default_rope_parameters(config: MoonshineConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -156,6 +163,7 @@ class MoonshineRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -168,6 +176,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 注意力前向（含 dropout 与 scaling）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -193,6 +202,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -200,6 +210,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin RoPE 应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -240,6 +251,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MoonshineAttention：Moonshine 多头自/交叉注意力（GQA + RoPE）
 class MoonshineAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -362,6 +374,7 @@ class MoonshineAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MoonshineEncoderLayer：Moonshine 编码器层（双向自注意力 + FFN）
 class MoonshineEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MoonshineConfig, layer_idx: int):
         super().__init__()
@@ -411,6 +424,7 @@ class MoonshineEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MoonshineDecoderLayer：Moonshine 解码器层（因果自注意力 + 交叉注意力 + FFN）
 class MoonshineDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MoonshineConfig, layer_idx: int | None = None):
         super().__init__()
@@ -484,6 +498,7 @@ class MoonshineDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MoonshinePreTrainedModel：Moonshine 预训练基类与卷积长度推算
 class MoonshinePreTrainedModel(PreTrainedModel):
     config: MoonshineConfig
     base_model_prefix = "model"
@@ -497,6 +512,7 @@ class MoonshinePreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     # TODO arthur, how do we separate when it cross / self coming from different layer?
 
+    # _get_feat_extract_output_lengths：按三层卷积推算编码器输出序列长度
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor):
         """
         Computes the output length of the convolutional layers
@@ -508,6 +524,7 @@ class MoonshinePreTrainedModel(PreTrainedModel):
         return output_conv3_length
 
 
+# MoonshineEncoder：Moonshine 音频编码器（三层 Conv1d + Transformer 堆叠）
 class MoonshineEncoder(MoonshinePreTrainedModel):
     """
     Transformer encoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MoonshineEncoderLayer`]
@@ -612,6 +629,7 @@ class MoonshineEncoder(MoonshinePreTrainedModel):
 
 
 @auto_docstring
+# MoonshineDecoder：Moonshine 文本解码器（因果 Transformer 堆叠）
 class MoonshineDecoder(MoonshinePreTrainedModel):
     main_input_name = "input_ids"
     _can_record_outputs = {
@@ -711,6 +729,7 @@ class MoonshineDecoder(MoonshinePreTrainedModel):
 
 
 @auto_docstring
+# MoonshineModel：Moonshine 编解码器主体（Encoder + Decoder）
 class MoonshineModel(MoonshinePreTrainedModel):
     def __init__(self, config: MoonshineConfig):
         super().__init__(config)
@@ -812,6 +831,7 @@ class MoonshineModel(MoonshinePreTrainedModel):
         )
 
 
+# shift_tokens_right：右移标签序列以生成 decoder 输入
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -833,6 +853,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     The Moonshine Model with a language modeling head. Can be used for automatic speech recognition.
     """
 )
+# MoonshineForConditionalGeneration：Moonshine 条件生成 ASR（含 lm_head）
 class MoonshineForConditionalGeneration(MoonshinePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
 

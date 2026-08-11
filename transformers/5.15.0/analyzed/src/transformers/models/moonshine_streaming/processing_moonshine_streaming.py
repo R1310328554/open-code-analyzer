@@ -23,6 +23,9 @@ from ...tokenization_utils_base import AudioInput, PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Moonshine Streaming 处理器：音频特征提取与文本 tokenizer 联合封装
+
+# MoonshineStreamingProcessorKwargs：流式 Moonshine 处理器默认参数
 class MoonshineStreamingProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -34,6 +37,7 @@ class MoonshineStreamingProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# MoonshineStreamingProcessor：流式 Moonshine 音频+文本联合处理器
 class MoonshineStreamingProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
@@ -71,6 +75,7 @@ class MoonshineStreamingProcessor(ProcessorMixin):
             inputs["labels"] = encodings["input_ids"]
             return inputs
 
+    # pad：对特征与/或 labels 批量填充
     def pad(self, *args, **kwargs):
         """
         This method operates on batches of extracted features and/or tokenized text. It forwards all arguments to
@@ -105,6 +110,7 @@ class MoonshineStreamingProcessor(ProcessorMixin):
             return input_features
 
     @property
+    # model_input_names：模型所需输入键名（特征 + labels）
     def model_input_names(self):
         # The processor doesn't return text ids and the model seems to not need them
         feature_extractor_input_names = self.feature_extractor.model_input_names

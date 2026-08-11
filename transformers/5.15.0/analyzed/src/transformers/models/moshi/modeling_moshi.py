@@ -42,12 +42,15 @@ from .configuration_moshi import MoshiConfig, MoshiDepthConfig
 logger = logging.get_logger(__name__)
 
 
+# Moshi 建模：Kyutai 全双工语音对话（文本+多码本音频联合生成）
+
 @auto_docstring(
     custom_intro="""
     Outputs of [`MoshiForConditionalConditionalGeneration.generate`].
     """
 )
 @dataclass
+# MoshiConditionalGenerationGenerateOutput：Moshi 条件生成 generate 输出结构
 class MoshiConditionalGenerationGenerateOutput(ModelOutput):
     r"""
     audio_sequences (`torch.LongTensor` of shape `(batch_size*num_return_sequences, 1, sequence_length)`, *optional*):
@@ -100,6 +103,7 @@ class MoshiConditionalGenerationGenerateOutput(ModelOutput):
     """
 )
 @dataclass
+# MoshiCausalLMOutputWithPast：Moshi 因果 LM 前向输出（含 past_key_values）
 class MoshiCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -127,6 +131,7 @@ class MoshiCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# MoshiConditionalGenerationOutputWithPast：Moshi 条件生成前向输出
 class MoshiConditionalGenerationOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `text_labels` is provided):
@@ -166,6 +171,7 @@ class MoshiConditionalGenerationOutputWithPast(ModelOutput):
 
 @auto_docstring
 @dataclass
+# MoshiUnconditionalInput：无条件生成所需的初始音频/文本 token
 class MoshiUnconditionalInput(ModelOutput):
     r"""
     input_ids (`torch.Tensor `of shape `(batch_size, sequence_length), *optional*):
@@ -186,6 +192,7 @@ class MoshiUnconditionalInput(ModelOutput):
 
 
 # Copied from transformers.models.gemma.modeling_gemma.GemmaRMSNorm with Gemma->Moshi
+# MoshiRMSNorm：Moshi RMS 层归一化
 class MoshiRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -205,6 +212,7 @@ class MoshiRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# MoshiFlexibleLinear：按码本层索引选择不同权重的灵活线性层
 class MoshiFlexibleLinear(nn.Module):
     def __init__(self, input_size, output_size, num_layers):
         super().__init__()
@@ -244,6 +252,7 @@ class MoshiFlexibleLinear(nn.Module):
         return x.squeeze(2)
 
 
+# MoshiLinear：Moshi 线性层（可选 FlexibleLinear 多码本模式）
 class MoshiLinear(nn.Module):
     def __init__(self, input_dim, output_dim, num_codebooks, use_flexible_linear=False):
         super().__init__()
@@ -263,6 +272,7 @@ class MoshiLinear(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Moshi
+# MoshiRotaryEmbedding：Moshi RoPE 旋转位置编码
 class MoshiRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MoshiConfig, device=None):
@@ -283,6 +293,7 @@ class MoshiRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 partial_rotary_factor 计算 RoPE 逆频率
     def compute_default_rope_parameters(config: MoshiConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -321,6 +332,7 @@ class MoshiRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -329,6 +341,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：将 cos/sin RoPE 应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -354,6 +367,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MoshiGatingMLP：Moshi SwiGLU 门控前馈网络
 class MoshiGatingMLP(nn.Module):
     def __init__(self, config, use_flexible_linear=False):
         super().__init__()
@@ -380,6 +394,7 @@ class MoshiGatingMLP(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -393,6 +408,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：标准 eager 注意力前向（含 dropout 与 scaling）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -418,6 +434,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MoshiAttention：Moshi 滑动窗口因果自注意力（GQA + RoPE）
 class MoshiAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -504,6 +521,7 @@ class MoshiAttention(nn.Module):
 
 # NO LONGER EXIST Copied from transformers.models.gemma.modeling_gemma.GemmaFlashAttention2 with Gemma->Moshi
 # TODO cyril: modular
+# MoshiDecoderLayer：Moshi 解码器层（RMSNorm + 注意力 + GatingMLP）
 class MoshiDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MoshiConfig, layer_idx: int, use_flexible_linear: bool, use_rope=True):
         super().__init__()
@@ -566,6 +584,7 @@ class MoshiDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MoshiPreTrainedModel：Moshi 预训练基类与权重初始化
 class MoshiPreTrainedModel(PreTrainedModel):
     config: MoshiConfig
     base_model_prefix = "model"
@@ -586,6 +605,7 @@ class MoshiPreTrainedModel(PreTrainedModel):
             init.normal_(module.weight)
 
 
+# MoshiDepthDecoder：Moshi 深度解码器（逐码本预测音频 token）
 class MoshiDepthDecoder(MoshiPreTrainedModel, GenerationMixin):
     """
     Transformer depth decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MoshiTransformerLayer`]
@@ -798,6 +818,7 @@ class MoshiDepthDecoder(MoshiPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# MoshiModel：Moshi 主解码器 Transformer 堆叠
 class MoshiModel(MoshiPreTrainedModel):
     def __init__(self, config: MoshiConfig):
         super().__init__(config)
@@ -913,6 +934,7 @@ class MoshiModel(MoshiPreTrainedModel):
     The Moshi decoder model with a text language modelling head on top. Only usable for text.
     """
 )
+# MoshiForCausalLM：Moshi 因果语言建模头
 class MoshiForCausalLM(MoshiPreTrainedModel, GenerationMixin):
     input_modalities = ("text",)
 
@@ -1028,6 +1050,7 @@ class MoshiForCausalLM(MoshiPreTrainedModel, GenerationMixin):
     The original Moshi model with an audio encoder, a Moshi depth decoder and a Moshi decoder, for speech-to-speech.
     """
 )
+# MoshiForConditionalGeneration：Moshi 全双工语音对话（编码器+主/深度解码器）
 class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
     config: MoshiConfig
     output_modalities = ("audio", "text")
@@ -1052,6 +1075,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
         self.num_codebooks = config.num_codebooks
         self.post_init()
 
+    # get_depth_decoder：返回深度解码器子模块
     def get_depth_decoder(self):
         return self.depth_decoder
 
@@ -1232,6 +1256,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
             depth_attentions=None if decoder_outputs is None else decoder_outputs.attentions,
         )
 
+    # _prepare_attention_mask_for_generation：生成时构造滑动窗口因果掩码
     def _prepare_attention_mask_for_generation(
         self,
         input_ids: torch.LongTensor,
@@ -1257,6 +1282,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
         )
         return attention_mask
 
+    # _prepare_inputs_embeds_for_generation：生成步拼接文本与音频嵌入
     def _prepare_inputs_embeds_for_generation(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1359,6 +1385,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
         )
 
     @torch.no_grad()
+    # generate：联合生成文本与多码本音频 token 序列
     def generate(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1612,6 +1639,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
             audio_sequences=output_values, sequences=output_text_ids, audio_codes=output_audio_codes
         )
 
+    # prepare_inputs_for_generation：生成步准备输入 embeds 与 cache
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -1684,6 +1712,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
 
         return model_inputs
 
+    # _update_model_kwargs_for_generation：更新生成步 past_key_values 等
     def _update_model_kwargs_for_generation(
         self,
         outputs: ModelOutput,
@@ -1716,6 +1745,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
     def set_output_embeddings(self, new_embeddings):
         self.decoder.set_output_embeddings(new_embeddings)
 
+    # freeze_audio_encoder：冻结 Mimi 音频编码器参数
     def freeze_audio_encoder(self):
         """
         Freeze the audio encoder weights.
@@ -1724,6 +1754,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
             param.requires_grad = False
         self.audio_encoder._requires_grad = False
 
+    # freeze_depth_decoder：冻结深度解码器参数
     def freeze_depth_decoder(self):
         """
         Freeze the depth encoder weights.
@@ -1734,6 +1765,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
 
     @staticmethod
     # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenForCausalLM.apply_delay_pattern_mask
+    # apply_delay_pattern_mask：对多码本序列应用延迟模式掩码
     def apply_delay_pattern_mask(input_ids, decoder_pad_token_mask):
         """Apply a delay pattern mask to the decoder input ids, only preserving predictions where
         the mask is set to -1, and otherwise setting to the value detailed in the mask."""
@@ -1742,6 +1774,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
         input_ids = torch.where(decoder_pad_token_mask == -1, input_ids, decoder_pad_token_mask)
         return input_ids
 
+    # build_delay_pattern_mask：构造多码本延迟模式的 padding 掩码
     def build_delay_pattern_mask(
         self, input_ids: torch.LongTensor, bos_token_id: int, pad_token_id: int, max_length: int | None = None
     ):
@@ -1787,6 +1820,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
         input_ids = input_ids_shifted[..., :seq_len_to_keep]
         return input_ids, pattern_mask
 
+    # get_unconditional_inputs：采样无条件生成的初始 token
     def get_unconditional_inputs(self, num_samples=1):
         """
         Helper function to get null inputs for unconditional generation, enabling the model to be used without the
@@ -1828,6 +1862,7 @@ class MoshiForConditionalGeneration(MoshiPreTrainedModel, GenerationMixin):
             attention_mask=attention_mask,
         )
 
+    # _check_and_maybe_initialize_inputs：校验并在缺失时初始化生成输入
     def _check_and_maybe_initialize_inputs(
         self,
         input_ids=None,

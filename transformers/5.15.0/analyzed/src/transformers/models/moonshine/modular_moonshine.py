@@ -47,8 +47,12 @@ from ..whisper.modeling_whisper import WhisperModel, shift_tokens_right
 logger = logging.get_logger(__name__)
 
 
+# Moonshine 模块化实现：组合 GLM/Llama/Whisper 组件构建 ASR 编解码器
+
+# MoonshineConfig：UsefulSensors/moonshine 轻量 ASR 编解码器默认超参
 @auto_docstring(checkpoint="UsefulSensors/moonshine-tiny")
 @strict
+# MoonshineConfig：UsefulSensors/moonshine 轻量 ASR 编解码器默认超参
 class MoonshineConfig(PreTrainedConfig):
     r"""
     encoder_num_key_value_heads (`int`, *optional*):
@@ -124,6 +128,7 @@ class MoonshineConfig(PreTrainedConfig):
     pad_token_id: int | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         if self.encoder_num_key_value_heads is None:
             self.encoder_num_key_value_heads = self.encoder_num_attention_heads
@@ -141,6 +146,7 @@ class MoonshineConfig(PreTrainedConfig):
     """
 )
 @dataclass
+# MoonshineEncoderModelOutput：编码器输出（含序列压缩后的 attention_mask）
 class MoonshineEncoderModelOutput(BaseModelOutput):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -154,6 +160,7 @@ class MoonshineEncoderModelOutput(BaseModelOutput):
     attention_mask: torch.Tensor | None = None
 
 
+# MoonshineEncoderMLP：编码器 FFN（GELU 激活，标准两层线性）
 class MoonshineEncoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -169,6 +176,7 @@ class MoonshineEncoderMLP(nn.Module):
         return hidden_states
 
 
+# MoonshineDecoderMLP：解码器 SwiGLU FFN（SiLU 门控 × 线性）
 class MoonshineDecoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -185,10 +193,12 @@ class MoonshineDecoderMLP(nn.Module):
         return hidden_states
 
 
+# MoonshineRotaryEmbedding：Moonshine 部分 RoPE 旋转位置编码
 class MoonshineRotaryEmbedding(GlmRotaryEmbedding):
     pass
 
 
+# MoonshineAttention：Moonshine 多头自/交叉注意力（GQA + RoPE）
 class MoonshineAttention(GlmAttention):
     def __init__(
         self,
@@ -293,6 +303,7 @@ class MoonshineAttention(GlmAttention):
         return attn_output, attn_weights
 
 
+# MoonshineEncoderLayer：Moonshine 编码器层（双向自注意力 + FFN）
 class MoonshineEncoderLayer(LlamaDecoderLayer):
     def __init__(self, config: MoonshineConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -310,6 +321,7 @@ class MoonshineEncoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, bias=False)
 
 
+# MoonshineDecoderLayer：Moonshine 解码器层（因果自注意力 + 交叉注意力 + FFN）
 class MoonshineDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MoonshineConfig, layer_idx: int | None = None):
         super().__init__()
@@ -383,6 +395,7 @@ class MoonshineDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MoonshinePreTrainedModel：Moonshine 预训练基类与卷积长度推算
 class MoonshinePreTrainedModel(PreTrainedModel):
     config: MoonshineConfig
     base_model_prefix = "model"
@@ -396,6 +409,7 @@ class MoonshinePreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     # TODO arthur, how do we separate when it cross / self coming from different layer?
 
+    # _get_feat_extract_output_lengths：按三层卷积推算编码器输出序列长度
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor):
         """
         Computes the output length of the convolutional layers
@@ -407,6 +421,7 @@ class MoonshinePreTrainedModel(PreTrainedModel):
         return output_conv3_length
 
 
+# MoonshineEncoder：Moonshine 音频编码器（三层 Conv1d + Transformer 堆叠）
 class MoonshineEncoder(MoonshinePreTrainedModel):
     """
     Transformer encoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MoonshineEncoderLayer`]
@@ -510,6 +525,7 @@ class MoonshineEncoder(MoonshinePreTrainedModel):
         )
 
 
+# MoonshineDecoder：Moonshine 文本解码器（因果 Transformer 堆叠）
 class MoonshineDecoder(LlamaModel):
     main_input_name = "input_ids"
     _can_record_outputs = {
@@ -599,6 +615,7 @@ class MoonshineDecoder(LlamaModel):
         )
 
 
+# MoonshineModel：Moonshine 编解码器主体（Encoder + Decoder）
 class MoonshineModel(WhisperModel):
     def _mask_input_features(self):
         raise AttributeError("Not needed for Moonshine")
@@ -680,6 +697,7 @@ class MoonshineModel(WhisperModel):
     The Moonshine Model with a language modeling head. Can be used for automatic speech recognition.
     """
 )
+# MoonshineForConditionalGeneration：Moonshine 条件生成 ASR（含 lm_head）
 class MoonshineForConditionalGeneration(MoonshinePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
 

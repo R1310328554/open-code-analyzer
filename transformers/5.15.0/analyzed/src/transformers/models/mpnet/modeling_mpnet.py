@@ -40,7 +40,10 @@ from .configuration_mpnet import MPNetConfig
 logger = logging.get_logger(__name__)
 
 
+# MPNet 建模：Permuted Pre-training 编码器，支持 MLM/分类/QA 等
+
 @auto_docstring
+# MPNetPreTrainedModel：MPNet 预训练基类与权重初始化
 class MPNetPreTrainedModel(PreTrainedModel):
     config: MPNetConfig
     base_model_prefix = "mpnet"
@@ -55,6 +58,7 @@ class MPNetPreTrainedModel(PreTrainedModel):
             init.copy_(module.position_ids, torch.arange(module.position_ids.shape[-1]).expand((1, -1)))
 
 
+# MPNetEmbeddings：词嵌入 + 位置嵌入 + LayerNorm
 class MPNetEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -94,6 +98,7 @@ class MPNetEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         return embeddings
 
+    # create_position_ids_from_inputs_embeds：由 inputs_embeds 生成顺序 position_ids
     def create_position_ids_from_inputs_embeds(self, inputs_embeds):
         """
         We are provided embeddings directly. We cannot infer which are padded so just generate sequential position ids.
@@ -112,6 +117,7 @@ class MPNetEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# MPNetSelfAttention：MPNet 自注意力（含相对位置偏置）
 class MPNetSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -174,6 +180,7 @@ class MPNetSelfAttention(nn.Module):
         return outputs
 
 
+# MPNetAttention：MPNet 完整注意力子层（SelfAttention + Output）
 class MPNetAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -201,6 +208,7 @@ class MPNetAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# MPNetIntermediate：MPNet FFN 中间层（GELU 扩展）
 class MPNetIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -217,6 +225,7 @@ class MPNetIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# MPNetOutput：MPNet FFN 输出投影与 dropout
 class MPNetOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -231,6 +240,7 @@ class MPNetOutput(nn.Module):
         return hidden_states
 
 
+# MPNetLayer：MPNet 单层 Transformer（注意力 + FFN + 残差）
 class MPNetLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -261,6 +271,7 @@ class MPNetLayer(nn.Module):
         return outputs
 
 
+# MPNetEncoder：MPNet 编码器堆叠与相对位置偏置计算
 class MPNetEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -309,6 +320,7 @@ class MPNetEncoder(nn.Module):
             attentions=all_attentions,
         )
 
+    # compute_position_bias：计算相对位置注意力偏置矩阵
     def compute_position_bias(self, x, position_ids=None, num_buckets=32):
         bsz, qlen, klen = x.size(0), x.size(1), x.size(1)
         if position_ids is not None:
@@ -328,6 +340,7 @@ class MPNetEncoder(nn.Module):
         return values
 
     @staticmethod
+    # relative_position_bucket：将相对距离映射到有限 bucket 索引
     def relative_position_bucket(relative_position, num_buckets=32, max_distance=128):
         ret = 0
         n = -relative_position
@@ -349,6 +362,7 @@ class MPNetEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# MPNetPooler：首 token 池化（Tanh 激活）
 class MPNetPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -365,6 +379,7 @@ class MPNetPooler(nn.Module):
 
 
 @auto_docstring
+# MPNetModel：MPNet 编码器主干（可选 pooler）
 class MPNetModel(MPNetPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -439,6 +454,7 @@ class MPNetModel(MPNetPreTrainedModel):
         )
 
 
+# MPNetForMaskedLM：MPNet 掩码语言建模
 class MPNetForMaskedLM(MPNetPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "mpnet.embeddings.word_embeddings.weight",
@@ -512,6 +528,7 @@ class MPNetForMaskedLM(MPNetPreTrainedModel):
         )
 
 
+# MPNetLMHead：MLM 预测头（Dense + GELU + LayerNorm + Linear）
 class MPNetLMHead(nn.Module):
     """MPNet Head for masked and permuted language modeling."""
 
@@ -540,6 +557,7 @@ class MPNetLMHead(nn.Module):
     output) e.g. for GLUE tasks.
     """
 )
+# MPNetForSequenceClassification：MPNet 序列分类
 class MPNetForSequenceClassification(MPNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -620,6 +638,7 @@ class MPNetForSequenceClassification(MPNetPreTrainedModel):
 
 
 @auto_docstring
+# MPNetForMultipleChoice：MPNet 多项选择
 class MPNetForMultipleChoice(MPNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -712,6 +731,7 @@ class MPNetForMultipleChoice(MPNetPreTrainedModel):
 
 
 @auto_docstring
+# MPNetForTokenClassification：MPNet 词级分类（NER 等）
 class MPNetForTokenClassification(MPNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -776,6 +796,7 @@ class MPNetForTokenClassification(MPNetPreTrainedModel):
         )
 
 
+# MPNetClassificationHead：序列分类线性头
 class MPNetClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -796,6 +817,7 @@ class MPNetClassificationHead(nn.Module):
 
 
 @auto_docstring
+# MPNetForQuestionAnswering：MPNet 抽取式问答
 class MPNetForQuestionAnswering(MPNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -870,6 +892,7 @@ class MPNetForQuestionAnswering(MPNetPreTrainedModel):
         )
 
 
+# create_position_ids_from_input_ids：由 input_ids 生成 position_ids（跳过 padding）
 def create_position_ids_from_input_ids(input_ids, padding_idx):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols

@@ -14,14 +14,18 @@
 # limitations under the License.
 """MPNet model configuration"""
 
+# MPNet 配置：Microsoft MPNet 预训练语言模型超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MPNetConfig：microsoft/mpnet-base 预训练语言模型默认超参
 @auto_docstring(checkpoint="microsoft/mpnet-base")
 @strict
+# MPNetConfig：microsoft/mpnet-base 预训练语言模型默认超参
 class MPNetConfig(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):

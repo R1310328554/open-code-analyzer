@@ -46,6 +46,9 @@ from .configuration_moonshine_streaming import MoonshineStreamingConfig, Moonshi
 logger = logging.get_logger(__name__)
 
 
+# Moonshine Streaming 模块化实现：滑动窗口编码 + 流式因果解码
+
+# MoonshineStreamingProcessorKwargs：流式 Moonshine 处理器默认参数
 class MoonshineStreamingProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -56,6 +59,7 @@ class MoonshineStreamingProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# MoonshineStreamingProcessor：流式 Moonshine 音频+文本联合处理器
 class MoonshineStreamingProcessor(Wav2Vec2Processor): ...
 
 
@@ -65,6 +69,7 @@ class MoonshineStreamingProcessor(Wav2Vec2Processor): ...
     """
 )
 @dataclass
+# MoonshineStreamingEncoderModelOutput：流式编码器输出（含压缩后 attention_mask）
 class MoonshineStreamingEncoderModelOutput(BaseModelOutput):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -78,6 +83,7 @@ class MoonshineStreamingEncoderModelOutput(BaseModelOutput):
     attention_mask: torch.Tensor | None = None
 
 
+# MoonshineStreamingFrameCMVN：逐帧倒谱均值方差归一化（CMVN）
 class MoonshineStreamingFrameCMVN(nn.Module):
     def __init__(self, eps: float = 1e-6):
         super().__init__()
@@ -90,6 +96,7 @@ class MoonshineStreamingFrameCMVN(nn.Module):
         return centered / rms
 
 
+# MoonshineStreamingAsinhCompression：asinh 非线性压缩以稳定特征动态范围
 class MoonshineStreamingAsinhCompression(nn.Module):
     def __init__(self, k_init: float = 0.75):
         super().__init__()
@@ -99,6 +106,7 @@ class MoonshineStreamingAsinhCompression(nn.Module):
         return torch.asinh(torch.exp(self.log_k) * x)
 
 
+# MoonshineStreamingCausalConv1d：因果一维卷积（流式推理仅看历史帧）
 class MoonshineStreamingCausalConv1d(nn.Conv1d):
     def __init__(
         self,
@@ -128,6 +136,7 @@ class MoonshineStreamingCausalConv1d(nn.Conv1d):
         return x, mask
 
 
+# MoonshineStreamingLayerNorm：流式编码器 LayerNorm（无 bias）
 class MoonshineStreamingLayerNorm(nn.Module):
     def __init__(self, dim: int, unit_offset: bool = True, device=None, dtype=None):
         super().__init__()
@@ -141,9 +150,11 @@ class MoonshineStreamingLayerNorm(nn.Module):
         return normed * gamma
 
 
+# MoonshineStreamingEncoderMLP：流式编码器 FFN（继承 Moonshine 编码器 MLP）
 class MoonshineStreamingEncoderMLP(MoonshineEncoderMLP): ...
 
 
+# MoonshineStreamingEncoderAttention：流式编码器滑动窗口自注意力
 class MoonshineStreamingEncoderAttention(nn.Module):
     def __init__(self, config: MoonshineStreamingConfig, layer_idx: int):
         super().__init__()
@@ -201,6 +212,7 @@ class MoonshineStreamingEncoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MoonshineStreamingEncoderLayer：流式编码器 Transformer 层
 class MoonshineStreamingEncoderLayer(MoonshineEncoderLayer):
     def __init__(self, config: MoonshineStreamingConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -210,6 +222,7 @@ class MoonshineStreamingEncoderLayer(MoonshineEncoderLayer):
         self.post_attention_layernorm = MoonshineStreamingLayerNorm(config.hidden_size)
 
 
+# MoonshineStreamingEncoderEmbedder：流式音频嵌入（CMVN + 压缩 + 因果卷积）
 class MoonshineStreamingEncoderEmbedder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -244,7 +257,9 @@ class MoonshineStreamingEncoderEmbedder(nn.Module):
         return hidden_states, padding_mask
 
 
+# MoonshineStreamingPreTrainedModel：流式 Moonshine 预训练基类
 class MoonshineStreamingPreTrainedModel(MoonshinePreTrainedModel):
+    # _get_feat_extract_output_lengths：按三层卷积推算编码器输出序列长度
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor) -> torch.LongTensor:
         frame_len = int(round(self.config.encoder_config.sample_rate * self.config.encoder_config.frame_ms / 1000.0))
         output_lengths = input_lengths // frame_len
@@ -259,6 +274,7 @@ class MoonshineStreamingPreTrainedModel(MoonshinePreTrainedModel):
             super()._init_weights(module)
 
 
+# sliding_window_mask_function：按 (window_size, shift) 构造滑动窗口注意力掩码
 def sliding_window_mask_function(sliding_window: tuple[int, int]) -> Callable:
     """
     This creates uni/bidirectional attention mask with sliding window.
@@ -275,6 +291,7 @@ def sliding_window_mask_function(sliding_window: tuple[int, int]) -> Callable:
     return inner_mask
 
 
+# MoonshineStreamingEncoder：流式 Moonshine 音频编码器（逐层滑动窗口）
 class MoonshineStreamingEncoder(MoonshineStreamingPreTrainedModel):
     config: MoonshineStreamingEncoderConfig
     _can_record_outputs = {
@@ -345,9 +362,11 @@ class MoonshineStreamingEncoder(MoonshineStreamingPreTrainedModel):
         return MoonshineStreamingEncoderModelOutput(last_hidden_state=hidden_states, attention_mask=attention_mask)
 
 
+# MoonshinMoonshineStreamingDecoderMLP：流式解码器 MLP（Llama SwiGLU 风格）
 class MoonshinMoonshineStreamingDecoderMLP(LlamaMLP): ...
 
 
+# MoonshineStreamingDecoder：流式 Moonshine 文本解码器
 class MoonshineStreamingDecoder(MoonshineDecoder):
     def __init__(self, config):
         super().__init__(config)
@@ -401,6 +420,7 @@ class MoonshineStreamingDecoder(MoonshineDecoder):
         )
 
 
+# MoonshineStreamingModel：流式 Moonshine 编解码器主体
 class MoonshineStreamingModel(MoonshineModel):
     def __init__(self, config):
         super().__init__(config)
@@ -408,6 +428,7 @@ class MoonshineStreamingModel(MoonshineModel):
         self.decoder = MoonshineStreamingDecoder(config)
 
 
+# MoonshineStreamingForConditionalGeneration：流式 Moonshine 条件生成 ASR
 class MoonshineStreamingForConditionalGeneration(MoonshineForConditionalGeneration): ...
 
 

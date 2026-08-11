@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING
 
 
+# MoonshineStreamingEncoderConfig：流式 Moonshine 编码器超参（帧长与滑动窗口）
 @auto_docstring(checkpoint="UsefulSensors/moonshine-streaming-tiny")
 @strict
+# MoonshineStreamingEncoderConfig：流式 Moonshine 编码器超参（帧长与滑动窗口）
 class MoonshineStreamingEncoderConfig(PreTrainedConfig):
     r"""
     sample_rate (`int`, *optional*, defaults to 16000):
@@ -69,6 +71,7 @@ class MoonshineStreamingEncoderConfig(PreTrainedConfig):
     )
     head_dim: int | None = None
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         self.head_dim = self.head_dim if self.head_dim is not None else self.hidden_size // self.num_attention_heads
         self.sliding_windows = [list(window) for window in self.sliding_windows]
@@ -76,8 +79,10 @@ class MoonshineStreamingEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MoonshineStreamingConfig：流式 Moonshine 编解码器整体超参
 @auto_docstring(checkpoint="UsefulSensors/moonshine-streaming-tiny")
 @strict
+# MoonshineStreamingConfig：流式 Moonshine 编解码器整体超参
 class MoonshineStreamingConfig(PreTrainedConfig):
     r"""
     pad_head_dim_to_multiple_of (`int`, *optional*):
@@ -122,6 +127,7 @@ class MoonshineStreamingConfig(PreTrainedConfig):
     tie_word_embeddings: bool = False
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config["model_type"] = self.encoder_config.get("model_type", "moonshine_streaming_encoder")

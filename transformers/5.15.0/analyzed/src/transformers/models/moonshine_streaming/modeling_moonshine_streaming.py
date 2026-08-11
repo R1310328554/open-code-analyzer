@@ -48,12 +48,15 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_moonshine_streaming import MoonshineStreamingConfig, MoonshineStreamingEncoderConfig
 
 
+# Moonshine Streaming 建模：逐帧流式 ASR（CMVN + 滑动窗口 + 因果解码）
+
 @auto_docstring(
     custom_intro="""
     Extends [~modeling_outputs.BaseModelOutput] to include the output attention mask since sequence length is not preserved in the model's forward.
     """
 )
 @dataclass
+# MoonshineStreamingEncoderModelOutput：流式编码器输出（含压缩后 attention_mask）
 class MoonshineStreamingEncoderModelOutput(BaseModelOutput):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -67,6 +70,7 @@ class MoonshineStreamingEncoderModelOutput(BaseModelOutput):
     attention_mask: torch.Tensor | None = None
 
 
+# MoonshineStreamingFrameCMVN：逐帧倒谱均值方差归一化（CMVN）
 class MoonshineStreamingFrameCMVN(nn.Module):
     def __init__(self, eps: float = 1e-6):
         super().__init__()
@@ -79,6 +83,7 @@ class MoonshineStreamingFrameCMVN(nn.Module):
         return centered / rms
 
 
+# MoonshineStreamingAsinhCompression：asinh 非线性压缩以稳定特征动态范围
 class MoonshineStreamingAsinhCompression(nn.Module):
     def __init__(self, k_init: float = 0.75):
         super().__init__()
@@ -88,6 +93,7 @@ class MoonshineStreamingAsinhCompression(nn.Module):
         return torch.asinh(torch.exp(self.log_k) * x)
 
 
+# MoonshineStreamingCausalConv1d：因果一维卷积（流式推理仅看历史帧）
 class MoonshineStreamingCausalConv1d(nn.Conv1d):
     def __init__(
         self,
@@ -117,6 +123,7 @@ class MoonshineStreamingCausalConv1d(nn.Conv1d):
         return x, mask
 
 
+# MoonshineStreamingLayerNorm：流式编码器 LayerNorm（无 bias）
 class MoonshineStreamingLayerNorm(nn.Module):
     def __init__(self, dim: int, unit_offset: bool = True, device=None, dtype=None):
         super().__init__()
@@ -130,6 +137,7 @@ class MoonshineStreamingLayerNorm(nn.Module):
         return normed * gamma
 
 
+# MoonshineStreamingEncoderMLP：流式编码器 FFN（继承 Moonshine 编码器 MLP）
 class MoonshineStreamingEncoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -145,6 +153,7 @@ class MoonshineStreamingEncoderMLP(nn.Module):
         return hidden_states
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -157,6 +166,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 注意力前向（含 dropout 与 scaling）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -182,6 +192,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MoonshineStreamingEncoderAttention：流式编码器滑动窗口自注意力
 class MoonshineStreamingEncoderAttention(nn.Module):
     def __init__(self, config: MoonshineStreamingConfig, layer_idx: int):
         super().__init__()
@@ -239,6 +250,7 @@ class MoonshineStreamingEncoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MoonshineStreamingEncoderLayer：流式编码器 Transformer 层
 class MoonshineStreamingEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MoonshineStreamingConfig, layer_idx: int):
         super().__init__()
@@ -280,6 +292,7 @@ class MoonshineStreamingEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MoonshineStreamingEncoderEmbedder：流式音频嵌入（CMVN + 压缩 + 因果卷积）
 class MoonshineStreamingEncoderEmbedder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -315,6 +328,7 @@ class MoonshineStreamingEncoderEmbedder(nn.Module):
 
 
 @auto_docstring
+# MoonshineStreamingPreTrainedModel：流式 Moonshine 预训练基类
 class MoonshineStreamingPreTrainedModel(PreTrainedModel):
     config: MoonshineStreamingConfig
     base_model_prefix = "model"
@@ -328,6 +342,7 @@ class MoonshineStreamingPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     # TODO arthur, how do we separate when it cross / self coming from different layer?
 
+    # _get_feat_extract_output_lengths：按三层卷积推算编码器输出序列长度
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor) -> torch.LongTensor:
         """
         Computes the output length of the convolutional layers
@@ -345,6 +360,7 @@ class MoonshineStreamingPreTrainedModel(PreTrainedModel):
             super()._init_weights(module)
 
 
+# sliding_window_mask_function：按 (window_size, shift) 构造滑动窗口注意力掩码
 def sliding_window_mask_function(sliding_window: tuple[int, int]) -> Callable:
     """
     This creates uni/bidirectional attention mask with sliding window.
@@ -361,6 +377,7 @@ def sliding_window_mask_function(sliding_window: tuple[int, int]) -> Callable:
     return inner_mask
 
 
+# MoonshineStreamingEncoder：流式 Moonshine 音频编码器（逐层滑动窗口）
 class MoonshineStreamingEncoder(MoonshineStreamingPreTrainedModel):
     config: MoonshineStreamingEncoderConfig
     _can_record_outputs = {
@@ -431,6 +448,7 @@ class MoonshineStreamingEncoder(MoonshineStreamingPreTrainedModel):
         return MoonshineStreamingEncoderModelOutput(last_hidden_state=hidden_states, attention_mask=attention_mask)
 
 
+# MoonshinMoonshineStreamingDecoderMLP：流式解码器 MLP（Llama SwiGLU 风格）
 class MoonshinMoonshineStreamingDecoderMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -447,6 +465,7 @@ class MoonshinMoonshineStreamingDecoderMLP(nn.Module):
         return down_proj
 
 
+# MoonshineStreamingDecoderMLP：流式解码器 SwiGLU FFN
 class MoonshineStreamingDecoderMLP(nn.Module):
     def __init__(self, config, hidden_act):
         super().__init__()
@@ -483,6 +502,7 @@ class MoonshineStreamingRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 partial_rotary_factor 计算 RoPE 逆频率
     def compute_default_rope_parameters(
         config: MoonshineStreamingConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -524,6 +544,7 @@ class MoonshineStreamingRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -531,6 +552,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin RoPE 应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -571,6 +593,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MoonshineStreamingAttention：流式解码器多头因果注意力（GQA + RoPE）
 class MoonshineStreamingAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -766,6 +789,7 @@ class MoonshineStreamingDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MoonshineStreamingDecoder：流式 Moonshine 文本解码器
 class MoonshineStreamingDecoder(MoonshineStreamingPreTrainedModel):
     main_input_name = "input_ids"
     _can_record_outputs = {
@@ -878,6 +902,7 @@ class MoonshineStreamingDecoder(MoonshineStreamingPreTrainedModel):
 
 
 @auto_docstring
+# MoonshineStreamingModel：流式 Moonshine 编解码器主体
 class MoonshineStreamingModel(MoonshineStreamingPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -978,6 +1003,7 @@ class MoonshineStreamingModel(MoonshineStreamingPreTrainedModel):
         )
 
 
+# shift_tokens_right：右移标签序列以生成 decoder 输入
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -999,6 +1025,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     The MoonshineStreaming Model with a language modeling head. Can be used for automatic speech recognition.
     """
 )
+# MoonshineStreamingForConditionalGeneration：流式 Moonshine 条件生成 ASR
 class MoonshineStreamingForConditionalGeneration(MoonshineStreamingPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
 

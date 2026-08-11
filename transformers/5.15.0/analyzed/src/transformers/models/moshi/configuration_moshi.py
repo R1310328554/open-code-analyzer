@@ -13,6 +13,8 @@
 # limitations under the License.
 """Moshi model configuration"""
 
+# Moshi 配置：全双工语音对话（Mimi 编码器 + 主/深度解码器）超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,8 +23,10 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# MoshiDepthConfig：Moshi 深度解码器（多码本音频 token）超参
 @auto_docstring(checkpoint="kmhf/hf-moshiko")
 @strict
+# MoshiDepthConfig：Moshi 深度解码器（多码本音频 token）超参
 class MoshiDepthConfig(PreTrainedConfig):
     r"""
     input_size (`int`, *optional*, defaults to 4096):
@@ -75,6 +79,7 @@ class MoshiDepthConfig(PreTrainedConfig):
     bos_token_id: int | None = None
     eos_token_id: int | list[int] | None = None
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         self.num_key_value_heads = (
             self.num_key_value_heads if self.num_key_value_heads is not None else self.num_attention_heads
@@ -82,14 +87,17 @@ class MoshiDepthConfig(PreTrainedConfig):
         self.head_dim = self.head_dim or self.hidden_size // self.num_attention_heads
         super().__post_init__(**kwargs)
 
+    # validate_architecture：@strict 校验 ffn_dim 偶数与码本数约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.ffn_dim % 2 == 1:
             raise ValueError(f"`ffn_dim={self.ffn_dim}` must be even.")
 
 
+# MoshiConfig：kmhf/hf-moshiko 全双工语音对话模型超参
 @auto_docstring(checkpoint="kmhf/hf-moshiko")
 @strict
+# MoshiConfig：kmhf/hf-moshiko 全双工语音对话模型超参
 class MoshiConfig(PreTrainedConfig):
     r"""
     audio_vocab_size (`int`, *optional*):
@@ -154,6 +162,7 @@ class MoshiConfig(PreTrainedConfig):
     audio_encoder_config: dict | PreTrainedConfig | None = None
     depth_decoder_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：初始化后补全 GQA 头数与 RoPE 默认值
     def __post_init__(self, **kwargs):
         self.num_key_value_heads = (
             self.num_key_value_heads if self.num_key_value_heads is not None else self.num_attention_heads
@@ -184,6 +193,7 @@ class MoshiConfig(PreTrainedConfig):
             self.depth_decoder_config = MoshiDepthConfig()
         super().__post_init__(**kwargs)
 
+    # validate_architecture：@strict 校验 ffn_dim 偶数与码本数约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.ffn_dim % 2 == 1:
@@ -195,10 +205,12 @@ class MoshiConfig(PreTrainedConfig):
             )
 
     @property
+    # sampling_rate：音频编码器采样率（只读属性）
     def sampling_rate(self):
         return self.audio_encoder_config.sampling_rate
 
     @classmethod
+    # from_audio_encoder_config：从 Mimi 等音频编码器配置实例化 MoshiConfig
     def from_audio_encoder_config(
         cls,
         audio_encoder_config: PreTrainedConfig,
