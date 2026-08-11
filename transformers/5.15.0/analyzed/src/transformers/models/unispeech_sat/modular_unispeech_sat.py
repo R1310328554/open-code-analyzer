@@ -39,6 +39,8 @@ from ..wav2vec2.modeling_wav2vec2 import (
 from .configuration_unispeech_sat import UniSpeechSatConfig
 
 
+# UniSpeech-SAT 模块化实现：复用 Wav2Vec2 组件并扩展 SAT 预训练与下游任务
+
 logger = logging.get_logger(__name__)
 
 
@@ -51,6 +53,7 @@ _HIDDEN_STATES_START_POSITION = 2
     """
 )
 @dataclass
+# UniSpeechSatForPreTrainingOutput：UniSpeech-SAT 预训练输出：对比损失 logits、投影量化态与码本困惑度
 class UniSpeechSatForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when model is in train mode, `torch.FloatTensor` of shape `(1,)`):
@@ -77,27 +80,34 @@ class UniSpeechSatForPreTrainingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# UniSpeechSatPositionalConvEmbedding：UniSpeech-SAT 位置卷积嵌入：分组 1D Conv + weight norm 相对位置编码
 class UniSpeechSatPositionalConvEmbedding(Wav2Vec2PositionalConvEmbedding):
     pass
 
 
+# UniSpeechSatFeatureEncoder：UniSpeech-SAT 特征编码器：多层 1D 卷积将原始波形映射为帧级表征
 class UniSpeechSatFeatureEncoder(Wav2Vec2FeatureEncoder):
     pass
 
 
+# UniSpeechSatFeatureProjection：UniSpeech-SAT 特征投影：LayerNorm + 线性层映射至 hidden 维度
 class UniSpeechSatFeatureProjection(Wav2Vec2FeatureProjection):
     pass
 
 
+# UniSpeechSatEncoder：UniSpeech-SAT 编码器：堆叠 Transformer 层融合上下文帧特征
 class UniSpeechSatEncoder(Wav2Vec2Encoder):
     pass
 
 
+# UniSpeechSatEncoderStableLayerNorm：UniSpeech-SAT 稳定 LayerNorm 编码器：Pre-LN Transformer 栈
 class UniSpeechSatEncoderStableLayerNorm(Wav2Vec2EncoderStableLayerNorm):
     pass
 
 
+# UniSpeechSatGumbelVectorQuantizer：UniSpeech-SAT Gumbel 向量量化：离散码本 + 对比学习目标
 class UniSpeechSatGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.weight_proj = nn.Linear(config.hidden_size, self.num_groups * self.num_vars)
@@ -108,6 +118,7 @@ class UniSpeechSatGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
         perplexity = torch.exp(-torch.sum(torch.xlogy(marginal_probs, marginal_probs), dim=-1)).sum()
         return perplexity
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         batch_size, sequence_length, hidden_size = hidden_states.shape
 
@@ -147,6 +158,7 @@ class UniSpeechSatGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
 
 
 @auto_docstring
+# UniSpeechSatPreTrainedModel：UniSpeech-SAT 预训练基类：权重初始化、特征掩码与适配器支持
 class UniSpeechSatPreTrainedModel(PreTrainedModel):
     config: UniSpeechSatConfig
     base_model_prefix = "unispeech_sat"
@@ -158,6 +170,7 @@ class UniSpeechSatPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv Kaiming 或正态分布
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -218,7 +231,9 @@ class UniSpeechSatPreTrainedModel(PreTrainedModel):
 UniSpeechSatBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# UniSpeechSatModel：UniSpeech-SAT 基模型：特征提取 + 编码器输出帧级隐状态
 class UniSpeechSatModel(UniSpeechSatPreTrainedModel, Wav2Vec2Model):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechSatConfig):
         UniSpeechSatPreTrainedModel.__init__(self, config)
         self.config = config
@@ -238,6 +253,7 @@ class UniSpeechSatModel(UniSpeechSatPreTrainedModel, Wav2Vec2Model):
     def freeze_feature_encoder(self):
         raise AttributeError("Not needed for UniSpeechSat")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -297,7 +313,9 @@ class UniSpeechSatModel(UniSpeechSatPreTrainedModel, Wav2Vec2Model):
     UniSpeechSat Model with a vector-quantization module and ctc loss for pre-training.
     """
 )
+# UniSpeechSatForPreTraining：UniSpeech-SAT 自监督预训练：掩码对比 + 码本多样性损失
 class UniSpeechSatForPreTraining(UniSpeechSatPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechSatConfig):
         super().__init__(config)
         self.unispeech_sat = UniSpeechSatModel(config)
@@ -354,6 +372,7 @@ class UniSpeechSatForPreTraining(UniSpeechSatPreTrainedModel):
         return logits
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -410,18 +429,22 @@ class UniSpeechSatForPreTraining(UniSpeechSatPreTrainedModel):
         )
 
 
+# UniSpeechSatForCTC：UniSpeech-SAT CTC 语音识别：线性头 + CTC 损失连接时序分类
 class UniSpeechSatForCTC(Wav2Vec2ForCTC):
     pass
 
 
+# UniSpeechSatForSequenceClassification：UniSpeech-SAT 序列分类：池化帧特征后全连接分类
 class UniSpeechSatForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 
 
+# UniSpeechSatForAudioFrameClassification：UniSpeech-SAT 帧级分类：逐帧 token 分类（如音素/事件检测）
 class UniSpeechSatForAudioFrameClassification(Wav2Vec2ForAudioFrameClassification):
     pass
 
 
+# UniSpeechSatForXVector：UniSpeech-SAT X-vector：TDNN + 统计池化 + 说话人嵌入
 class UniSpeechSatForXVector(Wav2Vec2ForXVector):
     pass
 

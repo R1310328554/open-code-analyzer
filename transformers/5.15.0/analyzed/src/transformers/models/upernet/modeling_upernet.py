@@ -24,12 +24,16 @@ from ...utils import auto_docstring
 from .configuration_upernet import UperNetConfig
 
 
+# UperNet 建模：FPN + PPM 多尺度融合头，语义分割密集预测
+
+# UperNetConvModule：UperNet 卷积模块：Conv + BN + ReLU 基础卷积单元
 class UperNetConvModule(nn.Module):
     """
     A convolutional block that bundles conv/norm/activation layers. This block simplifies the usage of convolution
     layers, which are commonly used with a norm layer (e.g., BatchNorm) and activation layer (e.g., ReLU).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -51,6 +55,7 @@ class UperNetConvModule(nn.Module):
         self.batch_norm = nn.BatchNorm2d(out_channels)
         self.activation = nn.ReLU()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         output = self.conv(input)
         output = self.batch_norm(output)
@@ -59,7 +64,9 @@ class UperNetConvModule(nn.Module):
         return output
 
 
+# UperNetPyramidPoolingBlock：UperNet 金字塔池化块：自适应平均池化 + 1×1 投影
 class UperNetPyramidPoolingBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, pool_scale: int, in_channels: int, channels: int) -> None:
         super().__init__()
         self.layers = [
@@ -69,6 +76,7 @@ class UperNetPyramidPoolingBlock(nn.Module):
         for i, layer in enumerate(self.layers):
             self.add_module(str(i), layer)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         hidden_state = input
         for layer in self.layers:
@@ -76,6 +84,7 @@ class UperNetPyramidPoolingBlock(nn.Module):
         return hidden_state
 
 
+# UperNetPyramidPoolingModule：UperNet PPM：多尺度池化特征拼接融合上下文
 class UperNetPyramidPoolingModule(nn.Module):
     """
     Pyramid Pooling Module (PPM) used in PSPNet.
@@ -91,6 +100,7 @@ class UperNetPyramidPoolingModule(nn.Module):
             align_corners argument of F.interpolate.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, pool_scales: tuple[int, ...], in_channels: int, channels: int, align_corners: bool) -> None:
         super().__init__()
         self.pool_scales = pool_scales
@@ -103,6 +113,7 @@ class UperNetPyramidPoolingModule(nn.Module):
             self.blocks.append(block)
             self.add_module(str(i), block)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
         ppm_outs = []
         for ppm in self.blocks:
@@ -114,12 +125,14 @@ class UperNetPyramidPoolingModule(nn.Module):
         return ppm_outs
 
 
+# UperNetHead：UperNet 解码头：FPN 横向连接 + PPM 多尺度特征融合
 class UperNetHead(nn.Module):
     """
     Unified Perceptual Parsing for Scene Understanding. This head is the implementation of
     [UPerNet](https://huggingface.co/papers/1807.10221).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, in_channels):
         super().__init__()
 
@@ -168,6 +181,7 @@ class UperNetHead(nn.Module):
 
         return output
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, encoder_hidden_states: torch.Tensor) -> torch.Tensor:
         # build laterals
         laterals = [lateral_conv(encoder_hidden_states[i]) for i, lateral_conv in enumerate(self.lateral_convs)]
@@ -198,6 +212,7 @@ class UperNetHead(nn.Module):
         return output
 
 
+# UperNetFCNHead：UperNet FCN 辅助头：浅层特征辅助语义分割监督
 class UperNetFCNHead(nn.Module):
     """
     Fully Convolution Networks for Semantic Segmentation. This head is the implementation of
@@ -214,6 +229,7 @@ class UperNetFCNHead(nn.Module):
             The dilation rate for convs in the head. Default: 1.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config, in_channels, in_index: int = 2, kernel_size: int = 3, dilation: int | tuple[int, int] = 1
     ) -> None:
@@ -252,6 +268,7 @@ class UperNetFCNHead(nn.Module):
 
         self.classifier = nn.Conv2d(self.channels, config.num_labels, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, encoder_hidden_states: torch.Tensor) -> torch.Tensor:
         # just take the relevant feature maps
         hidden_states = encoder_hidden_states[self.in_index]
@@ -263,6 +280,7 @@ class UperNetFCNHead(nn.Module):
 
 
 @auto_docstring
+# UperNetPreTrainedModel：UperNet 预训练基类：Conv/BN 权重初始化与骨干接口
 class UperNetPreTrainedModel(PreTrainedModel):
     config: UperNetConfig
     main_input_name = "pixel_values"
@@ -275,7 +293,9 @@ class UperNetPreTrainedModel(PreTrainedModel):
     UperNet framework leveraging any vision backbone e.g. for ADE20k, CityScapes.
     """
 )
+# UperNetForSemanticSegmentation：UperNet 语义分割：骨干多尺度特征 + 主/辅分割头
 class UperNetForSemanticSegmentation(UperNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -291,6 +311,7 @@ class UperNetForSemanticSegmentation(UperNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

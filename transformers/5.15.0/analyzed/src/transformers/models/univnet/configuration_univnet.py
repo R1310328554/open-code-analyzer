@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# UnivNet 配置：LVC 残差网络通道、核预测器与 mel 条件维度超参
+
 @auto_docstring(checkpoint="dg845/univnet-dev")
 @strict
+# UnivNetConfig：UnivNet 主配置：LVC 残差块核/步长/膨胀与核预测器超参
 class UnivNetConfig(PreTrainedConfig):
     r"""
     model_in_channels (`int`, *optional*, defaults to 64):

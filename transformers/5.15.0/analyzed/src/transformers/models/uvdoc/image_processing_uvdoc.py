@@ -31,8 +31,11 @@ from ...utils.generic import TensorType
 from ...utils.import_utils import requires
 
 
+# UVDoc 图像处理器（自动生成）：文档图像 resize 与 Torchvision 预处理
+
 @auto_docstring
 @requires(backends=("torch",))
+# UVDocImageProcessor：UVDoc 图像处理器：文档图 resize、归一化与 BatchFeature 封装
 class UVDocImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_resize = True

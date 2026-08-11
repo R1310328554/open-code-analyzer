@@ -23,9 +23,12 @@ from ...feature_extraction_utils import BatchFeature
 from ...utils import PaddingStrategy, TensorType, logging
 
 
+# UnivNet 特征提取：TacoTron2/Hifi-GAN 风格 log-mel 谱与噪声序列预处理
+
 logger = logging.get_logger(__name__)
 
 
+# UnivNetFeatureExtractor：UnivNet 特征提取器：STFT log-mel 谱 + 噪声序列与 padding 掩码
 class UnivNetFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a UnivNet feature extractor.
@@ -98,6 +101,7 @@ class UnivNetFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "noise_sequence", "padding_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size: int = 1,
@@ -260,6 +264,7 @@ class UnivNetFeatureExtractor(SequenceFeatureExtractor):
 
         return noise
 
+    # batch_decode：批量解码：按 waveform_lengths 截断 padding 波形
     def batch_decode(self, waveforms, waveform_lengths=None) -> list[np.ndarray]:
         r"""
         Removes padding from generated audio after running [`UnivNetModel.forward`]. This returns a ragged list of 1D
@@ -283,6 +288,7 @@ class UnivNetFeatureExtractor(SequenceFeatureExtractor):
 
         return waveforms
 
+    # __call__：联合调用：图像/音频预处理并返回 BatchFeature
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

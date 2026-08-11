@@ -45,8 +45,11 @@ from ..pp_lcnet.modeling_pp_lcnet import PPLCNetConvLayer
 from ..pp_ocrv5_server_det.modeling_pp_ocrv5_server_det import PPOCRV5ServerDetPreTrainedModel
 
 
+# UVDoc 模块化实现：复用 PPLCNet/PPOCR 组件，供 modeling 代码生成
+
 @auto_docstring(checkpoint="PaddlePaddle/UVDoc_safetensors")
 @strict
+# UVDocBackboneConfig：UVDoc 骨干配置：ResNet stage、桥接 dilated block 与输出特征名
 class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     resnet_head (`Sequence[list[int] | tuple[int, ...]]`, *optional*, defaults to `((3, 32), (32, 32))`):
@@ -116,6 +119,7 @@ class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
 
     kernel_size: int = 5
 
+    # __post_init__：后初始化：合并默认骨干配置与辅助头通道设置
     def __post_init__(self, **kwargs):
         self.depths = [len(stages) for stages in self.stage_configs]
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, len(self.stage_configs) + 1)]
@@ -127,6 +131,7 @@ class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/UVDoc_safetensors")
 @strict
+# UVDocConfig：UVDoc 主配置：骨干类型、输入尺寸与 UV 映射输出通道
 class UVDocConfig(PreTrainedConfig):
     r"""
     padding_mode (`str`, *optional*, defaults to `"reflect"`):
@@ -149,6 +154,7 @@ class UVDocConfig(PreTrainedConfig):
     bridge_connector: list[int] | tuple[int, ...] = (128, 128)
     out_point_positions2D: Sequence[list[int] | tuple[int, ...]] = ((128, 32), (32, 2))
 
+    # __post_init__：后初始化：合并默认骨干配置与辅助头通道设置
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -160,6 +166,7 @@ class UVDocConfig(PreTrainedConfig):
 
 @auto_docstring
 @requires(backends=("torch",))
+# UVDocImageProcessor：UVDoc 图像处理器：文档图 resize、归一化与 BatchFeature 封装
 class UVDocImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_resize = True
@@ -271,9 +278,11 @@ class UVDocImageProcessor(TorchvisionBackend):
         return results
 
 
+# UVDocConvLayer：UVDoc 卷积层：Conv + BN + 激活的基础卷积块
 class UVDocConvLayer(PPLCNetConvLayer):
     """Convolutional layer with batch normalization and activation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -300,9 +309,11 @@ class UVDocConvLayer(PPLCNetConvLayer):
         )
 
 
+# UVDocResidualBlock：UVDoc 残差块：双 3×3 Conv + 可选下采样捷径连接
 class UVDocResidualBlock(nn.Module):
     """Base residual block with dilation support."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -353,6 +364,7 @@ class UVDocResidualBlock(nn.Module):
 
         self.act_fn = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residual = self.conv_down(hidden_states)
         hidden_states = self.conv_start(hidden_states)
@@ -362,9 +374,11 @@ class UVDocResidualBlock(nn.Module):
         return hidden_states
 
 
+# UVDocResNetStage：UVDoc ResNet 阶段：顺序堆叠多个残差块
 class UVDocResNetStage(nn.Module):
     """A ResNet stage containing multiple residual blocks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, stage_index):
         super().__init__()
 
@@ -383,15 +397,18 @@ class UVDocResNetStage(nn.Module):
                 )
             )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:
             hidden_states = layer(hidden_states)
         return hidden_states
 
 
+# UVDocResNet：UVDoc ResNet 骨干：stem + 多 stage 提取文档图像特征
 class UVDocResNet(nn.Module):
     """Initial resnet_head and resnet_down."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.resnet_head = nn.ModuleList([])
@@ -411,6 +428,7 @@ class UVDocResNet(nn.Module):
             stage = UVDocResNetStage(config, stage_index)
             self.resnet_down.append(stage)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for head in self.resnet_head:
             hidden_states = head(hidden_states)
@@ -419,9 +437,11 @@ class UVDocResNet(nn.Module):
         return hidden_states
 
 
+# UVDocBridgeBlock：UVDoc 桥接块：dilated Conv 扩大感受野连接多尺度特征
 class UVDocBridgeBlock(GradientCheckpointingLayer):
     """Bridge module with dilated convolutions for long-range dependencies."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, bridge_index):
         super().__init__()
         self.blocks = nn.ModuleList([])
@@ -429,6 +449,7 @@ class UVDocBridgeBlock(GradientCheckpointingLayer):
         for in_channels, dilation in bridge:
             self.blocks.append(UVDocConvLayer(in_channels, in_channels, padding=dilation, dilation=dilation))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -439,9 +460,11 @@ class UVDocBridgeBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# UVDocPointPositions2D：UVDoc 2D 点位置编码：归一化网格坐标嵌入
 class UVDocPointPositions2D(nn.Module):
     """Module for predicting 2D point positions for document rectification."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -464,6 +487,7 @@ class UVDocPointPositions2D(nn.Module):
             padding_mode=config.padding_mode,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -471,6 +495,7 @@ class UVDocPointPositions2D(nn.Module):
 
 
 @auto_docstring
+# UVDocPreTrainedModel：UVDoc 预训练基类：Conv/BN 初始化与骨干 mixin 接口
 class UVDocPreTrainedModel(PPOCRV5ServerDetPreTrainedModel):
     supports_gradient_checkpointing = True
     _can_record_outputs = {
@@ -478,6 +503,7 @@ class UVDocPreTrainedModel(PPOCRV5ServerDetPreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv Kaiming 或正态分布
     def _init_weights(self, module):
         """Initialize the weights."""
         PreTrainedModel._init_weights(self, module)
@@ -485,7 +511,9 @@ class UVDocPreTrainedModel(PPOCRV5ServerDetPreTrainedModel):
             module.reset_parameters()
 
 
+# UVDocBridge：UVDoc 桥接模块：多 stage dilated 卷积融合 ResNet 特征
 class UVDocBridge(UVDocPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.bridge = nn.ModuleList([])
@@ -495,6 +523,7 @@ class UVDocBridge(UVDocPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -510,10 +539,12 @@ class UVDocBridge(UVDocPreTrainedModel):
     UVDoc backbone model for feature extraction.
     """
 )
+# UVDocBackbone：UVDoc 骨干网络：ResNet + Bridge 输出多尺度 hidden states
 class UVDocBackbone(BackboneMixin, UVDocPreTrainedModel):
     has_attentions = False
     base_model_prefix = "backbone"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UVDocBackboneConfig):
         super().__init__(config)
 
@@ -530,6 +561,7 @@ class UVDocBackbone(BackboneMixin, UVDocPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -549,7 +581,9 @@ class UVDocBackbone(BackboneMixin, UVDocPreTrainedModel):
         )
 
 
+# UVDocHead：UVDoc 预测头：卷积投影输出文档展平 UV 坐标映射
 class UVDocHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_bridge_layers = len(config.backbone_config.stage_configs)
@@ -565,6 +599,7 @@ class UVDocHead(nn.Module):
 
         self.out_point_positions2D = UVDocPointPositions2D(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -581,7 +616,9 @@ class UVDocHead(nn.Module):
     and outputs the rectified (corrected) document image tensor.
     """
 )
+# UVDocModel：UVDoc 完整模型：骨干特征提取 + UV 映射密集预测
 class UVDocModel(UVDocPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UVDocConfig):
         super().__init__(config)
 
@@ -591,6 +628,7 @@ class UVDocModel(UVDocPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

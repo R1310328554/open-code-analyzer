@@ -24,6 +24,8 @@ from ...utils import auto_docstring, logging
 from .configuration_univnet import UnivNetConfig
 
 
+# UnivNet 建模：位置可变卷积（LVC）条件声码器，mel 谱驱动波形生成
+
 logger = logging.get_logger(__name__)
 
 
@@ -34,6 +36,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# UnivNetModelOutput：UnivNet 输出：生成波形张量与去 padding 前的有效长度
 class UnivNetModelOutput(ModelOutput):
     r"""
     waveforms (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):
@@ -46,6 +49,7 @@ class UnivNetModelOutput(ModelOutput):
     waveform_lengths: torch.FloatTensor | None = None
 
 
+# UnivNetKernelPredictorResidualBlock：UnivNet 核预测器残差块：双 Conv1d + LeakyReLU 残差单元
 class UnivNetKernelPredictorResidualBlock(nn.Module):
     """
     Implementation of the residual block for the kernel predictor network inside each location variable convolution
@@ -56,6 +60,7 @@ class UnivNetKernelPredictorResidualBlock(nn.Module):
             Config for the `UnivNetModel` model.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: UnivNetConfig,
@@ -72,6 +77,7 @@ class UnivNetKernelPredictorResidualBlock(nn.Module):
         self.conv1 = nn.Conv1d(self.channels, self.channels, self.kernel_size, padding=padding, bias=True)
         self.conv2 = nn.Conv1d(self.channels, self.channels, self.kernel_size, padding=padding, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor):
         # hidden_states should have shape (batch_size, channels, seq_length)
         residual = hidden_states
@@ -82,6 +88,7 @@ class UnivNetKernelPredictorResidualBlock(nn.Module):
         hidden_states = nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
         return hidden_states + residual
 
+    # apply_weight_norm：应用 weight norm：稳定 LVC/核预测器卷积训练
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -90,11 +97,13 @@ class UnivNetKernelPredictorResidualBlock(nn.Module):
         weight_norm(self.conv1)
         weight_norm(self.conv2)
 
+    # remove_weight_norm：移除 weight norm：推理前剥离参数化归一化
     def remove_weight_norm(self):
         nn.utils.remove_weight_norm(self.conv1)
         nn.utils.remove_weight_norm(self.conv2)
 
 
+# UnivNetKernelPredictor：UnivNet 核预测器：由 mel 条件预测 LVC 层动态卷积核与偏置
 class UnivNetKernelPredictor(nn.Module):
     """
     Implementation of the kernel predictor network which supplies the kernel and bias for the location variable
@@ -112,6 +121,7 @@ class UnivNetKernelPredictor(nn.Module):
             The number of location variable convolutional layers to output kernels and biases for.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: UnivNetConfig,
@@ -150,6 +160,7 @@ class UnivNetKernelPredictor(nn.Module):
             self.resnet_hidden_channels, self.bias_channels, self.resnet_kernel_size, padding=padding, bias=True
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, spectrogram: torch.FloatTensor):
         """
         Maps a conditioning log-mel spectrogram to a tensor of convolutional kernels and biases, for use in location
@@ -196,6 +207,7 @@ class UnivNetKernelPredictor(nn.Module):
 
         return kernels, biases
 
+    # apply_weight_norm：应用 weight norm：稳定 LVC/核预测器卷积训练
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -207,6 +219,7 @@ class UnivNetKernelPredictor(nn.Module):
         weight_norm(self.kernel_conv)
         weight_norm(self.bias_conv)
 
+    # remove_weight_norm：移除 weight norm：推理前剥离参数化归一化
     def remove_weight_norm(self):
         nn.utils.remove_weight_norm(self.input_conv)
         for layer in self.resblocks:
@@ -215,6 +228,7 @@ class UnivNetKernelPredictor(nn.Module):
         nn.utils.remove_weight_norm(self.bias_conv)
 
 
+# UnivNetLvcResidualBlock：UnivNet LVC 残差块：位置可变卷积 + 扩张卷积残差堆叠
 class UnivNetLvcResidualBlock(nn.Module):
     """
     Implementation of the location variable convolution (LVC) residual block for the UnivNet residual network.
@@ -228,6 +242,7 @@ class UnivNetLvcResidualBlock(nn.Module):
             The dilation for the dilated 1D convolutional layer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: UnivNetConfig,
@@ -250,6 +265,7 @@ class UnivNetLvcResidualBlock(nn.Module):
             dilation=self.dilation,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, kernel, bias, hop_size=256):
         residual = hidden_states
         hidden_states = nn.functional.leaky_relu(hidden_states, self.leaky_relu_slope)
@@ -330,6 +346,7 @@ class UnivNetLvcResidualBlock(nn.Module):
 
         return output_hidden_states
 
+    # apply_weight_norm：应用 weight norm：稳定 LVC/核预测器卷积训练
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -337,10 +354,12 @@ class UnivNetLvcResidualBlock(nn.Module):
 
         weight_norm(self.conv)
 
+    # remove_weight_norm：移除 weight norm：推理前剥离参数化归一化
     def remove_weight_norm(self):
         nn.utils.remove_weight_norm(self.conv)
 
 
+# UnivNetLvcBlock：UnivNet LVC 块：核预测器 + 多层 LVC 残差上采样波形
 class UnivNetLvcBlock(nn.Module):
     """
     Implementation of the location variable convolution (LVC) residual block of the UnivNet residual block. Includes a
@@ -359,6 +378,7 @@ class UnivNetLvcBlock(nn.Module):
             The hop size for the location variable convolutional layers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: UnivNetConfig,
@@ -389,6 +409,7 @@ class UnivNetLvcBlock(nn.Module):
             [UnivNetLvcResidualBlock(config, self.kernel_size, self.dilations[i]) for i in range(self.num_blocks)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor, spectrogram: torch.FloatTensor):
         # hidden_states: (batch_size, hidden_channels, seq_length)
         # spectrogram: (batch_size, cond_channels, cond_length)
@@ -404,6 +425,7 @@ class UnivNetLvcBlock(nn.Module):
 
         return hidden_states
 
+    # apply_weight_norm：应用 weight norm：稳定 LVC/核预测器卷积训练
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -414,6 +436,7 @@ class UnivNetLvcBlock(nn.Module):
         for layer in self.resblocks:
             layer.apply_weight_norm()
 
+    # remove_weight_norm：移除 weight norm：推理前剥离参数化归一化
     def remove_weight_norm(self):
         nn.utils.remove_weight_norm(self.convt_pre)
         self.kernel_predictor.remove_weight_norm()
@@ -422,11 +445,13 @@ class UnivNetLvcBlock(nn.Module):
 
 
 @auto_docstring
+# UnivNetModel：UnivNet 声码器：噪声序列经 LVC 栈条件 mel 生成音频波形
 class UnivNetModel(PreTrainedModel):
     config: UnivNetConfig
     main_input_name = "input_features"
     input_modalities = "audio"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UnivNetConfig):
         super().__init__(config)
 
@@ -467,6 +492,7 @@ class UnivNetModel(PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.FloatTensor,
@@ -590,6 +616,7 @@ class UnivNetModel(PreTrainedModel):
             waveform_lengths=waveform_lengths,
         )
 
+    # apply_weight_norm：应用 weight norm：稳定 LVC/核预测器卷积训练
     def apply_weight_norm(self):
         weight_norm = nn.utils.weight_norm
         if hasattr(nn.utils.parametrizations, "weight_norm"):
@@ -600,6 +627,7 @@ class UnivNetModel(PreTrainedModel):
             layer.apply_weight_norm()
         weight_norm(self.conv_post)
 
+    # remove_weight_norm：移除 weight norm：推理前剥离参数化归一化
     def remove_weight_norm(self):
         nn.utils.remove_weight_norm(self.conv_pre)
         for layer in self.resblocks:

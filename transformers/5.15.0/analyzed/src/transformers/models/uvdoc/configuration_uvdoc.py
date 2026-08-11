@@ -29,8 +29,11 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# UVDoc 配置（自动生成）：ResNet 头、桥接模块 stage 与 dilated 卷积结构
+
 @auto_docstring(checkpoint="PaddlePaddle/UVDoc_safetensors")
 @strict
+# UVDocBackboneConfig：UVDoc 骨干配置：ResNet stage、桥接 dilated block 与输出特征名
 class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     resnet_head (`Sequence[list[int] | tuple[int, ...]]`, *optional*, defaults to `((3, 32), (32, 32))`):
@@ -100,6 +103,7 @@ class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
 
     kernel_size: int = 5
 
+    # __post_init__：后初始化：合并默认骨干配置与辅助头通道设置
     def __post_init__(self, **kwargs):
         self.depths = [len(stages) for stages in self.stage_configs]
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, len(self.stage_configs) + 1)]
@@ -111,6 +115,7 @@ class UVDocBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/UVDoc_safetensors")
 @strict
+# UVDocConfig：UVDoc 主配置：骨干类型、输入尺寸与 UV 映射输出通道
 class UVDocConfig(PreTrainedConfig):
     r"""
     padding_mode (`str`, *optional*, defaults to `"reflect"`):
@@ -133,6 +138,7 @@ class UVDocConfig(PreTrainedConfig):
     bridge_connector: list[int] | tuple[int, ...] = (128, 128)
     out_point_positions2D: Sequence[list[int] | tuple[int, ...]] = ((128, 32), (32, 2))
 
+    # __post_init__：后初始化：合并默认骨干配置与辅助头通道设置
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

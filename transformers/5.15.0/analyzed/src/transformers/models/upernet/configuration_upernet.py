@@ -21,8 +21,11 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# UperNet 配置：金字塔池化尺度、辅助头损失权重与骨干网络参数
+
 @auto_docstring(checkpoint="openmmlab/upernet-convnext-tiny")
 @strict
+# UperNetConfig：UperNet 主配置：PPM 池化尺度、辅助分割头与骨干 hidden 尺寸
 class UperNetConfig(PreTrainedConfig):
     r"""
     pool_scales (`tuple[int]`, *optional*, defaults to `[1, 2, 3, 6]`):
@@ -72,6 +75,7 @@ class UperNetConfig(PreTrainedConfig):
     auxiliary_concat_input: bool = False
     loss_ignore_index: int = 255
 
+    # __post_init__：后初始化：合并默认骨干配置与辅助头通道设置
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
