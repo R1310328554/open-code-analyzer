@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:28:06Z",
   "files": [
-    "django/core/management/commands/squashmigrations.py",
-    "django/core/management/commands/startapp.py",
-    "django/core/management/commands/startproject.py",
-    "django/core/management/commands/test.py",
-    "django/core/management/commands/testserver.py",
-    "django/core/management/sql.py",
-    "django/core/management/templates.py",
-    "django/core/management/utils.py",
-    "django/core/paginator.py",
-    "django/core/serializers/__init__.py",
-    "django/core/serializers/base.py",
-    "django/core/serializers/json.py",
-    "django/core/serializers/jsonl.py",
-    "django/core/serializers/python.py",
-    "django/core/serializers/pyyaml.py",
     "django/core/serializers/xml_serializer.py",
     "django/core/servers/__init__.py",
     "django/core/servers/basehttp.py",
@@ -33,5 +18,5 @@
     "django/db/backends/base/introspection.py"
   ],
   "remaining_pending": 282,
-  "done": 630
+  "done": 645
 }
