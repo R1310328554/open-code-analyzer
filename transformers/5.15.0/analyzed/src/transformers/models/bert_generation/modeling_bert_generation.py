@@ -42,6 +42,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->BertGeneration
+# BertGenerationSelfOutput：自注意力输出投影 + 残差 LayerNorm
 class BertGenerationSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -57,6 +58,7 @@ class BertGenerationSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -86,6 +88,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfAttention with Bert->BertGeneration
+# BertGenerationSelfAttention：多头自注意力
 class BertGenerationSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -154,6 +157,7 @@ class BertGenerationSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertCrossAttention with Bert->BertGeneration
+# BertGenerationCrossAttention：交叉注意力（decoder 读 encoder）
 class BertGenerationCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -231,6 +235,7 @@ class BertGenerationCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertAttention with Bert->BertGeneration,BERT->BERT_GENERATION
+# BertGenerationAttention：Self/Cross 注意力组合模块
 class BertGenerationAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -261,6 +266,7 @@ class BertGenerationAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->BertGeneration
+# BertGenerationIntermediate：FFN 第一层
 class BertGenerationIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -277,6 +283,7 @@ class BertGenerationIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->BertGeneration
+# BertGenerationOutput：FFN 第二层 + 残差
 class BertGenerationOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -292,6 +299,7 @@ class BertGenerationOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLayer with Bert->BertGeneration
+# BertGenerationLayer：单层 Transformer 块
 class BertGenerationLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -358,6 +366,7 @@ class BertGenerationLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertEncoder
+# BertEncoder：堆叠 BertGenerationLayer（生成专用命名空间）
 class BertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -391,6 +400,7 @@ class BertEncoder(nn.Module):
         )
 
 
+# BertGenerationEmbeddings：词 + 位置嵌入（无 token_type）
 class BertGenerationEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -426,6 +436,7 @@ class BertGenerationEmbeddings(nn.Module):
 
 
 @auto_docstring
+# BertGenerationPreTrainedModel：预训练基类
 class BertGenerationPreTrainedModel(PreTrainedModel):
     config_class = BertGenerationConfig
     base_model_prefix = "bert"
@@ -455,6 +466,7 @@ class BertGenerationPreTrainedModel(PreTrainedModel):
     The bare BertGeneration model transformer outputting raw hidden-states without any specific head on top.
     """
 )
+# BertGenerationEncoder：裸编码器/可切换 decoder 模式
 class BertGenerationEncoder(BertGenerationPreTrainedModel):
     """
 
@@ -587,6 +599,7 @@ class BertGenerationEncoder(BertGenerationPreTrainedModel):
         return attention_mask, encoder_attention_mask
 
 
+# BertGenerationOnlyLMHead：因果语言建模线性头（含 bias）
 class BertGenerationOnlyLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -603,6 +616,7 @@ class BertGenerationOnlyLMHead(nn.Module):
     BertGeneration Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# BertGenerationDecoder：带 generate 的 CLM 解码器
 class BertGenerationDecoder(BertGenerationPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "bert.embeddings.word_embeddings.weight",

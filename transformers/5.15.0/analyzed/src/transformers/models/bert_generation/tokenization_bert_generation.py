@@ -26,6 +26,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "spiece.model"}
 
 
 @requires(backends=("sentencepiece",))
+# BertGenerationTokenizer：基于 spiece.model 的生成专用分词器
 class BertGenerationTokenizer(SentencePieceBackend):
     """
     Construct a BertGeneration tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -72,6 +73,7 @@ class BertGenerationTokenizer(SentencePieceBackend):
     model_input_names = ["input_ids", "attention_mask"]
     is_fast = False
 
+# __init__：加载 SentencePiece 并设置 bos/eos/pad/sep 特殊 token
     def __init__(
         self,
         vocab_file,

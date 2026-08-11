@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt"}
 
 
+# load_vocab：从 vocab.txt 加载词表
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -37,6 +38,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# whitespace_tokenize：空白符切分预处理
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -46,6 +48,7 @@ def whitespace_tokenize(text):
     return tokens
 
 
+# BertTokenizerLegacy：慢速 BERT 分词器主类
 class BertTokenizerLegacy(PreTrainedTokenizer):
     r"""
     Construct a BERT tokenizer. Based on WordPiece.
@@ -255,6 +258,7 @@ class BertTokenizerLegacy(PreTrainedTokenizer):
         return (vocab_file,)
 
 
+# BasicTokenizer：标点/中文/小写等基础规范化切分
 class BasicTokenizer:
     """
     Constructs a BasicTokenizer that will run basic tokenization (punctuation splitting, lower casing, etc.).
@@ -416,6 +420,7 @@ class BasicTokenizer:
         return "".join(output)
 
 
+# WordpieceTokenizer：Greedy 最长匹配 WordPiece 子词切分
 class WordpieceTokenizer:
     """Runs WordPiece tokenization."""
 

@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# BEiT PyTorch 建模：相对位置偏置 ViT、MIM/分类/语义分割/Backbone 多任务头（由 modular_beit 自动生成）。
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
@@ -51,6 +52,7 @@ from .configuration_beit import BeitConfig
     """
 )
 @dataclass
+# BeitModelOutputWithPooling：含 pooler_output 的 BEiT 主干输出
 class BeitModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -60,6 +62,7 @@ class BeitModelOutputWithPooling(BaseModelOutputWithPooling):
     """
 
 
+# BeitPatchEmbeddings：将图像 patch 投影为 token 嵌入
 class BeitPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -90,6 +93,7 @@ class BeitPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# BeitEmbeddings：patch + CLS + 相对位置索引 + LayerNorm
 class BeitEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -176,6 +180,7 @@ class BeitEmbeddings(nn.Module):
         return embeddings
 
 
+# BeitRelativePositionBias：可学习相对位置偏置表
 class BeitRelativePositionBias(nn.Module):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
@@ -265,6 +270,7 @@ class BeitRelativePositionBias(nn.Module):
         return relative_position_bias.unsqueeze(0)
 
 
+# eager_attention_forward：标准缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -293,6 +299,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# BeitAttention：多头自注意力并注入相对位置偏置
 class BeitAttention(nn.Module):
     def __init__(self, config: BeitConfig):
         super().__init__()
@@ -341,6 +348,7 @@ class BeitAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BeitMLP：两层 GELU 前馈网络
 class BeitMLP(nn.Module):
     def __init__(self, config: BeitConfig):
         super().__init__()
@@ -357,6 +365,7 @@ class BeitMLP(nn.Module):
         return hidden_states
 
 
+# BeitDropPath：随机深度（Stochastic Depth）正则
 class BeitDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -381,6 +390,7 @@ class BeitDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# BeitLayer：Transformer 块（Attn + MLP + DropPath）
 class BeitLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -445,6 +455,7 @@ class BeitLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BeitPreTrainedModel：预训练基类与权重初始化
 class BeitPreTrainedModel(PreTrainedModel):
     config: BeitConfig
     base_model_prefix = "beit"
@@ -483,6 +494,7 @@ class BeitPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BeitModel：BEiT 视觉编码器主干（含 mean/CLS pooling）
 class BeitModel(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig, add_pooling_layer: bool = True) -> None:
         r"""
@@ -560,6 +572,7 @@ class BeitModel(BeitPreTrainedModel):
         return BeitModelOutputWithPooling(last_hidden_state=sequence_output, pooler_output=pooled_output)
 
 
+# BeitPooler：对 CLS token 做 tanh 池化
 class BeitPooler(nn.Module):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
@@ -580,6 +593,7 @@ class BeitPooler(nn.Module):
     will need to use [`BeitForMaskedImageModeling`] directly if you wish to do masked image modeling with BEiT.
     """
 )
+# BeitForMaskedImageModeling：掩码图像建模（MIM）预训练头
 class BeitForMaskedImageModeling(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -672,6 +686,7 @@ class BeitForMaskedImageModeling(BeitPreTrainedModel):
     hidden states of the patch tokens) e.g. for ImageNet.
     """
 )
+# BeitForImageClassification：图像分类线性头
 class BeitForImageClassification(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -722,6 +737,7 @@ class BeitForImageClassification(BeitPreTrainedModel):
         )
 
 
+# BeitConvLayer：语义分割辅助卷积层
 class BeitConvLayer(nn.Module):
     def __init__(
         self,
@@ -756,6 +772,7 @@ class BeitConvLayer(nn.Module):
         return hidden_states
 
 
+# BeitPyramidPoolingBlock：金字塔池化单尺度块
 class BeitPyramidPoolingBlock(nn.Module):
     def __init__(self, pool_scale: int, in_channels: int, channels: int) -> None:
         super().__init__()
@@ -769,6 +786,7 @@ class BeitPyramidPoolingBlock(nn.Module):
         return hidden_state
 
 
+# BeitPyramidPoolingModule：多尺度金字塔池化聚合
 class BeitPyramidPoolingModule(nn.Module):
     """
     Pyramid Pooling Module (PPM) used in PSPNet.
@@ -799,6 +817,7 @@ class BeitPyramidPoolingModule(nn.Module):
         return [block(hidden_states, size=original_size) for block in self.blocks]
 
 
+# BeitUperHead：UPerNet 风格语义分割解码头
 class BeitUperHead(nn.Module):
     """
     Unified Perceptual Parsing for Scene Understanding. This head is the implementation of
@@ -880,6 +899,7 @@ class BeitUperHead(nn.Module):
         return output
 
 
+# BeitFCNHead：FCN 辅助分割头
 class BeitFCNHead(nn.Module):
     """
     Fully Convolution Networks for Semantic Segmentation. This head is implemented of
@@ -941,6 +961,7 @@ class BeitFCNHead(nn.Module):
         return hidden_states
 
 
+# BeitFPNUpBlock：FPN 上采样融合块
 class BeitFPNUpBlock(nn.Module):
     """4x upsampling block: ConvTranspose → BN → GELU → ConvTranspose."""
 
@@ -959,6 +980,7 @@ class BeitFPNUpBlock(nn.Module):
         return hidden_states
 
 
+# BeitFPNNeck：多尺度特征金字塔颈部
 class BeitFPNNeck(nn.Module):
     """
     4-level feature pyramid neck for BeiT. Produces x4 upsample, x2 upsample,
@@ -981,6 +1003,7 @@ class BeitFPNNeck(nn.Module):
 
 
 @auto_docstring
+# BeitForSemanticSegmentation：ADE20K 等语义分割完整模型
 class BeitForSemanticSegmentation(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -1085,6 +1108,7 @@ class BeitForSemanticSegmentation(BeitPreTrainedModel):
     BEiT backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# BeitBackbone：供 Detectron2 等下游使用的视觉骨干
 class BeitBackbone(BackboneMixin, BeitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

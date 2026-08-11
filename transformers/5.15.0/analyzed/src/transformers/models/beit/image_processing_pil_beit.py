@@ -38,6 +38,7 @@ from ...utils.import_utils import requires
 
 
 # Adapted from transformers.models.beit.image_processing_beit.BeitImageProcessorKwargs
+# BeitImageProcessorKwargs：扩展 do_reduce_labels 等 BEiT 专用预处理参数
 class BeitImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -50,6 +51,7 @@ class BeitImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# BeitImageProcessorPil：PIL 后端 resize/normalize 与分割图联合预处理
 class BeitImageProcessorPil(PilBackend):
     """PIL backend for BEiT with reduce_label support."""
 
@@ -71,6 +73,7 @@ class BeitImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：对图像与可选 segmentation_maps 批量预处理
     def preprocess(
         self,
         images: ImageInput,
@@ -83,6 +86,7 @@ class BeitImageProcessorPil(PilBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+# _preprocess_image_like_inputs：组装 pixel_values 与 labels 并返回 BatchFeature
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -125,6 +129,7 @@ class BeitImageProcessorPil(PilBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+# reduce_label：分割标签减 1 并将背景 0 映射为 255
     def reduce_label(self, image: np.ndarray) -> np.ndarray:
         """Reduce label values by 1, replacing 0 with 255."""
         # Avoid using underflow conversion
@@ -133,6 +138,7 @@ class BeitImageProcessorPil(PilBackend):
         image[image == 254] = 255
         return image
 
+# _preprocess：逐图执行 reduce/resize/crop/rescale/normalize 流水线
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -167,6 +173,7 @@ class BeitImageProcessorPil(PilBackend):
         return processed_images
 
     @requires(backends=("torch",))
+# post_process_semantic_segmentation：logits 双线性上采样为语义分割类别图
     def post_process_semantic_segmentation(
         self, outputs, target_sizes: list[tuple] | None = None, return_segmentation_scores: bool = False
     ) -> "list[torch.Tensor] | list[SemanticSegmentationPostProcessorOutput]":

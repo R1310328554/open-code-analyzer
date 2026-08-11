@@ -46,6 +46,7 @@ from .configuration_beit import BeitConfig
     """
 )
 @dataclass
+# BeitModelOutputWithPooling：含 pooler_output 的 BEiT 主干输出
 class BeitModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -55,10 +56,12 @@ class BeitModelOutputWithPooling(BaseModelOutputWithPooling):
     """
 
 
+# BeitPatchEmbeddings：复用 ViT patch 嵌入投影
 class BeitPatchEmbeddings(ViTPatchEmbeddings):
     pass
 
 
+# BeitEmbeddings：在 ViT 嵌入上追加相对位置索引
 class BeitEmbeddings(ViTEmbeddings):
     def __init__(self, config: BeitConfig) -> None:
         nn.Module.__init__(self)
@@ -101,6 +104,7 @@ class BeitEmbeddings(ViTEmbeddings):
         return embeddings
 
 
+# BeitRelativePositionBias：可学习相对位置偏置表
 class BeitRelativePositionBias(nn.Module):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
@@ -190,6 +194,7 @@ class BeitRelativePositionBias(nn.Module):
         return relative_position_bias.unsqueeze(0)
 
 
+# BeitAttention：ViT 注意力 + 相对位置偏置注入
 class BeitAttention(ViTAttention):
     def __init__(self, config: BeitConfig):
         super().__init__(config)
@@ -199,14 +204,17 @@ class BeitAttention(ViTAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size)
 
 
+# BeitMLP：复用 ViT 两层 FFN
 class BeitMLP(ViTMLP):
     pass
 
 
+# BeitDropPath：复用 Swin 随机深度模块
 class BeitDropPath(SwinDropPath):
     pass
 
 
+# BeitLayer：ViT 层结构 + BEiT 相对位置与 DropPath
 class BeitLayer(ViTLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -266,6 +274,7 @@ class BeitLayer(ViTLayer):
 
 
 @auto_docstring
+# BeitPreTrainedModel：继承 ViT 预训练基类
 class BeitPreTrainedModel(ViTPreTrainedModel):
     _no_split_modules = ["BeitLayer"]
     _keys_to_ignore_on_load_unexpected = [r".*relative_position_index.*"]
@@ -290,6 +299,7 @@ class BeitPreTrainedModel(ViTPreTrainedModel):
 
 
 @auto_docstring
+# BeitModel：BEiT 视觉编码器 modular 定义
 class BeitModel(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig, add_pooling_layer: bool = True) -> None:
         r"""
@@ -367,6 +377,7 @@ class BeitModel(BeitPreTrainedModel):
         return BeitModelOutputWithPooling(last_hidden_state=sequence_output, pooler_output=pooled_output)
 
 
+# BeitPooler：CLS token tanh 池化
 class BeitPooler(nn.Module):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__()
@@ -387,6 +398,7 @@ class BeitPooler(nn.Module):
     will need to use [`BeitForMaskedImageModeling`] directly if you wish to do masked image modeling with BEiT.
     """
 )
+# BeitForMaskedImageModeling：MIM 预训练头 modular
 class BeitForMaskedImageModeling(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -479,6 +491,7 @@ class BeitForMaskedImageModeling(BeitPreTrainedModel):
     hidden states of the patch tokens) e.g. for ImageNet.
     """
 )
+# BeitForImageClassification：图像分类头 modular
 class BeitForImageClassification(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -529,6 +542,7 @@ class BeitForImageClassification(BeitPreTrainedModel):
         )
 
 
+# BeitConvLayer：复用 ResNet 卷积层做分割辅助
 class BeitConvLayer(ResNetConvLayer):
     def __init__(
         self,
@@ -555,6 +569,7 @@ class BeitConvLayer(ResNetConvLayer):
         )
 
 
+# BeitPyramidPoolingBlock：金字塔池化单尺度块
 class BeitPyramidPoolingBlock(nn.Module):
     def __init__(self, pool_scale: int, in_channels: int, channels: int) -> None:
         super().__init__()
@@ -568,6 +583,7 @@ class BeitPyramidPoolingBlock(nn.Module):
         return hidden_state
 
 
+# BeitPyramidPoolingModule：多尺度金字塔池化
 class BeitPyramidPoolingModule(nn.Module):
     """
     Pyramid Pooling Module (PPM) used in PSPNet.
@@ -598,6 +614,7 @@ class BeitPyramidPoolingModule(nn.Module):
         return [block(hidden_states, size=original_size) for block in self.blocks]
 
 
+# BeitUperHead：UPerNet 语义分割解码头
 class BeitUperHead(nn.Module):
     """
     Unified Perceptual Parsing for Scene Understanding. This head is the implementation of
@@ -679,6 +696,7 @@ class BeitUperHead(nn.Module):
         return output
 
 
+# BeitFCNHead：FCN 辅助分割头
 class BeitFCNHead(nn.Module):
     """
     Fully Convolution Networks for Semantic Segmentation. This head is implemented of
@@ -740,6 +758,7 @@ class BeitFCNHead(nn.Module):
         return hidden_states
 
 
+# BeitFPNUpBlock：FPN 上采样融合块
 class BeitFPNUpBlock(nn.Module):
     """4x upsampling block: ConvTranspose → BN → GELU → ConvTranspose."""
 
@@ -758,6 +777,7 @@ class BeitFPNUpBlock(nn.Module):
         return hidden_states
 
 
+# BeitFPNNeck：多尺度特征金字塔颈部
 class BeitFPNNeck(nn.Module):
     """
     4-level feature pyramid neck for BeiT. Produces x4 upsample, x2 upsample,
@@ -780,6 +800,7 @@ class BeitFPNNeck(nn.Module):
 
 
 @auto_docstring
+# BeitForSemanticSegmentation：语义分割完整模型 modular
 class BeitForSemanticSegmentation(BeitPreTrainedModel):
     def __init__(self, config: BeitConfig) -> None:
         super().__init__(config)
@@ -884,6 +905,7 @@ class BeitForSemanticSegmentation(BeitPreTrainedModel):
     BEiT backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# BeitBackbone：视觉骨干 modular 定义
 class BeitBackbone(BackboneMixin, BeitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

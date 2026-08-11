@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google-bert/bert-base-uncased")
 @strict
+# BertConfig：BERT 架构超参（hidden_size、num_hidden_layers 等）
 class BertConfig(PreTrainedConfig):
     r"""
     Examples:

@@ -50,6 +50,7 @@ from .configuration_bert import BertConfig
 logger = logging.get_logger(__name__)
 
 
+# BertEmbeddings：词/位置/segment 类型嵌入 + LayerNorm
 class BertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -108,6 +109,7 @@ class BertEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准缩放点积自注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -136,6 +138,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# BertSelfAttention：多头自注意力（Q/K/V 投影）
 class BertSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -203,6 +206,7 @@ class BertSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BertCrossAttention：解码器交叉注意力（encoder-decoder）
 class BertCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -279,6 +283,7 @@ class BertCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BertSelfOutput：注意力输出投影 + 残差 LayerNorm
 class BertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -293,6 +298,7 @@ class BertSelfOutput(nn.Module):
         return hidden_states
 
 
+# BertAttention：SelfAttn/CrossAttn + SelfOutput 组合
 class BertAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -322,6 +328,7 @@ class BertAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# BertIntermediate：FFN 第一层线性 + 激活
 class BertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -337,6 +344,7 @@ class BertIntermediate(nn.Module):
         return hidden_states
 
 
+# BertOutput：FFN 第二层线性 + 残差 LayerNorm
 class BertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -351,6 +359,7 @@ class BertOutput(nn.Module):
         return hidden_states
 
 
+# BertLayer：单层 Attn + FFN + 残差
 class BertLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -416,6 +425,7 @@ class BertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# BertEncoder：堆叠 num_hidden_layers 个 BertLayer
 class BertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -448,6 +458,7 @@ class BertEncoder(nn.Module):
         )
 
 
+# BertPooler：取 [CLS] 并 tanh 池化
 class BertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -463,6 +474,7 @@ class BertPooler(nn.Module):
         return pooled_output
 
 
+# BertPredictionHeadTransform：MLM 头前的 Dense+激活+LayerNorm
 class BertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -480,6 +492,7 @@ class BertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# BertLMPredictionHead：掩码语言建模解码线性层
 class BertLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -496,6 +509,7 @@ class BertLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# BertOnlyMLMHead：仅 MLM 预测头封装
 class BertOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -506,6 +520,7 @@ class BertOnlyMLMHead(nn.Module):
         return prediction_scores
 
 
+# BertOnlyNSPHead：下一句预测（NSP）二分类头
 class BertOnlyNSPHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -516,6 +531,7 @@ class BertOnlyNSPHead(nn.Module):
         return seq_relationship_score
 
 
+# BertPreTrainingHeads：MLM + NSP 联合预训练头
 class BertPreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -529,6 +545,7 @@ class BertPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# BertPreTrainedModel：预训练基类与权重初始化
 class BertPreTrainedModel(PreTrainedModel):
     config_class = BertConfig
     base_model_prefix = "bert"
@@ -560,6 +577,7 @@ class BertPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# BertForPreTrainingOutput：MLM+NSP 联合预训练输出
 class BertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -591,6 +609,7 @@ class BertForPreTrainingOutput(ModelOutput):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# BertModel：BERT 编码器主干（可作 encoder/decoder）
 class BertModel(BertPreTrainedModel):
     _no_split_modules = ["BertEmbeddings", "BertLayer"]
 
@@ -724,6 +743,7 @@ class BertModel(BertPreTrainedModel):
     sentence prediction (classification)` head.
     """
 )
+# BertForPreTraining：MLM + NSP 联合预训练
 class BertForPreTraining(BertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -821,6 +841,7 @@ class BertForPreTraining(BertPreTrainedModel):
     Bert Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# BertLMHeadModel：带 generate 的因果 LM 变体
 class BertLMHeadModel(BertPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -906,6 +927,7 @@ class BertLMHeadModel(BertPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# BertForMaskedLM：掩码语言建模微调
 class BertForMaskedLM(BertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "bert.embeddings.word_embeddings.weight",
@@ -987,6 +1009,7 @@ class BertForMaskedLM(BertPreTrainedModel):
     Bert Model with a `next sentence prediction (classification)` head on top.
     """
 )
+# BertForNextSentencePrediction：NSP 句子关系预测
 class BertForNextSentencePrediction(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1069,6 +1092,7 @@ class BertForNextSentencePrediction(BertPreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# BertForSequenceClassification：序列级分类（情感等）
 class BertForSequenceClassification(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1150,6 +1174,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
 
 
 @auto_docstring
+# BertForMultipleChoice：多选阅读理解
 class BertForMultipleChoice(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1248,6 +1273,7 @@ class BertForMultipleChoice(BertPreTrainedModel):
 
 
 @auto_docstring
+# BertForTokenClassification：token 级分类（NER 等）
 class BertForTokenClassification(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1308,6 +1334,7 @@ class BertForTokenClassification(BertPreTrainedModel):
 
 
 @auto_docstring
+# BertForQuestionAnswering：抽取式问答 span 预测
 class BertForQuestionAnswering(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

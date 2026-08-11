@@ -35,6 +35,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "spm_file": "spiece.model"}
 SPIECE_UNDERLINE = "▁"
 
 
+# load_vocab：从 vocab.txt 加载词表
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -46,6 +47,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# whitespace_tokenize：空白符切分
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -55,6 +57,7 @@ def whitespace_tokenize(text):
     return tokens
 
 
+# BertJapaneseTokenizer：可配置分词器类型与 subword 后端
 class BertJapaneseTokenizer(PreTrainedTokenizer):
     r"""
     Construct a BERT tokenizer for Japanese text.
@@ -293,6 +296,7 @@ class BertJapaneseTokenizer(PreTrainedTokenizer):
         return (vocab_file,)
 
 
+# MecabTokenizer：MeCab/fugashi 形态素分析分词
 class MecabTokenizer:
     """Runs basic tokenization with MeCab morphological parser."""
 
@@ -401,6 +405,7 @@ class MecabTokenizer:
         return tokens
 
 
+# SudachiTokenizer：SudachiPy 多粒度日语分词
 class SudachiTokenizer:
     """Runs basic tokenization with Sudachi morphological parser."""
 
@@ -498,6 +503,7 @@ class SudachiTokenizer:
         return tokens
 
 
+# JumanppTokenizer：Juman++ 形态素分析分词
 class JumanppTokenizer:
     """Runs basic tokenization with jumanpp morphological parser."""
 
@@ -565,6 +571,7 @@ class JumanppTokenizer:
         return tokens
 
 
+# CharacterTokenizer：字符级子词切分
 class CharacterTokenizer:
     """Runs Character tokenization."""
 
@@ -611,6 +618,7 @@ class CharacterTokenizer:
         return output_tokens
 
 
+# BasicTokenizer：基础规范化（日语场景可关闭中文切分）
 class BasicTokenizer:
     """
     Constructs a BasicTokenizer that will run basic tokenization (punctuation splitting, lower casing, etc.).
@@ -772,6 +780,7 @@ class BasicTokenizer:
         return "".join(output)
 
 
+# WordpieceTokenizer：WordPiece 子词切分
 class WordpieceTokenizer:
     """Runs WordPiece tokenization."""
 
@@ -829,6 +838,7 @@ class WordpieceTokenizer:
         return output_tokens
 
 
+# SentencepieceTokenizer：SentencePiece 子词切分
 class SentencepieceTokenizer:
     """
     Runs sentencepiece tokenization. Based on transformers.models.albert.tokenization_albert.AlbertTokenizer.

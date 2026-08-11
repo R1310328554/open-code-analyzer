@@ -27,6 +27,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# load_vocab：从 vocab.txt 加载词表到 OrderedDict
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -38,6 +39,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# BertTokenizer：WordPiece 分词，支持 do_lower_case 与特殊 token
 class BertTokenizer(TokenizersBackend):
     r"""
     Construct a BERT tokenizer (backed by HuggingFace's tokenizers library). Based on WordPiece.
