@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T04:58:11Z",
   "files": [
-    "django/contrib/flatpages/models.py",
-    "django/contrib/flatpages/sitemaps.py",
-    "django/contrib/flatpages/templatetags/__init__.py",
-    "django/contrib/flatpages/templatetags/flatpages.py",
-    "django/contrib/flatpages/urls.py",
-    "django/contrib/flatpages/views.py",
-    "django/contrib/gis/__init__.py",
-    "django/contrib/gis/admin/__init__.py",
-    "django/contrib/gis/admin/options.py",
-    "django/contrib/gis/apps.py",
-    "django/contrib/gis/db/__init__.py",
-    "django/contrib/gis/db/backends/__init__.py",
-    "django/contrib/gis/db/backends/base/__init__.py",
-    "django/contrib/gis/db/backends/base/adapter.py",
-    "django/contrib/gis/db/backends/base/features.py",
     "django/contrib/gis/db/backends/base/models.py",
     "django/contrib/gis/db/backends/base/operations.py",
     "django/contrib/gis/db/backends/mysql/__init__.py",
@@ -33,5 +18,5 @@
     "django/contrib/gis/db/backends/oracle/operations.py"
   ],
   "remaining_pending": 612,
-  "done": 300
+  "done": 315
 }
