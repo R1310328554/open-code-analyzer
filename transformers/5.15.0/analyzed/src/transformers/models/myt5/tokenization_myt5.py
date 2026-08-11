@@ -25,9 +25,12 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# MyT5 分词：形态感知 byte 哈希树重写 + T5 特殊 token 体系
+
 VOCAB_FILES_NAMES = {"vocab_file": "byte_maps.json"}
 
 
+# ByteRewriter：MyT5 字节重写哈希树（形态学 byte 映射规则）
 class ByteRewriter:
     """
     Byte rewriter class for MyT5 tokenizer.
@@ -54,6 +57,7 @@ class ByteRewriter:
         reverse_rewriting_rules = {v: k for k, v in rewriting_rules.items()}
         self.reverse_hash_tree = self.construct_hash_tree(reverse_rewriting_rules)
 
+    # add_leaf：向哈希树添加一条字节序列重写规则叶节点
     def add_leaf(self, hash_tree: dict[str, dict | list[str]], byte_in_sequence: str, byte_out_sequence: str):
         """
         Add a leaf with the output byte sequence to the hash tree.
@@ -69,6 +73,7 @@ class ByteRewriter:
 
         tree_pointer[self.LEAF] = byte_out_list
 
+    # construct_hash_tree：由重写规则字典构建字节哈希树
     def construct_hash_tree(self, rewriting_rules: dict[str, str]) -> dict[str, dict | list[str]]:
         """
         Construct a hash tree for rewritten byte sequences.
@@ -82,6 +87,7 @@ class ByteRewriter:
 
         return hash_tree
 
+    # search_hash_tree：在哈希树中查找匹配的重写字节序列
     def search_hash_tree(self, byte_sequence: list[str]) -> None | list[str]:
         """
         Search the hash tree and return the rewritten byte sequence if found.
@@ -95,6 +101,7 @@ class ByteRewriter:
 
         return tree_pointer[self.LEAF]
 
+    # rewrite_bytes：按哈希树贪心最长匹配重写字节序列
     def rewrite_bytes(self, in_bytes: list[str], reverse=False) -> list[str]:
         """
         Rewrite a sequence of bytes using the hash tree.
@@ -130,6 +137,7 @@ class ByteRewriter:
         return out_bytes
 
 
+# MyT5Tokenizer：google/myt5 形态感知 byte 级 T5 分词器
 class MyT5Tokenizer(PreTrainedTokenizer):
     """
     Construct a MyT5 tokenizer.
@@ -328,12 +336,14 @@ class MyT5Tokenizer(PreTrainedTokenizer):
         token = f"{index - self.offset:02x}"
         return token
 
+    # morphological_encode：编码阶段对 token 做形态学 byte 重写
     def morphological_encode(self, indices: list[str]) -> list[str]:
         # Decompose and merge morphological sequences
         indices = self.decompose_rewriter.rewrite_bytes(indices, reverse=False)
         indices = self.merge_rewriter.rewrite_bytes(indices, reverse=False)
         return indices
 
+    # morphological_decode：解码阶段对 token 做逆形态学 byte 重写
     def morphological_decode(self, indices: list[str]) -> list[str]:
         # Demerge and compose morphological sequences
         indices = self.merge_rewriter.rewrite_bytes(indices, reverse=True)

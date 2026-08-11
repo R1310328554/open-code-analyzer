@@ -15,6 +15,8 @@
 Text/audio processor class for MusicGen Melody
 """
 
+# MusicGen Melody 处理器：文本 tokenizer 与色度特征提取器联合封装
+
 from typing import Any
 
 import numpy as np
@@ -26,11 +28,13 @@ from ...utils.import_utils import requires
 
 @requires(backends=("torchaudio",))
 @auto_docstring
+# MusicgenMelodyProcessor：MusicGen Melody 文本+音频联合处理器
 class MusicgenMelodyProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     # Copied from transformers.models.musicgen.processing_musicgen.MusicgenProcessor.get_decoder_prompt_ids
+    # get_decoder_prompt_ids：获取 T5 解码器提示 token 序列
     def get_decoder_prompt_ids(self, task=None, language=None, no_timestamps=True):
         return self.tokenizer.get_decoder_prompt_ids(task=task, language=language, no_timestamps=no_timestamps)
 
@@ -41,6 +45,7 @@ class MusicgenMelodyProcessor(ProcessorMixin):
         return super().__call__(*args, **kwargs)
 
     # Copied from transformers.models.musicgen.processing_musicgen.MusicgenProcessor.batch_decode with padding_mask->attention_mask
+    # batch_decode：批量解码音频波形或 tokenizer 词元 ID
     def batch_decode(self, *args, **kwargs):
         """
         This method is used to decode either batches of audio outputs from the MusicGen model, or batches of token ids
@@ -60,6 +65,7 @@ class MusicgenMelodyProcessor(ProcessorMixin):
             return self.tokenizer.batch_decode(*args, **kwargs)
 
     # Copied from transformers.models.musicgen.processing_musicgen.MusicgenProcessor._decode_audio with padding_mask->attention_mask
+    # _decode_audio：将模型输出的 EnCodec 码本 token 解码为波形
     def _decode_audio(self, audio_values, attention_mask: Any = None) -> list[np.ndarray]:
         """
         This method strips any padding from the audio values to return a list of numpy audio arrays.
@@ -87,6 +93,7 @@ class MusicgenMelodyProcessor(ProcessorMixin):
 
         return audio_values
 
+    # get_unconditional_inputs：构造无条件生成的初始 decoder 输入
     def get_unconditional_inputs(self, num_samples=1, return_tensors="pt"):
         """
         Helper function to get null inputs for unconditional generation, enabling the model to be used without the

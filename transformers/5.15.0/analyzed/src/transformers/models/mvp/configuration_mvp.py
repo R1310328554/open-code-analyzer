@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MVP 配置：RUCAIBox 预训练 seq2seq 与 prompt 轻量微调超参
+
+# MvpConfig：RUCAIBox/mvp 预训练 seq2seq 编码器-解码器超参（含 prompt 机制）
 @auto_docstring(checkpoint="RUCAIBox/mvp")
 @strict
+# MvpConfig：RUCAIBox/mvp 预训练 seq2seq 编码器-解码器超参（含 prompt 机制）
 class MvpConfig(PreTrainedConfig):
     r"""
     use_prompt (`bool`, *optional*, defaults to `False`):

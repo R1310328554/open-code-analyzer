@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# NanoChat 配置：Karpathy 轻量因果 LLM 超参（GQA + RoPE）
+
+# NanoChatConfig：karpathy/nanochat-d32 轻量因果 Transformer 超参
 @auto_docstring(checkpoint="karpathy/nanochat-d32")
 @strict
+# NanoChatConfig：karpathy/nanochat-d32 轻量因果 Transformer 超参
 class NanoChatConfig(PreTrainedConfig):
     r"""
     Example:
@@ -71,6 +75,7 @@ class NanoChatConfig(PreTrainedConfig):
     pad_token_id: int | None = 1
     tie_word_embeddings: bool = False
 
+    # __post_init__：初始化后解析 text/audio 编码器与 decoder 子配置
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

@@ -36,7 +36,10 @@ if is_torchaudio_available():
 logger = logging.get_logger(__name__)
 
 
+# MusicGen Melody 特征提取：Demucs 分离轨或波形 STFT 色度特征
+
 @requires(backends=("torchaudio",))
+# MusicgenMelodyFeatureExtractor：从 Demucs 分离轨或原始波形提取色度（chroma）特征
 class MusicgenMelodyFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a MusicgenMelody feature extractor.
@@ -113,6 +116,7 @@ class MusicgenMelodyFeatureExtractor(SequenceFeatureExtractor):
         )
         self.stem_indices = stem_indices
 
+    # _torch_extract_fbank_features：STFT 计算 log-mel 并投影为色度特征张量
     def _torch_extract_fbank_features(self, waveform: torch.Tensor) -> torch.Tensor:
         """
         Compute the chroma spectrogram of the provided audio using the torchaudio spectrogram implementation and the librosa chroma features.
@@ -144,6 +148,7 @@ class MusicgenMelodyFeatureExtractor(SequenceFeatureExtractor):
 
         return norm_chroma
 
+    # _extract_stem_indices：Demucs 四轨分离并选取旋律相关 stem 索引
     def _extract_stem_indices(self, audio, sampling_rate=None):
         """
         Extracts stems from the output of the [Demucs](https://github.com/adefossez/demucs/tree/main) audio separation model,

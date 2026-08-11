@@ -42,6 +42,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_nanochat import NanoChatConfig
 
 
+# NanoChat 建模：轻量 GQA 因果 Transformer 与语言建模头
+
+# NanoChatRMSNorm：NanoChat RMS 层归一化（L2 范数缩放）
 class NanoChatRMSNorm(torch.nn.Module):
     def __init__(self, eps: float = 1e-6):
         super().__init__()
@@ -57,6 +60,7 @@ class NanoChatRMSNorm(torch.nn.Module):
         return f"eps={self.eps}"
 
 
+# NanoChatRotaryEmbedding：NanoChat RoPE 旋转位置编码
 class NanoChatRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: NanoChatConfig, device=None):
@@ -77,6 +81,7 @@ class NanoChatRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按配置计算 RoPE 逆频率
     def compute_default_rope_parameters(config: NanoChatConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -115,6 +120,7 @@ class NanoChatRotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin RoPE 应用到 Q/K 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -140,6 +146,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -152,6 +159,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -177,6 +185,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半维旋转（NanoChat 符号翻转变体）
 def rotate_half(x):
     """Rotates half the hidden dims of the input with flipped signs for NanoChat."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -185,6 +194,7 @@ def rotate_half(x):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# NanoChatAttention：NanoChat GQA 注意力（RoPE 后再 Q/K Norm）
 class NanoChatAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -259,6 +269,7 @@ class NanoChatAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# NanoChatMLP：NanoChat 前馈 MLP（CLIP 风格两层线性 + 激活）
 class NanoChatMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -274,6 +285,7 @@ class NanoChatMLP(nn.Module):
         return hidden_states
 
 
+# NanoChatDecoderLayer：NanoChat 解码器单层（注意力 + MLP + 残差）
 class NanoChatDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: NanoChatConfig, layer_idx: int):
         super().__init__()
@@ -319,6 +331,7 @@ class NanoChatDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# NanoChatPreTrainedModel：NanoChat 预训练基类与 o_proj 特殊初始化
 class NanoChatPreTrainedModel(PreTrainedModel):
     config: NanoChatConfig
     base_model_prefix = "model"
@@ -347,6 +360,7 @@ class NanoChatPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# NanoChatModel：NanoChat 因果 Transformer 解码器主干（层前额外 Norm）
 class NanoChatModel(NanoChatPreTrainedModel):
     def __init__(self, config: NanoChatConfig):
         super().__init__(config)
@@ -422,6 +436,7 @@ class NanoChatModel(NanoChatPreTrainedModel):
 
 
 @auto_docstring
+# NanoChatForCausalLM：NanoChat 因果语言建模条件生成
 class NanoChatForCausalLM(NanoChatPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

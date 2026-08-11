@@ -42,7 +42,10 @@ from .configuration_mvp import MvpConfig
 logger = logging.get_logger(__name__)
 
 
+# MVP 建模：带 prompt 的 BART 风格编码器-解码器与多种下游任务头
+
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：多码本 decoder 输入右移一位（首 token 填 start）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -60,6 +63,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 # Copied from transformers.models.bart.modeling_bart.BartLearnedPositionalEmbedding with Bart->Mvp
+# MvpLearnedPositionalEmbedding：MVP 可学习绝对位置嵌入
 class MvpLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -87,6 +91,7 @@ class MvpLearnedPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids + self.offset)
 
 
+# MvpAttention：MVP 多头自/交叉注意力（含 prompt 偏置）
 class MvpAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -234,6 +239,7 @@ class MvpAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# MvpEncoderLayer：MVP 编码器单层（双向自注意力 + FFN）
 class MvpEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MvpConfig):
         super().__init__()
@@ -295,6 +301,7 @@ class MvpEncoderLayer(GradientCheckpointingLayer):
         return hidden_states, attn_weights
 
 
+# MvpDecoderLayer：MVP 解码器单层（因果自注意力 + 交叉注意力 + FFN）
 class MvpDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MvpConfig, layer_idx=None):
         super().__init__()
@@ -404,6 +411,7 @@ class MvpDecoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartClassificationHead with Bart->MVP
+# MvpClassificationHead：MVP 序列分类头（池化 + 线性层）
 class MvpClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -428,6 +436,7 @@ class MvpClassificationHead(nn.Module):
         return hidden_states
 
 
+# MvpPrompt：MVP 可学习 prompt 嵌入（轻量微调）
 class MvpPrompt(nn.Module):
     """Layer-wise prompt for encoder or decoder."""
 
@@ -454,6 +463,7 @@ class MvpPrompt(nn.Module):
 
 
 @auto_docstring
+# MvpPreTrainedModel：MVP 预训练基类与权重初始化
 class MvpPreTrainedModel(PreTrainedModel):
     config: MvpConfig
     base_model_prefix = "model"
@@ -475,6 +485,7 @@ class MvpPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
 
+# MvpEncoder：MVP Transformer 编码器堆叠
 class MvpEncoder(MvpPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -638,6 +649,7 @@ class MvpEncoder(MvpPreTrainedModel):
         )
 
 
+# MvpDecoder：MVP Transformer 解码器堆叠
 class MvpDecoder(MvpPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`MvpDecoderLayer`]
@@ -867,6 +879,7 @@ class MvpDecoder(MvpPreTrainedModel):
 
 
 @auto_docstring
+# MvpModel：MVP 编码器-解码器 seq2seq 主体
 class MvpModel(MvpPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["final_logits_bias"]
     _tied_weights_keys = {
@@ -895,6 +908,7 @@ class MvpModel(MvpPreTrainedModel):
         self.encoder.embed_tokens = self.shared
         self.decoder.embed_tokens = self.shared
 
+    # set_lightweight_tuning：启用 prompt 轻量微调模式
     def set_lightweight_tuning(self):
         assert self.use_prompt, "If you want to use lightweight tuning, make sure that `use_prompt=True`."
 
@@ -1015,6 +1029,7 @@ class MvpModel(MvpPreTrainedModel):
     The MVP Model with a language modeling head. Can be used for various text generation tasks.
     """
 )
+# MvpForConditionalGeneration：MVP 条件文本生成
 class MvpForConditionalGeneration(MvpPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.shared.weight",
@@ -1045,6 +1060,7 @@ class MvpForConditionalGeneration(MvpPreTrainedModel, GenerationMixin):
             new_bias = torch.cat([self.final_logits_bias, extra_bias], dim=1)
         self.final_logits_bias = nn.Buffer(new_bias)
 
+    # set_lightweight_tuning：启用 prompt 轻量微调模式
     def set_lightweight_tuning(self):
         self.model.set_lightweight_tuning()
         self.lm_head.requires_grad_(False)
@@ -1170,6 +1186,7 @@ class MvpForConditionalGeneration(MvpPreTrainedModel, GenerationMixin):
             encoder_attentions=outputs.encoder_attentions,
         )
 
+    # prepare_decoder_input_ids_from_labels：由 labels 构造 decoder 输入
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
 
@@ -1180,6 +1197,7 @@ class MvpForConditionalGeneration(MvpPreTrainedModel, GenerationMixin):
     tasks.
     """
 )
+# MvpForSequenceClassification：MVP 序列分类
 class MvpForSequenceClassification(MvpPreTrainedModel):
     def __init__(self, config: MvpConfig, **kwargs):
         super().__init__(config, **kwargs)
@@ -1194,6 +1212,7 @@ class MvpForSequenceClassification(MvpPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # set_lightweight_tuning：启用 prompt 轻量微调模式
     def set_lightweight_tuning(self):
         self.model.set_lightweight_tuning()
         self.classification_head.requires_grad_(False)
@@ -1345,6 +1364,7 @@ class MvpForSequenceClassification(MvpPreTrainedModel):
 
 
 @auto_docstring
+# MvpForQuestionAnswering：MVP 抽取式问答
 class MvpForQuestionAnswering(MvpPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1358,6 +1378,7 @@ class MvpForQuestionAnswering(MvpPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # set_lightweight_tuning：启用 prompt 轻量微调模式
     def set_lightweight_tuning(self):
         self.model.set_lightweight_tuning()
         self.qa_outputs.requires_grad_(False)
@@ -1501,6 +1522,7 @@ class MvpForQuestionAnswering(MvpPreTrainedModel):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderWrapper with Bart->Mvp
+# MvpDecoderWrapper：MVP 解码器包装（供 CausalLM 复用）
 class MvpDecoderWrapper(MvpPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -1516,6 +1538,7 @@ class MvpDecoderWrapper(MvpPreTrainedModel):
         return self.decoder(*args, **kwargs)
 
 
+# MvpForCausalLM：MVP 解码器因果语言建模
 class MvpForCausalLM(MvpPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.decoder.embed_tokens.weight"}
 
@@ -1536,6 +1559,7 @@ class MvpForCausalLM(MvpPreTrainedModel, GenerationMixin):
     def set_input_embeddings(self, value):
         self.model.decoder.embed_tokens = value
 
+    # set_lightweight_tuning：启用 prompt 轻量微调模式
     def set_lightweight_tuning(self):
         self.model.set_lightweight_tuning()
         self.lm_head.requires_grad_(False)

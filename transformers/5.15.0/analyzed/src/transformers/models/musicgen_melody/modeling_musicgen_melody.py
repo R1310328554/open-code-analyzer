@@ -57,12 +57,15 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# MusicGen Melody 建模：多码本 EnCodec 解码器与文本/色度条件生成
+
 @auto_docstring(
     custom_intro="""
     Base class for Musicgen Melody autoregressive outputs.
     """
 )
 @dataclass
+# MusicgenMelodyOutputWithPast：Melody 自回归输出（含 logits、past 与 encoder 条件）
 class MusicgenMelodyOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -88,6 +91,7 @@ class MusicgenMelodyOutputWithPast(ModelOutput):
 
 
 # Copied from transformers.models.musicgen.modeling_musicgen.shift_tokens_right
+# shift_tokens_right：多码本 decoder 输入右移一位（首 token 填 start）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -109,6 +113,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenSinusoidalPositionalEmbedding with Musicgen->MusicgenMelody
+# MusicgenMelodySinusoidalPositionalEmbedding：正弦位置编码（任意序列长度）
 class MusicgenMelodySinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -155,6 +160,7 @@ class MusicgenMelodySinusoidalPositionalEmbedding(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -184,6 +190,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenAttention with Musicgen->MusicgenMelody
+# MusicgenMelodyAttention：Melody 解码器多头自/交叉注意力
 class MusicgenMelodyAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -296,6 +303,7 @@ class MusicgenMelodyAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MusicgenMelodyDecoderLayer：Melody 解码器单层（自注意力 + 交叉注意力 + FFN）
 class MusicgenMelodyDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MusicgenMelodyDecoderConfig, layer_idx=None):
         super().__init__()
@@ -362,6 +370,7 @@ class MusicgenMelodyDecoderLayer(GradientCheckpointingLayer):
 
 @auto_docstring
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenPreTrainedModel with Musicgen->MusicgenMelody
+# MusicgenMelodyPreTrainedModel：MusicGen Melody 预训练基类与权重初始化
 class MusicgenMelodyPreTrainedModel(PreTrainedModel):
     config: MusicgenMelodyDecoderConfig
     base_model_prefix = "model"
@@ -380,6 +389,7 @@ class MusicgenMelodyPreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenDecoder with MUSICGEN->MUSICGEN_MELODY,Musicgen->MusicgenMelody
+# MusicgenMelodyDecoder：Melody Transformer 解码器堆叠
 class MusicgenMelodyDecoder(MusicgenMelodyPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MusicgenMelodyDecoderLayer`]
@@ -536,6 +546,7 @@ class MusicgenMelodyDecoder(MusicgenMelodyPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenModel with MUSICGEN->MUSICGEN_MELODY,Musicgen->MusicgenMelody
+# MusicgenMelodyModel：Melody 解码器主体（多码本嵌入 + 堆叠层）
 class MusicgenMelodyModel(MusicgenMelodyPreTrainedModel):
     def __init__(self, config: MusicgenMelodyDecoderConfig):
         super().__init__(config)
@@ -620,6 +631,7 @@ class MusicgenMelodyModel(MusicgenMelodyPreTrainedModel):
     """
 )
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenForCausalLM with MUSICGEN->MUSICGEN_MELODY,Musicgen->MusicgenMelody,MusicGen->Musicgen Melody
+# MusicgenMelodyForCausalLM：Melody 多码本因果语言建模头
 class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
     output_modalities = ("audio",)
 
@@ -752,6 +764,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
         )
 
     # Ignore copy
+    # prepare_inputs_for_generation：生成步准备 past、attention_mask 等输入
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -807,6 +820,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
             "use_cache": use_cache,
         }
 
+    # build_delay_pattern_mask：构造多码本延迟模式的 padding 掩码
     def build_delay_pattern_mask(self, input_ids: torch.LongTensor, pad_token_id: int, max_length: int | None = None):
         """Build a delayed pattern mask to the input_ids. Each codebook is offset by the previous codebook by
         one, giving a delayed pattern mask at the start of sequence and end of sequence. Take the example where there
@@ -881,6 +895,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
         return input_ids, pattern_mask
 
     @staticmethod
+    # apply_delay_pattern_mask：对多码本序列应用延迟模式掩码
     def apply_delay_pattern_mask(input_ids, decoder_pad_token_mask):
         """Apply a delay pattern mask to the decoder input ids, only preserving predictions where
         the mask is set to -1, and otherwise setting to the value detailed in the mask."""
@@ -891,6 +906,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
 
     @torch.no_grad()
     # Ignore copy
+    # generate：自回归生成多码本音频 token 序列
     def generate(
         self,
         inputs: torch.Tensor | None = None,
@@ -1087,6 +1103,7 @@ class MusicgenMelodyForCausalLM(MusicgenMelodyPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# MusicgenMelodyForConditionalGeneration：文本/色度条件音乐生成（T5+EnCodec+解码器）
 class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
     config: MusicgenMelodyConfig
     main_input_name = "input_ids"
@@ -1186,6 +1203,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
 
     @classmethod
     # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenForConditionalGeneration.from_sub_models_pretrained with Musicgen->MusicgenMelody, musicgen-small->musicgen-melody
+    # from_sub_models_pretrained：从各子模型 checkpoint 组装完整 Melody 模型
     def from_sub_models_pretrained(
         cls,
         text_encoder_pretrained_model_name_or_path: str | None = None,
@@ -1549,6 +1567,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
             encoder_hidden_states=encoder_hidden_states,
         )
 
+    # prepare_inputs_for_generation：生成步准备 past、attention_mask 等输入
     def prepare_inputs_for_generation(
         self,
         decoder_input_ids,
@@ -1606,6 +1625,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
         }
 
     # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenForConditionalGeneration._prepare_decoder_input_ids_for_generation
+    # _prepare_decoder_input_ids_for_generation：生成时构造 decoder 输入 ID
     def _prepare_decoder_input_ids_for_generation(
         self,
         batch_size: int,
@@ -1653,6 +1673,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
 
         return decoder_input_ids, model_kwargs
 
+    # _prepare_encoder_hidden_states_kwargs_for_generation：生成时准备编码器隐状态
     def _prepare_encoder_hidden_states_kwargs_for_generation(
         self,
         inputs_tensor: torch.Tensor,
@@ -1753,6 +1774,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
 
         return model_kwargs
 
+    # prepare_decoder_input_ids_from_labels：由 labels 构造 decoder 输入
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.decoder.pad_token_id, self.config.decoder.bos_token_id)
 
@@ -1763,6 +1785,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
             " model.decoder.resize_token_embeddings(...))"
         )
 
+    # _maybe_initialize_input_ids_for_generation：缺失时初始化生成输入 ID
     def _maybe_initialize_input_ids_for_generation(
         self,
         inputs: torch.Tensor | None,
@@ -1785,6 +1808,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
                 break
         return torch.ones((batch_size, 1), dtype=torch.long, device=self.device) * bos_token_id
 
+    # freeze_audio_encoder：冻结 EnCodec 音频编码器参数
     def freeze_audio_encoder(self):
         """
         Freeze the audio encoder weights.
@@ -1793,6 +1817,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
             param.requires_grad = False
         self.audio_encoder._requires_grad = False
 
+    # freeze_text_encoder：冻结 T5 文本编码器参数
     def freeze_text_encoder(self):
         """
         Freeze the text encoder weights.
@@ -1802,6 +1827,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
         self.text_encoder._requires_grad = False
 
     # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenForConditionalGeneration._get_decoder_start_token_id
+    # _get_decoder_start_token_id：解析 decoder 起始 token ID
     def _get_decoder_start_token_id(
         self, decoder_start_token_id: int | list[int] | None = None, bos_token_id: int | None = None
     ) -> int:
@@ -1821,6 +1847,7 @@ class MusicgenMelodyForConditionalGeneration(PreTrainedModel, GenerationMixin):
         )
 
     @torch.no_grad()
+    # generate：自回归生成多码本音频 token 序列
     def generate(
         self,
         inputs: torch.Tensor | None = None,

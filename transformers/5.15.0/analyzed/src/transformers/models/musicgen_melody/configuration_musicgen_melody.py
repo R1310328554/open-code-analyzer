@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
+# MusicGen Melody 配置：文本/色度条件音乐生成的编码器-解码器联合超参
+
+# MusicgenMelodyDecoderConfig：facebook/musicgen-melody 音频 token 自回归解码器超参
 @auto_docstring(checkpoint="facebook/musicgen-melody")
 @strict
+# MusicgenMelodyDecoderConfig：facebook/musicgen-melody 音频 token 自回归解码器超参
 class MusicgenMelodyDecoderConfig(PreTrainedConfig):
     r"""
     audio_channels (`int`, *optional*, defaults to 1):
@@ -56,14 +60,17 @@ class MusicgenMelodyDecoderConfig(PreTrainedConfig):
     is_decoder: bool = False
     add_cross_attention: bool = False
 
+    # validate_architecture：@strict 校验 mono/stereo 音频通道数
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.audio_channels not in [1, 2]:
             raise ValueError(f"Expected 1 (mono) or 2 (stereo) audio channels, got {self.audio_channels} channels.")
 
 
+# MusicgenMelodyConfig：facebook/musicgen-melody 文本+色度条件音乐生成联合超参
 @auto_docstring(checkpoint="facebook/musicgen-melody")
 @strict
+# MusicgenMelodyConfig：facebook/musicgen-melody 文本+色度条件音乐生成联合超参
 class MusicgenMelodyConfig(PreTrainedConfig):
     r"""
     text_encoder (`Union[dict, `PretrainedConfig`]`):
@@ -129,6 +136,7 @@ class MusicgenMelodyConfig(PreTrainedConfig):
     chroma_length: int = 235
     initializer_factor: float = 0.02
 
+    # __post_init__：初始化后解析 text/audio 编码器与 decoder 子配置
     def __post_init__(self, **kwargs):
         if isinstance(self.text_encoder, dict):
             text_encoder_model_type = self.text_encoder.pop("model_type")
@@ -156,6 +164,7 @@ class MusicgenMelodyConfig(PreTrainedConfig):
 
     @property
     # This is a property because you might want to change the codec model on the fly
+    # sampling_rate：音频编码器采样率（只读属性，随 codec 可变）
     def sampling_rate(self):
         return self.audio_encoder.sampling_rate
 

@@ -40,14 +40,19 @@ from ..qwen3.modeling_qwen3 import Qwen3Attention
 from .configuration_nanochat import NanoChatConfig
 
 
+# NanoChat modular 源：Llama/Qwen3/Gemma2 组件组合的轻量 LLM 实现
+
+# NanoChatRMSNorm：NanoChat RMS 层归一化（L2 范数缩放）
 class NanoChatRMSNorm(Llama4TextL2Norm):
     pass
 
 
+# NanoChatRotaryEmbedding：NanoChat RoPE 旋转位置编码
 class NanoChatRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# rotate_half：RoPE 中将向量后半维旋转（NanoChat 符号翻转变体）
 def rotate_half(x):
     """Rotates half the hidden dims of the input with flipped signs for NanoChat."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -55,6 +60,7 @@ def rotate_half(x):
     return torch.cat((x2, -x1), dim=-1)
 
 
+# NanoChatAttention：NanoChat GQA 注意力（RoPE 后再 Q/K Norm）
 class NanoChatAttention(Qwen3Attention):
     def __init__(self, config: NanoChatConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -109,6 +115,7 @@ class NanoChatAttention(Qwen3Attention):
         return attn_output, attn_weights
 
 
+# NanoChatMLP：NanoChat 前馈 MLP（CLIP 风格两层线性 + 激活）
 class NanoChatMLP(CLIPMLP):
     def __init__(self, config):
         super().__init__(config)
@@ -116,6 +123,7 @@ class NanoChatMLP(CLIPMLP):
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
 
+# NanoChatDecoderLayer：NanoChat 解码器单层（注意力 + MLP + 残差）
 class NanoChatDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: NanoChatConfig, layer_idx: int):
         super().__init__()
@@ -125,6 +133,7 @@ class NanoChatDecoderLayer(LlamaDecoderLayer):
 
 
 @auto_docstring
+# NanoChatPreTrainedModel：NanoChat 预训练基类与 o_proj 特殊初始化
 class NanoChatPreTrainedModel(LlamaPreTrainedModel):
     def _init_weights(self, module: nn.Module) -> None:
         PreTrainedModel._init_weights(self, module)
@@ -137,6 +146,7 @@ class NanoChatPreTrainedModel(LlamaPreTrainedModel):
 
 
 @auto_docstring
+# NanoChatModel：NanoChat 因果 Transformer 解码器主干（层前额外 Norm）
 class NanoChatModel(LlamaModel):
     def __init__(self, config: NanoChatConfig):
         super().__init__(config)
@@ -197,6 +207,7 @@ class NanoChatModel(LlamaModel):
 
 
 @auto_docstring
+# NanoChatForCausalLM：NanoChat 因果语言建模条件生成
 class NanoChatForCausalLM(Gemma2ForCausalLM):
     _tp_plan = {"lm_head": "colwise_gather_output"}
 
