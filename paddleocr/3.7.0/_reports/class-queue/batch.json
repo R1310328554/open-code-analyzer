@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T07:05:56Z",
-  "files": [
-    "ppocr/data/imaug/iaa_augment.py",
-    "ppocr/data/imaug/label_ops.py",
-    "ppocr/data/imaug/latex_ocr_aug.py",
-    "ppocr/data/imaug/make_border_map.py",
-    "ppocr/data/imaug/make_pse_gt.py",
-    "ppocr/data/imaug/make_shrink_map.py",
-    "ppocr/data/imaug/operators.py",
-    "ppocr/data/imaug/pg_process.py",
-    "ppocr/data/imaug/randaugment.py",
-    "ppocr/data/imaug/random_crop_data.py",
-    "ppocr/data/imaug/rec_img_aug.py",
-    "ppocr/data/imaug/sast_process.py",
-    "ppocr/data/imaug/ssl_img_aug.py",
-    "ppocr/data/imaug/table_ops.py",
-    "ppocr/data/imaug/text_image_aug/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 302,
-  "done": 285
+  "done": 300
 }
