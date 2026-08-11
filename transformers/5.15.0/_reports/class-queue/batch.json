@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:32:02Z",
-  "files": [
-    "src/transformers/models/higgs_audio_v2/configuration_higgs_audio_v2.py",
-    "src/transformers/models/higgs_audio_v2/generation_higgs_audio_v2.py",
-    "src/transformers/models/higgs_audio_v2/modeling_higgs_audio_v2.py",
-    "src/transformers/models/higgs_audio_v2/modular_higgs_audio_v2.py",
-    "src/transformers/models/higgs_audio_v2/processing_higgs_audio_v2.py",
-    "src/transformers/models/higgs_audio_v2_tokenizer/__init__.py",
-    "src/transformers/models/higgs_audio_v2_tokenizer/configuration_higgs_audio_v2_tokenizer.py",
-    "src/transformers/models/higgs_audio_v2_tokenizer/modeling_higgs_audio_v2_tokenizer.py",
-    "src/transformers/models/higgs_audio_v2_tokenizer/modular_higgs_audio_v2_tokenizer.py",
-    "src/transformers/models/hrm_text/__init__.py",
-    "src/transformers/models/hrm_text/configuration_hrm_text.py",
-    "src/transformers/models/hrm_text/modeling_hrm_text.py",
-    "src/transformers/models/hrm_text/modular_hrm_text.py",
-    "src/transformers/models/hubert/__init__.py",
-    "src/transformers/models/hubert/configuration_hubert.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1629,
-  "done": 1035
+  "done": 1050
 }
