@@ -1,7 +1,9 @@
 /* global ol */
 "use strict";
-class GeometryTypeControl extends ol.control.Control {
+/* 地图控件：在几何类型未定时切换点/线/面绘制模式 */
+class GeometryTypeControl extends ol.control.Control {class GeometryTypeControl extends ol.control.Control {
     // Map control to switch type when geometry type is unknown
+    // 创建类型切换按钮并绑定 draw 交互
     constructor(opt_options) {
         const options = opt_options || {};
 
@@ -44,7 +46,9 @@ class GeometryTypeControl extends ol.control.Control {
 }
 
 // TODO: allow deleting individual features (#8972)
-class MapWidget {
+/* OpenLayers 地图控件：Admin 表单中编辑 GeoDjango 几何字段 */
+class MapWidget {class MapWidget {
+    // 初始化底图、要素集、交互与初始几何
     constructor(options) {
         this.map = null;
         this.interactions = { draw: null, modify: null };
@@ -141,6 +145,7 @@ class MapWidget {
         this.ready = true;
     }
 
+    // 创建 OpenLayers Map 实例
     createMap() {
         return new ol.Map({
             target: this.options.map_id,
@@ -151,6 +156,7 @@ class MapWidget {
         });
     }
 
+    // 配置 Modify/Draw 交互及可选的几何类型切换
     createInteractions() {
         // Initialize the modify interaction
         this.interactions.modify = new ol.interaction.Modify({
@@ -199,6 +205,7 @@ class MapWidget {
         this.map.addInteraction(this.interactions.modify);
     }
 
+    // 返回默认中心坐标，必要时做 SRID 投影变换
     defaultCenter() {
         const center = [this.options.default_lon, this.options.default_lat];
         if (this.options.map_srid) {
@@ -211,6 +218,7 @@ class MapWidget {
         return center;
     }
 
+    // 启用绘制交互并显示类型切换按钮
     enableDrawing() {
         this.interactions.draw.setActive(true);
         if (this.typeChoices) {
@@ -222,6 +230,7 @@ class MapWidget {
         }
     }
 
+    // 禁用绘制交互并隐藏类型切换按钮
     disableDrawing() {
         if (this.interactions.draw) {
             this.interactions.draw.setActive(false);
@@ -235,6 +244,7 @@ class MapWidget {
         }
     }
 
+    // 清空要素集并重置关联 textarea
     clearFeatures() {
         this.featureCollection.clear();
         // Empty textarea widget
@@ -242,6 +252,7 @@ class MapWidget {
         this.enableDrawing();
     }
 
+    // 将当前要素序列化为 GeoJSON 写入隐藏 textarea
     serializeFeatures() {
         // Three use cases: GeometryCollection, multigeometries, and single geometry
         let geometry = null;
@@ -286,7 +297,8 @@ class MapWidget {
 }
 
 // Static property assignment (ES6-compatible)
-MapWidget.layerBuilder = {
+// 静态底图图层构建器（NASA Worldview、OSM 等）
+MapWidget.layerBuilder = {MapWidget.layerBuilder = {
     nasaWorldview: () => {
         return new ol.layer.Tile({
             source: new ol.source.XYZ({
@@ -304,6 +316,7 @@ MapWidget.layerBuilder = {
     },
 };
 
+// 在指定 DOM 节内初始化所有 .dj_map_wrapper 地图控件
 function initMapWidgetInSection(section) {
     const maps = [];
 

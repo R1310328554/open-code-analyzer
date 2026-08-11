@@ -2,6 +2,7 @@ from django.contrib.gis.gdal import SpatialReference
 from django.db import DEFAULT_DB_ALIAS, connections
 
 
+# 将 GDAL SpatialReference 写入 spatial_ref_sys 表以启用数据库级变换
 def add_srs_entry(
     srs, auth_name="EPSG", auth_srid=None, ref_sys_name=None, database=None
 ):

@@ -1,4 +1,5 @@
-# LayerMapping -- A Django Model/OGR Layer Mapping Utility
+# LayerMapping — OGR 矢量图层到 GeoDjango 模型的映射工具
+# LayerMapping -- A Django Model/OGR Layer Mapping Utility# LayerMapping -- A Django Model/OGR Layer Mapping Utility
 """
 The LayerMapping class provides a way to map the contents of OGR
 vector files (e.g. SHP files) to Geographic-enabled Django models.
@@ -36,26 +37,32 @@ from django.utils.encoding import force_str
 
 
 # LayerMapping exceptions.
+# 图层映射通用异常基类
 class LayerMapError(Exception):
     pass
 
 
+# 字符串长度超出模型字段限制
 class InvalidString(LayerMapError):
     pass
 
 
+# Decimal 精度或位数校验失败
 class InvalidDecimal(LayerMapError):
     pass
 
 
+# 无法从 OGR 字段构造整数
 class InvalidInteger(LayerMapError):
     pass
 
 
+# 外键关联模型未找到
 class MissingForeignKey(LayerMapError):
     pass
 
 
+# 将 OGR 图层要素批量导入 GeoDjango 模型的核心类
 class LayerMapping:
     "A class that maps OGR Layers to GeoDjango Models."
 
@@ -94,6 +101,7 @@ class LayerMapping:
         models.PositiveSmallIntegerField: (OFTInteger, OFTReal, OFTString),
     }
 
+    # 绑定模型、数据源、字段映射并校验图层兼容性
     def __init__(
         self,
         model,
@@ -177,6 +185,7 @@ class LayerMapping:
             raise LayerMapError("Unrecognized transaction mode: %s" % transaction_mode)
 
     # Checking routines used during initialization.
+    # 校验并规范化 fid_range 切片参数
     def check_fid_range(self, fid_range):
         "Check the `fid_range` keyword."
         if fid_range:
@@ -189,6 +198,7 @@ class LayerMapping:
         else:
             return None
 
+    # 校验 OGR 图层字段与模型字段的类型映射
     def check_layer(self):
         """
         Check the Layer metadata and ensure that it's compatible with the
@@ -307,6 +317,7 @@ class LayerMapping:
 
             self.fields[field_name] = fields_val
 
+    # 解析并校验源空间参考系统
     def check_srs(self, source_srs):
         "Check the compatibility of the given spatial reference object."
 
@@ -325,6 +336,7 @@ class LayerMapping:
         else:
             return sr
 
+    # 校验 unique 关键字参数格式
     def check_unique(self, unique):
         "Check the `unique` keyword parameter -- may be a sequence or string."
         if isinstance(unique, (list, tuple)):
@@ -342,6 +354,7 @@ class LayerMapping:
             )
 
     # Keyword argument retrieval routines.
+    # 从 OGR 要素构造模型实例的关键字参数字典
     def feature_kwargs(self, feat):
         """
         Given an OGR Feature, return a dictionary of keyword arguments for
@@ -375,6 +388,7 @@ class LayerMapping:
 
         return kwargs
 
+    # 提取用于唯一性查找的关键字参数子集
     def unique_kwargs(self, kwargs):
         """
         Given the feature keyword arguments (from `feature_kwargs`), construct
@@ -387,6 +401,7 @@ class LayerMapping:
             return {fld: kwargs[fld] for fld in self.unique}
 
     # Verification routines used in constructing model keyword arguments.
+    # 校验 OGR 字段值与 Django 模型字段的兼容性
     def verify_ogr_field(self, ogr_field, model_field):
         """
         Verify if the OGR Field contents are acceptable to the model field. If
@@ -461,6 +476,7 @@ class LayerMapping:
             val = ogr_field.value
         return val
 
+    # 通过外键映射查找关联模型实例
     def verify_fk(self, feat, rel_model, rel_mapping):
         """
         Given an OGR Feature, the related model and its dictionary mapping,
@@ -486,6 +502,7 @@ class LayerMapping:
                 % (rel_model.__name__, fk_kwargs)
             )
 
+    # 校验/转换几何类型并执行坐标变换
     def verify_geom(self, geom, model_field):
         """
         Verify the geometry -- construct and return a GeometryCollection
@@ -518,6 +535,7 @@ class LayerMapping:
         return g.wkt
 
     # Other model methods.
+    # 构建源 SRS 到模型字段 SRS 的 CoordTransform
     def coord_transform(self):
         "Return the coordinate transformation object."
         SpatialRefSys = self.spatial_backend.spatial_ref_sys()
@@ -536,6 +554,7 @@ class LayerMapping:
                 "Could not translate between the data source and model geometry."
             ) from exc
 
+    # 返回映射中的 GeometryField 实例
     def geometry_field(self):
         """
         Return the GeometryField instance associated with the geographic
@@ -546,6 +565,7 @@ class LayerMapping:
         opts = self.model._meta
         return opts.get_field(self.geom_field)
 
+    # 判断单几何是否需提升为多几何类型
     def make_multi(self, geom_type, model_field):
         """
         Given the OGRGeomType for a geometry and its associated GeometryField,
@@ -557,6 +577,7 @@ class LayerMapping:
             and model_field.__class__.__name__ == "Multi%s" % geom_type.django
         )
 
+    # 遍历图层要素并写入数据库，支持增量与事务模式
     def save(
         self,
         verbose=False,

@@ -1,4 +1,7 @@
 """
+GeoDjango 实用工具包：图层映射、OGR 检查、SRS 注册等。
+
+This module contains useful utilities for GeoDjango."""
 This module contains useful utilities for GeoDjango.
 """
 

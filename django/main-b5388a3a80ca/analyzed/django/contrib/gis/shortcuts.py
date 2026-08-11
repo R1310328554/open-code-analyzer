@@ -12,6 +12,7 @@ except ImportError:
     numpy = False
 
 
+# 将 KML 字符串压缩为 KMZ 二进制内容
 def compress_kml(kml):
     "Return compressed KMZ from the given KML string."
     kmz = BytesIO()
@@ -21,6 +22,7 @@ def compress_kml(kml):
     return kmz.read()
 
 
+# 渲染模板并返回 KML MIME 类型的 HttpResponse
 def render_to_kml(*args, **kwargs):
     "Render the response as KML (using the correct MIME type)."
     return HttpResponse(
@@ -29,6 +31,7 @@ def render_to_kml(*args, **kwargs):
     )
 
 
+# 渲染模板、压缩为 KMZ 并返回对应 HttpResponse
 def render_to_kmz(*args, **kwargs):
     """
     Compress the KML content and return as KMZ (using the correct

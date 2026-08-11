@@ -2,6 +2,7 @@ from django.http import Http404
 from django.utils.translation import gettext as _
 
 
+# 向后兼容的 feed 视图分发器，按 slug 实例化并配置 Feed 类
 def feed(request, url, feed_dict=None):
     """Provided for backwards compatibility."""
     if not feed_dict:

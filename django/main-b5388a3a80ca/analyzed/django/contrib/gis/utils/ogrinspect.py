@@ -1,4 +1,7 @@
 """
+从 OGR 数据源自动生成 GeoDjango 模型代码与 LayerMapping 映射字典。
+
+This module is for inspecting OGR data sources and generating either"""
 This module is for inspecting OGR data sources and generating either
 models for GeoDjango and/or mapping dictionaries for use with the
 `LayerMapping` utility.
@@ -16,6 +19,7 @@ from django.contrib.gis.gdal.field import (
 )
 
 
+# 根据数据源图层字段生成 LayerMapping 映射字典
 def mapping(data_source, geom_name="geom", layer_key=0, multi_geom=False):
     """
     Given a DataSource, generate a dictionary that may be used
@@ -56,6 +60,7 @@ def mapping(data_source, geom_name="geom", layer_key=0, multi_geom=False):
     return _mapping
 
 
+# 生成 GeoDjango 模型 Python 源码字符串
 def ogrinspect(*args, **kwargs):
     """
     Given a data source (either a string or a DataSource object) and a string
@@ -127,6 +132,7 @@ def ogrinspect(*args, **kwargs):
     return "\n".join(_ogrinspect(*args, **kwargs))
 
 
+# ogrinspect 内部实现：逐字段映射 OGR 类型到 Django 字段
 def _ogrinspect(
     data_source,
     model_name,

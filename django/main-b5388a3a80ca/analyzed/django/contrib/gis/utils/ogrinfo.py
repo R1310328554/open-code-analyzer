@@ -1,4 +1,7 @@
 """
+OGR 数据源结构检查工具，输出类似 ogrinfo 命令行的摘要信息。
+
+This module includes some utility functions for inspecting the layout"""
 This module includes some utility functions for inspecting the layout
 of a GDAL data source -- the functionality is analogous to the output
 produced by the `ogrinfo` utility.
@@ -8,6 +11,7 @@ from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.gdal.geometries import GEO_CLASSES
 
 
+# 遍历图层并打印前 num_features 条要素的字段信息
 def ogrinfo(data_source, num_features=10):
     """
     Walk the available layers in the supplied `data_source`, displaying
