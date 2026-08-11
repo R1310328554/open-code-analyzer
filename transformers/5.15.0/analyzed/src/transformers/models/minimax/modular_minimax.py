@@ -52,8 +52,12 @@ from ..mixtral.modeling_mixtral import (
 logger = logging.get_logger(__name__)
 
 
+# MiniMax modular 源：Mixtral MoE + Mamba2 Lightning 注意力因果 LM 实现
+
+# MiniMaxConfig：MiniMaxAI/MiniMax-Text-01 混合 MoE + Lightning 注意力默认超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-Text-01-hf")
 @strict
+# MiniMaxConfig：MiniMaxAI/MiniMax-Text-01 混合 MoE + Lightning 注意力默认超参
 class MiniMaxConfig(PreTrainedConfig):
     r"""
     block_size (`int`, *optional*, defaults to 256):
@@ -156,10 +160,12 @@ class MiniMaxConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MiniMaxRMSNorm：MiniMax RMS 层归一化（等价 T5LayerNorm）
 class MiniMaxRMSNorm(MixtralRMSNorm):
     pass
 
 
+# MiniMaxCache：MiniMax 动态 KV 缓存，额外存储 Lightning 注意力线性缓存
 class MiniMaxCache(DynamicCache):
     def __init__(self):
         super().__init__()
@@ -197,6 +203,7 @@ class MiniMaxCache(DynamicCache):
         raise RuntimeError("MiniMaxCache does not support `crop` method")
 
 
+# MiniMaxLightningAttention：MiniMax Lightning 线性注意力（块内/块间混合）
 class MiniMaxLightningAttention(nn.Module):
     def __init__(self, config: MiniMaxConfig, layer_idx: int):
         super().__init__()
@@ -341,22 +348,27 @@ class MiniMaxLightningAttention(nn.Module):
         return attn_output, attn_weights_inter
 
 
+# MiniMaxRotaryEmbedding：MiniMax 旋转位置编码（RoPE）
 class MiniMaxRotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# MiniMaxAttention：MiniMax 标准多头因果自注意力（含滑动窗口）
 class MiniMaxAttention(MixtralAttention):
     pass
 
 
+# MiniMaxTopKRouter：MiniMax MoE top-k 专家路由器
 class MiniMaxTopKRouter(MixtralTopKRouter):
     pass
 
 
+# MiniMaxSparseMoeBlock：MiniMax 稀疏 MoE 层（路由 + 专家 FFN）
 class MiniMaxSparseMoeBlock(MixtralSparseMoeBlock):
     pass
 
 
+# MiniMaxDecoderLayer：MiniMax 解码器单层（Lightning/标准注意力 + MoE FFN）
 class MiniMaxDecoderLayer(MixtralDecoderLayer, GradientCheckpointingLayer):
     def __init__(self, config: MiniMaxConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -406,6 +418,7 @@ class MiniMaxDecoderLayer(MixtralDecoderLayer, GradientCheckpointingLayer):
         return hidden_states
 
 
+# MiniMaxPreTrainedModel：MiniMax 预训练基类与权重初始化
 class MiniMaxPreTrainedModel(MixtralPreTrainedModel):
     _can_compile_fullgraph = False  # uses a non-compilable custom cache class MiniMaxCache
     _can_record_outputs = {
@@ -425,6 +438,7 @@ class MiniMaxPreTrainedModel(MixtralPreTrainedModel):
             init.copy_(module.diagonal_decay, diagonal_decay)
 
 
+# MiniMaxModel：MiniMax MoE Transformer 解码器主干
 class MiniMaxModel(MixtralModel):
     @merge_with_config_defaults
     @capture_outputs
@@ -494,6 +508,7 @@ class MiniMaxModel(MixtralModel):
         )
 
 
+# MiniMaxForCausalLM：MiniMax 因果语言建模条件生成
 class MiniMaxForCausalLM(MixtralForCausalLM):
     def forward(self, **super_kwargs):
         r"""
@@ -521,14 +536,17 @@ class MiniMaxForCausalLM(MixtralForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# MiniMaxForSequenceClassification：MiniMax 序列分类
 class MiniMaxForSequenceClassification(MixtralForSequenceClassification):
     pass
 
 
+# MiniMaxForTokenClassification：MiniMax 词元分类
 class MiniMaxForTokenClassification(MixtralForTokenClassification):
     pass
 
 
+# MiniMaxForQuestionAnswering：MiniMax 抽取式问答
 class MiniMaxForQuestionAnswering(MixtralForQuestionAnswering):
     pass
 

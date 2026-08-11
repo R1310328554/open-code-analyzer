@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# MiniMax 配置：MiniMax-Text-01 混合 MoE + Lightning 注意力超参
+
+# MiniMaxConfig：MiniMaxAI/MiniMax-Text-01 混合 MoE + Lightning 注意力默认超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-Text-01-hf")
 @strict
+# MiniMaxConfig：MiniMaxAI/MiniMax-Text-01 混合 MoE + Lightning 注意力默认超参
 class MiniMaxConfig(PreTrainedConfig):
     r"""
     block_size (`int`, *optional*, defaults to 256):

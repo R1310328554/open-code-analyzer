@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# MiniMax-M2 配置：MoE 因果语言模型默认超参
+
+# MiniMaxM2Config：MiniMax-M2 MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-Text-01-hf")
 @strict
+# MiniMaxM2Config：MiniMax-M2 MoE 因果语言模型默认超参
 class MiniMaxM2Config(PreTrainedConfig):
     r"""
     Example:

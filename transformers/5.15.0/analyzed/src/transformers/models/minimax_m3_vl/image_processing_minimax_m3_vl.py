@@ -32,6 +32,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# MiniMax-M3-VL 图像预处理：动态分辨率缩放与 patch 合并
+
+# MiniMaxM3VLImageProcessorKwargs：MiniMax-M3-VL 图像处理器可选参数字典类型
 class MiniMaxM3VLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -53,6 +56,7 @@ class MiniMaxM3VLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：MiniMax-M3-VL 按像素预算智能缩放图像尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -83,6 +87,7 @@ def smart_resize(
 
 
 @auto_docstring
+# MiniMaxM3VLImageProcessor：MiniMax-M3-VL 动态分辨率图像预处理（patch 合并）
 class MiniMaxM3VLImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

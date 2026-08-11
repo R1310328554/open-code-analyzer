@@ -50,6 +50,9 @@ from ...vision_utils import get_vision_position_ids
 from .configuration_minimax_m3_vl import MiniMaxM3VLConfig, MiniMaxM3VLTextConfig, MiniMaxM3VLVisionConfig
 
 
+# MiniMax-M3-VL 建模：视觉塔 + 稀疏/稠密混合 MoE 文本骨干（由 modular 自动生成）
+
+# MiniMaxM3VLSparseCacheLayer：MiniMax-M3-VL 稀疏索引注意力动态缓存层
 class MiniMaxM3VLSparseCacheLayer(DynamicLayer):
     _layer_type = "minimax_m3_sparse"
 
@@ -90,6 +93,7 @@ class MiniMaxM3VLSparseCacheLayer(DynamicLayer):
         self.idx_keys = self.idx_keys[..., : -abs(tokens_to_remove), :]
 
 
+# MiniMaxM3VLSparseStaticCacheLayer：MiniMax-M3-VL 稀疏索引注意力静态缓存层
 class MiniMaxM3VLSparseStaticCacheLayer(StaticLayer):
     _layer_type = "minimax_m3_sparse"
 
@@ -139,6 +143,7 @@ class MiniMaxM3VLSparseStaticCacheLayer(StaticLayer):
             self.idx_keys = self.idx_keys.index_select(0, beam_idx.to(self.idx_keys.device))
 
 
+# MiniMaxM3VLRMSNorm：MiniMax-M3-VL RMS 层归一化
 class MiniMaxM3VLRMSNorm(nn.Module):
     """Gemma-style RMSNorm: normalizes in fp32 and scales by `weight + 1`."""
 
@@ -161,6 +166,7 @@ class MiniMaxM3VLRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# MiniMaxM3VLDenseMLP：MiniMax-M3-VL 稠密 SwiGLU-OAI 前馈 MLP 子层
 class MiniMaxM3VLDenseMLP(nn.Module):
     def __init__(self, config: MiniMaxM3VLTextConfig, intermediate_size: int | None = None):
         super().__init__()
@@ -180,6 +186,7 @@ class MiniMaxM3VLDenseMLP(nn.Module):
 
 
 @use_experts_implementation
+# MiniMaxM3VLExperts：MiniMax-M3-VL MoE 多专家 FFN 并行计算模块
 class MiniMaxM3VLExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -220,6 +227,7 @@ class MiniMaxM3VLExperts(nn.Module):
         return (up + 1.0) * glu
 
 
+# MiniMaxM3VLTopKRouter：MiniMax-M3-VL MoE top-k 专家路由器
 class MiniMaxM3VLTopKRouter(nn.Module):
     def __init__(self, config: MiniMaxM3VLTextConfig):
         super().__init__()
@@ -241,6 +249,7 @@ class MiniMaxM3VLTopKRouter(nn.Module):
         return router_logits, top_k_weights, top_k_index
 
 
+# MiniMaxM3VLSparseMoeBlock：MiniMax-M3-VL 稀疏 MoE 层（含共享专家）
 class MiniMaxM3VLSparseMoeBlock(nn.Module):
     def __init__(self, config: MiniMaxM3VLTextConfig):
         super().__init__()
@@ -264,6 +273,7 @@ class MiniMaxM3VLSparseMoeBlock(nn.Module):
         return hidden_states
 
 
+# MiniMaxM3VLRotaryEmbedding：MiniMax-M3-VL 文本 RoPE（部分 head 维度旋转）
 class MiniMaxM3VLRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MiniMaxM3VLConfig, device=None):
@@ -325,6 +335,7 @@ class MiniMaxM3VLRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -337,6 +348,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiniMax eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -362,6 +374,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -398,6 +411,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -405,6 +419,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# MiniMaxM3VLAttention：MiniMax-M3-VL Lightning 索引稀疏注意力
 class MiniMaxM3VLAttention(nn.Module):
     """
     M3 attention: per-head Gemma QK-norm + partial RoPE, optionally sparse indexer selection which require position IDs.
@@ -489,6 +504,7 @@ class MiniMaxM3VLAttention(nn.Module):
         return self.o_proj(attn_output), attn_weights
 
 
+# MiniMaxM3VLIndexer：MiniMax-M3-VL Lightning 索引器（块级 top-k 键选择）
 class MiniMaxM3VLIndexer(nn.Module):
     r"""Lightning Indexer for MiniMax M3 sparse attention.
 
@@ -635,6 +651,7 @@ class MiniMaxM3VLIndexer(nn.Module):
         return torch.zeros(keep.shape, dtype=dtype, device=device).masked_fill(~keep, min_dtype)
 
 
+# MiniMaxM3VLDecoderLayer：MiniMax-M3-VL 解码器单层（索引注意力 + 稠密/MoE FFN）
 class MiniMaxM3VLDecoderLayer(GradientCheckpointingLayer):
     """M3 decoder layer: per-layer dense/MoE MLP and dense/sparse attention."""
 
@@ -678,6 +695,7 @@ class MiniMaxM3VLDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiniMaxM3VLPreTrainedModel：MiniMax-M3-VL 预训练基类与权重初始化
 class MiniMaxM3VLPreTrainedModel(PreTrainedModel):
     config: MiniMaxM3VLConfig | MiniMaxM3VLTextConfig
     base_model_prefix = "model"
@@ -713,6 +731,7 @@ class MiniMaxM3VLPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MiniMaxM3VLTextModel：MiniMax-M3-VL 纯文本 MoE 解码器主干
 class MiniMaxM3VLTextModel(MiniMaxM3VLPreTrainedModel):
     config: MiniMaxM3VLTextConfig
 
@@ -792,6 +811,7 @@ class MiniMaxM3VLTextModel(MiniMaxM3VLPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MiniMax MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -875,6 +895,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# MiniMaxM3VLForCausalLM：MiniMax-M3-VL 文本因果语言建模
 class MiniMaxM3VLForCausalLM(MiniMaxM3VLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -979,6 +1000,7 @@ class MiniMaxM3VLForCausalLM(MiniMaxM3VLPreTrainedModel, GenerationMixin):
         )
 
 
+# MiniMaxM3VLVisionEmbeddings：MiniMax-M3-VL 3D patch 视觉嵌入
 class MiniMaxM3VLVisionEmbeddings(nn.Module):
     """Patch embedding, identical to [`Qwen2_5_VisionPatchEmbed`] (reads its dims from the vision
     config). The upstream checkpoint stores the conv as `patch_embedding`, renamed to the
@@ -1005,6 +1027,7 @@ class MiniMaxM3VLVisionEmbeddings(nn.Module):
         return hidden_states
 
 
+# MiniMaxM3VL3DRotaryEmbedding：MiniMax-M3-VL 视觉 3D RoPE（时空位置编码）
 class MiniMaxM3VL3DRotaryEmbedding(nn.Module):
     r"""3D RoPE for the vision tower: each patch is rotated by its `(T, H, W)` grid position.
 
@@ -1049,6 +1072,7 @@ class MiniMaxM3VL3DRotaryEmbedding(nn.Module):
         return emb.cos().to(dtype), emb.sin().to(dtype)
 
 
+# apply_rotary_pos_emb_vision：MiniMax-M3-VL 将 3D RoPE 应用到视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -1062,6 +1086,7 @@ def apply_rotary_pos_emb_vision(
     return torch.cat([q_rot, q_pass], dim=-1), torch.cat([k_rot, k_pass], dim=-1)
 
 
+# MiniMaxM3VLVisionAttention：MiniMax-M3-VL 视觉编码器多头自注意力
 class MiniMaxM3VLVisionAttention(nn.Module):
     """CLIP-style vision attention; the only difference from [`CLIPAttention`] is
     that queries and keys are rotated by the tower's 3D RoPE before the
@@ -1121,6 +1146,7 @@ class MiniMaxM3VLVisionAttention(nn.Module):
         return self.out_proj(attn_output), attn_weights
 
 
+# MiniMaxM3VLVisionMLP：MiniMax-M3-VL 视觉编码器 FFN 子层
 class MiniMaxM3VLVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1136,6 +1162,7 @@ class MiniMaxM3VLVisionMLP(nn.Module):
         return hidden_states
 
 
+# MiniMaxM3VLVisionEncoderLayer：MiniMax-M3-VL 视觉编码器单层（注意力 + MLP）
 class MiniMaxM3VLVisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiniMaxM3VLVisionConfig):
         super().__init__()
@@ -1170,6 +1197,7 @@ class MiniMaxM3VLVisionEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiniMaxM3VLVisionModel：MiniMax-M3-VL 视觉 Transformer 编码器堆叠
 class MiniMaxM3VLVisionModel(MiniMaxM3VLPreTrainedModel):
     """CLIP-like vision tower with Conv3d patch embed + 3D RoPE."""
 
@@ -1210,6 +1238,7 @@ class MiniMaxM3VLVisionModel(MiniMaxM3VLPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states, pooler_output=hidden_states[:, 0])
 
 
+# MiniMaxM3VLMultiModalProjector：MiniMax-M3-VL 视觉-语言特征投影层
 class MiniMaxM3VLMultiModalProjector(nn.Module):
     """Projects each vision patch from `vision_config.hidden_size` to `text_config.hidden_size`
     (GELU MLP), then groups `spatial_merge_size**2` neighbouring patches into the channel dim and
@@ -1238,6 +1267,7 @@ class MiniMaxM3VLMultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# MiniMaxM3VLModelOutputWithPast：MiniMax-M3-VL 多模态模型输出（含 past_key_values）
 class MiniMaxM3VLModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -1264,6 +1294,7 @@ class MiniMaxM3VLModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# MiniMaxM3VLCausalLMOutputWithPast：MiniMax-M3-VL 条件生成输出（含 logits 与 past）
 class MiniMaxM3VLCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1294,6 +1325,7 @@ class MiniMaxM3VLCausalLMOutputWithPast(ModelOutput):
 
 
 @auto_docstring(custom_intro="MiniMax M3 VL backbone (vision + projector + text), without LM head.")
+# MiniMaxM3VLModel：MiniMax-M3-VL 多模态主干（视觉塔 + 文本 LLM）
 class MiniMaxM3VLModel(MiniMaxM3VLPreTrainedModel):
     config: MiniMaxM3VLConfig
 
@@ -1440,6 +1472,7 @@ class MiniMaxM3VLModel(MiniMaxM3VLPreTrainedModel):
 
 
 @auto_docstring(custom_intro="MiniMax M3 VL full model with LM head (text + vision).")
+# MiniMaxM3SparseForConditionalGeneration：MiniMax-M3-VL 图文/视频条件生成
 class MiniMaxM3SparseForConditionalGeneration(MiniMaxM3VLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     config: MiniMaxM3VLConfig

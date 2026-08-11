@@ -43,6 +43,9 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_minimax_m2 import MiniMaxM2Config
 
 
+# MiniMax-M2 建模：MoE 解码器因果 LM（由 modular 自动生成）
+
+# MiniMaxM2TopKRouter：MiniMax-M2 MoE top-k 专家路由器
 class MiniMaxM2TopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -65,6 +68,7 @@ class MiniMaxM2TopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# MiniMaxM2Experts：MiniMax-M2 MoE 多专家 FFN 并行计算模块
 class MiniMaxM2Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -104,6 +108,7 @@ class MiniMaxM2Experts(nn.Module):
         return final_hidden_states
 
 
+# MiniMaxM2SparseMoeBlock：MiniMax-M2 稀疏 MoE 层（路由 + 专家 FFN）
 class MiniMaxM2SparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -125,6 +130,7 @@ class MiniMaxM2SparseMoeBlock(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# MiniMaxM2RMSNorm：MiniMax-M2 RMS 层归一化
 class MiniMaxM2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -145,6 +151,7 @@ class MiniMaxM2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MiniMaxM2RotaryEmbedding：MiniMax-M2 旋转位置编码（RoPE）
 class MiniMaxM2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MiniMaxM2Config, device=None):
@@ -204,6 +211,7 @@ class MiniMaxM2RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -216,6 +224,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiniMax eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -241,6 +250,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -277,6 +287,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -284,6 +295,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# MiniMaxM2Attention：MiniMax-M2 多头因果自注意力（FlexOlmo 变体）
 class MiniMaxM2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -348,6 +360,7 @@ class MiniMaxM2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# MiniMaxM2DecoderLayer：MiniMax-M2 解码器单层（注意力 + MoE FFN）
 class MiniMaxM2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiniMaxM2Config, layer_idx: int):
         super().__init__()
@@ -387,6 +400,7 @@ class MiniMaxM2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiniMaxM2PreTrainedModel：MiniMax-M2 预训练基类与权重初始化
 class MiniMaxM2PreTrainedModel(PreTrainedModel):
     config: MiniMaxM2Config
     base_model_prefix = "model"
@@ -419,6 +433,7 @@ class MiniMaxM2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MiniMaxM2Model：MiniMax-M2 MoE Transformer 解码器主干
 class MiniMaxM2Model(MiniMaxM2PreTrainedModel):
     def __init__(self, config: MiniMaxM2Config):
         super().__init__(config)
@@ -494,6 +509,7 @@ class MiniMaxM2Model(MiniMaxM2PreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MiniMax MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -577,6 +593,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# MiniMaxM2ForCausalLM：MiniMax-M2 因果语言建模条件生成
 class MiniMaxM2ForCausalLM(MiniMaxM2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

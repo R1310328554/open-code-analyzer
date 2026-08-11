@@ -45,8 +45,10 @@ from ..mixtral.modeling_mixtral import (
 )
 
 
+# MiniMaxM2Config：MiniMax-M2 MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-Text-01-hf")
 @strict
+# MiniMaxM2Config：MiniMax-M2 MoE 因果语言模型默认超参
 class MiniMaxM2Config(PreTrainedConfig):
     r"""
     Example:
@@ -117,6 +119,7 @@ class MiniMaxM2Config(PreTrainedConfig):
     rope_parameters: RopeParameters | dict | None = None
 
 
+# MiniMaxM2TopKRouter：MiniMax-M2 MoE top-k 专家路由器
 class MiniMaxM2TopKRouter(MixtralTopKRouter):
     def forward(self, hidden_states, e_score_correction_bias):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
@@ -131,10 +134,12 @@ class MiniMaxM2TopKRouter(MixtralTopKRouter):
         return router_logits, router_scores, top_k_index
 
 
+# MiniMaxM2Experts：MiniMax-M2 MoE 多专家 FFN 并行计算模块
 class MiniMaxM2Experts(MixtralExperts):
     pass
 
 
+# MiniMaxM2SparseMoeBlock：MiniMax-M2 稀疏 MoE 层（路由 + 专家 FFN）
 class MiniMaxM2SparseMoeBlock(MixtralSparseMoeBlock):
     def __init__(self, config):
         super().__init__()
@@ -151,15 +156,18 @@ class MiniMaxM2SparseMoeBlock(MixtralSparseMoeBlock):
         return hidden_states
 
 
+# MiniMaxM2RMSNorm：MiniMax-M2 RMS 层归一化
 class MiniMaxM2RMSNorm(MixtralRMSNorm):
     pass
 
 
+# MiniMaxM2RotaryEmbedding：MiniMax-M2 旋转位置编码（RoPE）
 class MiniMaxM2RotaryEmbedding(Glm4MoeRotaryEmbedding):
     pass
 
 
 @no_inherit_decorator
+# MiniMaxM2Attention：MiniMax-M2 多头因果自注意力（FlexOlmo 变体）
 class MiniMaxM2Attention(FlexOlmoAttention):
     def __init__(self, config: MiniMaxM2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -169,6 +177,7 @@ class MiniMaxM2Attention(FlexOlmoAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
 
 
+# MiniMaxM2PreTrainedModel：MiniMax-M2 预训练基类与权重初始化
 class MiniMaxM2PreTrainedModel(MixtralPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -183,6 +192,7 @@ class MiniMaxM2PreTrainedModel(MixtralPreTrainedModel):
             init.zeros_(module.e_score_correction_bias)
 
 
+# MiniMaxM2Model：MiniMax-M2 MoE Transformer 解码器主干
 class MiniMaxM2Model(MixtralModel):
     @merge_with_config_defaults
     @capture_outputs
@@ -242,6 +252,7 @@ class MiniMaxM2Model(MixtralModel):
         )
 
 
+# MiniMaxM2ForCausalLM：MiniMax-M2 因果语言建模条件生成
 class MiniMaxM2ForCausalLM(MixtralForCausalLM):
     pass
 

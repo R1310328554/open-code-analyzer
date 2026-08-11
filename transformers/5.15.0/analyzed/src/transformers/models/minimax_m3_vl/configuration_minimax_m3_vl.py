@@ -25,8 +25,12 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# MiniMax-M3-VL 配置：多模态视觉-语言模型超参
+
+# MiniMaxM3VLTextConfig：MiniMax-M3-VL 文本骨干（稀疏/稠密混合 MoE + Lightning 索引注意力）超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-M3-preview")
 @strict
+# MiniMaxM3VLTextConfig：MiniMax-M3-VL 文本骨干（稀疏/稠密混合 MoE + Lightning 索引注意力）超参
 class MiniMaxM3VLTextConfig(PreTrainedConfig):
     r"""
     dense_intermediate_size (`int`, *optional*, defaults to 12288):
@@ -154,8 +158,10 @@ class MiniMaxM3VLTextConfig(PreTrainedConfig):
             self.mlp_layer_types = ["sparse"] * self.num_hidden_layers
 
 
+# MiniMaxM3VLVisionConfig：MiniMax-M3-VL 视觉编码器超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-M3-preview")
 @strict
+# MiniMaxM3VLVisionConfig：MiniMax-M3-VL 视觉编码器超参
 class MiniMaxM3VLVisionConfig(PreTrainedConfig):
     r"""
     rope_parameters (`RopeParameters`, *optional*):
@@ -182,8 +188,10 @@ class MiniMaxM3VLVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# MiniMaxM3VLConfig：MiniMaxAI/MiniMax-M3-preview 多模态视觉-语言默认超参
 @auto_docstring(checkpoint="MiniMaxAI/MiniMax-M3-preview")
 @strict
+# MiniMaxM3VLConfig：MiniMaxAI/MiniMax-M3-preview 多模态视觉-语言默认超参
 class MiniMaxM3VLConfig(PreTrainedConfig):
     model_type = "minimax_m3_vl"
     sub_configs = {"text_config": AutoConfig, "vision_config": AutoConfig}

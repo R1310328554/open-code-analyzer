@@ -49,7 +49,10 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_minimax import MiniMaxConfig
 
 
+# MiniMax 建模：MoE + Lightning 注意力因果 LM（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# MiniMaxRMSNorm：MiniMax RMS 层归一化（等价 T5LayerNorm）
 class MiniMaxRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -70,6 +73,7 @@ class MiniMaxRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MiniMaxCache：MiniMax 动态 KV 缓存，额外存储 Lightning 注意力线性缓存
 class MiniMaxCache(DynamicCache):
     def __init__(self):
         super().__init__()
@@ -107,6 +111,7 @@ class MiniMaxCache(DynamicCache):
         raise RuntimeError("MiniMaxCache does not support `crop` method")
 
 
+# apply_mask_to_padding_states：将 padding 位置状态置零（Mamba2 辅助函数）
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -119,6 +124,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
     return hidden_states
 
 
+# MiniMaxLightningAttention：MiniMax Lightning 线性注意力（块内/块间混合）
 class MiniMaxLightningAttention(nn.Module):
     def __init__(self, config: MiniMaxConfig, layer_idx: int):
         super().__init__()
@@ -263,6 +269,7 @@ class MiniMaxLightningAttention(nn.Module):
         return attn_output, attn_weights_inter
 
 
+# MiniMaxRotaryEmbedding：MiniMax 旋转位置编码（RoPE）
 class MiniMaxRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MiniMaxConfig, device=None):
@@ -317,6 +324,7 @@ class MiniMaxRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -325,6 +333,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -350,6 +359,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -362,6 +372,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiniMax eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -388,6 +399,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# MiniMaxAttention：MiniMax 标准多头因果自注意力（含滑动窗口）
 class MiniMaxAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -447,6 +459,7 @@ class MiniMaxAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MiniMaxTopKRouter：MiniMax MoE top-k 专家路由器
 class MiniMaxTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -466,6 +479,7 @@ class MiniMaxTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# MiniMaxExperts：MiniMax MoE 多专家 FFN 并行计算模块
 class MiniMaxExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -505,6 +519,7 @@ class MiniMaxExperts(nn.Module):
         return final_hidden_states
 
 
+# MiniMaxSparseMoeBlock：MiniMax 稀疏 MoE 层（路由 + 专家 FFN）
 class MiniMaxSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -524,6 +539,7 @@ class MiniMaxSparseMoeBlock(nn.Module):
         return hidden_states
 
 
+# MiniMaxDecoderLayer：MiniMax 解码器单层（Lightning/标准注意力 + MoE FFN）
 class MiniMaxDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiniMaxConfig, layer_idx: int):
         super().__init__()
@@ -578,6 +594,7 @@ class MiniMaxDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiniMaxPreTrainedModel：MiniMax 预训练基类与权重初始化
 class MiniMaxPreTrainedModel(PreTrainedModel):
     config: MiniMaxConfig
     base_model_prefix = "model"
@@ -614,6 +631,7 @@ class MiniMaxPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MiniMaxModel：MiniMax MoE Transformer 解码器主干
 class MiniMaxModel(MiniMaxPreTrainedModel):
     def __init__(self, config: MiniMaxConfig):
         super().__init__(config)
@@ -699,6 +717,7 @@ class MiniMaxModel(MiniMaxPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MiniMax MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -782,6 +801,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# MiniMaxForCausalLM：MiniMax 因果语言建模条件生成
 class MiniMaxForCausalLM(MiniMaxPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -885,14 +905,17 @@ class MiniMaxForCausalLM(MiniMaxPreTrainedModel, GenerationMixin):
         )
 
 
+# MiniMaxForSequenceClassification：MiniMax 序列分类
 class MiniMaxForSequenceClassification(GenericForSequenceClassification, MiniMaxPreTrainedModel):
     pass
 
 
+# MiniMaxForTokenClassification：MiniMax 词元分类
 class MiniMaxForTokenClassification(GenericForTokenClassification, MiniMaxPreTrainedModel):
     pass
 
 
+# MiniMaxForQuestionAnswering：MiniMax 抽取式问答
 class MiniMaxForQuestionAnswering(GenericForQuestionAnswering, MiniMaxPreTrainedModel):
     pass
 

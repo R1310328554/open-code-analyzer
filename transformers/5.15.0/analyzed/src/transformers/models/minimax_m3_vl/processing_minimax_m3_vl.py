@@ -21,6 +21,9 @@ from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# MiniMax-M3-VL 处理器：图文/视频联合 token 化与占位符对齐
+
+# MiniMaxM3VLProcessorKwargs：MiniMax-M3-VL 多模态处理器可选参数字典类型
 class MiniMaxM3VLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "videos_kwargs": {"do_resize": False, "return_metadata": True},
@@ -28,6 +31,7 @@ class MiniMaxM3VLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# MiniMaxM3VLProcessor：MiniMax-M3-VL 图文/视频联合 token 化与占位符展开
 class MiniMaxM3VLProcessor(ProcessorMixin):
     """Combines tokenizer + image_processor + video_processor for MiniMax M3 VL.
 

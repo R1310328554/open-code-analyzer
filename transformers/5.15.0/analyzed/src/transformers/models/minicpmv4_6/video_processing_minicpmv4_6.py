@@ -43,10 +43,14 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# MiniCPM-V-4.6 视频预处理：帧采样、子帧拼接与高分辨率切片
+
+# ensure_divide：将长度对齐到 divisor 整数倍（至少为 divisor）
 def ensure_divide(length: int, divisor: int) -> int:
     return max(round(length / divisor) * divisor, divisor)
 
 
+# MiniCPMV4_6VideoProcessorKwargs：MiniCPM-V-4.6 视频处理器可选参数字典类型
 class MiniCPMV4_6VideoProcessorKwargs(VideosKwargs, total=False):
     r"""
     max_num_frames (`int`, *optional*, defaults to 128):
@@ -81,6 +85,7 @@ class MiniCPMV4_6VideoProcessorKwargs(VideosKwargs, total=False):
 
 
 @auto_docstring
+# MiniCPMV4_6VideoProcessor：MiniCPM-V-4.6 视频帧采样、子帧拼接与高分辨率切片预处理
 class MiniCPMV4_6VideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     do_resize = True
