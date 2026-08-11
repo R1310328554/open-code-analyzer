@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RegNet 配置：分组宽度、stage 深度与 X/Y 层类型选择
+
 
 
 @auto_docstring(checkpoint="facebook/regnet-y-040")
 @strict
+# RegNetConfig：RegNet 配置：stage 深度/宽度、分组与 X/Y 层类型
 class RegNetConfig(PreTrainedConfig):
     r"""
     groups_width (`int`, *optional*, defaults to 64):

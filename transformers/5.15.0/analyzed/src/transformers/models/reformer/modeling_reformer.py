@@ -35,6 +35,8 @@ from ...modeling_outputs import CausalLMOutput, MaskedLMOutput, QuestionAnswerin
 from ...modeling_utils import PreTrainedModel
 from ...pytorch_utils import apply_chunking_to_forward
 from ...utils import (
+# Reformer 建模：LSH 自注意力、局部窗口注意力与可逆编码器
+
     DUMMY_INPUTS,
     DUMMY_MASK,
     ModelOutput,
@@ -62,11 +64,13 @@ ReformerEncoderOutput = namedtuple(
 )
 
 
+# ReformerDynamicCache：Reformer 动态 KV 缓存：可逆层与 LSH 注意力状态
 class ReformerDynamicCache:
     """
     A dynamic cache that stores past buckets instead of key/values.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, _distributed_cache_data: Iterable | None = None) -> None:
         self._seen_tokens = 0  # Used in `generate` to keep tally of how many tokens the cache has seen
         self.buckets_cache: list[torch.Tensor] = []
@@ -148,6 +152,7 @@ class ReformerDynamicCache:
                 self.states_cache[layer_idx] = self.states_cache[layer_idx].index_select(0, beam_idx.to(device))
 
 
+# _stable_argsort：稳定 argsort：相等元素保持原始顺序
 def _stable_argsort(vector, dim):
     # this function scales the vector so that torch.argsort is stable.
     # torch.argsort is not stable on its own
@@ -157,6 +162,7 @@ def _stable_argsort(vector, dim):
     return torch.argsort(scaled_vector, dim=dim)
 
 
+# _get_least_common_mult_chunk_len：计算 LSH/局部注意力 chunk 最小公倍数
 def _get_least_common_mult_chunk_len(config):
     attn_types = config.attn_layers
     attn_types_set = set(attn_types)
@@ -173,6 +179,7 @@ def _get_least_common_mult_chunk_len(config):
         )
 
 
+# _get_min_chunk_len：推导注意力分块所需最小 chunk 长度
 def _get_min_chunk_len(config):
     attn_types = config.attn_layers
     attn_types_set = set(attn_types)
@@ -189,11 +196,13 @@ def _get_min_chunk_len(config):
         )
 
 
+# AxialPositionEmbeddings：轴向位置嵌入：2D 分解位置编码求和
 class AxialPositionEmbeddings(nn.Module):
     """
     Constructs axial position embeddings. Useful for very long input sequences to save memory and time.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.axial_pos_shape = config.axial_pos_shape
@@ -219,6 +228,7 @@ class AxialPositionEmbeddings(nn.Module):
             # create tensor and init
             self.weights.append(nn.Parameter(torch.ones(ax_shape, dtype=torch.float32)))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids):
         # broadcast weights to correct shape
         batch_size = position_ids.shape[0]
@@ -294,23 +304,28 @@ class AxialPositionEmbeddings(nn.Module):
         return position_encodings
 
 
+# PositionEmbeddings：位置嵌入包装：轴向或标准正弦位置编码
 class PositionEmbeddings(nn.Module):
     """Constructs conventional position embeddings of shape `[max_pos_embeddings, hidden_size]`."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dropout = config.hidden_dropout_prob
         self.embedding = nn.Embedding(config.max_position_embeddings, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids):
         position_embeddings = self.embedding(position_ids)
         position_embeddings = nn.functional.dropout(position_embeddings, p=self.dropout, training=self.training)
         return position_embeddings
 
 
+# ReformerEmbeddings：词嵌入 + 位置嵌入 + 层归一化
 class ReformerEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.max_position_embeddings = config.max_position_embeddings
@@ -321,6 +336,7 @@ class ReformerEmbeddings(nn.Module):
             AxialPositionEmbeddings(config) if config.axial_pos_embds else PositionEmbeddings(config)
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, position_ids=None, inputs_embeds=None, start_idx_pos_encodings=0):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -354,6 +370,7 @@ class ReformerEmbeddings(nn.Module):
         return embeddings
 
 
+# EfficientAttentionMixin：高效注意力混入：分块前向与内存优化工具
 class EfficientAttentionMixin:
     """
     A few utilities for nn.Modules in Reformer, to be used as a mixin.
@@ -412,7 +429,9 @@ class EfficientAttentionMixin:
             raise ValueError(f"Input vector rank should be one of [3, 4], but is: {len(vectors.shape)}")
 
 
+# LSHSelfAttention：LSH 自注意力：局部敏感哈希近似全注意力
 class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.config = config
@@ -444,6 +463,7 @@ class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
         self.mask_value_float16 = nn.Buffer(torch.tensor(-1e4), persistent=False)
         self.mask_value_float32 = nn.Buffer(torch.tensor(-1e9), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -1074,6 +1094,7 @@ class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
         return torch.gather(vectors, 2, expanded_idxs)
 
 
+# ReverseSort：自定义 autograd：稳定 argsort 的反向传播
 class ReverseSort(Function):
     """
     After chunked attention is applied which sorted clusters, original ordering has to be restored. Since customized
@@ -1081,6 +1102,7 @@ class ReverseSort(Function):
     """
 
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(ctx, out_vectors, logits, sorted_bucket_idx, undo_sorted_bucket_idx):
         # save sorted_bucket_idx for backprop
         with torch.no_grad():
@@ -1106,7 +1128,9 @@ class ReverseSort(Function):
         return grad_out_vectors, grad_logits, None, None
 
 
+# LocalSelfAttention：局部自注意力：固定窗口 chunk 内全连接
 class LocalSelfAttention(nn.Module, EfficientAttentionMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
 
@@ -1133,6 +1157,7 @@ class LocalSelfAttention(nn.Module, EfficientAttentionMixin):
         self.mask_value_float16 = nn.Buffer(torch.tensor(-1e4), persistent=False)
         self.mask_value_float32 = nn.Buffer(torch.tensor(-1e9), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -1329,7 +1354,9 @@ class LocalSelfAttention(nn.Module, EfficientAttentionMixin):
         return previous_hidden_states[:, start_position:]
 
 
+# ReformerSelfOutput：注意力输出投影：Dense + Dropout 残差前处理
 class ReformerSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         all_head_size = config.num_attention_heads * config.attention_head_size
@@ -1337,13 +1364,16 @@ class ReformerSelfOutput(nn.Module):
 
         self.dense = nn.Linear(all_head_size, config.hidden_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
         return hidden_states
 
 
+# ReformerAttention：注意力层：LSH 或 Local 自注意力 + 输出
 class ReformerAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.layer_id = layer_id
@@ -1368,6 +1398,7 @@ class ReformerAttention(nn.Module):
             )
         self.output = ReformerSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -1430,7 +1461,9 @@ class ReformerAttention(nn.Module):
         )
 
 
+# ReformerFeedForwardDense：FFN 第一层：扩展隐藏维度
 class ReformerFeedForwardDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dropout = config.hidden_dropout_prob
@@ -1442,6 +1475,7 @@ class ReformerFeedForwardDense(nn.Module):
 
         self.dense = nn.Linear(config.hidden_size, config.feed_forward_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
@@ -1449,20 +1483,25 @@ class ReformerFeedForwardDense(nn.Module):
         return hidden_states
 
 
+# ReformerFeedForwardOutput：FFN 输出层：投影回 hidden_size
 class ReformerFeedForwardOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dropout = config.hidden_dropout_prob
 
         self.dense = nn.Linear(config.feed_forward_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
         return hidden_states
 
 
+# ChunkReformerFeedForward：分块 FFN：按 chunk_size 降低内存峰值
 class ChunkReformerFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -1472,6 +1511,7 @@ class ChunkReformerFeedForward(nn.Module):
         self.dense = ReformerFeedForwardDense(config)
         self.output = ReformerFeedForwardOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, attention_output):
         return apply_chunking_to_forward(
             self.forward_chunk,
@@ -1486,7 +1526,9 @@ class ChunkReformerFeedForward(nn.Module):
         return self.output(hidden_states)
 
 
+# ReformerLayer：Reformer 层：注意力 + FFN，支持可逆模式
 class ReformerLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.attention = ReformerAttention(config, layer_id)
@@ -1532,6 +1574,7 @@ class ReformerLayer(nn.Module):
 
         torch.manual_seed(self.feed_forward_seed)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prev_attn_output,
@@ -1650,6 +1693,7 @@ class ReformerLayer(nn.Module):
         )
 
 
+# _ReversibleFunction：可逆层 autograd：前向/反向共享激活以省内存
 class _ReversibleFunction(Function):
     """
     To prevent PyTorch from performing the usual backpropagation, a customized backward function is implemented here.
@@ -1658,6 +1702,7 @@ class _ReversibleFunction(Function):
     """
 
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         ctx,
         hidden_states,
@@ -1757,7 +1802,9 @@ class _ReversibleFunction(Function):
         return grad_hidden_states, None, None, None, None, None, None, None, None, None, None, None
 
 
+# ReformerEncoder：编码器堆栈：多层 ReformerLayer 或可逆序列
 class ReformerEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dropout = config.hidden_dropout_prob
@@ -1767,6 +1814,7 @@ class ReformerEncoder(nn.Module):
         # Layer Norm is done over 2 * hidden_size
         self.layer_norm = nn.LayerNorm(2 * config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -1818,7 +1866,9 @@ class ReformerEncoder(nn.Module):
         )
 
 
+# ReformerOnlyLMHead：语言模型头：隐状态到词表 logits
 class ReformerOnlyLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         # Reformer is using Rev Nets, thus last layer outputs are concatenated and
@@ -1828,6 +1878,7 @@ class ReformerOnlyLMHead(nn.Module):
         self.decoder = nn.Linear(2 * config.hidden_size, config.vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         return apply_chunking_to_forward(self.forward_chunk, self.chunk_size_lm_head, self.seq_len_dim, hidden_states)
 
@@ -1837,6 +1888,7 @@ class ReformerOnlyLMHead(nn.Module):
 
 
 @auto_docstring
+# ReformerPreTrainedModel：Reformer 预训练基类：LSH 哈希种子与初始化
 class ReformerPreTrainedModel(PreTrainedModel):
     config: ReformerConfig
     base_model_prefix = "reformer"
@@ -1852,6 +1904,7 @@ class ReformerPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -1874,6 +1927,7 @@ class ReformerPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# ReformerModelOutput：Reformer 骨干输出：last_hidden_state 与可选隐状态
 class ReformerModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_predict, hidden_size)`):
@@ -1902,6 +1956,7 @@ class ReformerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# ReformerModelWithLMHeadOutput：带 LM 头输出：logits 与 past_key_values
 class ReformerModelWithLMHeadOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape *(1,)*, *optional*, returned when `labels` is provided):
@@ -1928,7 +1983,9 @@ class ReformerModelWithLMHeadOutput(ModelOutput):
 
 
 @auto_docstring
+# ReformerModel：Reformer 骨干：嵌入 + 可逆/标准编码器
 class ReformerModel(ReformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -1949,6 +2006,7 @@ class ReformerModel(ReformerPreTrainedModel):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -2147,7 +2205,9 @@ class ReformerModel(ReformerPreTrainedModel):
     Reformer Model with a `language modeling` head on top.
     """
 )
+# ReformerModelWithLMHead：带 LM 头模型：自回归文本生成
 class ReformerModelWithLMHead(ReformerPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         assert config.is_decoder, "If you want to use `ReformerModelWithLMHead` make sure that `is_decoder=True`."
@@ -2174,6 +2234,7 @@ class ReformerModelWithLMHead(ReformerPreTrainedModel, GenerationMixin):
         self.lm_head.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -2285,7 +2346,9 @@ class ReformerModelWithLMHead(ReformerPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# ReformerForMaskedLM：掩码语言模型：MLM 预训练任务头
 class ReformerForMaskedLM(ReformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         assert not config.is_decoder, (
@@ -2306,6 +2369,7 @@ class ReformerForMaskedLM(ReformerPreTrainedModel):
         self.lm_head.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -2423,7 +2487,9 @@ class ReformerForMaskedLM(ReformerPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# ReformerForSequenceClassification：序列分类：池化 + 线性分类器
 class ReformerForSequenceClassification(ReformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -2438,6 +2504,7 @@ class ReformerForSequenceClassification(ReformerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -2551,9 +2618,11 @@ class ReformerForSequenceClassification(ReformerPreTrainedModel):
         )
 
 
+# ReformerClassificationHead：分类头：Dense + tanh + 输出投影
 class ReformerClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(2 * config.hidden_size, config.hidden_size)
@@ -2563,6 +2632,7 @@ class ReformerClassificationHead(nn.Module):
         self.dropout = nn.Dropout(classifier_dropout)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, **kwargs):
         hidden_states = hidden_states[:, 0, :]  # take <s> token (equiv. to [CLS])
         hidden_states = self.dropout(hidden_states)
@@ -2574,7 +2644,9 @@ class ReformerClassificationHead(nn.Module):
 
 
 @auto_docstring
+# ReformerForQuestionAnswering：抽取式问答：span 起始/结束位置预测
 class ReformerForQuestionAnswering(ReformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -2587,6 +2659,7 @@ class ReformerForQuestionAnswering(ReformerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,

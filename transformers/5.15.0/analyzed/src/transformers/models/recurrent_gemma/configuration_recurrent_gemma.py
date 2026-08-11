@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# RecurrentGemma 配置：RG-LRU 宽度、block_types 与 logits soft-cap
+
 
 
 @auto_docstring(checkpoint="google/recurrentgemma-2b")
 @strict
+# RecurrentGemmaConfig：RecurrentGemma 配置：RG-LRU、block_types 与 RoPE 参数
 class RecurrentGemmaConfig(PreTrainedConfig):
     r"""
     lru_width (`int` or `None`, *optional*):

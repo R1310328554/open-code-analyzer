@@ -28,6 +28,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring, logging
 from .configuration_rag import RagConfig
 from .retrieval_rag import RagRetriever
+# RAG 建模：问题编码、文档检索上下文与序列/Token 级生成
+
 
 
 logger = logging.get_logger(__name__)
@@ -39,6 +41,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# RetrievAugLMMarginOutput：边际化 RAG 输出：对多文档 logits 求 log-sum-exp 聚合
 class RetrievAugLMMarginOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -131,6 +134,7 @@ class RetrievAugLMMarginOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# RetrievAugLMOutput：RAG 生成输出：检索文档分数、上下文与解码器隐状态
 class RetrievAugLMOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
@@ -228,6 +232,7 @@ class RetrievAugLMOutput(ModelOutput):
     """
 )
 @auto_docstring
+# RagPreTrainedModel：RAG 预训练基类：双编码器权重初始化与检索器挂载
 class RagPreTrainedModel(PreTrainedModel):
     config: RagConfig
     base_model_prefix = "rag"
@@ -369,7 +374,9 @@ class RagPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# RagModel：RAG 骨干：问题编码 + 检索上下文 + 生成器编码器
 class RagModel(RagPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -423,6 +430,7 @@ class RagModel(RagPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -660,7 +668,9 @@ class RagModel(RagPreTrainedModel):
     A RAG-sequence model implementation. It performs RAG-sequence specific marginalization in the forward pass.
     """
 )
+# RagSequenceForGeneration：序列级 RAG 生成：整句 beam search 与文档去重
 class RagSequenceForGeneration(RagPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -700,6 +710,7 @@ class RagSequenceForGeneration(RagPreTrainedModel):
         self.rag.ctx_encoder = ctx_encoder
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1099,7 +1110,9 @@ class RagSequenceForGeneration(RagPreTrainedModel):
     A RAG-token model implementation. It performs RAG-token specific marginalization in the forward pass.
     """
 )
+# RagTokenForGeneration：Token 级 RAG 生成：逐步解码与边际化损失
 class RagTokenForGeneration(RagPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -1225,6 +1238,7 @@ class RagTokenForGeneration(RagPreTrainedModel, GenerationMixin):
         return torch.logsumexp(log_prob_sum, dim=1)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

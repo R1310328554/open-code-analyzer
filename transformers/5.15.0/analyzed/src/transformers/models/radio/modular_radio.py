@@ -26,6 +26,8 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..dinov2.modeling_dinov2 import (
+# RADIO 视觉编码 modular 源：CPE 位置嵌入、DINOv2 层复用与摘要 token 聚合
+
     Dinov2Attention,
     Dinov2Layer,
     Dinov2LayerScale,
@@ -41,6 +43,7 @@ __all__ = ["RadioModel", "RadioPreTrainedModel"]
 
 
 @dataclass
+# RadioModelOutput：RADIO 输出：摘要嵌入、空间 patch 特征与完整隐状态
 class RadioModelOutput(ModelOutput):
     """Output of [`RadioModel`].
 
@@ -65,19 +68,23 @@ class RadioModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# RadioInputConditioner：输入归一化：float32 算术后 cast 回原始 dtype
 class RadioInputConditioner(nn.Module):
     """Normalizes pixel values; arithmetic is done in float32 then cast back."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.norm_mean = nn.Buffer(torch.tensor(config.norm_mean).view(-1, 1, 1), persistent=True)
         self.norm_std = nn.Buffer(torch.tensor(config.norm_std).view(-1, 1, 1), persistent=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         normalized = (pixel_values.float() - self.norm_mean.float()) / self.norm_std.float()
         return normalized.to(pixel_values.dtype)
 
 
+# RadioPatchEmbeddings：CPE Patch 嵌入：裁剪位置插值 + cls/register 前缀 token
 class RadioPatchEmbeddings(nn.Module):
     """Cropped Position Embedding (CPE) patch generator.
 
@@ -85,6 +92,7 @@ class RadioPatchEmbeddings(nn.Module):
     absolute position embedding, and prepends learned cls + register tokens.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.patch_size = config.patch_size
@@ -122,6 +130,7 @@ class RadioPatchEmbeddings(nn.Module):
             pos = F.interpolate(pos.float(), size=tuple(input_dims), mode="bilinear", align_corners=False).to(dtype)
         return pos.flatten(2).permute(0, 2, 1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         patches = self.patch_projection(self._image_to_patches(pixel_values))
         input_dims = (pixel_values.shape[-2] // self.patch_size, pixel_values.shape[-1] // self.patch_size)
@@ -130,27 +139,33 @@ class RadioPatchEmbeddings(nn.Module):
         return torch.cat([prefix, patches], dim=1)
 
 
+# RadioMLP：前馈子层：复用 DINOv2 MLP 结构
 class RadioMLP(Dinov2MLP):
     pass
 
 
+# RadioLayerScale：LayerScale：可学习逐通道缩放残差分支
 class RadioLayerScale(Dinov2LayerScale):
     pass
 
 
+# RadioSelfAttention：自注意力：复用 DINOv2 缩放点积注意力
 class RadioSelfAttention(Dinov2SelfAttention):
     pass
 
 
+# RadioAttention：注意力包装：自注意力 + 输出投影
 class RadioAttention(Dinov2Attention):
     pass
 
 
+# RadioLayer：Transformer 层：注意力 + MLP 残差堆叠
 class RadioLayer(Dinov2Layer):
     pass
 
 
 @auto_docstring
+# RadioPreTrainedModel：RADIO 预训练基类：权重初始化与输出录制
 class RadioPreTrainedModel(PreTrainedModel):
     config_class = RadioConfig
     base_model_prefix = "model"
@@ -166,6 +181,7 @@ class RadioPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         # Use `transformers.initialization` (not in-place `.data` ops) so the
         # framework's `_is_hf_initialized` guard skips already-loaded params.
@@ -189,7 +205,9 @@ class RadioPreTrainedModel(PreTrainedModel):
             init.copy_(module.summary_idxs, torch.tensor(self.config.summary_idxs, dtype=torch.long))
 
 
+# RadioEncoder：编码器堆栈：多层 RadioLayer 顺序前向
 class RadioEncoder(RadioPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__(config)
         self.layer = nn.ModuleList([RadioLayer(config) for _ in range(config.num_hidden_layers)])
@@ -197,6 +215,7 @@ class RadioEncoder(RadioPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> BaseModelOutput:
         for layer in self.layer:
             hidden_states = layer(hidden_states)
@@ -204,7 +223,9 @@ class RadioEncoder(RadioPreTrainedModel):
 
 
 @auto_docstring
+# RadioModel：RADIO 视觉骨干：归一化 → Patch 嵌入 → 编码 → 摘要聚合
 class RadioModel(RadioPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__(config)
         self.config = config
@@ -218,6 +239,7 @@ class RadioModel(RadioPreTrainedModel):
     def patch_size(self) -> int:
         return self.config.patch_size
 
+    # make_preprocessor_external：剥离输入归一化模块，由调用方自行预处理
     def make_preprocessor_external(self):
         """Detach the input conditioner (caller applies normalization itself)."""
         conditioner = self.input_conditioner
@@ -226,6 +248,7 @@ class RadioModel(RadioPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> RadioModelOutput:
         pixel_values = self.input_conditioner(pixel_values)
         hidden_states = self.embeddings(pixel_values)

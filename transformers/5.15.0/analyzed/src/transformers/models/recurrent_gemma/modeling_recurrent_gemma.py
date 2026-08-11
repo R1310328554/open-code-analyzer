@@ -35,6 +35,8 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_recurrent_gemma import RecurrentGemmaConfig
+# RecurrentGemma 建模：RG-LRU 循环块、局部注意力与因果 LM 生成
+
 
 
 logger = logging.get_logger(__name__)
@@ -42,7 +44,9 @@ _MAX_SQRT_GRADIENT = 1000.0
 
 
 # Copied from transformers.models.gemma.modeling_gemma.GemmaRMSNorm with Gemma->RecurrentGemma
+# RecurrentGemmaRMSNorm：RMS 层归一化：Gemma 风格 (1+weight) 缩放
 class RecurrentGemmaRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -51,6 +55,7 @@ class RecurrentGemmaRMSNorm(nn.Module):
     def _norm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         output = self._norm(x.float())
         # Llama does x.to(float16) * w whilst RecurrentGemma is (x * w).to(float16)
@@ -58,13 +63,16 @@ class RecurrentGemmaRMSNorm(nn.Module):
         output = output * (1.0 + self.weight.float())
         return output.type_as(x)
 
+    # extra_repr：模块 repr 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->RecurrentGemma
+# RecurrentGemmaRotaryEmbedding：旋转位置编码：标准 RoPE 逆频率与 cos/sin
 class RecurrentGemmaRotaryEmbedding(nn.Module):
     # Ignore copy
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RecurrentGemmaConfig, device=None):
         super().__init__()
         self.config = config
@@ -82,6 +90,7 @@ class RecurrentGemmaRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(
         config: RecurrentGemmaConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -104,6 +113,7 @@ class RecurrentGemmaRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -122,6 +132,7 @@ class RecurrentGemmaRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 辅助：向量后半取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -130,6 +141,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.gpt_neox.modeling_gpt_neox.apply_rotary_pos_emb
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 按位置旋转编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -167,6 +179,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 键值扩展：KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -180,6 +193,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -205,9 +219,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# RecurrentGemmaAttention：滑动窗口自注意力：GQA + RoPE 与局部因果掩码
 class RecurrentGemmaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RecurrentGemmaConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -228,6 +244,7 @@ class RecurrentGemmaAttention(nn.Module):
         self.o_proj = nn.Linear(self.num_attention_heads * self.head_dim, self.hidden_size, bias=True)
         self.rotary_emb = RecurrentGemmaRotaryEmbedding(config=config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -271,10 +288,12 @@ class RecurrentGemmaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SqrtBoundDerivative：自定义 autograd：sqrt 梯度上界裁剪稳定训练
 class SqrtBoundDerivative(torch.autograd.Function):
     """Computes a square root with a gradient clipped at `_MAX_SQRT_GRADIENT`."""
 
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(ctx, x: torch.Tensor) -> torch.Tensor:
         """The forward pass, which is a normal `sqrt`."""
         ctx.save_for_backward(x)
@@ -288,9 +307,11 @@ class SqrtBoundDerivative(torch.autograd.Function):
         return grad_output / torch.sqrt(clipped_x_times_4)
 
 
+# RecurrentGemmaRglru：RG-LRU 循环单元：门控线性循环与 1D 因果卷积
 class RecurrentGemmaRglru(nn.Module):
     """A Real-Gated Linear Recurrent Unit (RG-LRU) layer."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_attention_heads = config.num_attention_heads
@@ -308,6 +329,7 @@ class RecurrentGemmaRglru(nn.Module):
         self.recurrent_gate_bias = nn.Parameter(torch.empty([self.num_attention_heads, self.block_width]))
         self.recurrent_states = None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         activations: torch.Tensor,
@@ -399,9 +421,11 @@ class RecurrentGemmaRglru(nn.Module):
         return contextualized_states, recurrent_states
 
 
+# RecurrentGemmaRecurrentBlock：循环解码块：RG-LRU 替代标准自注意力
 class RecurrentGemmaRecurrentBlock(nn.Module):
     """Griffin and Hawk's recurrent block."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RecurrentGemmaConfig, layer_idx: int):
         super().__init__()
         self.lru_width = config.lru_width
@@ -422,6 +446,7 @@ class RecurrentGemmaRecurrentBlock(nn.Module):
 
         self.conv1d_state = None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_states: torch.Tensor,
@@ -479,7 +504,9 @@ class RecurrentGemmaRecurrentBlock(nn.Module):
 TEMPORAL_BLOCK_CLASSES = {"recurrent": RecurrentGemmaRecurrentBlock, "attention": RecurrentGemmaAttention}
 
 
+# RecurrentGemmaMlp：SwiGLU 前馈子层：gate/up/down 投影
 class RecurrentGemmaMlp(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -490,14 +517,17 @@ class RecurrentGemmaMlp(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.hidden_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         gate = self.act_fn(self.gate_proj(hidden_states))
         return self.down_proj(gate * self.up_proj(hidden_states))
 
 
+# RecurrentGemmaDecoderLayer：解码层：循环块或注意力 + MLP 残差
 class RecurrentGemmaDecoderLayer(GradientCheckpointingLayer):
     """Griffin and Hawk's residual block."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__()
         self.temporal_pre_norm = RecurrentGemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -505,6 +535,7 @@ class RecurrentGemmaDecoderLayer(GradientCheckpointingLayer):
         self.channel_pre_norm = RecurrentGemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.mlp_block = RecurrentGemmaMlp(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         activations: torch.Tensor,
@@ -536,6 +567,7 @@ class RecurrentGemmaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# RecurrentGemmaPreTrainedModel：RecurrentGemma 预训练基类：RG-LRU 权重初始化
 class RecurrentGemmaPreTrainedModel(PreTrainedModel):
     config: RecurrentGemmaConfig
     base_model_prefix = "model"
@@ -554,6 +586,7 @@ class RecurrentGemmaPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         std = math.sqrt(self.config.w_init_variance_scale / self.config.conv1d_width)
@@ -624,7 +657,9 @@ def _get_mask_sizes(self, query_length: int, layer_idx: int) -> tuple[int, int]:
 
 
 @auto_docstring
+# RecurrentGemmaModel：RecurrentGemma 骨干：交替循环/注意力层堆叠
 class RecurrentGemmaModel(RecurrentGemmaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RecurrentGemmaConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -644,6 +679,7 @@ class RecurrentGemmaModel(RecurrentGemmaPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -703,9 +739,11 @@ class RecurrentGemmaModel(RecurrentGemmaPreTrainedModel):
 
 # TODO: re-enable check: Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM with LLAMA->RECURRENTGEMMA,Llama->RecurrentGemma,llama->gemma
 @auto_docstring
+# RecurrentGemmaForCausalLM：因果语言模型：自回归生成与 logits soft-cap
 class RecurrentGemmaForCausalLM(RecurrentGemmaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = RecurrentGemmaModel(config)
@@ -718,6 +756,7 @@ class RecurrentGemmaForCausalLM(RecurrentGemmaPreTrainedModel, GenerationMixin):
     @can_return_tuple
     @auto_docstring
     # Ignore copy
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

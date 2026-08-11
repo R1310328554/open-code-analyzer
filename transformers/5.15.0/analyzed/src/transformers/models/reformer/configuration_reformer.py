@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Reformer 配置：LSH/局部注意力层序、轴向位置编码与分块 FFN
+
 
 
 @auto_docstring(checkpoint="google/reformer-crime-and-punishment")
 @strict
+# ReformerConfig：Reformer 配置：LSH/局部层序、轴向 PE 与分块参数
 class ReformerConfig(PreTrainedConfig):
     r"""
     attention_head_size (`int`, *optional*, defaults to 64):

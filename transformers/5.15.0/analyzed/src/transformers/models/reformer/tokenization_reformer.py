@@ -18,6 +18,8 @@ from tokenizers.models import BPE
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
+# Reformer BPE 分词器：SentencePiece 词表与 TokenizersBackend 封装
+
 
 
 logger = logging.get_logger(__name__)
@@ -28,6 +30,7 @@ SPIECE_UNDERLINE = "▁"
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model"}
 
 
+# ReformerTokenizer：Reformer BPE 分词：SentencePiece 词表与特殊 token
 class ReformerTokenizer(TokenizersBackend):
     """
     Construct a Reformer tokenizer (backed by HuggingFace's tokenizers library). Based on
@@ -67,6 +70,7 @@ class ReformerTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

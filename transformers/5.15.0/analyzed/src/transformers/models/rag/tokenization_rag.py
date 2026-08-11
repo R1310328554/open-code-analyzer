@@ -17,17 +17,22 @@ import os
 
 from ...utils import logging
 from .configuration_rag import RagConfig
+# RAG 分词器：问题编码器与生成器双 AutoTokenizer 联合封装
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# RagTokenizer：双分词器：问题编码器/生成器切换与联合保存加载
 class RagTokenizer:
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, question_encoder, generator):
         self.question_encoder = question_encoder
         self.generator = generator
         self.current_tokenizer = self.question_encoder
 
+    # save_pretrained：保存双分词器到 question_encoder/generator 子目录
     def save_pretrained(self, save_directory):
         if os.path.isfile(save_directory):
             raise ValueError(f"Provided path ({save_directory}) should be a directory, not a file")
@@ -38,6 +43,7 @@ class RagTokenizer:
         self.generator.save_pretrained(generator_path)
 
     @classmethod
+    # from_pretrained：从 Hub 或本地路径加载 RAG 双分词器
     def from_pretrained(cls, pretrained_model_name_or_path, **kwargs):
         # dynamically import AutoTokenizer
         from ..auto.tokenization_auto import AutoTokenizer
@@ -58,15 +64,19 @@ class RagTokenizer:
     def __call__(self, *args, **kwargs):
         return self.current_tokenizer(*args, **kwargs)
 
+    # batch_decode：批量 token id 解码为文本（使用生成器分词器）
     def batch_decode(self, *args, **kwargs):
         return self.generator.batch_decode(*args, **kwargs)
 
+    # decode：单条 token 序列解码为文本
     def decode(self, *args, **kwargs):
         return self.generator.decode(*args, **kwargs)
 
+    # _switch_to_input_mode：切换当前分词器为问题编码器模式
     def _switch_to_input_mode(self):
         self.current_tokenizer = self.question_encoder
 
+    # _switch_to_target_mode：切换当前分词器为生成器目标模式
     def _switch_to_target_mode(self):
         self.current_tokenizer = self.generator
 

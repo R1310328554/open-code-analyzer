@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto.configuration_auto import AutoConfig
+# RAG 配置：检索索引、文档拼接与问题编码器/生成器子配置
+
 
 
 @auto_docstring(checkpoint="")
 @strict
+# RagConfig：RAG 顶层配置：检索参数与 question/generator 子配置
 class RagConfig(PreTrainedConfig):
     r"""
     prefix (`str`, *optional*):

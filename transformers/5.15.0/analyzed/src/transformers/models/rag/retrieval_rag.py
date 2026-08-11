@@ -25,6 +25,8 @@ from ...tokenization_utils_base import BatchEncoding
 from ...utils import cached_file, is_datasets_available, is_faiss_available, logging, requires_backends, strtobool
 from .configuration_rag import RagConfig
 from .tokenization_rag import RagTokenizer
+# RAG 检索器：FAISS 索引封装、HF 数据集与文档上下文组装
+
 
 
 if is_datasets_available():
@@ -40,11 +42,13 @@ logger = logging.get_logger(__name__)
 LEGACY_INDEX_PATH = "https://storage.googleapis.com/huggingface-nlp/datasets/wiki_dpr/"
 
 
+# Index：检索索引抽象基类：文档查询、加载与 top-k 检索接口
 class Index:
     """
     A base class for the Indices encapsulated by the [`RagRetriever`].
     """
 
+    # get_doc_dicts：按 doc_id 返回文档 title/text 字典列表
     def get_doc_dicts(self, doc_ids: np.ndarray) -> list[dict]:
         """
         Returns a list of dictionaries, containing titles and text of the retrieved documents.
@@ -55,6 +59,7 @@ class Index:
         """
         raise NotImplementedError
 
+    # get_top_docs：批量查询向量检索 top-k 文档 id 与嵌入
     def get_top_docs(self, question_hidden_states: np.ndarray, n_docs=5) -> tuple[np.ndarray, np.ndarray]:
         """
         For each query in the batch, retrieves `n_docs` documents.
@@ -71,12 +76,14 @@ class Index:
         """
         raise NotImplementedError
 
+    # is_initialized：检查 faiss 索引是否已加载到内存
     def is_initialized(self):
         """
         Returns `True` if index is already initialized.
         """
         raise NotImplementedError
 
+    # init_index：一次性加载检索索引（分布式训练仅单 worker 执行）
     def init_index(self):
         """
         A function responsible for loading the index into memory. Should be called only once per training run of a RAG
@@ -86,6 +93,7 @@ class Index:
         raise NotImplementedError
 
 
+# LegacyIndex：DPR 遗留索引：反序列化 Facebook DPR faiss 索引文件
 class LegacyIndex(Index):
     """
     An index which can be deserialized from the files built using https://github.com/facebookresearch/DPR. We use
@@ -101,6 +109,7 @@ class LegacyIndex(Index):
     INDEX_FILENAME = "hf_bert_base.hnswSQ8_correct_phi_128.c_index"
     PASSAGE_FILENAME = "psgs_w100.tsv.pkl"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vector_size, index_path):
         requires_backends(self, ["faiss"])
         self.index_id_to_db_id = []
@@ -160,9 +169,11 @@ class LegacyIndex(Index):
             "Deserialized index_id_to_db_id should match faiss index size"
         )
 
+    # is_initialized：检查 faiss 索引是否已加载到内存
     def is_initialized(self):
         return self._index_initialized
 
+    # init_index：一次性加载检索索引（分布式训练仅单 worker 执行）
     def init_index(self):
         index = faiss.IndexHNSWFlat(self.vector_size + 1, 512)
         index.hnsw.efSearch = 128
@@ -171,6 +182,7 @@ class LegacyIndex(Index):
         self._deserialize_index()
         self._index_initialized = True
 
+    # get_doc_dicts：按 doc_id 返回文档 title/text 字典列表
     def get_doc_dicts(self, doc_ids: np.ndarray):
         doc_list = []
         for doc_ids_i in doc_ids:
@@ -185,6 +197,7 @@ class LegacyIndex(Index):
             doc_dicts.append(doc_dict)
         return doc_dicts
 
+    # get_top_docs：批量查询向量检索 top-k 文档 id 与嵌入
     def get_top_docs(self, question_hidden_states: np.ndarray, n_docs=5) -> tuple[np.ndarray, np.ndarray]:
         aux_dim = np.zeros(len(question_hidden_states), dtype="float32").reshape(-1, 1)
         query_nhsw_vectors = np.hstack((question_hidden_states, aux_dim))
@@ -194,7 +207,9 @@ class LegacyIndex(Index):
         return np.array(ids), np.array(vectors)
 
 
+# HFIndexBase：HuggingFace 索引基类：datasets 语料与 faiss 向量检索
 class HFIndexBase(Index):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vector_size, dataset, index_initialized=False):
         requires_backends(self, ["faiss"])
         self.vector_size = vector_size
@@ -218,15 +233,19 @@ class HFIndexBase(Index):
                 "or `dataset.load_faiss_index` to load one from the disk."
             )
 
+    # init_index：一次性加载检索索引（分布式训练仅单 worker 执行）
     def init_index(self):
         raise NotImplementedError()
 
+    # is_initialized：检查 faiss 索引是否已加载到内存
     def is_initialized(self):
         return self._index_initialized
 
+    # get_doc_dicts：按 doc_id 返回文档 title/text 字典列表
     def get_doc_dicts(self, doc_ids: np.ndarray) -> list[dict]:
         return [self.dataset[doc_ids[i].tolist()] for i in range(doc_ids.shape[0])]
 
+    # get_top_docs：批量查询向量检索 top-k 文档 id 与嵌入
     def get_top_docs(self, question_hidden_states: np.ndarray, n_docs=5) -> tuple[np.ndarray, np.ndarray]:
         _, ids = self.dataset.search_batch("embeddings", question_hidden_states, n_docs)
         docs = [self.dataset[[i for i in indices if i >= 0]] for indices in ids]
@@ -237,6 +256,7 @@ class HFIndexBase(Index):
         return np.array(ids), np.array(vectors)  # shapes (batch_size, n_docs) and (batch_size, n_docs, d)
 
 
+# CanonicalHFIndex：标准 HF 索引：从 Hub 下载 wiki_dpr 等预建索引
 class CanonicalHFIndex(HFIndexBase):
     """
     A wrapper around an instance of [`~datasets.Datasets`]. If `index_path` is set to `None`, we load the pre-computed
@@ -259,6 +279,7 @@ class CanonicalHFIndex(HFIndexBase):
             If True, use the dummy configuration of the dataset for tests.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vector_size: int,
@@ -288,6 +309,7 @@ class CanonicalHFIndex(HFIndexBase):
         )
         super().__init__(vector_size, dataset, index_initialized=False)
 
+    # init_index：一次性加载检索索引（分布式训练仅单 worker 执行）
     def init_index(self):
         if self.index_path is not None:
             logger.info(f"Loading index from {self.index_path}")
@@ -307,6 +329,7 @@ class CanonicalHFIndex(HFIndexBase):
         self._index_initialized = True
 
 
+# CustomHFIndex：自定义 HF 索引：本地 passages 与 index_path 加载
 class CustomHFIndex(HFIndexBase):
     """
     A wrapper around an instance of [`~datasets.Datasets`]. The dataset and the index are both loaded from the
@@ -321,6 +344,7 @@ class CustomHFIndex(HFIndexBase):
             The path to the serialized faiss index on disk.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vector_size: int, dataset, index_path=None):
         requires_backends(self, ["faiss"])
         super().__init__(vector_size, dataset, index_initialized=index_path is None)
@@ -337,6 +361,7 @@ class CustomHFIndex(HFIndexBase):
         dataset = load_from_disk(dataset_path)
         return cls(vector_size=vector_size, dataset=dataset, index_path=index_path)
 
+    # init_index：一次性加载检索索引（分布式训练仅单 worker 执行）
     def init_index(self):
         if not self.is_initialized():
             logger.info(f"Loading index from {self.index_path}")
@@ -344,6 +369,7 @@ class CustomHFIndex(HFIndexBase):
             self._index_initialized = True
 
 
+# RagRetriever：检索器：查询向量 → top-k 文档 → 拼接上下文 input_ids
 class RagRetriever:
     """
     Retriever used to get documents from vector queries. It retrieves the documents embeddings as well as the documents
@@ -398,6 +424,7 @@ class RagRetriever:
     >>> retriever = RagRetriever.from_pretrained("facebook/rag-sequence-nq", index_name="legacy")
     ```"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, question_encoder_tokenizer, generator_tokenizer, index=None, init_retrieval=True):
         self._init_retrieval = init_retrieval
         requires_backends(self, ["datasets"])
@@ -441,6 +468,7 @@ class RagRetriever:
             )
 
     @classmethod
+    # from_pretrained：从 Hub 或本地路径加载 RAG 双分词器
     def from_pretrained(cls, retriever_name_or_path, indexed_dataset=None, **kwargs):
         requires_backends(cls, ["datasets"])
         config = kwargs.pop("config", None) or RagConfig.from_pretrained(retriever_name_or_path, **kwargs)
@@ -459,6 +487,7 @@ class RagRetriever:
             index=index,
         )
 
+    # save_pretrained：保存双分词器到 question_encoder/generator 子目录
     def save_pretrained(self, save_directory):
         if isinstance(self.index, CustomHFIndex):
             if self.config.index_path is None:
