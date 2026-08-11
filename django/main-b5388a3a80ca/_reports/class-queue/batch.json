@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:51:26Z",
-  "files": [
-    "django/utils/encoding.py",
-    "django/utils/feedgenerator.py",
-    "django/utils/formats.py",
-    "django/utils/functional.py",
-    "django/utils/hashable.py",
-    "django/utils/html.py",
-    "django/utils/http.py",
-    "django/utils/inspect.py",
-    "django/utils/ipv6.py",
-    "django/utils/json.py",
-    "django/utils/log.py",
-    "django/utils/lorem_ipsum.py",
-    "django/utils/module_loading.py",
-    "django/utils/numberformat.py",
-    "django/utils/regex_helper.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 42,
-  "done": 885
+  "done": 900
 }
