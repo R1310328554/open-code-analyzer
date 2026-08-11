@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LED 配置：allenai/led-base-16384 长文档局部注意力编码器-解码器超参
+
+# LEDConfig：allenai/led-base-16384 长文档局部注意力 seq2seq 默认超参
 @auto_docstring(checkpoint="allenai/led-base-16384")
 @strict
+# LEDConfig：allenai/led-base-16384 长文档编码器-解码器 Transformer 超参（局部注意力窗口）
 class LEDConfig(PreTrainedConfig):
     r"""
     max_encoder_position_embeddings (`int`, *optional*, defaults to 16384):

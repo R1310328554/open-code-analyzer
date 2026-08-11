@@ -29,7 +29,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import auto_docstring
 
 
+# LeViT 图像预处理：Torchvision resize（shortest_edge×256/224）+ 归一化
+
 @auto_docstring
+# LevitImageProcessor：LeViT Torchvision 图像 resize + 归一化预处理
 class LevitImageProcessor(TorchvisionBackend):
     """Torchvision backend for LeViT with custom resize (shortest_edge * 256/224)."""
 

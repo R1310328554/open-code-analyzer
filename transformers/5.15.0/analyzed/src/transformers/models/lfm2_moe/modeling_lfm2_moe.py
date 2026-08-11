@@ -45,10 +45,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_lfm2_moe 由 modular_lfm2_moe.py 自动生成
 from .configuration_lfm2_moe import Lfm2MoeConfig
 
 
+# LFM2-MoE 建模：稀疏 Top-K MoE + 混合注意力/卷积解码器（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Lfm2MoeRMSNorm：LFM2-MoE RMS 层归一化
 class Lfm2MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -69,6 +73,7 @@ class Lfm2MoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Lfm2MoeRotaryEmbedding：LFM2-MoE 旋转位置编码（RoPE）
 class Lfm2MoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Lfm2MoeConfig, device=None):
@@ -123,6 +128,7 @@ class Lfm2MoeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Lfm2MoeMLP：LFM2-MoE 稠密前馈 MLP（浅层使用）
 class Lfm2MoeMLP(nn.Module):
     def __init__(self, config: Lfm2MoeConfig, intermediate_size: int | None = None):
         super().__init__()
@@ -137,6 +143,7 @@ class Lfm2MoeMLP(nn.Module):
 
 
 @use_experts_implementation
+# Lfm2MoeExperts：LFM2-MoE 多专家 FFN 参数组
 class Lfm2MoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -176,6 +183,7 @@ class Lfm2MoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Lfm2MoeTopKRouter：LFM2-MoE Top-K 路由门控（选择激活专家）
 class Lfm2MoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -203,6 +211,7 @@ class Lfm2MoeTopKRouter(nn.Module):
         return router_logits, routing_weights, selected_experts
 
 
+# Lfm2MoeSparseMoeBlock：LFM2-MoE 稀疏 MoE 块（路由 + 专家 FFN）
 class Lfm2MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -221,6 +230,7 @@ class Lfm2MoeSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -229,6 +239,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -254,6 +265,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -266,6 +278,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -292,6 +305,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Lfm2MoeAttention：LFM2-MoE 多头自注意力（RoPE + GQA）
 class Lfm2MoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -350,6 +364,7 @@ class Lfm2MoeAttention(nn.Module):
         return output, attn_weights
 
 
+# apply_mask_to_padding_states：将 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -363,6 +378,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积增量解码状态更新
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -383,6 +399,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积前向（带缓存）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -406,6 +423,7 @@ def causal_conv1d_fn(
 
 
 @use_kernelized_func([causal_conv1d_update, causal_conv1d_fn])
+# Lfm2MoeShortConv：LFM2-MoE 短因果卷积层
 class Lfm2MoeShortConv(nn.Module):
     def __init__(
         self,
@@ -474,6 +492,7 @@ class Lfm2MoeShortConv(nn.Module):
         return y
 
 
+# Lfm2MoeDecoderLayer：LFM2-MoE 解码器单层（注意力/卷积 + MoE/MLP）
 class Lfm2MoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Lfm2MoeConfig, layer_idx: int):
         super().__init__()
@@ -524,6 +543,7 @@ class Lfm2MoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Lfm2MoePreTrainedModel：LFM2-MoE 预训练基类与权重初始化
 class Lfm2MoePreTrainedModel(PreTrainedModel):
     config: Lfm2MoeConfig
     base_model_prefix = "model"
@@ -555,6 +575,7 @@ class Lfm2MoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Lfm2MoeModel：LFM2-MoE 稀疏专家因果解码器主干
 class Lfm2MoeModel(Lfm2MoePreTrainedModel):
     def __init__(self, config: Lfm2MoeConfig):
         super().__init__(config)
@@ -635,6 +656,7 @@ class Lfm2MoeModel(Lfm2MoePreTrainedModel):
 
 
 @auto_docstring
+# Lfm2MoeForCausalLM：LFM2-MoE 因果语言建模
 class Lfm2MoeForCausalLM(Lfm2MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

@@ -31,6 +31,8 @@ from ...utils import auto_docstring, logging
 from .configuration_levit import LevitConfig
 
 
+# LeViT 建模：卷积 patch 嵌入 + 多阶段轻量 Vision Transformer 图像分类
+
 logger = logging.get_logger(__name__)
 
 
@@ -40,6 +42,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# LevitForImageClassificationWithTeacherOutput：LeViT 蒸馏分类输出 dataclass
 class LevitForImageClassificationWithTeacherOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, config.num_labels)`):
@@ -58,6 +61,7 @@ class LevitForImageClassificationWithTeacherOutput(ModelOutput):
     hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# LevitConvEmbeddings：LeViT 初始卷积嵌入（降采样 + 通道扩展）
 class LevitConvEmbeddings(nn.Module):
     """
     LeViT Conv Embeddings with Batch Norm, used in the initial patch embedding layer.
@@ -78,6 +82,7 @@ class LevitConvEmbeddings(nn.Module):
         return embeddings
 
 
+# LevitPatchEmbeddings：LeViT 分块嵌入（卷积 patchify）
 class LevitPatchEmbeddings(nn.Module):
     """
     LeViT patch embeddings, for final embeddings to be passed to transformer blocks. It consists of multiple
@@ -122,6 +127,7 @@ class LevitPatchEmbeddings(nn.Module):
         return embeddings.flatten(2).transpose(1, 2)
 
 
+# MLPLayerWithBN：LeViT 带 BatchNorm 的 MLP 层
 class MLPLayerWithBN(nn.Module):
     def __init__(self, input_dim, output_dim, bn_weight_init=1):
         super().__init__()
@@ -134,6 +140,7 @@ class MLPLayerWithBN(nn.Module):
         return hidden_state
 
 
+# LevitSubsample：LeViT 空间下采样（stride 卷积）
 class LevitSubsample(nn.Module):
     def __init__(self, stride, resolution):
         super().__init__()
@@ -148,6 +155,7 @@ class LevitSubsample(nn.Module):
         return hidden_state
 
 
+# LevitAttention：LeViT 多头自注意力（无 LayerNorm 前置）
 class LevitAttention(nn.Module):
     def __init__(self, hidden_sizes, key_dim, num_attention_heads, attention_ratio, resolution):
         super().__init__()
@@ -210,6 +218,7 @@ class LevitAttention(nn.Module):
         return hidden_state
 
 
+# LevitAttentionSubsample：LeViT 带下采样的注意力层
 class LevitAttentionSubsample(nn.Module):
     def __init__(
         self,
@@ -294,6 +303,7 @@ class LevitAttentionSubsample(nn.Module):
         return hidden_state
 
 
+# LevitMLPLayer：LeViT MLP 前馈层（GELU 激活）
 class LevitMLPLayer(nn.Module):
     """
     MLP Layer with `2X` expansion in contrast to ViT with `4X`.
@@ -312,6 +322,7 @@ class LevitMLPLayer(nn.Module):
         return hidden_state
 
 
+# LevitResidualLayer：LeViT 残差连接封装
 class LevitResidualLayer(nn.Module):
     """
     Residual Block for LeViT
@@ -333,6 +344,7 @@ class LevitResidualLayer(nn.Module):
             return hidden_state
 
 
+# LevitStage：LeViT 单阶段堆叠（注意力 + MLP 块）
 class LevitStage(nn.Module):
     """
     LeViT Stage consisting of `LevitMLPLayer` and `LevitAttention` layers.
@@ -402,6 +414,7 @@ class LevitStage(nn.Module):
         return hidden_state
 
 
+# LevitEncoder：LeViT 多阶段视觉编码器
 class LevitEncoder(nn.Module):
     """
     LeViT Encoder consisting of multiple `LevitStage` stages.
@@ -448,6 +461,7 @@ class LevitEncoder(nn.Module):
         return BaseModelOutputWithNoAttention(last_hidden_state=hidden_state, hidden_states=all_hidden_states)
 
 
+# LevitClassificationLayer：LeViT 分类头（全局池化 + 线性层）
 class LevitClassificationLayer(nn.Module):
     """
     LeViT Classification Layer
@@ -465,6 +479,7 @@ class LevitClassificationLayer(nn.Module):
 
 
 @auto_docstring
+# LevitPreTrainedModel：LeViT 预训练基类与权重初始化
 class LevitPreTrainedModel(PreTrainedModel):
     config: LevitConfig
     base_model_prefix = "levit"
@@ -486,6 +501,7 @@ class LevitPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LevitModel：LeViT 轻量 Vision Transformer 主干
 class LevitModel(LevitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -539,6 +555,7 @@ class LevitModel(LevitPreTrainedModel):
     ImageNet.
     """
 )
+# LevitForImageClassification：LeViT 图像分类
 class LevitForImageClassification(LevitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -602,6 +619,7 @@ class LevitForImageClassification(LevitPreTrainedModel):
            supported.
     """
 )
+# LevitForImageClassificationWithTeacher：LeViT 带教师蒸馏的图像分类
 class LevitForImageClassificationWithTeacher(LevitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

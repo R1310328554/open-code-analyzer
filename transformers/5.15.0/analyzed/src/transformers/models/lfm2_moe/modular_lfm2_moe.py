@@ -40,14 +40,19 @@ from .configuration_lfm2_moe import Lfm2MoeConfig
 logger = logging.get_logger(__name__)
 
 
+# LFM2-MoE modular 源：复用 LFM2/Mixtral/Qwen2-MoE 组件构建稀疏专家因果 LM
+
+# Lfm2MoeRMSNorm：LFM2-MoE RMS 层归一化
 class Lfm2MoeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Lfm2MoeRotaryEmbedding：LFM2-MoE 旋转位置编码（RoPE）
 class Lfm2MoeRotaryEmbedding(Lfm2RotaryEmbedding):
     pass
 
 
+# Lfm2MoeMLP：LFM2-MoE 稠密前馈 MLP（浅层使用）
 class Lfm2MoeMLP(Lfm2MLP):
     def __init__(self, config: Lfm2MoeConfig, intermediate_size: int | None = None):
         nn.Module.__init__(self)
@@ -58,12 +63,14 @@ class Lfm2MoeMLP(Lfm2MLP):
         self.w2 = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# Lfm2MoeExperts：LFM2-MoE 多专家 FFN 参数组
 class Lfm2MoeExperts(Qwen2MoeExperts):
     def __init__(self, config):
         super().__init__(config)
         self.act_fn = F.silu
 
 
+# Lfm2MoeTopKRouter：LFM2-MoE Top-K 路由门控（选择激活专家）
 class Lfm2MoeTopKRouter(Qwen2MoeTopKRouter):
     def __init__(self, config):
         super().__init__(config)
@@ -86,6 +93,7 @@ class Lfm2MoeTopKRouter(Qwen2MoeTopKRouter):
         return router_logits, routing_weights, selected_experts
 
 
+# Lfm2MoeSparseMoeBlock：LFM2-MoE 稀疏 MoE 块（路由 + 专家 FFN）
 class Lfm2MoeSparseMoeBlock(Qwen3MoeSparseMoeBlock):
     def __init__(self, config):
         super().__init__(config)
@@ -102,14 +110,17 @@ class Lfm2MoeSparseMoeBlock(Qwen3MoeSparseMoeBlock):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# Lfm2MoeAttention：LFM2-MoE 多头自注意力（RoPE + GQA）
 class Lfm2MoeAttention(Lfm2Attention):
     pass
 
 
+# Lfm2MoeShortConv：LFM2-MoE 短因果卷积层
 class Lfm2MoeShortConv(Lfm2ShortConv):
     pass
 
 
+# Lfm2MoeDecoderLayer：LFM2-MoE 解码器单层（注意力/卷积 + MoE/MLP）
 class Lfm2MoeDecoderLayer(Lfm2DecoderLayer):
     def __init__(self, config: Lfm2MoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -120,6 +131,7 @@ class Lfm2MoeDecoderLayer(Lfm2DecoderLayer):
         )
 
 
+# Lfm2MoePreTrainedModel：LFM2-MoE 预训练基类与权重初始化
 class Lfm2MoePreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -134,6 +146,7 @@ class Lfm2MoePreTrainedModel(LlamaPreTrainedModel):
                 init.zeros_(module.expert_bias)
 
 
+# Lfm2MoeModel：LFM2-MoE 稀疏专家因果解码器主干
 class Lfm2MoeModel(MixtralModel):
     def __init__(self, config: Lfm2MoeConfig):
         super().__init__(config)
@@ -201,6 +214,7 @@ class Lfm2MoeModel(MixtralModel):
         )
 
 
+# Lfm2MoeForCausalLM：LFM2-MoE 因果语言建模
 class Lfm2MoeForCausalLM(LlamaForCausalLM):
     pass
 

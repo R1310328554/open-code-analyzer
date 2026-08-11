@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LeViT 配置：facebook/levit-128S 轻量 Vision Transformer 图像分类超参
+
+# LevitConfig：facebook/levit-128S 轻量 ViT 图像分类默认超参
 @auto_docstring(checkpoint="facebook/levit-128S")
 @strict
+# LevitConfig：facebook/levit-128S 轻量 Vision Transformer 超参
 class LevitConfig(PreTrainedConfig):
     r"""
     stride (`int`, *optional*, defaults to 2):

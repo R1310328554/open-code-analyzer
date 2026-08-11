@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# LFM2 配置：LiquidAI/LFM2-1.2B 混合注意力与短卷积因果语言模型超参
+
+# Lfm2Config：LiquidAI/LFM2-1.2B 混合注意力+短卷积因果 LM 默认超参
 @auto_docstring(checkpoint="LiquidAI/LFM2-1.2B")
 @strict
+# Lfm2Config：LiquidAI/LFM2-1.2B 混合注意力+短卷积因果语言模型超参
 class Lfm2Config(PreTrainedConfig):
     r"""
     conv_bias (`bool`, *optional*, defaults to `False`):

@@ -32,9 +32,12 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_led import LEDConfig
 
 
+# LED 建模：Longformer 风格局部注意力 + 因果解码器 seq2seq 长文档理解
+
 logger = logging.get_logger(__name__)
 
 
+# shift_tokens_right：将 decoder 输入右移一位并插入起始 token
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -51,6 +54,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# _prepare_4d_attention_mask_inverted：构建反转的 4D 注意力掩码（LED 局部窗口）
 def _prepare_4d_attention_mask_inverted(mask: torch.Tensor, dtype: torch.dtype, tgt_len: int | None = None):
     """
     Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
@@ -69,6 +73,7 @@ def _prepare_4d_attention_mask_inverted(mask: torch.Tensor, dtype: torch.dtype, 
     return expanded_attention_mask
 
 
+# LEDLearnedPositionalEmbedding：LED 可学习绝对位置嵌入
 class LEDLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -87,6 +92,7 @@ class LEDLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.longformer.modeling_longformer.LongformerSelfAttention with Longformer->LEDEncoder
+# LEDEncoderSelfAttention：LED 编码器局部窗口自注意力（Longformer 风格）
 class LEDEncoderSelfAttention(nn.Module):
     def __init__(self, config, layer_id):
         super().__init__()
@@ -701,6 +707,7 @@ class LEDEncoderSelfAttention(nn.Module):
         return global_attn_output, global_attn_probs
 
 
+# LEDEncoderAttention：LED 编码器注意力子层封装
 class LEDEncoderAttention(nn.Module):
     def __init__(self, config, layer_id):
         super().__init__()
@@ -733,6 +740,7 @@ class LEDEncoderAttention(nn.Module):
         return outputs
 
 
+# LEDDecoderAttention：LED 解码器因果自注意力 + 交叉注意力
 class LEDDecoderAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -868,6 +876,7 @@ class LEDDecoderAttention(nn.Module):
         return attn_output, attn_weights_reshaped, past_key_values
 
 
+# LEDEncoderLayer：LED 编码器单层（局部自注意力 + FFN）
 class LEDEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: LEDConfig, layer_id: int):
         super().__init__()
@@ -924,6 +933,7 @@ class LEDEncoderLayer(GradientCheckpointingLayer):
         return (hidden_states,) + attn_outputs[1:]
 
 
+# LEDDecoderLayer：LED 解码器单层（自注意力 + 交叉注意力 + FFN）
 class LEDDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: LEDConfig, layer_idx=None):
         super().__init__()
@@ -1027,6 +1037,7 @@ class LEDDecoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# LEDClassificationHead：LED 序列分类头（池化 + 线性层）
 class LEDClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1052,6 +1063,7 @@ class LEDClassificationHead(nn.Module):
 
 
 @auto_docstring
+# LEDPreTrainedModel：LED 预训练基类与权重初始化
 class LEDPreTrainedModel(PreTrainedModel):
     config: LEDConfig
     base_model_prefix = "led"
@@ -1080,6 +1092,7 @@ class LEDPreTrainedModel(PreTrainedModel):
 )
 @dataclass
 # Copied from transformers.models.longformer.modeling_longformer.LongformerBaseModelOutput with Longformer->LEDEncoder
+# LEDEncoderBaseModelOutput：LED 编码器输出 dataclass
 class LEDEncoderBaseModelOutput(ModelOutput):
     r"""
     attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
@@ -1119,6 +1132,7 @@ class LEDEncoderBaseModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LEDSeq2SeqModelOutput：LED 编解码器联合输出 dataclass
 class LEDSeq2SeqModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -1157,6 +1171,7 @@ class LEDSeq2SeqModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LEDSeq2SeqLMOutput：LED 条件生成语言建模输出 dataclass
 class LEDSeq2SeqLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1195,6 +1210,7 @@ class LEDSeq2SeqLMOutput(ModelOutput):
     """
 )
 @dataclass
+# LEDSeq2SeqSequenceClassifierOutput：LED 序列分类输出 dataclass
 class LEDSeq2SeqSequenceClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `label` is provided):
@@ -1233,6 +1249,7 @@ class LEDSeq2SeqSequenceClassifierOutput(ModelOutput):
     """
 )
 @dataclass
+# LEDSeq2SeqQuestionAnsweringModelOutput：LED 抽取式问答输出 dataclass
 class LEDSeq2SeqQuestionAnsweringModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1264,6 +1281,7 @@ class LEDSeq2SeqQuestionAnsweringModelOutput(ModelOutput):
     encoder_global_attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# LEDEncoder：LED 长文档局部注意力编码器主干
 class LEDEncoder(LEDPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self-attention layers. Each layer is a
@@ -1526,6 +1544,7 @@ class LEDEncoder(LEDPreTrainedModel):
         )
 
 
+# LEDDecoder：LED 因果解码器（带交叉注意力）
 class LEDDecoder(LEDPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`LEDDecoderLayer`]
@@ -1736,6 +1755,7 @@ class LEDDecoder(LEDPreTrainedModel):
 
 
 @auto_docstring
+# LEDModel：LED 编码器-解码器 seq2seq 主干
 class LEDModel(LEDPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -1878,6 +1898,7 @@ class LEDModel(LEDPreTrainedModel):
     The LED Model with a language modeling head. Can be used for summarization.
     """
 )
+# LEDForConditionalGeneration：LED 长文档摘要/生成条件语言模型
 class LEDForConditionalGeneration(LEDPreTrainedModel, GenerationMixin):
     base_model_prefix = "led"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -2068,6 +2089,7 @@ class LEDForConditionalGeneration(LEDPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# LEDForQuestionAnswering：LED 长文档抽取式问答
 class LEDForQuestionAnswering(LEDPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

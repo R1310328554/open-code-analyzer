@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LFM2-MoE 配置：LiquidAI/LFM2-8B-A1B 稀疏混合专家因果语言模型超参
+
+# Lfm2MoeConfig：LiquidAI/LFM2-8B-A1B 稀疏 MoE 因果 LM 默认超参
 @auto_docstring(checkpoint="LiquidAI/LFM2-8B-A1B")
 @strict
+# Lfm2MoeConfig：LiquidAI/LFM2-8B-A1B 稀疏 MoE 混合专家语言模型超参
 class Lfm2MoeConfig(PreTrainedConfig):
     r"""
     conv_bias (`bool`, *optional*, defaults to `False`):

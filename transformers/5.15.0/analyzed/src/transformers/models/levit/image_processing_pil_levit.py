@@ -28,7 +28,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import auto_docstring
 
 
+# LeViT PIL 图像预处理：PIL resize（shortest_edge×256/224）+ 归一化
+
 @auto_docstring
+# LevitImageProcessorPil：LeViT PIL 后端图像 resize + 归一化预处理
 class LevitImageProcessorPil(PilBackend):
     """PIL backend for LeViT with custom resize (shortest_edge * 256/224)."""
 

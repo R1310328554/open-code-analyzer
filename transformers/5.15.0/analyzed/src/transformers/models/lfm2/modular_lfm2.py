@@ -43,14 +43,19 @@ from .configuration_lfm2 import Lfm2Config
 logger = logging.get_logger(__name__)
 
 
+# LFM2 modular 源：复用 Llama/Gemma2/Qwen3-Next 组件构建混合注意力+卷积因果 LM
+
+# Lfm2RMSNorm：LFM2 RMS 层归一化（等价 T5LayerNorm）
 class Lfm2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Lfm2RotaryEmbedding：LFM2 旋转位置编码（RoPE）
 class Lfm2RotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# Lfm2MLP：LFM2 前馈 MLP（SwiGLU 风格门控）
 class Lfm2MLP(nn.Module):
     def __init__(self, config: Lfm2Config):
         super().__init__()
@@ -71,6 +76,7 @@ class Lfm2MLP(nn.Module):
         return self.w2(F.silu(self.w1(x)) * self.w3(x))
 
 
+# Lfm2Attention：LFM2 多头自注意力（RoPE + GQA）
 class Lfm2Attention(LlamaAttention):
     def __init__(self, config: Lfm2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -124,6 +130,7 @@ class Lfm2Attention(LlamaAttention):
 
 
 @use_kernelized_func([causal_conv1d_update, causal_conv1d_fn])
+# Lfm2ShortConv：LFM2 短因果卷积层（替代部分注意力层）
 class Lfm2ShortConv(nn.Module):
     def __init__(
         self,
@@ -192,6 +199,7 @@ class Lfm2ShortConv(nn.Module):
         return y
 
 
+# Lfm2DecoderLayer：LFM2 解码器单层（注意力或短卷积 + MLP）
 class Lfm2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Lfm2Config, layer_idx: int):
         super().__init__()
@@ -237,10 +245,12 @@ class Lfm2DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Lfm2PreTrainedModel：LFM2 预训练基类与权重初始化
 class Lfm2PreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# Lfm2Model：LFM2 混合注意力/卷积因果解码器主干
 class Lfm2Model(LlamaModel):
     def __init__(self, config: Lfm2Config):
         super().__init__(config)
@@ -306,6 +316,7 @@ class Lfm2Model(LlamaModel):
         )
 
 
+# Lfm2ForCausalLM：LFM2 因果语言建模
 class Lfm2ForCausalLM(LlamaForCausalLM):
     pass
 

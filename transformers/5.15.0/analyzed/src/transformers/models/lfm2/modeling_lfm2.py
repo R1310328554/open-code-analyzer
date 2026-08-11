@@ -38,10 +38,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_lfm2 由 modular_lfm2.py 自动生成
 from .configuration_lfm2 import Lfm2Config
 
 
+# LFM2 建模：混合 RoPE 注意力 + 短因果卷积解码器（由 modular_lfm2.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Lfm2RMSNorm：LFM2 RMS 层归一化（等价 T5LayerNorm）
 class Lfm2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -62,6 +66,7 @@ class Lfm2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Lfm2RotaryEmbedding：LFM2 旋转位置编码（RoPE）
 class Lfm2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Lfm2Config, device=None):
@@ -116,6 +121,7 @@ class Lfm2RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Lfm2MLP：LFM2 前馈 MLP（SwiGLU 风格门控）
 class Lfm2MLP(nn.Module):
     def __init__(self, config: Lfm2Config):
         super().__init__()
@@ -136,6 +142,7 @@ class Lfm2MLP(nn.Module):
         return self.w2(F.silu(self.w1(x)) * self.w3(x))
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -144,6 +151,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -169,6 +177,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -181,6 +190,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -207,6 +217,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Lfm2Attention：LFM2 多头自注意力（RoPE + GQA）
 class Lfm2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -265,6 +276,7 @@ class Lfm2Attention(nn.Module):
         return output, attn_weights
 
 
+# apply_mask_to_padding_states：将 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -278,6 +290,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积增量解码状态更新
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -298,6 +311,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积前向（带缓存）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -321,6 +335,7 @@ def causal_conv1d_fn(
 
 
 @use_kernelized_func([causal_conv1d_update, causal_conv1d_fn])
+# Lfm2ShortConv：LFM2 短因果卷积层（替代部分注意力层）
 class Lfm2ShortConv(nn.Module):
     def __init__(
         self,
@@ -389,6 +404,7 @@ class Lfm2ShortConv(nn.Module):
         return y
 
 
+# Lfm2DecoderLayer：LFM2 解码器单层（注意力或短卷积 + MLP）
 class Lfm2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Lfm2Config, layer_idx: int):
         super().__init__()
@@ -435,6 +451,7 @@ class Lfm2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Lfm2PreTrainedModel：LFM2 预训练基类与权重初始化
 class Lfm2PreTrainedModel(PreTrainedModel):
     config: Lfm2Config
     base_model_prefix = "model"
@@ -454,6 +471,7 @@ class Lfm2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Lfm2Model：LFM2 混合注意力/卷积因果解码器主干
 class Lfm2Model(Lfm2PreTrainedModel):
     def __init__(self, config: Lfm2Config):
         super().__init__(config)
@@ -534,6 +552,7 @@ class Lfm2Model(Lfm2PreTrainedModel):
 
 
 @auto_docstring
+# Lfm2ForCausalLM：LFM2 因果语言建模
 class Lfm2ForCausalLM(Lfm2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
