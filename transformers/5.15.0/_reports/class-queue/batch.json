@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:04:52Z",
   "files": [
-    "src/transformers/models/radio/modular_radio.py",
-    "src/transformers/models/rag/__init__.py",
-    "src/transformers/models/rag/configuration_rag.py",
-    "src/transformers/models/rag/modeling_rag.py",
-    "src/transformers/models/rag/retrieval_rag.py",
-    "src/transformers/models/rag/tokenization_rag.py",
-    "src/transformers/models/recurrent_gemma/__init__.py",
-    "src/transformers/models/recurrent_gemma/configuration_recurrent_gemma.py",
-    "src/transformers/models/recurrent_gemma/modeling_recurrent_gemma.py",
-    "src/transformers/models/reformer/__init__.py",
-    "src/transformers/models/reformer/configuration_reformer.py",
-    "src/transformers/models/reformer/modeling_reformer.py",
-    "src/transformers/models/reformer/tokenization_reformer.py",
-    "src/transformers/models/regnet/__init__.py",
-    "src/transformers/models/regnet/configuration_regnet.py",
     "src/transformers/models/regnet/modeling_regnet.py",
     "src/transformers/models/rembert/__init__.py",
     "src/transformers/models/rembert/configuration_rembert.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/roberta/configuration_roberta.py"
   ],
   "remaining_pending": 729,
-  "done": 1920
+  "done": 1935
 }
