@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:29:25Z",
-  "files": [
-    "src/transformers/models/granitemoehybrid/modeling_granitemoehybrid.py",
-    "src/transformers/models/granitemoehybrid/modular_granitemoehybrid.py",
-    "src/transformers/models/granitemoeshared/__init__.py",
-    "src/transformers/models/granitemoeshared/configuration_granitemoeshared.py",
-    "src/transformers/models/granitemoeshared/modeling_granitemoeshared.py",
-    "src/transformers/models/granitemoeshared/modular_granitemoeshared.py",
-    "src/transformers/models/grounding_dino/__init__.py",
-    "src/transformers/models/grounding_dino/configuration_grounding_dino.py",
-    "src/transformers/models/grounding_dino/image_processing_grounding_dino.py",
-    "src/transformers/models/grounding_dino/image_processing_pil_grounding_dino.py",
-    "src/transformers/models/grounding_dino/modeling_grounding_dino.py",
-    "src/transformers/models/grounding_dino/modular_grounding_dino.py",
-    "src/transformers/models/grounding_dino/processing_grounding_dino.py",
-    "src/transformers/models/groupvit/__init__.py",
-    "src/transformers/models/groupvit/configuration_groupvit.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1659,
-  "done": 1005
+  "done": 1020
 }
