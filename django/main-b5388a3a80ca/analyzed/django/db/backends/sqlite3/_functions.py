@@ -1,4 +1,6 @@
 """
+# SQLite 用户自定义函数与聚合：日期、数学、哈希与 UUID
+Implementations of SQL functions for SQLite."""
 Implementations of SQL functions for SQLite.
 """
 
@@ -43,6 +45,7 @@ if PY314:
     from uuid import uuid7
 
 
+# 向连接注册 django_* 日期函数、聚合与可选数学函数
 def register(connection):
     create_deterministic_function = functools.partial(
         connection.create_function,
@@ -116,6 +119,7 @@ def register(connection):
         create_deterministic_function("TAN", 1, _sqlite_tan)
 
 
+# 解析 datetime 字符串并应用时区偏移
 def _sqlite_datetime_parse(dt, tzname=None, conn_tzname=None):
     if dt is None:
         return None
@@ -138,6 +142,7 @@ def _sqlite_datetime_parse(dt, tzname=None, conn_tzname=None):
     return dt
 
 
+# 日期截断为 year/quarter/month/week/day
 def _sqlite_date_trunc(lookup_type, dt, tzname, conn_tzname):
     dt = _sqlite_datetime_parse(dt, tzname, conn_tzname)
     if dt is None:
@@ -209,6 +214,7 @@ def _sqlite_datetime_extract(lookup_type, dt, tzname=None, conn_tzname=None):
         return getattr(dt, lookup_type)
 
 
+# datetime 截断到指定粒度
 def _sqlite_datetime_trunc(lookup_type, dt, tzname, conn_tzname):
     dt = _sqlite_datetime_parse(dt, tzname, conn_tzname)
     if dt is None:
@@ -259,6 +265,7 @@ def _sqlite_prepare_dtdelta_param(conn, param):
     return param
 
 
+# 日期/时间差格式化（+/-/×/÷）
 def _sqlite_format_dtdelta(connector, lhs, rhs):
     """
     LHS and RHS can be either:
@@ -312,6 +319,7 @@ def _sqlite_timestamp_diff(lhs, rhs):
     return duration_microseconds(left - right)
 
 
+# Python re 实现的 REGEXP
 def _sqlite_regexp(pattern, string):
     if pattern is None or string is None:
         return None
@@ -520,10 +528,12 @@ class ListAggregate(list):
     step = list.append
 
 
+# 总体标准差聚合
 class StdDevPop(ListAggregate):
     finalize = statistics.pstdev
 
 
+# 样本标准差聚合
 class StdDevSamp(ListAggregate):
     finalize = statistics.stdev
 
@@ -536,6 +546,7 @@ class VarSamp(ListAggregate):
     finalize = statistics.variance
 
 
+# ANY_VALUE：返回分组首元素
 class AnyValue(ListAggregate):
     def finalize(self):
         return self[0]
@@ -553,13 +564,16 @@ class BitAggregate(ListAggregate):
             return None
 
 
+# 按位与聚合
 class BitAnd(BitAggregate):
     bit_operator = operator.and_
 
 
+# 按位或聚合
 class BitOr(BitAggregate):
     bit_operator = operator.or_
 
 
+# 按位异或聚合
 class BitXor(BitAggregate):
     bit_operator = operator.xor

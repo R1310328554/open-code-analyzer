@@ -18,12 +18,14 @@ from django.utils.regex_helper import _lazy_re_compile
 
 
 @lru_cache
+# 缓存 JSON 编码器对应的 dumps 函数
 def get_json_dumps(encoder):
     if encoder is None:
         return json.dumps
     return partial(json.dumps, cls=encoder)
 
 
+# PostgreSQL SQL 操作：EXTRACT、DATE_TRUNC、DISTINCT ON 与 UPSERT
 class DatabaseOperations(BaseDatabaseOperations):
     compiler_module = "django.db.backends.postgresql.compiler"
     cast_char_field_without_max_length = "varchar"
@@ -61,6 +63,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             "PositiveBigIntegerField": numeric.Int8,
         }
 
+    # UNION 时对 IP/Time/UUID 显式 CAST 避免 text 合并
     def unification_cast_sql(self, output_field):
         internal_type = output_field.get_internal_type()
         if internal_type in (
@@ -84,6 +87,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     # EXTRACT format cannot be passed in parameters.
     _extract_format_re = _lazy_re_compile(r"[A-Z_]+")
 
+    # EXTRACT 日期分量，week_day 统一为周日=1
     def date_extract_sql(self, lookup_type, sql, params):
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT
         if lookup_type == "week_day":
@@ -99,6 +103,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             raise ValueError(f"Invalid lookup type: {lookup_type!r}")
         return f"EXTRACT({lookup_type} FROM {sql})", params
 
+    # DATE_TRUNC 日期截断
     def date_trunc_sql(self, lookup_type, sql, params, tzname=None):
         sql, params = self._convert_sql_to_tz(sql, params, tzname)
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
@@ -111,6 +116,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             return f"{tzname}{sign}{offset}"
         return tzname
 
+    # USE_TZ 时 AT TIME ZONE 转换
     def _convert_sql_to_tz(self, sql, params, tzname):
         if tzname and settings.USE_TZ:
             tzname_param = self._prepare_tzname_delta(tzname)
@@ -132,6 +138,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             return f"EXTRACT(SECOND FROM DATE_TRUNC(%s, {sql}))", ("second", *params)
         return self.date_extract_sql(lookup_type, sql, params)
 
+    # datetime DATE_TRUNC
     def datetime_trunc_sql(self, lookup_type, sql, params, tzname):
         sql, params = self._convert_sql_to_tz(sql, params, tzname)
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
@@ -150,11 +157,13 @@ class DatabaseOperations(BaseDatabaseOperations):
     def deferrable_sql(self):
         return " DEFERRABLE INITIALLY DEFERRED"
 
+    # InsertUnnest 时 SELECT * FROM UNNEST(...)
     def bulk_insert_sql(self, fields, placeholder_rows):
         if isinstance(placeholder_rows, InsertUnnest):
             return f"SELECT * FROM {placeholder_rows}"
         return super().bulk_insert_sql(fields, placeholder_rows)
 
+    # 文本查找 ::text/UPPER，IP 字段 HOST()
     def lookup_cast(self, lookup_type, internal_type=None):
         lookup = "%s"
         # Cast text lookups to text to allow things like filter(x__contains=4)
@@ -186,17 +195,20 @@ class DatabaseOperations(BaseDatabaseOperations):
     def prepare_sql_script(self, sql):
         return [sql]
 
+    # 双引号引用标识符
     def quote_name(self, name):
         if name.startswith('"') and name.endswith('"'):
             return name  # Quoting once is enough.
         return '"%s"' % name
 
+    # 客户端 mogrify 合并 SQL 与参数
     def compose_sql(self, sql, params):
         return mogrify(sql, params, self.connection)
 
     def set_time_zone_sql(self):
         return "SELECT set_config('TimeZone', %s, false)"
 
+    # TRUNCATE ... RESTART IDENTITY [CASCADE]
     def sql_flush(self, style, tables, *, reset_sequences=False, allow_cascade=False):
         if not tables:
             return []
@@ -213,6 +225,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             sql_parts.append(style.SQL_KEYWORD("CASCADE"))
         return ["%s;" % " ".join(sql_parts)]
 
+    # setval(pg_get_serial_sequence(...), 1, false)
     def sequence_reset_by_name_sql(self, style, sequences):
         # 'ALTER SEQUENCE sequence_name RESTART WITH 1;'... style SQL
         # statements to reset sequence indices
@@ -288,6 +301,7 @@ class DatabaseOperations(BaseDatabaseOperations):
         """
         return 63
 
+    # DISTINCT ON (fields) 或 DISTINCT
     def distinct_sql(self, fields, params):
         if fields:
             params = [param for param_list in params for param in param_list]
@@ -336,11 +350,13 @@ class DatabaseOperations(BaseDatabaseOperations):
     def adapt_timefield_value(self, value):
         return value
 
+    # 包装为 psycopg Inet 类型
     def adapt_ipaddressfield_value(self, value):
         if value:
             return Inet(value)
         return None
 
+    # 包装为 Jsonb 适配器
     def adapt_json_value(self, value, encoder):
         return Jsonb(value, dumps=get_json_dumps(encoder))
 
@@ -352,6 +368,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             return "(interval '1 day' * (%s - %s))" % (lhs_sql, rhs_sql), params
         return super().subtract_temporals(internal_type, lhs, rhs)
 
+    # EXPLAIN (FORMAT ..., ANALYZE, BUFFERS ...)
     def explain_query_prefix(self, format=None, **options):
         extra = {}
         if serialize := options.pop("serialize", None):
@@ -374,6 +391,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             prefix += " (%s)" % ", ".join("%s %s" % i for i in extra.items())
         return prefix
 
+    # ON CONFLICT DO NOTHING / DO UPDATE SET
     def on_conflict_suffix_sql(self, fields, on_conflict, update_fields, unique_fields):
         if on_conflict == OnConflict.IGNORE:
             return "ON CONFLICT DO NOTHING"
@@ -394,6 +412,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             unique_fields,
         )
 
+    # 类型不一致时对 rhs 做 Cast
     def prepare_join_on_clause(self, lhs_table, lhs_field, rhs_table, rhs_field):
         lhs_expr, rhs_expr = super().prepare_join_on_clause(
             lhs_table, lhs_field, rhs_table, rhs_field

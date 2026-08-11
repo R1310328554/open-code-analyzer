@@ -4,6 +4,7 @@ from django.db.backends.postgresql.psycopg_any import sql
 from django.db.backends.utils import strip_quotes
 
 
+# PostgreSQL Schema 编辑器：并发索引、LIKE 模式索引与 IDENTITY
 class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     # Setting all constraints to IMMEDIATE to allow changing data in the same
     # transaction.
@@ -39,6 +40,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     )
     sql_delete_procedure = "DROP FUNCTION %(procedure)s(%(param_types)s)"
 
+    # 客户端 compose_sql 合并参数后执行 DDL
     def execute(self, sql, params=()):
         # Merge the query client-side, as PostgreSQL won't do it server-side.
         if params is None:
@@ -55,9 +57,11 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         "ALTER TABLE %(table)s ALTER COLUMN %(column)s DROP IDENTITY IF EXISTS"
     )
 
+    # 引用 DDL 字面量
     def quote_value(self, value):
         return sql.quote(value, self.connection.connection)
 
+    # 追加 varchar/text 的 _like 模式索引
     def _field_indexes_sql(self, model, field):
         output = super()._field_indexes_sql(model, field)
         like_index_statement = self._create_like_index_sql(model, field)
@@ -80,6 +84,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         else:
             yield self._field_data_type(field.base_field)
 
+    # varchar_pattern_ops/text_pattern_ops 非 C 区域 LIKE
     def _create_like_index_sql(self, model, field):
         """
         Return the statement to create an index with varchar operator pattern
@@ -119,6 +124,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 )
         return None
 
+    # 改列类型时 USING column::type
     def _using_sql(self, new_field, old_field):
         if new_field.generated:
             return ""
@@ -149,6 +155,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             or (old_type.startswith("citext") and not new_type.startswith("citext"))
         )
 
+    # 处理 IDENTITY/序列与 _like 索引删除
     def _alter_column_type_sql(
         self, model, old_field, new_field, new_type, old_collation, new_collation
     ):
@@ -260,6 +267,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 model, old_field, new_field, new_type, old_collation, new_collation
             )
 
+    # 改字段后同步创建/删除 PostgreSQL 特有索引
     def _alter_field(
         self,
         model,
@@ -313,11 +321,13 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             )
         return super()._index_columns(table, columns, col_suffixes, opclasses)
 
+    # 支持 CREATE INDEX CONCURRENTLY
     def add_index(self, model, index, concurrently=False):
         self.execute(
             index.create_sql(model, self, concurrently=concurrently), params=None
         )
 
+    # 支持 DROP INDEX CONCURRENTLY
     def remove_index(self, model, index, concurrently=False):
         self.execute(index.remove_sql(model, self, concurrently=concurrently))
 
@@ -366,6 +376,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             expressions=expressions,
         )
 
+    # pg_collation.collisdeterministic
     def _is_collation_deterministic(self, collation_name):
         with self.connection.cursor() as cursor:
             cursor.execute(

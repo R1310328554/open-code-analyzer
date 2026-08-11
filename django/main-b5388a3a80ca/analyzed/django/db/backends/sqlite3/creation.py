@@ -9,19 +9,23 @@ from django.db import NotSupportedError
 from django.db.backends.base.creation import BaseDatabaseCreation
 
 
+# SQLite 测试库：内存共享 URI、文件复制与多进程克隆
 class DatabaseCreation(BaseDatabaseCreation):
     @staticmethod
+    # 判断 :memory: 或 mode=memory URI
     def is_in_memory_db(database_name):
         return not isinstance(database_name, Path) and (
             database_name == ":memory:" or "mode=memory" in database_name
         )
 
+    # 内存库使用 file:memorydb_<alias>?mode=memory&cache=shared
     def _get_test_db_name(self):
         test_database_name = self.connection.settings_dict["TEST"]["NAME"] or ":memory:"
         if test_database_name == ":memory:":
             return "file:memorydb_%s?mode=memory&cache=shared" % self.connection.alias
         return test_database_name
 
+    # 删除旧文件或确认后重建磁盘测试库
     def _create_test_db(self, verbosity, autoclobber, keepdb=False):
         test_database_name = self._get_test_db_name()
 
@@ -51,6 +55,7 @@ class DatabaseCreation(BaseDatabaseCreation):
                     sys.exit(1)
         return test_database_name
 
+    # fork 复用内存库；spawn/forkserver 落盘克隆
     def get_test_db_clone_settings(self, suffix):
         orig_settings_dict = self.connection.settings_dict
         source_database_name = orig_settings_dict["NAME"] or ":memory:"
@@ -71,6 +76,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             f"Cloning with start method {start_method!r} is not supported."
         )
 
+    # shutil.copy 或 backup() 克隆测试库
     def _clone_test_db(self, suffix, verbosity, keepdb=False):
         source_database_name = self.connection.settings_dict["NAME"]
         target_database_name = self.get_test_db_clone_settings(suffix)["NAME"]
@@ -111,6 +117,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             # Remove the SQLite database file
             os.remove(test_database_name)
 
+    # 内存库签名含 connection.alias
     def test_db_signature(self):
         """
         Return a tuple that uniquely identifies a test database.
@@ -127,6 +134,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             sig.append(test_database_name)
         return tuple(sig)
 
+    # 并行测试 worker 连接对应克隆库
     def setup_worker_connection(self, _worker_id):
         settings_dict = self.get_test_db_clone_settings(_worker_id)
         # connection.settings_dict must be updated in place for changes to be

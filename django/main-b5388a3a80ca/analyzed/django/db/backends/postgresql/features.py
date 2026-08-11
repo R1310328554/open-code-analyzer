@@ -6,6 +6,7 @@ from django.db.backends.postgresql.psycopg_any import is_psycopg3
 from django.utils.functional import cached_property
 
 
+# PostgreSQL 能力标志：RETURNING、DISTINCT ON、JSON、UPSERT 与版本分支
 class DatabaseFeatures(BaseDatabaseFeatures):
     minimum_database_version = (15,)
     allows_group_by_selected_pks = True
@@ -82,14 +83,17 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_uuid4_function = True
 
     @cached_property
+    # PostgreSQL 18+ 支持 uuid7()
     def supports_uuid7_function(self):
         return self.is_postgresql_18
 
     @cached_property
+    # PostgreSQL 18+ 支持 uuid7() 位移参数
     def supports_uuid7_function_shift(self):
         return self.is_postgresql_18
 
     @cached_property
+    # 按连接池、服务端绑定等条件跳过不兼容测试
     def django_test_skips(self):
         skips = {
             "opclasses are PostgreSQL only.": {
@@ -123,6 +127,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return skips
 
     @cached_property
+    # 服务端绑定或 psycopg2 数组比较等已知失败
     def django_test_expected_failures(self):
         expected_failures = set()
         if self.uses_server_side_binding:
@@ -147,17 +152,20 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return expected_failures
 
     @cached_property
+    # psycopg3 且 OPTIONS.server_side_binding 为真
     def uses_server_side_binding(self):
         options = self.connection.settings_dict["OPTIONS"]
         return is_psycopg3 and options.get("server_side_binding") is True
 
     @cached_property
+    # 服务端绑定时参数上限 2^16-1
     def max_query_params(self):
         if self.uses_server_side_binding:
             return 2**16 - 1
         return None
 
     @cached_property
+    # 文本字段禁止 NUL 字节的异常类型与消息
     def prohibits_null_characters_in_text_exception(self):
         if is_psycopg3:
             return DataError, "PostgreSQL text fields cannot contain NUL (0x00) bytes"
@@ -165,6 +173,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
             return ValueError, "A string literal cannot contain NUL (0x00) characters."
 
     @cached_property
+    # Positive* 字段内省映射到无符号整型
     def introspected_field_types(self):
         return {
             **super().introspected_field_types,
@@ -174,14 +183,17 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         }
 
     @cached_property
+    # pg_version >= 160000
     def is_postgresql_16(self):
         return self.connection.pg_version >= 160000
 
     @cached_property
+    # pg_version >= 170000
     def is_postgresql_17(self):
         return self.connection.pg_version >= 170000
 
     @cached_property
+    # pg_version >= 180000
     def is_postgresql_18(self):
         return self.connection.pg_version >= 180000
 

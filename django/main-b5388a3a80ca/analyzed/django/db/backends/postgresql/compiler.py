@@ -15,6 +15,7 @@ __all__ = [
 ]
 
 
+# 批量插入 UNNEST 策略的哨兵值，渲染为 UNNEST(...) SQL
 class InsertUnnest(list):
     """
     Sentinel value to signal DatabaseOperations.bulk_insert_sql() that the
@@ -25,7 +26,9 @@ class InsertUnnest(list):
         return "UNNEST(%s)" % ", ".join(self)
 
 
+# PostgreSQL INSERT 编译器：字面量批量插入时优先 UNNEST 优化
 class SQLInsertCompiler(BaseSQLInsertCompiler):
+    # 多行纯字面量且无特殊占位符时生成 UNNEST 数组插入
     def assemble_as_sql(self, fields, value_rows):
         # Specialize bulk-insertion of literal values through UNNEST to
         # reduce the time spent planning the query.

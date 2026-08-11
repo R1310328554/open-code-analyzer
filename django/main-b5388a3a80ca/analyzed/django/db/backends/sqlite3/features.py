@@ -10,6 +10,7 @@ from django.utils.version import PY314
 from .base import Database
 
 
+# SQLite 能力标志：无原生时区、表重建改列与 JSON 运行时检测
 class DatabaseFeatures(BaseDatabaseFeatures):
     minimum_database_version = (3, 37)
     test_db_allows_multiple_connections = False
@@ -63,10 +64,12 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_uuid4_function = True
 
     @cached_property
+    # Python 3.14+ 提供 UUIDV7 UDF
     def supports_uuid7_function(self):
         return PY314
 
     @cached_property
+    # 精度舍入、改列重建表、内存库 close 等跳过规则
     def django_test_skips(self):
         skips = {
             "SQLite stores values rounded to 15 significant digits.": {
@@ -140,6 +143,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return skips
 
     @cached_property
+    # BigAutoField/SmallAutoField 映射为 AutoField 等
     def introspected_field_types(self):
         return {
             **super().introspected_field_types,
@@ -150,6 +154,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         }
 
     @property
+    # SQLITE_LIMIT_VARIABLE_NUMBER 运行时上限
     def max_query_params(self):
         """
         SQLite has a variable limit per query. The limit can be changed using
@@ -161,6 +166,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return self.connection.connection.getlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER)
 
     @cached_property
+    # SELECT JSON(...) 探测 JSON1 扩展
     def supports_json_field(self):
         with self.connection.cursor() as cursor:
             try:

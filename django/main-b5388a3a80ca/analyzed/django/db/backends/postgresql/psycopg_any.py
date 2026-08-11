@@ -1,3 +1,4 @@
+# psycopg2/psycopg3 兼容层：类型、错误、mogrify 与适配器
 import ipaddress
 from functools import lru_cache
 
@@ -20,11 +21,14 @@ try:
         pq.Format.TEXT,
     )
 
+    # psycopg3：ClientCursor.mogrify 合并 SQL
+    # psycopg2：cursor.mogrify 合并 SQL
     def mogrify(sql, params, connection):
         with connection.cursor() as cursor:
             return ClientCursor(cursor.connection).mogrify(sql, params)
 
     # Adapters.
+    # 按指定时区加载 timestamptz
     class BaseTzLoader(adapt.Loader):
         """
         Load a PostgreSQL timestamptz using a specific timezone.
@@ -40,12 +44,14 @@ try:
         def load(self, data):
             return self.orig_loader.load(data).replace(tzinfo=self.timezone)
 
+    # 注册 SpecificTzLoader 到 AdaptersMap
     def register_tzloader(tz, context):
         class SpecificTzLoader(BaseTzLoader):
             timezone = tz
 
         context.adapters.register_loader("timestamptz", SpecificTzLoader)
 
+    # 范围导出：naive datetime 用 tstzrange OID
     class DjangoRangeDumper(RangeDumper):
         """A Range dumper customized for Django."""
 
@@ -58,6 +64,7 @@ try:
             return dumper
 
     @lru_cache
+    # 构建 jsonb/inet/range/timestamptz 适配器模板
     def get_adapters_template(use_tz, timezone):
         # Create an adapters map extending the base one.
         ctx = adapt.AdaptersMap(adapters)
@@ -99,6 +106,7 @@ except ImportError:
         REPEATABLE_READ = extensions.ISOLATION_LEVEL_REPEATABLE_READ
         SERIALIZABLE = extensions.ISOLATION_LEVEL_SERIALIZABLE
 
+    # psycopg2 extensions.adapt 引用值
     def _quote(value, connection=None):
         adapted = extensions.adapt(value)
         if hasattr(adapted, "encoding"):
@@ -114,6 +122,7 @@ except ImportError:
 
     is_psycopg3 = False
 
+    # psycopg2 Json 子类，getquoted 追加 ::jsonb
     class Jsonb(Json):
         def getquoted(self):
             quoted = super().getquoted()

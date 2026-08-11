@@ -1,4 +1,6 @@
 """
+# 标准库 sqlite3 后端：类型适配、PRAGMA 与游标占位符转换
+SQLite backend for the sqlite3 module in the standard library."""
 SQLite backend for the sqlite3 module in the standard library.
 """
 
@@ -25,6 +27,7 @@ from .operations import DatabaseOperations
 from .schema import DatabaseSchemaEditor
 
 
+# 将 sqlite3 返回的 bytes 解码后交给转换函数
 def decoder(conv_func):
     """
     Convert bytestrings from Python's sqlite3 interface to a regular string.
@@ -57,6 +60,7 @@ Database.register_adapter(datetime.date, adapt_date)
 Database.register_adapter(datetime.datetime, adapt_datetime)
 
 
+# SQLite 连接：data_types、LIKE ESCAPE 与内存库保护
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = "sqlite"
     display_name = "SQLite"
@@ -151,6 +155,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     introspection_class = DatabaseIntrospection
     ops_class = DatabaseOperations
 
+    # database/OPTIONS、check_same_thread=False 与 init_command
     def get_connection_params(self):
         settings_dict = self.settings_dict
         if not settings_dict["NAME"]:
@@ -201,6 +206,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return self.Database.sqlite_version_info
 
     @async_unsafe
+    # 连接后注册 UDF、PRAGMA foreign_keys 与 legacy_alter_table
     def get_new_connection(self, conn_params):
         conn = Database.connect(**conn_params)
         register_functions(conn)
@@ -214,10 +220,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 conn.execute(init_command)
         return conn
 
+    # 返回 SQLiteCursorWrapper
     def create_cursor(self, name=None):
         return self.connection.cursor(factory=SQLiteCursorWrapper)
 
     @async_unsafe
+    # 内存库忽略 close 以防数据丢失
     def close(self):
         self.validate_thread_sharing()
         # If database is in memory, closing the connection destroys the
@@ -246,6 +254,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with self.wrap_database_errors:
             self.connection.isolation_level = level
 
+    # PRAGMA foreign_keys = OFF
     def disable_constraint_checking(self):
         with self.cursor() as cursor:
             cursor.execute("PRAGMA foreign_keys = OFF")
@@ -259,6 +268,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with self.cursor() as cursor:
             cursor.execute("PRAGMA foreign_keys = ON")
 
+    # PRAGMA foreign_key_check 并抛出 IntegrityError
     def check_constraints(self, table_names=None):
         """
         Check each table name in `table_names` for rows with invalid foreign
@@ -318,6 +328,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     def is_usable(self):
         return True
 
+    # autocommit 下显式 BEGIN 以兼容 savepoint
     def _start_transaction_under_autocommit(self):
         """
         Start a transaction explicitly in autocommit mode.
@@ -337,6 +348,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 FORMAT_QMARK_REGEX = _lazy_re_compile(r"(?<!%)%s")
 
 
+# 将 format/pyformat 占位符转为 qmark/named 风格
 class SQLiteCursorWrapper(Database.Cursor):
     """
     Django uses the "format" and "pyformat" styles, but Python's sqlite3 module
@@ -369,6 +381,7 @@ class SQLiteCursorWrapper(Database.Cursor):
         query = self.convert_query(query, param_names=param_names)
         return super().executemany(query, param_list)
 
+    # %s → ? 或 %(name)s → :name
     def convert_query(self, query, *, param_names=None):
         if param_names is None:
             # Convert from "format" style to "qmark" style.

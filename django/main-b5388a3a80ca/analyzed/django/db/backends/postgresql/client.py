@@ -3,10 +3,12 @@ import signal
 from django.db.backends.base.client import BaseDatabaseClient
 
 
+# PostgreSQL 命令行客户端（psql）启动封装
 class DatabaseClient(BaseDatabaseClient):
     executable_name = "psql"
 
     @classmethod
+    # 将 DATABASES 配置转为 psql 参数与 PGPASSWORD 等环境变量
     def settings_to_cmd_args_env(cls, settings_dict, parameters):
         args = [cls.executable_name]
         options = settings_dict["OPTIONS"]
@@ -53,6 +55,7 @@ class DatabaseClient(BaseDatabaseClient):
             env["PGPASSFILE"] = str(passfile)
         return args, (env or None)
 
+    # 启动 psql shell，临时忽略 SIGINT 以便中止查询
     def runshell(self, parameters):
         sigint_handler = signal.getsignal(signal.SIGINT)
         try:

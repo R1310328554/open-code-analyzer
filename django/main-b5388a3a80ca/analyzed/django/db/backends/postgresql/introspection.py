@@ -6,10 +6,13 @@ from django.db.backends.base.introspection import TableInfo as BaseTableInfo
 from django.db.backends.postgresql.base import psycopg_version
 from django.db.models import DB_CASCADE, DB_SET_DEFAULT, DB_SET_NULL, DO_NOTHING, Index
 
+# 扩展 BaseFieldInfo：is_autofield 与列注释
 FieldInfo = namedtuple("FieldInfo", [*BaseFieldInfo._fields, "is_autofield", "comment"])
+# 扩展 BaseTableInfo：表注释
 TableInfo = namedtuple("TableInfo", [*BaseTableInfo._fields, "comment"])
 
 
+# PostgreSQL pg_catalog 内省：类型 OID、约束与表达式索引
 class DatabaseIntrospection(BaseDatabaseIntrospection):
     # Maps type codes to Django Field types.
     data_types_reverse = {
@@ -47,6 +50,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         # DB_RESTRICT - "r" is not supported.
     }
 
+    # 识别 serial/identity 列为 AutoField 系列
     def get_field_type(self, data_type, description):
         field_type = super().get_field_type(data_type, description)
         if description.is_autofield or (
@@ -62,6 +66,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
                 return "SmallAutoField"
         return field_type
 
+    # 返回可见表/视图/分区及 obj_description 注释
     def get_table_list(self, cursor):
         """Return a list of table and view names in the current database."""
         cursor.execute("""
@@ -85,6 +90,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             if row[0] not in self.ignored_tables
         ]
 
+    # 合并 pg_attribute 元数据与 LIMIT 1 游标描述
     def get_table_description(self, cursor, table_name):
         """
         Return a description of the table with the DB-API cursor.description
@@ -144,6 +150,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             for line in cursor.description
         ]
 
+    # 从 pg_depend 查找表列关联序列
     def get_sequences(self, cursor, table_name, table_fields=()):
         cursor.execute(
             """
@@ -170,6 +177,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             for row in cursor.fetchall()
         ]
 
+    # pg_constraint 外键：列名、目标表与 ON DELETE
     def get_relations(self, cursor, table_name):
         """
         Return a dictionary of
@@ -201,6 +209,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             for row in cursor.fetchall()
         }
 
+    # 汇总主键/唯一/外键/Check 与 pg_index 表达式索引
     def get_constraints(self, cursor, table_name):
         """
         Retrieve any constraints or keys (unique, pk, fk, check, index) across
