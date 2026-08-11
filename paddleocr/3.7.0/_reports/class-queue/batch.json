@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T06:45:01Z",
   "files": [
-    "deploy/ios_demo/scripts/extract_xcresult_attachments.py",
-    "deploy/ios_demo/scripts/extract_xctest_metrics.py",
-    "deploy/ios_demo/scripts/generate_benchmark_report.py",
-    "deploy/ios_demo/scripts/ocr_reference_run.py",
-    "deploy/ios_demo/scripts/quantize_onnx_model.py",
-    "deploy/ios_demo/scripts/utils.py",
-    "deploy/paddleocr_vl_docker/hps/gateway/app.py",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/MainActivity.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/OCRApplication.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/ErrorDialog.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/ImagePicker.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/ImagePreview.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/LoadingOverlay.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/ResultList.kt",
-    "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/component/TimingBar.kt",
     "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/screen/HomeScreen.kt",
     "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/theme/Theme.kt",
     "deploy/ppocr-android/app/src/main/java/com/paddle/ocr/demo/ui/viewmodel/OCRViewModel.kt",
@@ -33,5 +18,5 @@
     "deploy/ppocr-android/ppocr-sdk/src/main/java/com/paddle/ocr/model/OCRResult.kt"
   ],
   "remaining_pending": 512,
-  "done": 60
+  "done": 75
 }
