@@ -25,6 +25,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 from ..siglip import SiglipVisionConfig
+# T5Gemma2 配置：文本/编码器/解码器子配置与滑动窗口注意力超参数
+
 
 
 logger = logging.get_logger(__name__)
@@ -32,6 +34,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2TextConfig：T5Gemma2 文本配置：hidden_size、层数、RoPE 与滑动窗口参数
 class T5Gemma2TextConfig(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -87,6 +90,7 @@ class T5Gemma2TextConfig(PreTrainedConfig):
     attn_logit_softcapping: float | None = None
     default_theta = {"global": 1_000_000.0, "local": 10_000.0}
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         # BC -> the pattern used to be a simple int, and it's still present in configs on the Hub
         _sliding_window_pattern = kwargs.pop("sliding_window_pattern", 6)
@@ -138,6 +142,7 @@ class T5Gemma2TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2EncoderConfig：T5Gemma2 编码器配置：双向注意力与 encoder 层深度
 class T5Gemma2EncoderConfig(PreTrainedConfig):
     r"""
     mm_tokens_per_image (`int`, *optional*, defaults to 256):
@@ -189,6 +194,7 @@ class T5Gemma2EncoderConfig(PreTrainedConfig):
     initializer_range: float | None = 0.02
     tie_word_embeddings: bool | None = True
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = T5Gemma2TextConfig()
@@ -207,6 +213,7 @@ class T5Gemma2EncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2DecoderConfig：T5Gemma2 解码器配置：因果/滑动窗口注意力与 decoder 层深度
 class T5Gemma2DecoderConfig(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -262,6 +269,7 @@ class T5Gemma2DecoderConfig(PreTrainedConfig):
     attn_logit_softcapping: float | None = None
     default_theta = {"global": 1_000_000.0, "local": 10_000.0}
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         # BC -> the pattern used to be a simple int, and it's still present in configs on the Hub
         _sliding_window_pattern = kwargs.pop("sliding_window_pattern", 6)
@@ -313,6 +321,7 @@ class T5Gemma2DecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2Config：T5Gemma2 主配置：聚合 text/encoder/decoder 子配置与 tie_word_embeddings
 class T5Gemma2Config(PreTrainedConfig):
     r"""
     encoder (`Union[T5Gemma2EncoderConfig, dict]`, optional, *optional*):
@@ -354,6 +363,7 @@ class T5Gemma2Config(PreTrainedConfig):
     eoi_token_index: int | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder, dict):
             self.encoder = T5Gemma2EncoderConfig(**self.encoder)

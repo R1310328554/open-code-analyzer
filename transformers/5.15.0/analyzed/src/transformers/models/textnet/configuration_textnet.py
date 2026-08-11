@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# TextNet 配置：RepConv 阶段深度、通道数与骨干输出特征索引
+
 
 
 @auto_docstring(checkpoint="czczup/textnet-base")
 @strict
+# TextNetConfig：TextNet 配置：RepConv 各阶段通道/深度与骨干输出索引
 class TextNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     stem_kernel_size (`int`, *optional*, defaults to 3):
@@ -72,6 +75,7 @@ class TextNetConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         if self.conv_layer_kernel_sizes is None:
             self.conv_layer_kernel_sizes = [

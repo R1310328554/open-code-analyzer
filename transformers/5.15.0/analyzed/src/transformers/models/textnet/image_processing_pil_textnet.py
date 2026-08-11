@@ -20,6 +20,8 @@ from ...image_processing_utils import BatchFeature
 from ...image_transforms import get_resize_output_image_size
 from ...image_transforms import resize as np_resize
 from ...image_utils import (
+# TextNet PIL 图像处理器：缩放、归一化与文本检测预处理
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -32,6 +34,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.textnet.image_processing_textnet.TextNetImageProcessorKwargs
+# TextNetImageProcessorKwargs：TextNet 预处理参数：缩放尺寸与归一化 mean/std
 class TextNetImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -42,6 +45,7 @@ class TextNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# TextNetImageProcessorPil：TextNet PIL 后端：逐图缩放/归一化预处理
 class TextNetImageProcessorPil(PilBackend):
     """PIL backend for TextNet with size_divisor resize."""
 
@@ -60,10 +64,12 @@ class TextNetImageProcessorPil(PilBackend):
     do_convert_rgb = True
     size_divisor = 32
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[TextNetImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理入口：解析 kwargs 并调用后端 _preprocess
     def preprocess(self, images: ImageInput, **kwargs: Unpack[TextNetImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
@@ -97,6 +103,7 @@ class TextNetImageProcessorPil(PilBackend):
             input_data_format=ChannelDimension.FIRST,
         )
 
+    # _preprocess：内部预处理：缩放/归一化流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

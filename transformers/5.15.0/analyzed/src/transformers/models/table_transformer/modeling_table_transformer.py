@@ -27,6 +27,8 @@ from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithCrossAttentions, Seq2SeqModelOutput
 from ...modeling_utils import PreTrainedModel
 from ...utils import (
+# Table Transformer 建模：DETR 风格表格单元格/行列检测与对象查询解码
+
     ModelOutput,
     auto_docstring,
     logging,
@@ -46,6 +48,7 @@ logger = logging.get_logger(__name__)
 )
 @dataclass
 # Copied from transformers.models.detr.modeling_detr.DetrDecoderOutput with DETR->TABLE_TRANSFORMER,Detr->TableTransformer
+# TableTransformerDecoderOutput：Table Transformer 解码输出：含 cross_attentions 的 BaseModelOutput
 class TableTransformerDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -65,6 +68,7 @@ class TableTransformerDecoderOutput(BaseModelOutputWithCrossAttentions):
 )
 @dataclass
 # Copied from transformers.models.detr.modeling_detr.DetrModelOutput with DETR->TABLE_TRANSFORMER,Detr->TableTransformer
+# TableTransformerModelOutput：Table Transformer 模型输出：encoder/decoder 隐状态与 past_key_values
 class TableTransformerModelOutput(Seq2SeqModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, sequence_length, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -82,6 +86,7 @@ class TableTransformerModelOutput(Seq2SeqModelOutput):
 )
 @dataclass
 # Copied from transformers.models.detr.modeling_detr.DetrObjectDetectionOutput with Detr->TableTransformer,DetrImageProcessor->DetrImageProcessor
+# TableTransformerObjectDetectionOutput：Table Transformer 检测输出：pred_logits、pred_boxes 与辅助损失
 class TableTransformerObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -120,6 +125,7 @@ class TableTransformerObjectDetectionOutput(ModelOutput):
 
 
 # Copied from transformers.models.detr.modeling_detr.DetrFrozenBatchNorm2d with Detr->TableTransformer
+# TableTransformerFrozenBatchNorm2d：Table Transformer 冻结 BN：推理态 BatchNorm 不更新 running stats
 class TableTransformerFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -128,6 +134,7 @@ class TableTransformerFrozenBatchNorm2d(nn.Module):
     torchvision.models.resnet[18,34,50,101] produce nans.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, n):
         super().__init__()
         self.weight = nn.Buffer(torch.ones(n))
@@ -146,6 +153,7 @@ class TableTransformerFrozenBatchNorm2d(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         # move reshapes to the beginning
         # to make it user-friendly
@@ -160,6 +168,7 @@ class TableTransformerFrozenBatchNorm2d(nn.Module):
 
 
 # Copied from transformers.models.detr.modeling_detr.replace_batch_norm with Detr->TableTransformer
+# replace_batch_norm：替换 BatchNorm：将 nn.BatchNorm2d 换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `TableTransformerFrozenBatchNorm2d`.
@@ -185,6 +194,7 @@ def replace_batch_norm(model):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrConvEncoder with Detr->TableTransformer
+# TableTransformerConvEncoder：Table Transformer 卷积编码器：ResNet 骨干提取多尺度特征图
 class TableTransformerConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -193,6 +203,7 @@ class TableTransformerConvEncoder(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -223,6 +234,7 @@ class TableTransformerConvEncoder(nn.Module):
                     if "stage.1" not in name and "stage.2" not in name and "stage.3" not in name:
                         parameter.requires_grad_(False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, pixel_mask: torch.Tensor):
         # send pixel_values through the model to get list of feature maps
         features = self.model(pixel_values)
@@ -238,16 +250,19 @@ class TableTransformerConvEncoder(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrConvModel with Detr->TableTransformer
+# TableTransformerConvModel：Table Transformer 卷积模型：ConvEncoder + 1×1 投影至 hidden_dim
 class TableTransformerConvModel(nn.Module):
     """
     This module adds 2D position embeddings to all intermediate feature maps of the convolutional encoder.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, conv_encoder, position_embedding):
         super().__init__()
         self.conv_encoder = conv_encoder
         self.position_embedding = position_embedding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values, pixel_mask):
         # send pixel_values and pixel_mask through backbone to get list of (feature_map, pixel_mask) tuples
         out = self.conv_encoder(pixel_values, pixel_mask)
@@ -260,12 +275,14 @@ class TableTransformerConvModel(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrSinePositionEmbedding with Detr->TableTransformer
+# TableTransformerSinePositionEmbedding：Table Transformer 正弦位置编码：2D sin/cos 位置嵌入
 class TableTransformerSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
     need paper, generalized to work on images.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, embedding_dim=64, temperature=10000, normalize=False, scale=None):
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -277,6 +294,7 @@ class TableTransformerSinePositionEmbedding(nn.Module):
             scale = 2 * math.pi
         self.scale = scale
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values, pixel_mask):
         if pixel_mask is None:
             raise ValueError("No pixel mask provided")
@@ -298,16 +316,19 @@ class TableTransformerSinePositionEmbedding(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrLearnedPositionEmbedding with Detr->TableTransformer
+# TableTransformerLearnedPositionEmbedding：Table Transformer 可学习位置编码：Embedding 查表 2D 坐标
 class TableTransformerLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, embedding_dim=256):
         super().__init__()
         self.row_embeddings = nn.Embedding(50, embedding_dim)
         self.column_embeddings = nn.Embedding(50, embedding_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values, pixel_mask=None):
         height, width = pixel_values.shape[-2:]
         width_values = torch.arange(width, device=pixel_values.device)
@@ -322,6 +343,7 @@ class TableTransformerLearnedPositionEmbedding(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.build_position_encoding with Detr->TableTransformer
+# build_position_encoding：构建位置编码：按 config 选择 sine 或 learned 2D 嵌入
 def build_position_encoding(config):
     n_steps = config.d_model // 2
     if config.position_embedding_type == "sine":
@@ -336,6 +358,7 @@ def build_position_encoding(config):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrAttention with DETR->TABLE_TRANSFORMER,Detr->TableTransformer
+# TableTransformerAttention：Table Transformer 注意力：多头自/交叉注意力 + 可选 mask
 class TableTransformerAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -343,6 +366,7 @@ class TableTransformerAttention(nn.Module):
     Here, we add position embeddings to the queries and keys (as explained in the TABLE_TRANSFORMER paper).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -373,6 +397,7 @@ class TableTransformerAttention(nn.Module):
     def with_pos_embed(self, tensor: torch.Tensor, object_queries: Tensor | None):
         return tensor if object_queries is None else tensor + object_queries
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -469,8 +494,10 @@ class TableTransformerAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# TableTransformerEncoderLayer：Table Transformer 编码层：自注意力 + FFN 双残差
 class TableTransformerEncoderLayer(nn.Module):
     # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrEncoderLayer.__init__ with Detr->TableTransformer
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -487,6 +514,7 @@ class TableTransformerEncoderLayer(nn.Module):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -542,8 +570,10 @@ class TableTransformerEncoderLayer(nn.Module):
         return outputs
 
 
+# TableTransformerDecoderLayer：Table Transformer 解码层：自注意力 + 交叉注意力 + FFN
 class TableTransformerDecoderLayer(GradientCheckpointingLayer):
     # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrDecoderLayer.__init__ with Detr->TableTransformer
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -568,6 +598,7 @@ class TableTransformerDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -650,6 +681,7 @@ class TableTransformerDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# TableTransformerPreTrainedModel：Table Transformer 预训练基类：权重初始化与输出录制
 class TableTransformerPreTrainedModel(PreTrainedModel):
     config: TableTransformerConfig
     base_model_prefix = "model"
@@ -662,6 +694,7 @@ class TableTransformerPreTrainedModel(PreTrainedModel):
     ]
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm/RMSNorm 与偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
 
@@ -670,6 +703,7 @@ class TableTransformerPreTrainedModel(PreTrainedModel):
             init.uniform_(module.column_embeddings.weight)
 
 
+# TableTransformerEncoder：Table Transformer 编码器：Flatten 特征 + 位置编码 + EncoderLayer 堆叠
 class TableTransformerEncoder(TableTransformerPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -685,6 +719,7 @@ class TableTransformerEncoder(TableTransformerPreTrainedModel):
         config: TableTransformerConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__(config)
 
@@ -698,6 +733,7 @@ class TableTransformerEncoder(TableTransformerPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds=None,
@@ -791,6 +827,7 @@ class TableTransformerEncoder(TableTransformerPreTrainedModel):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrDecoder with DETR->TABLE_TRANSFORMER,Detr->TableTransformer
+# TableTransformerDecoder：Table Transformer 解码器：对象查询 + 交叉注意力读取 encoder memory
 class TableTransformerDecoder(TableTransformerPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`TableTransformerDecoderLayer`].
@@ -806,6 +843,7 @@ class TableTransformerDecoder(TableTransformerPreTrainedModel):
         config: TableTransformerConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -819,6 +857,7 @@ class TableTransformerDecoder(TableTransformerPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds=None,
@@ -964,8 +1003,10 @@ class TableTransformerDecoder(TableTransformerPreTrainedModel):
     hidden-states without any specific head on top.
     """
 )
+# TableTransformerModel：Table Transformer 基模型：Encoder-Decoder 联合前向
 class TableTransformerModel(TableTransformerPreTrainedModel):
     # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrModel.__init__ with Detr->TableTransformer
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__(config)
 
@@ -994,6 +1035,7 @@ class TableTransformerModel(TableTransformerPreTrainedModel):
             param.requires_grad_(True)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1133,8 +1175,10 @@ class TableTransformerModel(TableTransformerPreTrainedModel):
     top, for tasks such as COCO detection.
     """
 )
+# TableTransformerForObjectDetection：Table Transformer 表格检测：MLP 预测类别与归一化 bbox
 class TableTransformerForObjectDetection(TableTransformerPreTrainedModel):
     # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrForObjectDetection.__init__ with Detr->TableTransformer
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TableTransformerConfig):
         super().__init__(config)
 
@@ -1153,6 +1197,7 @@ class TableTransformerForObjectDetection(TableTransformerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -1269,6 +1314,7 @@ class TableTransformerForObjectDetection(TableTransformerPreTrainedModel):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrMLPPredictionHead with Detr->TableTransformer,detr->table_transformer
+# TableTransformerMLPPredictionHead：Table Transformer MLP 预测头：3 层 Linear + ReLU 输出 logits/box
 class TableTransformerMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -1278,12 +1324,14 @@ class TableTransformerMLPPredictionHead(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         for i, layer in enumerate(self.layers):
             x = nn.functional.relu(layer(x)) if i < self.num_layers - 1 else layer(x)

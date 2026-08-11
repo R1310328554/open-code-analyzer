@@ -29,6 +29,8 @@ import numpy as np
 
 from ...tokenization_python import PreTrainedTokenizer, Trie, _is_control, _is_punctuation, _is_whitespace
 from ...tokenization_utils_base import (
+# TAPAS 分词器：WordPiece + 表格行列坐标 token 与数值解析工具
+
     ENCODE_KWARGS_DOCSTRING,
     VERY_LARGE_INTEGER,
     BatchEncoding,
@@ -48,6 +50,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt"}
 
 
+# TapasTruncationStrategy：TAPAS 截断策略枚举：DROP_ROWS 等表格行截断方式
 class TapasTruncationStrategy(ExplicitEnum):
     """
     Possible values for the `truncation` argument in [`~TapasTokenizer.__call__`]. Useful for tab-completion in an IDE.
@@ -61,6 +64,7 @@ TableValue = collections.namedtuple("TokenValue", ["token", "column_id", "row_id
 
 
 @dataclass(frozen=True)
+# TokenCoordinates：TAPAS token 坐标：记录 token 在表格中的 (row, col) 位置
 class TokenCoordinates:
     column_index: int
     row_index: int
@@ -68,12 +72,14 @@ class TokenCoordinates:
 
 
 @dataclass
+# TokenizedTable：TAPAS 分词表格：token 序列与行列坐标对齐结果
 class TokenizedTable:
     rows: list[list[list[str]]]
     selected_tokens: list[TokenCoordinates]
 
 
 @dataclass(frozen=True)
+# SerializedExample：TAPAS 序列化样本：问题+表格 token 与 numeric_values 元数据
 class SerializedExample:
     tokens: list[str]
     column_ids: list[int]
@@ -81,10 +87,12 @@ class SerializedExample:
     segment_ids: list[int]
 
 
+# _is_inner_wordpiece：WordPiece 内部 token 检测：判断是否以 ## 前缀开头
 def _is_inner_wordpiece(token: str):
     return token.startswith("##")
 
 
+# load_vocab：加载 WordPiece 词表：读取 vocab.txt 为 token→id 字典
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -96,6 +104,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# whitespace_tokenize：空白切分：按空格/标点边界初步切分文本
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -146,6 +155,7 @@ TAPAS_ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
 """
 
 
+# TapasTokenizer：TAPAS 分词器：WordPiece + 表格行列 token 与数值特征注入
 class TapasTokenizer(PreTrainedTokenizer):
     r"""
     Construct a TAPAS tokenizer. Based on WordPiece. Flattens a table and one or more related sentences to be used by
@@ -232,6 +242,7 @@ class TapasTokenizer(PreTrainedTokenizer):
     model_input_names = ["input_ids", "attention_mask", "token_type_ids"]
     vocab_files_names = VOCAB_FILES_NAMES
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file,
@@ -378,11 +389,13 @@ class TapasTokenizer(PreTrainedTokenizer):
         """Converts an index (integer) in a token (str) using the vocab."""
         return self.ids_to_tokens.get(index, self.unk_token)
 
+    # convert_tokens_to_string：token 序列→字符串：WordPiece 解码并清理 ## 前缀
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         out_string = " ".join(tokens).replace(" ##", "").strip()
         return out_string
 
+    # save_vocabulary：保存词表：写入 vocab.txt 文件
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         index = 0
         if os.path.isdir(save_directory):
@@ -468,6 +481,7 @@ class TapasTokenizer(PreTrainedTokenizer):
         table_row_ids = list(zip(*table_values))[2] if table_values else []
         return [0] * (1 + len(query_ids) + 1) + list(table_row_ids)
 
+    # build_inputs_with_special_tokens：拼接特殊 token：[CLS] + 序列 + [SEP]
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -487,6 +501,7 @@ class TapasTokenizer(PreTrainedTokenizer):
 
         return [self.cls_token_id] + token_ids_0 + [self.sep_token_id] + token_ids_1
 
+    # get_special_tokens_mask：特殊 token 掩码：标记 CLS/SEP 等特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -914,6 +929,7 @@ class TapasTokenizer(PreTrainedTokenizer):
         return encoded_inputs["input_ids"]
 
     @add_end_docstrings(ENCODE_KWARGS_DOCSTRING, TAPAS_ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING)
+    # encode_plus：编码增强：问题+表格联合 tokenize 并注入 numeric 特征
     def encode_plus(
         self,
         table: Union["pd.DataFrame", TextInput, list[TextInput]],
@@ -1982,6 +1998,7 @@ class TapasTokenizer(PreTrainedTokenizer):
     # End of everything related to converting logits to predictions
 
 
+# BasicTokenizer：TAPAS 基础分词器：Unicode 清洗、中文/标点切分与 lowercasing
 class BasicTokenizer:
     """
     Constructs a BasicTokenizer that will run basic tokenization (punctuation splitting, lower casing, etc.).
@@ -2005,6 +2022,7 @@ class BasicTokenizer:
             the full context of the words, such as contractions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         do_lower_case=True,
@@ -2143,9 +2161,11 @@ class BasicTokenizer:
         return "".join(output)
 
 
+# WordpieceTokenizer：TAPAS WordPiece 分词器：贪心最长匹配子词切分
 class WordpieceTokenizer:
     """Runs WordPiece tokenization."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vocab, unk_token, max_input_chars_per_word=100):
         self.vocab = vocab
         self.unk_token = unk_token
@@ -2209,6 +2229,7 @@ class WordpieceTokenizer:
 
 # taken from constants.py of the original implementation
 # URL: https://github.com/google-research/tapas/blob/master/tapas/utils/constants.py
+# Relation：TAPAS 数值关系枚举：EQ/NE/GT/LT 等比较关系类型
 class Relation(enum.Enum):
     HEADER_TO_CELL = 1  # Connects header to cell.
     CELL_TO_HEADER = 2  # Connects cell to header.
@@ -2222,6 +2243,7 @@ class Relation(enum.Enum):
 
 
 @dataclass
+# Date：TAPAS 日期值：年/月/日结构化表示
 class Date:
     year: int | None = None
     month: int | None = None
@@ -2229,12 +2251,14 @@ class Date:
 
 
 @dataclass
+# NumericValue：TAPAS 数值：浮点或日期类型的单元格数值
 class NumericValue:
     float_value: float | None = None
     date: Date | None = None
 
 
 @dataclass
+# NumericValueSpan：TAPAS 数值 span：文本中数值子串的起止位置
 class NumericValueSpan:
     begin_index: int | None = None
     end_index: int | None = None
@@ -2242,12 +2266,14 @@ class NumericValueSpan:
 
 
 @dataclass
+# Cell：TAPAS 单元格：文本内容与解析出的 numeric_values 列表
 class Cell:
     text: str
     numeric_value: NumericValue | None = None
 
 
 @dataclass
+# Question：TAPAS 问题：自然语言问题文本与关联 numeric_values
 class Question:
     original_text: str  # The original raw question string.
     text: str  # The question string after normalization.
@@ -2307,6 +2333,7 @@ _FIELD_TO_REGEX = (
 )
 
 
+# _process_date_pattern：日期模式处理：将正则捕获组转为 Date 结构
 def _process_date_pattern(dp):
     """Compute a regex for each date pattern to use as a prefilter."""
     pattern, mask = dp
@@ -2321,6 +2348,7 @@ def _process_date_pattern(dp):
     return pattern, mask, re.compile("^" + regex + "$")
 
 
+# _process_date_patterns：批量日期模式：遍历预定义 regex 列表解析日期
 def _process_date_patterns():
     return tuple(_process_date_pattern(dp) for dp in _DATE_PATTERNS)
 
@@ -2375,6 +2403,7 @@ _MAX_YEAR = 2016
 _INF = float("INF")
 
 
+# _get_numeric_value_from_date：日期转数值：按 mask 提取年月日分量
 def _get_numeric_value_from_date(date, mask):
     """Converts date (datetime Python object) to a NumericValue object with a Date object value."""
     if date.year < _MIN_YEAR or date.year > _MAX_YEAR:
@@ -2390,17 +2419,20 @@ def _get_numeric_value_from_date(date, mask):
     return NumericValue(date=new_date)
 
 
+# _get_span_length_key：span 长度键：用于按 n-gram 长度排序 span
 def _get_span_length_key(span):
     """Sorts span by decreasing length first and increasing first index second."""
     return span[1] - span[0], -span[0]
 
 
+# _get_numeric_value_from_float：浮点转 NumericValue：封装 Python float
 def _get_numeric_value_from_float(value):
     """Converts float (Python) to a NumericValue object with a float value."""
     return NumericValue(float_value=value)
 
 
 # Doesn't parse ordinal expressions such as '18th of february 1655'.
+# _parse_date：日期解析：尝试多种格式将文本转为 Date
 def _parse_date(text):
     """Attempts to format a text as a standard date string (yyyy-mm-dd)."""
     text = re.sub(r"Sept\b", "Sep", text)
@@ -2418,6 +2450,7 @@ def _parse_date(text):
     return None
 
 
+# _parse_number：数字解析：尝试将文本转为 float NumericValue
 def _parse_number(text):
     """Parses simple cardinal and ordinals numbers."""
     for suffix in _ORDINAL_SUFFIXES:
@@ -2436,6 +2469,7 @@ def _parse_number(text):
     return value
 
 
+# get_all_spans：提取 n-gram span：扫描文本中长度 ≤ max_ngram 的所有子串
 def get_all_spans(text, max_ngram_length):
     """
     Split a text into all possible ngrams up to 'max_ngram_length'. Split points are white space and punctuation.
@@ -2457,10 +2491,12 @@ def get_all_spans(text, max_ngram_length):
                 yield start_index, index + 1
 
 
+# normalize_for_match：匹配归一化：lower/strip 文本供 fuzzy 匹配
 def normalize_for_match(text):
     return " ".join(text.lower().split())
 
 
+# format_text：文本格式化：统一空白与标点便于数值解析
 def format_text(text):
     """Lowercases and strips punctuation."""
     text = text.lower().strip()
@@ -2475,6 +2511,7 @@ def format_text(text):
     return EMPTY_TEXT
 
 
+# parse_text：文本解析：识别日期/浮点/整数等 NumericValue
 def parse_text(text):
     """
     Extracts longest number and date spans.
@@ -2549,6 +2586,7 @@ NUMBER_TYPE = "number"
 DATE_TYPE = "date"
 
 
+# _get_value_type：数值类型判定：区分 DATE/FLOAT/INT 等类型
 def _get_value_type(numeric_value):
     if numeric_value.float_value is not None:
         return NUMBER_TYPE
@@ -2557,6 +2595,7 @@ def _get_value_type(numeric_value):
     raise ValueError(f"Unknown type: {numeric_value}")
 
 
+# _get_value_as_primitive_value：数值原语提取：NumericValue 转为 Python 标量
 def _get_value_as_primitive_value(numeric_value):
     """Maps a NumericValue proto to a float or tuple of float."""
     if numeric_value.float_value is not None:
@@ -2575,10 +2614,12 @@ def _get_value_as_primitive_value(numeric_value):
     raise ValueError(f"Unknown type: {numeric_value}")
 
 
+# _get_all_types：收集数值类型：返回表格中所有 NumericValue 类型集合
 def _get_all_types(numeric_values):
     return {_get_value_type(value) for value in numeric_values}
 
 
+# get_numeric_sort_key_fn：数值排序键：为 NumericValue 列表构造比较键函数
 def get_numeric_sort_key_fn(numeric_values):
     """
     Creates a function that can be used as a sort key or to compare the values. Maps to primitive types and finds the
@@ -2626,6 +2667,7 @@ def get_numeric_sort_key_fn(numeric_values):
     return _sort_key_fn
 
 
+# _consolidate_numeric_values：数值合并：同列语义相同数值按阈值合并
 def _consolidate_numeric_values(row_index_to_values, min_consolidation_fraction, debug_info):
     """
     Finds the most common numeric values in a column and returns them
@@ -2673,12 +2715,14 @@ def _consolidate_numeric_values(row_index_to_values, min_consolidation_fraction,
     return new_row_index_to_value
 
 
+# _get_numeric_values：单元格数值提取：parse_text 解析文本中所有数值
 def _get_numeric_values(text):
     """Parses text and returns numeric values."""
     numeric_spans = parse_text(text)
     return itertools.chain(*(span.values for span in numeric_spans))
 
 
+# _get_column_values：列数值收集：汇总指定列所有单元格的 numeric_values
 def _get_column_values(table, col_index):
     """
     Parses text in column and returns a dict mapping row_index to values. This is the _get_column_values function from
@@ -2695,6 +2739,7 @@ def _get_column_values(table, col_index):
     return index_to_values
 
 
+# get_numeric_relation：数值关系判定：比较两个 NumericValue 的 EQ/GT/LT 等关系
 def get_numeric_relation(value, other_value, sort_key_fn):
     """Compares two values and returns their relation or None."""
     value = sort_key_fn(value)
@@ -2708,6 +2753,7 @@ def get_numeric_relation(value, other_value, sort_key_fn):
     return None
 
 
+# add_numeric_values_to_question：问题数值注入：解析问题文本中的数值特征
 def add_numeric_values_to_question(question):
     """Adds numeric value spans to a question."""
     original_text = question
@@ -2716,11 +2762,13 @@ def add_numeric_values_to_question(question):
     return Question(original_text=original_text, text=question, numeric_spans=numeric_spans)
 
 
+# filter_invalid_unicode：Unicode 过滤：移除 surrogate 等非法字符
 def filter_invalid_unicode(text):
     """Return an empty string and True if 'text' is in invalid unicode."""
     return ("", True) if isinstance(text, bytes) else (text, False)
 
 
+# filter_invalid_unicode_from_table：表格 Unicode 过滤：逐单元格清理非法字符
 def filter_invalid_unicode_from_table(table):
     """
     Removes invalid unicode from table. Checks whether a table cell text contains an invalid unicode encoding. If yes,
@@ -2747,6 +2795,7 @@ def filter_invalid_unicode_from_table(table):
             logging.warning(f"Scrub an invalid table header @ table_id: {table.table_id}, col_index: {col_index}")
 
 
+# add_numeric_table_values：表格数值注入：解析各列数值并合并同义值
 def add_numeric_table_values(table, min_consolidation_fraction=0.7, debug_info=None):
     """
     Parses text in table column-wise and adds the consolidated values. Consolidation refers to finding values with a

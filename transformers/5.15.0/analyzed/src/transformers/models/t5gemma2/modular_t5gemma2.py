@@ -27,6 +27,8 @@ from ...generation import GenerationConfig, GenerationMixin, GenerationMode
 from ...masking_utils import create_bidirectional_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_outputs import (
+# T5Gemma2 模块化实现：复用 Gemma3/T5Gemma 组件，供 modeling 代码生成
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPooling,
@@ -75,6 +77,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2TextConfig：T5Gemma2 文本配置：hidden_size、层数、RoPE 与滑动窗口参数
 class T5Gemma2TextConfig(Gemma3TextConfig, PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -88,6 +91,7 @@ class T5Gemma2TextConfig(Gemma3TextConfig, PreTrainedConfig):
     model_type = "t5gemma2_text"
     use_bidirectional_attention = AttributeError()
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         # BC -> the pattern used to be a simple int, and it's still present in configs on the Hub
         _sliding_window_pattern = kwargs.pop("sliding_window_pattern", 6)
@@ -102,6 +106,7 @@ class T5Gemma2TextConfig(Gemma3TextConfig, PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2EncoderConfig：T5Gemma2 编码器配置：双向注意力与 encoder 层深度
 class T5Gemma2EncoderConfig(Gemma3Config):
     model_type = "t5gemma2_encoder"
 
@@ -113,6 +118,7 @@ class T5Gemma2EncoderConfig(Gemma3Config):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2DecoderConfig：T5Gemma2 解码器配置：因果/滑动窗口注意力与 decoder 层深度
 class T5Gemma2DecoderConfig(Gemma3TextConfig, PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -126,6 +132,7 @@ class T5Gemma2DecoderConfig(Gemma3TextConfig, PreTrainedConfig):
     model_type = "t5gemma2_decoder"
     use_bidirectional_attention = AttributeError()
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         # BC -> the pattern used to be a simple int, and it's still present in configs on the Hub
         _sliding_window_pattern = kwargs.pop("sliding_window_pattern", 6)
@@ -140,6 +147,7 @@ class T5Gemma2DecoderConfig(Gemma3TextConfig, PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5gemma-2-270m-270m")
 @strict
+# T5Gemma2Config：T5Gemma2 主配置：聚合 text/encoder/decoder 子配置与 tie_word_embeddings
 class T5Gemma2Config(PreTrainedConfig):
     r"""
     encoder (`Union[T5Gemma2EncoderConfig, dict]`, optional, *optional*):
@@ -181,6 +189,7 @@ class T5Gemma2Config(PreTrainedConfig):
     eoi_token_index: int | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder, dict):
             self.encoder = T5Gemma2EncoderConfig(**self.encoder)
@@ -227,15 +236,19 @@ class T5Gemma2Config(PreTrainedConfig):
             )
 
 
+# T5Gemma2RMSNorm：T5Gemma2 RMSNorm：Gemma3 风格均方根层归一化
 class T5Gemma2RMSNorm(Gemma3RMSNorm):
     pass
 
 
+# T5Gemma2MLP：T5Gemma2 MLP：Gemma3 门控前馈网络
 class T5Gemma2MLP(Gemma3MLP):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2TextConfig):
         super().__init__(config)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         hidden_states = self.act_fn(self.gate_proj(x)) * self.up_proj(x)
         hidden_states = self.dropout(hidden_states)
@@ -243,23 +256,29 @@ class T5Gemma2MLP(Gemma3MLP):
         return down_proj
 
 
+# T5Gemma2RotaryEmbedding：T5Gemma2 旋转位置编码：RoPE 缓存与动态序列长度扩展
 class T5Gemma2RotaryEmbedding(Gemma3RotaryEmbedding):
     pass
 
 
+# T5Gemma2SelfAttention：T5Gemma2 自注意力：Gemma3 多头自注意力 + 可选滑动窗口
 class T5Gemma2SelfAttention(Gemma3Attention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2TextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.is_causal = False  # Only used by the encoder
 
 
+# T5Gemma2MergedAttention：T5Gemma2 合并注意力：自注意力与交叉注意力权重合并的单模块
 class T5Gemma2MergedAttention(Gemma3Attention):
     """Merged self-attention and cross-attention for decoder."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2TextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.is_causal = False  # Fused causal and encoder mask
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         # decoder self-attention inputs
@@ -347,6 +366,7 @@ class T5Gemma2MergedAttention(Gemma3Attention):
         return attn_output, self_attn_weights, cross_attn_weights
 
 
+# sliding_window_mask_function：滑动窗口掩码工厂：返回限制局部注意力的 mask 函数
 def sliding_window_mask_function(sliding_window: int, is_causal=True) -> Callable:
     """
     This creates uni/bidirectional attention mask with sliding window.
@@ -366,13 +386,16 @@ def sliding_window_mask_function(sliding_window: int, is_causal=True) -> Callabl
     return inner_mask
 
 
+# T5Gemma2EncoderLayer：T5Gemma2 编码层：自注意力 + MLP 双残差
 class T5Gemma2EncoderLayer(T5GemmaEncoderLayer):
     pass
 
 
+# T5Gemma2DecoderLayer：T5Gemma2 解码层：合并注意力 + MLP 双残差
 class T5Gemma2DecoderLayer(T5GemmaEncoderLayer):
     """Decoder sub-layer: merged attention instead of vanilla self-attention."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int):
         super().__init__(config, layer_idx)
 
@@ -382,6 +405,7 @@ class T5Gemma2DecoderLayer(T5GemmaEncoderLayer):
             layer_idx=layer_idx,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -417,22 +441,28 @@ class T5Gemma2DecoderLayer(T5GemmaEncoderLayer):
         return hidden_states
 
 
+# T5Gemma2LMHead：T5Gemma2 语言模型头：隐藏态映射至词表 logits
 class T5Gemma2LMHead(T5GemmaLMHead):
     pass
 
 
+# T5Gemma2ClassificationHead：T5Gemma2 分类头：池化 + Linear 输出分类 logits
 class T5Gemma2ClassificationHead(T5GemmaClassificationHead):
     pass
 
 
+# T5Gemma2MultiModalProjector：T5Gemma2 多模态投影：视觉特征线性映射至文本 hidden_size
 class T5Gemma2MultiModalProjector(Gemma3MultiModalProjector):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2EncoderConfig):
         super().__init__(config)
 
 
+# T5Gemma2TextScaledWordEmbedding：T5Gemma2 缩放词嵌入：Embedding × sqrt(hidden_size) 缩放
 class T5Gemma2TextScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
     """T5Gemma2 Embedding: override to add eoi token embedding separately."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         num_embeddings: int,
@@ -445,6 +475,7 @@ class T5Gemma2TextScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
         self.eoi_token_index = eoi_token_index
         self.eoi_embedding = nn.Parameter(torch.zeros(self.embedding_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor):
         input_embeddings = super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
         input_embeddings[input_ids == self.eoi_token_index] = self.eoi_embedding.to(input_embeddings.dtype)
@@ -452,6 +483,7 @@ class T5Gemma2TextScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
 
 
 @auto_docstring
+# T5Gemma2PreTrainedModel：T5Gemma2 预训练基类：权重初始化与生成/缓存支持
 class T5Gemma2PreTrainedModel(Gemma3PreTrainedModel):
     config: T5Gemma2Config
     base_model_prefix = "model"
@@ -470,6 +502,7 @@ class T5Gemma2PreTrainedModel(Gemma3PreTrainedModel):
     # Recording is declared on the text encoder/decoder classes; None avoids inheriting the gemma3 dict
     _can_record_outputs = None
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm/RMSNorm 与偏置置零
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
         if isinstance(module, T5Gemma2MultiModalProjector):
@@ -522,6 +555,7 @@ class T5Gemma2PreTrainedModel(Gemma3PreTrainedModel):
         return shifted_input_ids
 
 
+# T5Gemma2TextEncoder：T5Gemma2 文本编码器：纯文本 EncoderLayer 堆叠
 class T5Gemma2TextEncoder(T5Gemma2PreTrainedModel):
     config: T5Gemma2TextConfig
     _can_record_outputs = {
@@ -529,6 +563,7 @@ class T5Gemma2TextEncoder(T5Gemma2PreTrainedModel):
         "hidden_states": T5Gemma2EncoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: T5Gemma2TextConfig,
@@ -560,6 +595,7 @@ class T5Gemma2TextEncoder(T5Gemma2PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -623,9 +659,11 @@ class T5Gemma2TextEncoder(T5Gemma2PreTrainedModel):
         )
 
 
+# T5Gemma2Encoder：T5Gemma2 编码器：双向注意力编码 + 可选多模态输入投影
 class T5Gemma2Encoder(T5Gemma2PreTrainedModel):
     config: T5Gemma2EncoderConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: T5Gemma2EncoderConfig,
@@ -691,6 +729,7 @@ class T5Gemma2Encoder(T5Gemma2PreTrainedModel):
         return special_image_mask
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -727,6 +766,7 @@ class T5Gemma2Encoder(T5Gemma2PreTrainedModel):
         return outputs
 
 
+# T5Gemma2Decoder：T5Gemma2 解码器：因果/滑动窗口解码 + 交叉注意力
 class T5Gemma2Decoder(T5Gemma2PreTrainedModel):
     config: T5Gemma2DecoderConfig
     _can_record_outputs = {
@@ -735,6 +775,7 @@ class T5Gemma2Decoder(T5Gemma2PreTrainedModel):
         "hidden_states": T5Gemma2DecoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2DecoderConfig, eoi_token_index: int = 256_000):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -760,6 +801,7 @@ class T5Gemma2Decoder(T5Gemma2PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -856,12 +898,14 @@ class T5Gemma2Decoder(T5Gemma2PreTrainedModel):
 
 
 @auto_docstring
+# T5Gemma2Model：T5Gemma2 基模型：编码器-解码器联合前向
 class T5Gemma2Model(T5Gemma2PreTrainedModel):
     _tied_weights_keys = {
         "decoder.embed_tokens.weight": "encoder.text_model.embed_tokens.weight",
         "decoder.embed_tokens.eoi_embedding": "encoder.text_model.embed_tokens.eoi_embedding",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2Config):
         super().__init__(config)
 
@@ -885,6 +929,7 @@ class T5Gemma2Model(T5Gemma2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         # encoder inputs
@@ -949,6 +994,7 @@ class T5Gemma2Model(T5Gemma2PreTrainedModel):
         )
 
 
+# T5Gemma2ForConditionalGeneration：T5Gemma2 条件生成：seq2seq 自回归解码 + LM 损失
 class T5Gemma2ForConditionalGeneration(T5Gemma2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.out_proj.weight": "model.encoder.text_model.embed_tokens.weight",
@@ -956,6 +1002,7 @@ class T5Gemma2ForConditionalGeneration(T5Gemma2PreTrainedModel, GenerationMixin)
     _tp_plan = {"lm_head.out_proj": "colwise_gather_output"}
     _pp_plan = {"lm_head.out_proj": (["hidden_states"], ["logits"])}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2Config):
         super().__init__(config)
 
@@ -997,6 +1044,7 @@ class T5Gemma2ForConditionalGeneration(T5Gemma2PreTrainedModel, GenerationMixin)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         # encoder inputs
@@ -1153,7 +1201,9 @@ class T5Gemma2ForConditionalGeneration(T5Gemma2PreTrainedModel, GenerationMixin)
 
 
 @auto_docstring
+# T5Gemma2ForSequenceClassification：T5Gemma2 序列分类：decoder 末 token 池化 + 分类头
 class T5Gemma2ForSequenceClassification(T5Gemma2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1173,6 +1223,7 @@ class T5Gemma2ForSequenceClassification(T5Gemma2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1251,7 +1302,9 @@ class T5Gemma2ForSequenceClassification(T5Gemma2PreTrainedModel):
 
 
 @auto_docstring
+# T5Gemma2ForTokenClassification：T5Gemma2 序列标注：逐 token 线性分类头
 class T5Gemma2ForTokenClassification(T5Gemma2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Gemma2Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1272,6 +1325,7 @@ class T5Gemma2ForTokenClassification(T5Gemma2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

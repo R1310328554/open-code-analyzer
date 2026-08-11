@@ -31,6 +31,8 @@ from ...modeling_utils import PreTrainedModel
 from ...pytorch_utils import apply_chunking_to_forward
 from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_tapas import TapasConfig
+# TAPAS 建模：表格+问题联合编码、单元格选择/聚合/分类多任务头
+
 
 
 logger = logging.get_logger(__name__)
@@ -46,6 +48,7 @@ CLOSE_ENOUGH_TO_LOG_ZERO = -10000.0
     """
 )
 @dataclass
+# TableQuestionAnsweringOutput：TAPAS 表格 QA 输出：logits、聚合 logits 与可选损失
 class TableQuestionAnsweringOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` (and possibly `answer`, `aggregation_labels`, `numeric_values` and `numeric_values_scale` are provided)):
@@ -64,12 +67,14 @@ class TableQuestionAnsweringOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# TapasEmbeddings：TAPAS 嵌入：词/位置/段/列/行/列内排名/列内索引七路嵌入求和
 class TapasEmbeddings(nn.Module):
     """
     Construct the embeddings from word, position and token_type embeddings. Same as BertEmbeddings but with a number of
     additional token type embeddings to encode tabular structure.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         # we do not include config.disabled_features and config.disable_position_embeddings from the original implementation
@@ -89,6 +94,7 @@ class TapasEmbeddings(nn.Module):
 
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -141,7 +147,9 @@ class TapasEmbeddings(nn.Module):
         return embeddings
 
 
+# TapasSelfAttention：TAPAS 自注意力：BERT 风格缩放点积多头自注意力
 class TapasSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -162,6 +170,7 @@ class TapasSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -231,13 +240,16 @@ class TapasSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# TapasSelfOutput：TAPAS 注意力输出：Dense + Dropout + 残差 LayerNorm
 class TapasSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -245,13 +257,16 @@ class TapasSelfOutput(nn.Module):
         return hidden_states
 
 
+# TapasAttention：TAPAS 注意力模块：SelfAttention + SelfOutput 封装
 class TapasAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.self = TapasSelfAttention(config, layer_idx=layer_idx)
         self.output = TapasSelfOutput(config)
 
     # Copied from transformers.models.rembert.modeling_rembert.RemBertAttention.forward
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -274,7 +289,9 @@ class TapasAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# TapasIntermediate：TAPAS 中间层：Dense + 激活的前馈前半段
 class TapasIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -283,6 +300,7 @@ class TapasIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -290,13 +308,16 @@ class TapasIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# TapasOutput：TAPAS 输出层：Dense + Dropout + 残差 LayerNorm
 class TapasOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -304,7 +325,9 @@ class TapasOutput(nn.Module):
         return hidden_states
 
 
+# TapasLayer：TAPAS Transformer 层：Attention + FFN 残差堆叠
 class TapasLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -320,6 +343,7 @@ class TapasLayer(GradientCheckpointingLayer):
         self.output = TapasOutput(config)
 
     # Copied from transformers.models.rembert.modeling_rembert.RemBertLayer.forward
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -370,13 +394,16 @@ class TapasLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# TapasEncoder：TAPAS 编码器：多层 TapasLayer 堆叠
 class TapasEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([TapasLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -422,12 +449,15 @@ class TapasEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# TapasPooler：TAPAS 池化层：首 token [CLS] 线性 + Tanh
 class TapasPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -438,7 +468,9 @@ class TapasPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->Tapas
+# TapasPredictionHeadTransform：TAPAS 预测头变换：Dense + 激活 + LayerNorm
 class TapasPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -448,6 +480,7 @@ class TapasPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -456,7 +489,9 @@ class TapasPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->Tapas
+# TapasLMPredictionHead：TAPAS MLM 头：变换 + 词表解码器
 class TapasLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.transform = TapasPredictionHeadTransform(config)
@@ -466,6 +501,7 @@ class TapasLMPredictionHead(nn.Module):
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=True)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
@@ -473,23 +509,28 @@ class TapasLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->Tapas
+# TapasOnlyMLMHead：TAPAS 纯 MLM 头：LMPredictionHead 封装
 class TapasOnlyMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = TapasLMPredictionHead(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 @auto_docstring
+# TapasPreTrainedModel：TAPAS 预训练基类：权重初始化与表格 QA 输出录制
 class TapasPreTrainedModel(PreTrainedModel):
     config: TapasConfig
     base_model_prefix = "tapas"
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm/RMSNorm 与偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -507,6 +548,7 @@ class TapasPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# TapasModel：TAPAS 基模型：表格+问题联合编码输出序列隐状态
 class TapasModel(TapasPreTrainedModel):
     """
     This class is a small change compared to [`BertModel`], taking into account the additional token type ids.
@@ -518,6 +560,7 @@ class TapasModel(TapasPreTrainedModel):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -541,6 +584,7 @@ class TapasModel(TapasPreTrainedModel):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -558,6 +602,7 @@ class TapasModel(TapasPreTrainedModel):
         r"""
         token_type_ids (`torch.LongTensor` of shape `(batch_size, sequence_length, 7)`, *optional*):
             Token indices that encode tabular structure. Indices can be obtained using [`AutoTokenizer`]. See this
+            # for：模型组件定义与接口
             class for more info.
 
             [What are token type IDs?](../glossary#token-type-ids)
@@ -657,6 +702,7 @@ class TapasModel(TapasPreTrainedModel):
 
 
 @auto_docstring
+# TapasForMaskedLM：TAPAS 掩码语言模型：MLM 头预测被 mask 的表格/问题 token
 class TapasForMaskedLM(TapasPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -665,6 +711,7 @@ class TapasForMaskedLM(TapasPreTrainedModel):
     config: TapasConfig
     base_model_prefix = "tapas"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -682,6 +729,7 @@ class TapasForMaskedLM(TapasPreTrainedModel):
         self.cls.predictions.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -700,6 +748,7 @@ class TapasForMaskedLM(TapasPreTrainedModel):
         r"""
         token_type_ids (`torch.LongTensor` of shape `(batch_size, sequence_length, 7)`, *optional*):
             Token indices that encode tabular structure. Indices can be obtained using [`AutoTokenizer`]. See this
+            # for：模型组件定义与接口
             class for more info.
 
             [What are token type IDs?](../glossary#token-type-ids)
@@ -782,7 +831,9 @@ class TapasForMaskedLM(TapasPreTrainedModel):
     SQA, WTQ or WikiSQL-supervised tasks.
     """
 )
+# TapasForQuestionAnswering：TAPAS 表格问答：单元格选择 + 聚合类型 + 回归多任务头
 class TapasForQuestionAnswering(TapasPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TapasConfig):
         super().__init__(config)
 
@@ -806,6 +857,7 @@ class TapasForQuestionAnswering(TapasPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -827,6 +879,7 @@ class TapasForQuestionAnswering(TapasPreTrainedModel):
         r"""
         token_type_ids (`torch.LongTensor` of shape `(batch_size, sequence_length, 7)`, *optional*):
             Token indices that encode tabular structure. Indices can be obtained using [`AutoTokenizer`]. See this
+            # for：模型组件定义与接口
             class for more info.
 
             [What are token type IDs?](../glossary#token-type-ids)
@@ -1120,7 +1173,9 @@ class TapasForQuestionAnswering(TapasPreTrainedModel):
     entailment tasks, such as TabFact (Chen et al., 2020).
     """
 )
+# TapasForSequenceClassification：TAPAS 序列分类：池化表示 + Linear 分类头
 class TapasForSequenceClassification(TapasPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1133,6 +1188,7 @@ class TapasForSequenceClassification(TapasPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1149,6 +1205,7 @@ class TapasForSequenceClassification(TapasPreTrainedModel):
         r"""
         token_type_ids (`torch.LongTensor` of shape `(batch_size, sequence_length, 7)`, *optional*):
             Token indices that encode tabular structure. Indices can be obtained using [`AutoTokenizer`]. See this
+            # for：模型组件定义与接口
             class for more info.
 
             [What are token type IDs?](../glossary#token-type-ids)
@@ -1247,6 +1304,7 @@ class TapasForSequenceClassification(TapasPreTrainedModel):
 """ TAPAS utilities."""
 
 
+# AverageApproximationFunction：TAPAS 聚合近似函数枚举：MEAN/SUM/COUNT 等聚合策略
 class AverageApproximationFunction(str, enum.Enum):
     RATIO = "ratio"
     FIRST_ORDER = "first_order"
@@ -1256,9 +1314,11 @@ class AverageApproximationFunction(str, enum.Enum):
 # Beginning of everything related to segmented tensors
 
 
+# IndexMap：TAPAS 分段索引映射：batch 形状 + 段 id 张量封装
 class IndexMap:
     """Index grouping entries within a tensor."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, indices, num_segments, batch_dims=0):
         """
         Creates an index
@@ -1282,9 +1342,11 @@ class IndexMap:
         return self.indices.size()[: self.batch_dims]  # returns a torch.Size object
 
 
+# ProductIndexMap：TAPAS 笛卡尔积索引：两 IndexMap 组合为乘积段索引
 class ProductIndexMap(IndexMap):
     """The product of two indices."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, outer_index, inner_index):
         """
         Combines indices i and j into pairs (i, j). The result is an index where each segment (i, j) is the
@@ -1327,6 +1389,7 @@ class ProductIndexMap(IndexMap):
         )
 
 
+# gather：TAPAS 分段 gather：按 IndexMap 从 values 中收集段内元素
 def gather(values, index, name="segmented_gather"):
     """
     Gathers from *values* using the index map. For each element in the domain of the index map this operation looks up
@@ -1360,6 +1423,7 @@ def gather(values, index, name="segmented_gather"):
         return torch.gather(values, index.batch_dims, indices)
 
 
+# flatten：TAPAS 分段 flatten：将 IndexMap 展平为一维段索引
 def flatten(index, name="segmented_flatten"):
     """
     Flattens a batched index map (which is typically of shape batch_size, seq_length) to a 1d index map. This operation
@@ -1389,6 +1453,7 @@ def flatten(index, name="segmented_flatten"):
     return IndexMap(indices=indices.view(-1), num_segments=index.num_segments * batch_size, batch_dims=0)
 
 
+# range_index_map：TAPAS 范围索引：为 batch 中每段生成连续段 id
 def range_index_map(batch_shape, num_segments, name="range_index_map"):
     """
     Constructs an index map equal to range(num_segments).
@@ -1433,6 +1498,7 @@ def range_index_map(batch_shape, num_segments, name="range_index_map"):
     return IndexMap(indices=indices, num_segments=num_segments, batch_dims=list(batch_shape.size())[0])
 
 
+# _segment_reduce：TAPAS 通用分段归约：按 IndexMap 调用自定义 reduce 函数
 def _segment_reduce(values, index, segment_reduce_fn, name):
     """
     Applies a segment reduction segment-wise.
@@ -1482,6 +1548,7 @@ def _segment_reduce(values, index, segment_reduce_fn, name):
     return output_values, output_index
 
 
+# reduce_sum：TAPAS 分段求和：按 IndexMap 对 values 段内求和
 def reduce_sum(values, index, name="segmented_reduce_sum"):
     """
     Sums a tensor over its segments.
@@ -1509,6 +1576,7 @@ def reduce_sum(values, index, name="segmented_reduce_sum"):
     return _segment_reduce(values, index, "sum", name)
 
 
+# reduce_mean：TAPAS 分段均值：按 IndexMap 对 values 段内取平均
 def reduce_mean(values, index, name="segmented_reduce_mean"):
     """
     Averages a tensor over its segments.
@@ -1538,6 +1606,7 @@ def reduce_mean(values, index, name="segmented_reduce_mean"):
     return _segment_reduce(values, index, "mean", name)
 
 
+# reduce_max：TAPAS 分段最大值：按 IndexMap 对 values 段内取 max
 def reduce_max(values, index, name="segmented_reduce_max"):
     """
     Computes the maximum over segments.
@@ -1565,6 +1634,7 @@ def reduce_max(values, index, name="segmented_reduce_max"):
     return _segment_reduce(values, index, "amax", name)
 
 
+# reduce_min：TAPAS 分段最小值：按 IndexMap 对 values 段内取 min
 def reduce_min(values, index, name="segmented_reduce_min"):
     """
     Computes the minimum over segments.
@@ -1595,6 +1665,7 @@ def reduce_min(values, index, name="segmented_reduce_min"):
 # End of everything related to segmented tensors
 
 
+# compute_column_logits：TAPAS 列 logits：对每列单元格 token logits 聚合得到列选择分数
 def compute_column_logits(
     sequence_output, column_output_weights, column_output_bias, cell_index, cell_mask, allow_empty_column_selection
 ):
@@ -1647,6 +1718,7 @@ def compute_column_logits(
     return column_logits
 
 
+# _single_column_cell_selection_loss：TAPAS 列-单元格选择损失：token 与 column logits 联合 CE
 def _single_column_cell_selection_loss(token_logits, column_logits, labels, cell_index, col_index, cell_mask):
     """
     Computes the loss for cell selection constrained to a single column. The loss is a hierarchical log-likelihood. The
@@ -1754,6 +1826,7 @@ def _single_column_cell_selection_loss(token_logits, column_logits, labels, cell
     return selection_loss_per_example, logits
 
 
+# compute_token_logits：TAPAS token logits：序列输出经温度缩放与线性层得单元格分数
 def compute_token_logits(sequence_output, temperature, output_weights, output_bias):
     """
     Computes logits per token
@@ -1776,6 +1849,7 @@ def compute_token_logits(sequence_output, temperature, output_weights, output_bi
     return logits
 
 
+# _calculate_aggregate_mask：TAPAS 聚合掩码：判定答案是否需聚合而非单元格选择
 def _calculate_aggregate_mask(answer, pooled_output, cell_selection_preference, labels, aggregation_classifier):
     """
     Finds examples where the model should select cells with no aggregation.
@@ -1825,6 +1899,7 @@ def _calculate_aggregate_mask(answer, pooled_output, cell_selection_preference, 
     return aggregate_mask
 
 
+# _calculate_aggregation_loss_known：TAPAS 已知聚合损失：有标签时聚合分类 CE
 def _calculate_aggregation_loss_known(
     logits_aggregation, aggregate_mask, aggregation_labels, use_answer_as_supervision, num_aggregation_labels
 ):
@@ -1871,6 +1946,7 @@ def _calculate_aggregation_loss_known(
         return per_example_aggregation_intermediate
 
 
+# _calculate_aggregation_loss_unknown：TAPAS 未知聚合损失：无标签时聚合头正则
 def _calculate_aggregation_loss_unknown(logits_aggregation, aggregate_mask):
     """
     Calculates aggregation loss in the case of answer supervision.
@@ -1895,6 +1971,7 @@ def _calculate_aggregation_loss_unknown(logits_aggregation, aggregate_mask):
     return -torch.log(aggregation_ops_total_mass) * aggregate_mask
 
 
+# _calculate_aggregation_loss：TAPAS 聚合损失入口：组合 known/unknown 两路径
 def _calculate_aggregation_loss(
     logits_aggregation,
     aggregate_mask,
@@ -1933,6 +2010,7 @@ def _calculate_aggregation_loss(
     return aggregation_loss_weight * per_example_aggregation_loss
 
 
+# _calculate_expected_result：TAPAS 期望结果：按聚合函数对选中单元格数值归约
 def _calculate_expected_result(
     dist_per_cell, numeric_values, numeric_values_scale, input_mask_float, logits_aggregation, config
 ):
@@ -2021,11 +2099,13 @@ def _calculate_expected_result(
 
 
 # PyTorch does not currently support Huber loss with custom delta so we define it ourself
+# huber_loss：Huber 损失：回归任务对离群值更鲁棒的平滑 L1 损失
 def huber_loss(input, target, delta: float = 1.0):
     errors = torch.abs(input - target)  # shape (batch_size,)
     return torch.where(errors < delta, 0.5 * errors**2, errors * delta - (0.5 * delta**2))
 
 
+# _calculate_regression_loss：TAPAS 回归损失：数值答案的 Huber/MSE 损失
 def _calculate_regression_loss(
     answer,
     aggregate_mask,

@@ -19,10 +19,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# Table Transformer 配置：ResNet 骨干、Transformer 编解码层与检测头超参数
+
 
 
 @auto_docstring(checkpoint="microsoft/table-transformer-detection")
 @strict
+# TableTransformerConfig：Table Transformer 配置：ResNet 骨干、Transformer 层数与检测查询数
 class TableTransformerConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 100):
@@ -91,6 +94,7 @@ class TableTransformerConfig(PreTrainedConfig):
     giou_loss_coefficient: int = 2
     eos_coefficient: float = 0.1
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         backbone_kwargs = kwargs.get("backbone_kwargs", {})
         timm_default_kwargs = {

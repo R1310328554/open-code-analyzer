@@ -25,10 +25,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# TAPAS 配置：表格 token 类型嵌入、聚合头与单元格选择超参数
+
 
 
 @auto_docstring(checkpoint="google/tapas-base-finetuned-sqa")
 @strict
+# TapasConfig：TAPAS 配置：表格 token 类型数、聚合类型与单元格选择超参数
 class TapasConfig(PreTrainedConfig):
     r"""
     type_vocab_sizes (`list[int]`, *optional*, defaults to `[3, 256, 256, 2, 256, 256, 10]`):
@@ -146,6 +149,7 @@ class TapasConfig(PreTrainedConfig):
     add_cross_attention: bool = False
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：派生 num_layers/hidden_size 等字段并校验一致性
     def __post_init__(self, **kwargs):
         if isinstance(self.aggregation_labels, dict):
             self.aggregation_labels = {int(k): v for k, v in self.aggregation_labels.items()}
