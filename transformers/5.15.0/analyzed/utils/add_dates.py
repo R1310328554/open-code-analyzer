@@ -1,3 +1,4 @@
+# 模型文档日期维护：从 git/GitHub/论文元数据同步发布日期
 import argparse
 import os
 import re

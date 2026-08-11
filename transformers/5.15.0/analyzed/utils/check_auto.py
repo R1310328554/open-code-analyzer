@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Auto 映射生成/校验：从 configuration_*.py 自动生成 model_type 映射
 
 import argparse
 import ast

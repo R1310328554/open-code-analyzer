@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 视觉工具：torch.compile 前预计算 cu_seqlens/position_ids 等动态张量
 """Vision utility functions for pre-computing very dynamic and
 data-dependent tensors that can break model graph capturing.
 

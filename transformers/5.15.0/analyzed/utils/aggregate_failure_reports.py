@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 失败报告聚合：合并目录下多个 JSON 失败报告为单一文件
 
 """
 Aggregate multiple failure report JSON files into a single file.

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 视频工具：加载/解码/批处理与 VideoMetadata 元数据
 
 import os
 import warnings
@@ -75,6 +76,7 @@ VideoInput = Union[
 ]
 
 
+# VideoMetadata：视频元数据 dataclass：帧数/fps/尺寸/时长
 @dataclass
 class VideoMetadata(Mapping):
     total_num_frames: int

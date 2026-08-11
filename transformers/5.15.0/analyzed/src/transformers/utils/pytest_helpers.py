@@ -1,3 +1,4 @@
+# pytest JSON 报告汇总工具：按文件/类/测试名统计失败分布
 import argparse
 import json
 import re

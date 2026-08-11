@@ -13,6 +13,7 @@
 # limitations under the License.
 """
 Utilities for working with package versions
+# 版本检查工具：pip 风格依赖版本运行时校验
 """
 
 import importlib.metadata

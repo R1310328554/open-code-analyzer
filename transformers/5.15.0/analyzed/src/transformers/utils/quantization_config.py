@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 量化配置模块：各量化后端（GPTQ/AWQ/BnB 等）的配置 dataclass 与枚举
 import copy
 import importlib.metadata
 import json
@@ -40,6 +41,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# QuantizationMethod：量化方法枚举：bitsandbytes/gptq/awq 等后端标识
 class QuantizationMethod(str, Enum):
     BITS_AND_BYTES = "bitsandbytes"
     GPTQ = "gptq"
@@ -67,6 +69,7 @@ class QuantizationMethod(str, Enum):
     GEMMA = "gemma"
 
 
+# AwqFormat：AWQ 矩阵格式枚举：gemm/gemv/gemv_fast 等
 class AwqFormat(str, Enum):
     GEMM = "gemm"
     GEMV = "gemv"
@@ -74,6 +77,7 @@ class AwqFormat(str, Enum):
     LLM_AWQ = "llm-awq"
 
 
+# AwqBackend：AWQ 推理后端枚举：marlin/exllama/auto 等
 class AwqBackend(str, Enum):
     LEGACY_AWQ = "autoawq"
     AUTO = "auto"
@@ -91,6 +95,7 @@ class AwqBackend(str, Enum):
 
 
 @dataclass
+# QuantizationConfigMixin：量化配置混入基类：dict/JSON 序列化与反序列化
 class QuantizationConfigMixin:
     """
     Mixin class for quantization config
@@ -206,6 +211,7 @@ class QuantizationConfigMixin:
 
 
 @dataclass
+# AutoRoundConfig：Intel AutoRound 量化配置：bits/group_size/backend
 class AutoRoundConfig(QuantizationConfigMixin):
     """This is a wrapper class about all possible attributes and features that you can play with a model that has been
     loaded AutoRound quantization.
@@ -275,6 +281,7 @@ class AutoRoundConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# HqqConfig：HQQ 半二次量化配置：nbits/group_size/动态层配置
 class HqqConfig(QuantizationConfigMixin):
     """
     This is wrapper around hqq's BaseQuantizeConfig.
@@ -388,6 +395,7 @@ class HqqConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# BitsAndBytesConfig：bitsandbytes 4/8-bit 量化配置
 class BitsAndBytesConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -609,12 +617,14 @@ class BitsAndBytesConfig(QuantizationConfigMixin):
         return serializable_config_dict
 
 
+# ExllamaVersion：ExLlama 推理版本枚举：v1/v2
 class ExllamaVersion(int, Enum):
     ONE = 1
     TWO = 2
 
 
 @dataclass
+# GPTQConfig：GPTQ 后训练量化配置：bits/group_size/dataset
 class GPTQConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -797,6 +807,7 @@ class GPTQConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# AwqConfig：AWQ 激活感知量化配置：format/backend 扩展
 class AwqConfig(GPTQConfig):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -863,6 +874,7 @@ class AwqConfig(GPTQConfig):
 
 
 @dataclass
+# AqlmConfig：AQLM 加性码本 Lookup 量化配置
 class AqlmConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about `aqlm` parameters.
@@ -923,6 +935,7 @@ class AqlmConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# VptqLayerConfig：VPTQ 单层向量后训练量化配置
 class VptqLayerConfig(QuantizationConfigMixin):
     """
     This is used to explain vptq config params for each layer
@@ -978,6 +991,7 @@ class VptqLayerConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# VptqConfig：VPTQ 向量后训练量化配置
 class VptqConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about `vptq` parameters.
@@ -1019,6 +1033,7 @@ class VptqConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# QuantoConfig：HuggingFace quanto 量化配置
 class QuantoConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -1060,6 +1075,7 @@ class QuantoConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# EetqConfig：EETQ GPU 8-bit 权重量化配置
 class EetqConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -1093,6 +1109,7 @@ class EetqConfig(QuantizationConfigMixin):
             raise ValueError(f"Only support weights in {accepted_weights} but found {self.weights}")
 
 
+# CompressedTensorsConfig：compressed-tensors 稀疏量化配置
 class CompressedTensorsConfig(QuantizationConfigMixin):
     """
     This is a wrapper class that handles compressed-tensors quantization config options.
@@ -1293,6 +1310,7 @@ class CompressedTensorsConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# FbgemmFp8Config：FBGEMM FP8 量化配置
 class FbgemmFp8Config(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -1324,6 +1342,7 @@ class FbgemmFp8Config(QuantizationConfigMixin):
 
 
 @dataclass
+# HiggsConfig：Higgs 量化配置
 class HiggsConfig(QuantizationConfigMixin):
     """
     HiggsConfig is a configuration class for quantization using the HIGGS method.
@@ -1380,6 +1399,7 @@ class HiggsConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# FPQuantConfig：FPQuant 浮点量化配置
 class FPQuantConfig(QuantizationConfigMixin):
     """
     FPQuantConfig is a configuration class for quantization using the FPQuant method.
@@ -1469,6 +1489,7 @@ class FPQuantConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# TorchAoConfig：PyTorch torchao 量化配置
 class TorchAoConfig(QuantizationConfigMixin):
     """Config class for torchao quantization/sparsity techniques.
 
@@ -1572,6 +1593,7 @@ class TorchAoConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# BitNetQuantConfig：BitNet 1.58-bit 量化配置
 class BitNetQuantConfig(QuantizationConfigMixin):
     """
     Configuration class for applying BitNet quantization.
@@ -1628,6 +1650,7 @@ class BitNetQuantConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# SpQRConfig：SpQR 稀疏加量化配置
 class SpQRConfig(QuantizationConfigMixin):
     """
     This is a wrapper class about `spqr` parameters. Refer to the original publication for more details.
@@ -1691,6 +1714,7 @@ class SpQRConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# FineGrainedFP8Config：细粒度 FP8 量化配置
 class FineGrainedFP8Config(QuantizationConfigMixin):
     """
     FineGrainedFP8Config is a configuration class for fine-grained FP8 quantization used mainly for deepseek models.
@@ -1747,6 +1771,7 @@ class FineGrainedFP8Config(QuantizationConfigMixin):
         return {"dequantize": self.dequantize, "modules_to_not_convert": self.modules_to_not_convert}
 
 
+# QuarkConfig：AMD Quark 量化配置
 class QuarkConfig(QuantizationConfigMixin):
     def __init__(
         self,
@@ -1789,6 +1814,7 @@ class QuarkConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# Mxfp4Config：MXFP4 微缩放浮点量化配置
 class Mxfp4Config(QuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
@@ -1823,6 +1849,7 @@ class Mxfp4Config(QuantizationConfigMixin):
         return {"quant_method": self.quant_method, "modules_to_not_convert": self.modules_to_not_convert}
 
 
+# MetalConfig：Apple Metal 量化配置
 class MetalConfig(QuantizationConfigMixin):
     """
     Configuration class for Metal affine quantization targeting Apple Silicon (MPS) devices.
@@ -1867,6 +1894,7 @@ class MetalConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# FourOverSixConfig：4-over-6 混合精度量化配置
 class FourOverSixConfig(QuantizationConfigMixin):
     """
     This is a wrapper class containing all options for quantization with `fouroversix`. In brief,
@@ -1962,6 +1990,7 @@ class FourOverSixConfig(QuantizationConfigMixin):
         self.modules_to_not_convert = modules_to_not_convert
 
 
+# SinqConfig：SINQ 权重量化配置
 class SinqConfig(QuantizationConfigMixin):
     """
     Quantization config for SINQ / A-SINQ.
@@ -2031,6 +2060,7 @@ class SinqConfig(QuantizationConfigMixin):
 
 
 @dataclass
+# GemmaQuantizationConfig：Gemma 模型专用量化配置
 class GemmaQuantizationConfig(QuantizationConfigMixin):
     """Quantization config for pre-quantized Gemma checkpoints.
 

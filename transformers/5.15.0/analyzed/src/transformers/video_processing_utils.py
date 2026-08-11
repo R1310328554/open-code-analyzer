@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 视频预处理基类：resize/normalize/采样帧与 Hub 加载
 
 import json
 import os
@@ -74,6 +75,7 @@ if is_vision_available():
 logger = logging.get_logger(__name__)
 
 
+# BaseVideoProcessor：视频处理器基类：帧采样/缩放/归一化与批处理
 @requires(backends=("vision", "torchvision"))
 class BaseVideoProcessor(TorchvisionBackend):
     _auto_class = None

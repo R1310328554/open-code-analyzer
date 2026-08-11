@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 坏提交定位：git bisect 结合 CI 失败报告查找引入回归的提交
 import argparse
 import copy
 import json

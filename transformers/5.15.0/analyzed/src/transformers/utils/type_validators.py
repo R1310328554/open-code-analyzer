@@ -1,3 +1,4 @@
+# 类型校验器：Processor/Video 等 kwargs 的参数验证函数
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any, Union, cast
