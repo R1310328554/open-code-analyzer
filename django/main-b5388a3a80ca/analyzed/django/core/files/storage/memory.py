@@ -1,4 +1,6 @@
 """
+# 内存存储实现：基于 dj-inmemorystorage 的树形结构
+Based on dj-inmemorystorage (BSD)"""
 Based on dj-inmemorystorage (BSD) by Cody Soyland, Seán Hayes, Tore Birkeland,
 and Nick Presta.
 """
@@ -24,6 +26,7 @@ from .mixins import StorageSettingsMixin
 __all__ = ("InMemoryStorage",)
 
 
+# 时间戳混入：记录创建、访问与修改时间
 class TimingMixin:
     def _initialize_times(self):
         self.created_time = now()
@@ -37,6 +40,7 @@ class TimingMixin:
         self.modified_time = now()
 
 
+# 内存文件节点：处理 unicode/bytes 转换并记录时间
 class InMemoryFileNode(ContentFile, TimingMixin):
     """
     Helper class representing an in-memory file node.
@@ -78,6 +82,7 @@ class InMemoryFileNode(ContentFile, TimingMixin):
         self.file.write(content)
 
 
+# 内存目录节点：管理子节点并支持路径导航
 class InMemoryDirNode(TimingMixin):
     """
     Helper class representing an in-memory directory node.
@@ -165,6 +170,7 @@ class InMemoryDirNode(TimingMixin):
 
 
 @deconstructible(path="django.core.files.storage.InMemoryStorage")
+# 内存存储后端：文件保存在进程内树结构中
 class InMemoryStorage(Storage, StorageSettingsMixin):
     """A storage saving files in memory."""
 
@@ -235,6 +241,7 @@ class InMemoryStorage(Storage, StorageSettingsMixin):
         )
         return file_node.open(mode)
 
+    # 创建文件节点并分块写入内容
     def _save(self, name, content):
         file_node = self._resolve(
             name, create_if_missing=True, leaf_cls=InMemoryFileNode
@@ -255,6 +262,7 @@ class InMemoryStorage(Storage, StorageSettingsMixin):
     def path(self, name):
         return safe_join(self.location, name)
 
+    # 从父目录移除指定文件节点
     def delete(self, name):
         path, filename = os.path.split(name)
         dir_node = self._resolve(path, check_exists=False)

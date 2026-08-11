@@ -5,9 +5,11 @@ from django.core.files.utils import FileProxyMixin
 from django.utils.functional import cached_property
 
 
+# 文件包装基类：封装底层 file-like 对象并提供 chunks 迭代
 class File(FileProxyMixin):
     DEFAULT_CHUNK_SIZE = 64 * 2**10
 
+    # 绑定底层文件对象并读取 name/mode 属性
     def __init__(self, file, name=None):
         self.file = file
         if name is None:
@@ -45,6 +47,7 @@ class File(FileProxyMixin):
             return size
         raise AttributeError("Unable to determine the file's size.")
 
+    # 按块读取文件内容，默认块大小 DEFAULT_CHUNK_SIZE
     def chunks(self, chunk_size=None):
         """
         Read the file and yield chunks of ``chunk_size`` bytes (defaults to
@@ -62,6 +65,7 @@ class File(FileProxyMixin):
                 break
             yield data
 
+    # 判断是否需要多块读取（内存文件应返回 False）
     def multiple_chunks(self, chunk_size=None):
         """
         Return ``True`` if you can expect multiple chunks.
@@ -121,6 +125,7 @@ class File(FileProxyMixin):
         self.file.close()
 
 
+# 基于原始内容的 File 对象：无需真实磁盘文件
 class ContentFile(File):
     """
     A File-like object that takes just raw content, rather than an actual file.
@@ -146,16 +151,19 @@ class ContentFile(File):
         return self.file.write(data)
 
 
+# 判断行是否以 \r 结尾（兼容 str/bytes）
 def endswith_cr(line):
     """Return True if line (a text or bytestring) ends with '\r'."""
     return line.endswith("\r" if isinstance(line, str) else b"\r")
 
 
+# 判断行是否以 \n 结尾（兼容 str/bytes）
 def endswith_lf(line):
     """Return True if line (a text or bytestring) ends with '\n'."""
     return line.endswith("\n" if isinstance(line, str) else b"\n")
 
 
+# 判断行是否等于单独的 \n（兼容 str/bytes）
 def equals_lf(line):
     """Return True if line (a text or bytestring) equals '\n'."""
     return line == ("\n" if isinstance(line, str) else b"\n")

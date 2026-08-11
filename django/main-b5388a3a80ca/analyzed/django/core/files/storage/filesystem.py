@@ -16,6 +16,7 @@ from .mixins import StorageSettingsMixin
 
 
 @deconstructible(path="django.core.files.storage.FileSystemStorage")
+# 标准文件系统存储：将文件保存到 MEDIA_ROOT 目录
 class FileSystemStorage(Storage, StorageSettingsMixin):
     """
     Standard filesystem storage
@@ -62,9 +63,11 @@ class FileSystemStorage(Storage, StorageSettingsMixin):
             self._directory_permissions_mode, settings.FILE_UPLOAD_DIRECTORY_PERMISSIONS
         )
 
+    # 以指定模式打开本地路径上的文件
     def _open(self, name, mode="rb"):
         return File(open(self.path(name), mode))
 
+    # 创建中间目录并写入内容，支持临时文件快速移动
     def _save(self, name, content):
         full_path = self.path(name)
 
@@ -153,6 +156,7 @@ class FileSystemStorage(Storage, StorageSettingsMixin):
                 except PermissionError:
                     pass
 
+    # 从文件系统删除文件或空目录
     def delete(self, name):
         if not name:
             raise ValueError("The name must be given to delete().")
@@ -192,12 +196,14 @@ class FileSystemStorage(Storage, StorageSettingsMixin):
                     files.append(entry.name)
         return directories, files
 
+    # 返回 safe_join 后的本地绝对路径
     def path(self, name):
         return safe_join(self.location, name)
 
     def size(self, name):
         return os.path.getsize(self.path(name))
 
+    # 拼接 MEDIA_URL 与文件 URI 生成访问 URL
     def url(self, name):
         if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")

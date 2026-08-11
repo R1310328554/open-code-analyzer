@@ -8,6 +8,7 @@ from django.utils.crypto import get_random_string
 from django.utils.text import get_valid_filename
 
 
+# 存储后端抽象基类：定义 save/open/delete 等公共 API
 class Storage:
     """
     A base storage class, providing some default behaviors that all other
@@ -17,10 +18,12 @@ class Storage:
     # The following methods represent a public interface to private methods.
     # These shouldn't be overridden by subclasses unless absolutely necessary.
 
+    # 打开指定名称的文件，委托 _open 实现
     def open(self, name, mode="rb"):
         """Retrieve the specified file from storage."""
         return self._open(name, mode)
 
+    # 保存内容：校验文件名、获取可用名并调用 _save
     def save(self, name, content, max_length=None):
         """
         Save new content to the file specified by name. The content should be
@@ -57,6 +60,7 @@ class Storage:
 
     # These methods are part of the public API, with default implementations.
 
+    # 返回适合存储系统的合法文件名
     def get_valid_name(self, name):
         """
         Return a filename, based on the provided filename, that's suitable for
@@ -72,6 +76,7 @@ class Storage:
         """
         return "%s_%s%s" % (file_root, get_random_string(7), file_ext)
 
+    # 返回存储中尚未占用的文件名，必要时追加随机后缀
     def get_available_name(self, name, max_length=None):
         """
         Return a filename that's free on the target storage system and
@@ -114,6 +119,7 @@ class Storage:
                 )
         return name
 
+    # 校验 upload_to 路径并生成待 save 的文件名
     def generate_filename(self, filename):
         """
         Validate the filename by calling get_valid_name() and return a filename
@@ -139,6 +145,7 @@ class Storage:
     # The following methods form the public API for storage systems, but with
     # no default implementations. Subclasses must implement *all* of these.
 
+    # 删除指定文件，子类必须实现
     def delete(self, name):
         """
         Delete the specified file from the storage system.
@@ -147,6 +154,7 @@ class Storage:
             "subclasses of Storage must provide a delete() method"
         )
 
+    # 判断文件是否已存在，子类必须实现
     def exists(self, name):
         """
         Return True if a file referenced by the given name already exists in
@@ -156,6 +164,7 @@ class Storage:
             "subclasses of Storage must provide an exists() method"
         )
 
+    # 列出目录内容，返回 (directories, files) 元组
     def listdir(self, path):
         """
         List the contents of the specified path. Return a 2-tuple of lists:
@@ -171,6 +180,7 @@ class Storage:
         """
         raise NotImplementedError("subclasses of Storage must provide a size() method")
 
+    # 返回文件可直接访问的绝对 URL，子类必须实现
     def url(self, name):
         """
         Return an absolute URL where the file's contents can be accessed

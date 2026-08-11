@@ -1,4 +1,6 @@
 """
+# 跨平台文件锁：Windows 用 LockFileEx，Unix 用 fcntl
+Portable file locking utilities."""
 Portable file locking utilities.
 
 Based partially on an example by Jonathan Feignberg in the Python
@@ -22,6 +24,7 @@ import os
 __all__ = ("LOCK_EX", "LOCK_SH", "LOCK_NB", "lock", "unlock")
 
 
+# 从文件对象或整数 fd 获取文件描述符
 def _fd(f):
     """Get a filedescriptor from something which could be a file or an fd."""
     return f.fileno() if hasattr(f, "fileno") else f

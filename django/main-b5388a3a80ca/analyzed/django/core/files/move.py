@@ -1,4 +1,6 @@
 """
+# 安全移动文件：优先 os.rename，跨文件系统则流式复制
+Move a file in the safest way possible::"""
 Move a file in the safest way possible::
 
     >>> from django.core.files.move import file_move_safe
@@ -13,6 +15,7 @@ from django.core.files import locks
 __all__ = ["file_move_safe"]
 
 
+# 安全移动文件：加独占锁流式复制并保留元数据
 def file_move_safe(
     old_file_name, new_file_name, chunk_size=1024 * 64, allow_overwrite=False
 ):

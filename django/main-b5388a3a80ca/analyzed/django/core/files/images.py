@@ -1,4 +1,6 @@
 """
+# 图像工具：依赖 Pillow 解析宽高
+Utility functions for handling images."""
 Utility functions for handling images.
 
 Requires Pillow as you might imagine.
@@ -10,6 +12,7 @@ import zlib
 from django.core.files import File
 
 
+# 图像文件混入类：提供 width/height 属性
 class ImageFile(File):
     """
     A mixin for use alongside django.core.files.base.File, which provides
@@ -32,6 +35,7 @@ class ImageFile(File):
         return self._dimensions_cache
 
 
+# 通过 Pillow 解析器读取图像宽高，支持文件或路径
 def get_image_dimensions(file_or_path, close=False):
     """
     Return the (width, height) of an image, given an open file or a path. Set

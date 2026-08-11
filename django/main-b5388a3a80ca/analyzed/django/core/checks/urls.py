@@ -7,6 +7,7 @@ from django.utils.inspect import signature
 from . import Error, Tags, Warning, register
 
 
+# URL 配置检查：ROOT_URLCONF 存在时递归校验 URL 解析器
 @register(Tags.urls)
 def check_url_config(app_configs, **kwargs):
     if getattr(settings, "ROOT_URLCONF", None):
@@ -17,6 +18,7 @@ def check_url_config(app_configs, **kwargs):
     return []
 
 
+# 递归检查 URL 解析器，无效模式返回 E004 错误
 def check_resolver(resolver):
     """
     Recursively check the resolver.
@@ -30,6 +32,7 @@ def check_resolver(resolver):
         return []
 
 
+# 检查 URL 命名空间是否全局唯一（重复则 W005 警告）
 @register(Tags.urls)
 def check_url_namespaces_unique(app_configs, **kwargs):
     """
@@ -56,6 +59,7 @@ def check_url_namespaces_unique(app_configs, **kwargs):
     return errors
 
 
+# 递归收集所有 URL 命名空间路径
 def _load_all_namespaces(resolver, parents=()):
     """
     Recursively load all namespaces from URL patterns.
@@ -75,6 +79,7 @@ def _load_all_namespaces(resolver, parents=()):
     return namespaces
 
 
+# 为非法 urlpatterns 元素生成 E004 错误及修复提示
 def get_warning_for_invalid_pattern(pattern):
     """
     Return a list containing a warning that the pattern is invalid.
@@ -102,6 +107,7 @@ def get_warning_for_invalid_pattern(pattern):
     ]
 
 
+# 检查 STATIC_URL/MEDIA_URL 是否以斜杠结尾
 @register(Tags.urls)
 def check_url_settings(app_configs, **kwargs):
     errors = []
@@ -112,6 +118,7 @@ def check_url_settings(app_configs, **kwargs):
     return errors
 
 
+# 构造 urls.E006：URL 设置必须以斜杠结尾
 def E006(name):
     return Error(
         "The {} setting must end with a slash.".format(name),
@@ -119,6 +126,7 @@ def E006(name):
     )
 
 
+# 检查自定义 handler400/403/404/500 视图签名是否正确
 @register(Tags.urls)
 def check_custom_error_handlers(app_configs, **kwargs):
     if not getattr(settings, "ROOT_URLCONF", None):

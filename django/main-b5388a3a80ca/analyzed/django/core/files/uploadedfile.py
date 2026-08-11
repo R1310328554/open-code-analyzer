@@ -1,4 +1,6 @@
 """
+# 上传文件类：表单提交的文件数据抽象
+Classes representing uploaded files."""
 Classes representing uploaded files.
 """
 
@@ -18,6 +20,7 @@ __all__ = (
 )
 
 
+# 上传文件抽象基类：携带 content_type 与 charset 元数据
 class UploadedFile(File):
     """
     An abstract uploaded file (``TemporaryUploadedFile`` and
@@ -71,6 +74,7 @@ class UploadedFile(File):
     name = property(_get_name, _set_name)
 
 
+# 磁盘临时上传文件：流式写入 NamedTemporaryFile
 class TemporaryUploadedFile(UploadedFile):
     """
     A file uploaded to a temporary location (i.e. stream-to-disk).
@@ -83,6 +87,7 @@ class TemporaryUploadedFile(UploadedFile):
         )
         super().__init__(file, name, content_type, size, charset, content_type_extra)
 
+    # 返回临时文件的完整磁盘路径
     def temporary_file_path(self):
         """Return the full path of this file."""
         return self.file.name
@@ -97,6 +102,7 @@ class TemporaryUploadedFile(UploadedFile):
             pass
 
 
+# 内存上传文件：小文件直接保存在内存中
 class InMemoryUploadedFile(UploadedFile):
     """
     A file uploaded into memory (i.e. stream-to-memory).
@@ -128,6 +134,7 @@ class InMemoryUploadedFile(UploadedFile):
         return False
 
 
+# 简易上传文件：仅含 name、content 与 content_type
 class SimpleUploadedFile(InMemoryUploadedFile):
     """
     A simple representation of a file, which just has content, size, and a
@@ -141,6 +148,7 @@ class SimpleUploadedFile(InMemoryUploadedFile):
         )
 
     @classmethod
+    # 从字典创建 SimpleUploadedFile 实例
     def from_dict(cls, file_dict):
         """
         Create a SimpleUploadedFile object from a dictionary with keys:

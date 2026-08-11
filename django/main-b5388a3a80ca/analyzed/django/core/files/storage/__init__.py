@@ -18,10 +18,12 @@ __all__ = (
 )
 
 
+# 默认存储懒加载代理：指向 STORAGES[default]
 class DefaultStorage(LazyObject):
     def _setup(self):
         self._wrapped = storages[DEFAULT_STORAGE_ALIAS]
 
 
+# 全局存储处理器：按别名懒加载后端
 storages = StorageHandler()
 default_storage = DefaultStorage()

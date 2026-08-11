@@ -1,4 +1,6 @@
 """
+# 临时文件模块：Windows 下可重复打开的 NamedTemporaryFile
+The temp module provides a NamedTemporaryFile"""
 The temp module provides a NamedTemporaryFile that can be reopened in the same
 process on any platform. Most platforms use the standard Python
 tempfile.NamedTemporaryFile class, but Windows users are given a custom class.
@@ -29,6 +31,7 @@ __all__ = (
 
 if os.name == "nt":
 
+    # Windows 专用临时文件：mkstemp 创建且关闭时可 reopen
     class TemporaryFile(FileProxyMixin):
         """
         Temporary file object constructor that supports reopening of the
