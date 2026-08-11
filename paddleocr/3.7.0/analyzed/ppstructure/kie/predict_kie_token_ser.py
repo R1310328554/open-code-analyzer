@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# KIE 语义实体识别（SER）推理：OCR + VQA Token LayoutLM 序列标注
 import os
 import sys
 
@@ -38,6 +39,7 @@ from paddleocr import PaddleOCR
 logger = get_logger()
 
 
+    # SER 预测器：PaddleOCR 检测识别 + VQAToken 预处理与 LayoutLM 后处理
 class SerPredictor(object):
     def __init__(self, args):
         self.args = args

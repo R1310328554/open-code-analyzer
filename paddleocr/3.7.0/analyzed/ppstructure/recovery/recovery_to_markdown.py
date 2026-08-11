@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 版面结果恢复 Markdown：figure/title/table/equation/text 分区拼接
 import os
 import re
 
@@ -20,6 +21,7 @@ from ppocr.utils.logging import get_logger
 logger = get_logger()
 
 
+# 根据首行缩进选择段落合并策略（段首双空格或段尾空格）
 def check_merge_method(in_region):
     """Select the function to merge paragraph.
 
@@ -126,6 +128,7 @@ def convert_text_space_tail(in_region):
     return text
 
 
+# 将 sorted layout 结果写入 {img_name}_ocr.md
 def convert_info_markdown(res, save_folder, img_name):
     """Save the recognition result as a markdown file.
 

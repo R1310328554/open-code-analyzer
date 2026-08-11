@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# HTML 表格转 Word：解析 thead/tbody、colspan/rowspan 与内联样式
 """
 This code is refer from: https://github.com/weizwx/html2docx/blob/master/htmldocx/h2d.py
 """
@@ -139,6 +140,7 @@ font_names = {
 }
 
 
+    # HTMLParser 子类：递归解析 table/tr/td 并写入 python-docx Document
 class HtmlToDocx(HTMLParser):
     def __init__(self):
         super().__init__()

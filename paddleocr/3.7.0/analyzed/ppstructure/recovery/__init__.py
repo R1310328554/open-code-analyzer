@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# recovery 子包：版面分析结果恢复为 docx 或 Markdown
+# limitations under the License.

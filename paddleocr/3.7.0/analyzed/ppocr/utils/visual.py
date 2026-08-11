@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# KIE/版面结构可视化：SER/RE 实体着色、关系连线与检测框绘制
 import cv2
 import os
 import numpy as np
@@ -18,6 +19,7 @@ import PIL
 from PIL import Image, ImageDraw, ImageFont
 
 
+# 按实体类别着色绘制 SER 预测框与标签，半透明叠加原图
 def draw_ser_results(
     image, ocr_results, font_path="doc/fonts/simfang.ttf", font_size=14
 ):
@@ -56,6 +58,7 @@ def draw_ser_results(
     return np.array(img_new)
 
 
+# 在 bbox 区域填色并绘制带背景条的文字标注
 def draw_box_txt(bbox, text, draw, font, font_size, color):
     # draw ocr results outline
     bbox = ((bbox[0], bbox[1]), (bbox[2], bbox[3]))
@@ -77,6 +80,7 @@ def draw_box_txt(bbox, text, draw, font, font_size, color):
     draw.text((bbox[0][0] + 1, start_y), text, fill=(255, 255, 255), font=font)
 
 
+# 四点多边形转轴对齐矩形 [x1, y1, x2, y2]
 def trans_poly_to_bbox(poly):
     x1 = np.min([p[0] for p in poly])
     x2 = np.max([p[0] for p in poly])
@@ -85,6 +89,7 @@ def trans_poly_to_bbox(poly):
     return [x1, y1, x2, y2]
 
 
+# 绘制 RE 头尾实体框并用绿线连接关系对
 def draw_re_results(image, result, font_path="doc/fonts/simfang.ttf", font_size=18):
     np.random.seed(0)
     if isinstance(image, np.ndarray):
@@ -132,6 +137,7 @@ def draw_re_results(image, result, font_path="doc/fonts/simfang.ttf", font_size=
     return np.array(img_new)
 
 
+# OpenCV 在图像上绘制蓝色矩形检测框
 def draw_rectangle(img_path, boxes):
     boxes = np.array(boxes)
     img = cv2.imread(img_path)

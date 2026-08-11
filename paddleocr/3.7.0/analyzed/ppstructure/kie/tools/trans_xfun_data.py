@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# XFUND 多语言 KIE 标注转换：documents 字段转为 tab 分隔训练标签
 import json
 
 
+# 逐文档提取 text/label/box/linking，写入「图像路径\tJSON 行」格式
 def transfer_xfun_data(json_path=None, output_file=None):
     with open(json_path, "r", encoding="utf-8") as fin:
         lines = fin.readlines()

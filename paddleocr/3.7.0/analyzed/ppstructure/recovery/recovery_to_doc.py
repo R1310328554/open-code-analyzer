@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 版面结果恢复 Word：标题/正文/表格/图片按单双栏写入 docx
 import os
 from copy import deepcopy
 
@@ -29,6 +30,7 @@ from ppocr.utils.logging import get_logger
 logger = get_logger()
 
 
+# 遍历 layout 区域，figure 插图、table 经 HtmlToDocx、text 缩进段落
 def convert_info_docx(img, res, save_folder, img_name):
     doc = Document()
     doc.styles["Normal"].font.name = "Times New Roman"
@@ -84,6 +86,7 @@ def convert_info_docx(img, res, save_folder, img_name):
     logger.info("docx save to {}".format(docx_path))
 
 
+# 按阅读顺序排序并标注 single/double 栏布局
 def sorted_layout_boxes(res, w):
     """
     Sort text boxes in order from top to bottom, left to right

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# KIE 端到端评估：IoU 匹配后联合 OCR 编辑距离与 SER 标签 F1
 import os
 import re
 import sys
@@ -26,6 +27,7 @@ import json
 import copy
 
 
+# 解析 gt/pred 推理文件为 {图像名: ocr_info 列表}，可忽略背景类
 def parse_ser_results_fp(fp, fp_type="gt", ignore_background=True):
     # img/zh_val_0.jpg        {
     #     "height": 3508,
@@ -58,6 +60,7 @@ def parse_ser_results_fp(fp, fp_type="gt", ignore_background=True):
     return res_dict
 
 
+# 四点坐标转 Shapely 凸包多边形
 def polygon_from_str(polygon_points):
     """
     Create a shapely polygon object from gt or dt line.
@@ -67,6 +70,7 @@ def polygon_from_str(polygon_points):
     return polygon
 
 
+# 两多边形交并比，拓扑异常时 IoU 置 0
 def polygon_iou(poly1, poly2):
     """
     Intersection over union between two shapely polygons.
@@ -106,6 +110,7 @@ def convert_bbox_to_polygon(bbox):
     return poly
 
 
+# 逐图 IoU 贪心匹配，统计字符准确率、编辑距离与 precision/recall/fmeasure
 def eval_e2e(args):
     # gt
     gt_results = parse_ser_results_fp(args.gt_json_path, "gt", args.ignore_background)

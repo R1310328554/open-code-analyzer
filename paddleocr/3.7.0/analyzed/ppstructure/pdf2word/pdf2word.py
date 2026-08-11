@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PDF/图像转 Word 桌面 GUI：自动下载模型、中英文版面 OCR 与 docx 恢复
 import sys
 import tarfile
 import os
@@ -86,6 +87,7 @@ DICT_CN = {
 }
 
 
+# Qt QImage 转 OpenCV BGR ndarray
 def QImageToCvMat(incomingImage) -> np.array:
     """
     Converts a QImage into an opencv MAT format
@@ -102,6 +104,7 @@ def QImageToCvMat(incomingImage) -> np.array:
     return arr
 
 
+# 读取 PDF 各页或单张图像，PDF 以 2x 缩放渲染（超大页降 1x）
 def readImage(image_file) -> list:
     if os.path.basename(image_file)[-3:] == "pdf":
         imgs = []
@@ -126,6 +129,7 @@ def readImage(image_file) -> list:
     return imgs
 
 
+    # 后台 QThread：逐文件版面分析、结构保存与 recovery 转 docx
 class Worker(QThread):
     progressBarValue = Signal(int)
     progressBarRange = Signal(int)
@@ -238,6 +242,7 @@ class Worker(QThread):
             self.exceptedsignal.emit(str(e))  # 将异常发送给UI进程
 
 
+    # 主窗口：文件选择、中英文转换、进度条与模型下载
 class APP_Image2Doc(QWidget):
     def __init__(self):
         super().__init__()

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# FUNSD 数据集标注转换：表单字段分词合并、阅读顺序排序与 linking 重映射
 import json
 import os
 import sys
@@ -20,6 +21,7 @@ import numpy as np
 from copy import deepcopy
 
 
+# 四点多边形转轴对齐 bbox
 def trans_poly_to_bbox(poly):
     x1 = np.min([p[0] for p in poly])
     x2 = np.max([p[0] for p in poly])
@@ -28,6 +30,7 @@ def trans_poly_to_bbox(poly):
     return [x1, y1, x2, y2]
 
 
+# 多个 bbox 求最小外接四边形
 def get_outer_poly(bbox_list):
     x1 = min([bbox[0] for bbox in bbox_list])
     y1 = min([bbox[1] for bbox in bbox_list])
@@ -36,6 +39,7 @@ def get_outer_poly(bbox_list):
     return [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
 
 
+# 读取 FUNSD JSON，按行内词合并为 transcription/label/points/linking
 def load_funsd_label(image_dir, anno_dir):
     imgs = os.listdir(image_dir)
     annos = os.listdir(anno_dir)

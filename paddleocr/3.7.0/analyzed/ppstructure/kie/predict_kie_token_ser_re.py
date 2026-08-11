@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# KIE 关系抽取（RE）推理：SER 实体输出经 Token LayoutLM 预测实体间关系
 import os
 import sys
 
@@ -37,6 +38,7 @@ from ppstructure.kie.predict_kie_token_ser import SerPredictor
 logger = get_logger()
 
 
+    # SER+RE 联合预测器：先 SerPredictor 再 RE 模型与 VQARe 后处理
 class SerRePredictor(object):
     def __init__(self, args):
         self.use_visual_backbone = args.use_visual_backbone

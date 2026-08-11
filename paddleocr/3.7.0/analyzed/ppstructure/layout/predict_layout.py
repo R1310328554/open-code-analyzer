@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 版面分析推理：PicoDet 检测 title/text/table/figure 等区域
 import os
 import sys
 
@@ -35,6 +36,7 @@ from picodet_postprocess import PicoDetPostProcess
 logger = get_logger()
 
 
+    # 版面预测器：Resize/Normalize 预处理 + PicoDetPostProcess NMS
 class LayoutPredictor(object):
     def __init__(self, args):
         pre_process_list = [

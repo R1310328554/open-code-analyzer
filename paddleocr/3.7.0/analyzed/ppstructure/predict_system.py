@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档结构分析主系统：layout/OCR/表格/公式/KIE 多模式编排与结果保存
 import os
 import sys
 import subprocess
@@ -41,6 +42,7 @@ from ppstructure.utility import parse_args, draw_structure_result, cal_ocr_word_
 logger = get_logger()
 
 
+    # 结构分析编排器：按 mode 组合 layout、OCR、表格、公式或 KIE 流水线
 class StructureSystem(object):
     def __init__(self, args):
         self.mode = args.mode
@@ -271,6 +273,7 @@ class StructureSystem(object):
         return True
 
 
+# 将各区域 JSON、表格 HTML 转 Excel、figure 存 jpg
 def save_structure_res(res, save_folder, img_name, img_idx=0):
     excel_save_folder = os.path.join(save_folder, img_name)
     os.makedirs(excel_save_folder, exist_ok=True)
