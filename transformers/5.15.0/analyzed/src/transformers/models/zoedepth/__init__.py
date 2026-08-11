@@ -25,5 +25,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # zoedepth 包：延迟加载配置、图像处理与建模子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

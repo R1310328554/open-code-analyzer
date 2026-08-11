@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch ZoeDepth model."""
 
+# ZoeDepth 建模：ViT 骨干 + 相对/度量深度估计，支持多域 bin 回归
 import math
 from dataclasses import dataclass
 
@@ -37,6 +38,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# ZoeDepthDepthEstimatorOutput：深度估计输出：predicted_depth 与 domain_logits
 class ZoeDepthDepthEstimatorOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -52,6 +54,7 @@ class ZoeDepthDepthEstimatorOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# ZoeDepthReassembleStage：重组阶段：CLS readout + 通道投影 + 多尺度 resize
 class ZoeDepthReassembleStage(nn.Module):
     """
     This class reassembles the hidden states of the backbone into image-like feature representations at various
@@ -126,6 +129,7 @@ class ZoeDepthReassembleStage(nn.Module):
         return out
 
 
+# ZoeDepthReassembleLayer：单层重组：ConvTranspose/Identity 调整空间分辨率
 class ZoeDepthReassembleLayer(nn.Module):
     def __init__(self, config, channels, factor):
         super().__init__()
@@ -150,6 +154,7 @@ class ZoeDepthReassembleLayer(nn.Module):
 
 
 # Copied from transformers.models.dpt.modeling_dpt.DPTFeatureFusionStage with DPT->ZoeDepth
+# ZoeDepthFeatureFusionStage：特征融合阶段：自顶向下多尺度特征聚合
 class ZoeDepthFeatureFusionStage(nn.Module):
     def __init__(self, config: ZoeDepthConfig):
         super().__init__()
@@ -175,6 +180,7 @@ class ZoeDepthFeatureFusionStage(nn.Module):
 
 
 # Copied from transformers.models.dpt.modeling_dpt.DPTPreActResidualLayer with DPT->ZoeDepth
+# ZoeDepthPreActResidualLayer：Pre-Act 残差单元：Conv + BN + 激活
 class ZoeDepthPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -238,6 +244,7 @@ class ZoeDepthPreActResidualLayer(nn.Module):
 
 
 # Copied from transformers.models.dpt.modeling_dpt.DPTFeatureFusionLayer with DPT->ZoeDepth
+# ZoeDepthFeatureFusionLayer：融合层：上采样 + 拼接 + 残差卷积
 class ZoeDepthFeatureFusionLayer(nn.Module):
     """Feature fusion layer, merges feature maps from different stages.
 
@@ -275,6 +282,7 @@ class ZoeDepthFeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# ZoeDepthNeck：颈部网络：重组 + 多尺度特征融合
 class ZoeDepthNeck(nn.Module):
     """
     ZoeDepthNeck. A neck is a module that is normally used between the backbone and the head. It takes a list of tensors as
@@ -329,6 +337,7 @@ class ZoeDepthNeck(nn.Module):
         return output, features[-1]
 
 
+# ZoeDepthRelativeDepthEstimationHead：相对深度头：bin 分类 + 条件 log-binomial
 class ZoeDepthRelativeDepthEstimationHead(nn.Module):
     """
     Relative depth estimation head consisting of 3 convolutional layers. It progressively halves the feature dimension and upsamples
@@ -380,6 +389,7 @@ def log_binom(n, k, eps=1e-7):
     return n * torch.log(n) - k * torch.log(k) - (n - k) * torch.log(n - k + eps)
 
 
+# LogBinomialSoftmax：对数二项分布 softmax：离散深度 bin 概率
 class LogBinomialSoftmax(nn.Module):
     def __init__(self, n_classes=256, act=torch.softmax):
         """Compute log binomial distribution for n_classes
@@ -424,6 +434,7 @@ class LogBinomialSoftmax(nn.Module):
         return self.act(y / temperature, dim=1)
 
 
+# ZoeDepthConditionalLogBinomialSoftmax：条件 log-binomial：温度与 bin 中心调制
 class ZoeDepthConditionalLogBinomialSoftmax(nn.Module):
     def __init__(
         self,
@@ -491,6 +502,7 @@ class ZoeDepthConditionalLogBinomialSoftmax(nn.Module):
         return self.log_binomial_transform(probabilities, temperature)
 
 
+# ZoeDepthSeedBinRegressor：种子 bin 回归：attractor 迭代细化 bin 中心
 class ZoeDepthSeedBinRegressor(nn.Module):
     def __init__(self, config, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
         """Bin center regressor network.
@@ -567,6 +579,7 @@ def inv_attractor(dx, alpha: float = 300, gamma: int = 2):
     return dx.div(1 + alpha * dx.pow(gamma))
 
 
+# ZoeDepthAttractorLayer：归一化 attractor 层：拉近/推远 bin 中心
 class ZoeDepthAttractorLayer(nn.Module):
     def __init__(
         self,
@@ -662,6 +675,7 @@ class ZoeDepthAttractorLayer(nn.Module):
         return bin_new_centers, bin_centers
 
 
+# ZoeDepthAttractorLayerUnnormed：未归一化 attractor 层变体
 class ZoeDepthAttractorLayerUnnormed(nn.Module):
     def __init__(
         self,
@@ -746,6 +760,7 @@ class ZoeDepthAttractorLayerUnnormed(nn.Module):
         return bin_new_centers, bin_centers
 
 
+# ZoeDepthProjector：1x1 卷积投影：通道维度变换
 class ZoeDepthProjector(nn.Module):
     def __init__(self, in_features, out_features, mlp_dim=128):
         """Projector MLP.
@@ -773,6 +788,7 @@ class ZoeDepthProjector(nn.Module):
 
 
 # Copied from transformers.models.grounding_dino.modeling_grounding_dino.GroundingDinoMultiheadAttention with GroundingDino->ZoeDepth
+# ZoeDepthMultiheadAttention：多头自注意力：深度头内部 Transformer
 class ZoeDepthMultiheadAttention(nn.Module):
     """Equivalent implementation of nn.MultiheadAttention with `batch_first=True`."""
 
@@ -846,6 +862,7 @@ class ZoeDepthMultiheadAttention(nn.Module):
         return outputs
 
 
+# ZoeDepthTransformerEncoderLayer：Transformer 编码层：自注意力 + FFN
 class ZoeDepthTransformerEncoderLayer(nn.Module):
     def __init__(self, config, dropout=0.1, activation="relu"):
         super().__init__()
@@ -882,6 +899,7 @@ class ZoeDepthTransformerEncoderLayer(nn.Module):
         return src
 
 
+# ZoeDepthPatchTransformerEncoder：Patch Transformer 编码器堆叠
 class ZoeDepthPatchTransformerEncoder(nn.Module):
     def __init__(self, config):
         """ViT-like transformer block
@@ -945,6 +963,7 @@ class ZoeDepthPatchTransformerEncoder(nn.Module):
         return embeddings
 
 
+# ZoeDepthMLPClassifier：MLP 分类器：域 logits 预测（NYU/KITTI 等）
 class ZoeDepthMLPClassifier(nn.Module):
     def __init__(self, in_features, out_features) -> None:
         super().__init__()
@@ -962,6 +981,7 @@ class ZoeDepthMLPClassifier(nn.Module):
         return domain_logits
 
 
+# ZoeDepthMultipleMetricDepthEstimationHeads：多域度量深度头集合
 class ZoeDepthMultipleMetricDepthEstimationHeads(nn.Module):
     """
     Multiple metric depth estimation heads. A MLP classifier is used to route between 2 different heads.
@@ -1103,6 +1123,7 @@ class ZoeDepthMultipleMetricDepthEstimationHeads(nn.Module):
         return out, domain_logits
 
 
+# ZoeDepthMetricDepthEstimationHead：单域度量深度头：bin 回归 + attractor
 class ZoeDepthMetricDepthEstimationHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1203,6 +1224,7 @@ class ZoeDepthMetricDepthEstimationHead(nn.Module):
 # Modified from transformers.models.dpt.modeling_dpt.DPTPreTrainedModel with DPT->ZoeDepth,dpt->zoedepth
 # avoiding sdpa and flash_attn_2 support, it's done int the backend
 @auto_docstring
+# ZoeDepthPreTrainedModel：预训练基类：LogBinomialSoftmax 等特殊初始化
 class ZoeDepthPreTrainedModel(PreTrainedModel):
     config: ZoeDepthConfig
     base_model_prefix = "zoedepth"
@@ -1222,6 +1244,7 @@ class ZoeDepthPreTrainedModel(PreTrainedModel):
     ZoeDepth model with one or multiple metric depth estimation head(s) on top.
     """
 )
+# ZoeDepthForDepthEstimation：完整 ZoeDepth：骨干 + 相对/度量深度头
 class ZoeDepthForDepthEstimation(ZoeDepthPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Image processor class for ZoeDepth."""
 
+# ZoeDepth PIL 图像处理：保持宽高比 resize 与 ImageNet 归一化
 import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Union
@@ -49,6 +50,7 @@ if is_torchvision_available():
 
 
 # Adapted from transformers.models.zoedepth.image_processing_zoedepth.ZoeDepthImageProcessorKwargs
+# ZoeDepthImageProcessorKwargs：预处理关键字：keep_aspect_ratio 与 ensure_multiple_of
 class ZoeDepthImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     keep_aspect_ratio (`bool`, *optional*, defaults to `self.keep_aspect_ratio`):
@@ -110,6 +112,7 @@ def get_resize_output_image_size(
 
 @auto_docstring
 @requires(backends=("torch",))
+# ZoeDepthImageProcessorPil：PIL 后端：resize/归一化/pad 深度估计输入
 class ZoeDepthImageProcessorPil(PilBackend):
     valid_kwargs = ZoeDepthImageProcessorKwargs
     do_pad = True

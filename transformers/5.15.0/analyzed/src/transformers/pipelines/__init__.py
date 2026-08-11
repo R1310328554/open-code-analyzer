@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Pipeline 工厂：按 task 名称加载模型/处理器并实例化对应推理流水线
 from __future__ import annotations
 
 import json

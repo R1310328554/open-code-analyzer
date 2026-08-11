@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 猴子补丁：模型加载时按类名/正则替换 nn.Module，用于量化与结构实验
 import re
 import sys
 import threading

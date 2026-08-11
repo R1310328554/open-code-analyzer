@@ -14,6 +14,7 @@
 
 """PyTorch Zaya model."""
 
+# ZAYA 模块化建模：复用 Laguna/Llama/Qwen3 MoE 组件的 ZAYA 变体
 from collections.abc import Callable
 from typing import Any, Literal
 
@@ -50,6 +51,7 @@ from ..qwen3_moe.modeling_qwen3_moe import Qwen3MoeExperts, Qwen3MoeRMSNorm
 
 @auto_docstring(checkpoint="Zyphra/ZAYA1-8B")
 @strict
+# ZayaConfig：继承 LagunaConfig 的 ZAYA 主配置
 class ZayaConfig(LagunaConfig):
     r"""
     lm_head_bias (`bool`, *optional*, defaults to `False`):
@@ -140,14 +142,17 @@ class ZayaConfig(LagunaConfig):
             raise ValueError("`sliding_window` must be set when `layer_types` contains `hybrid_sliding`.")
 
 
+# ZayaRotaryEmbedding：继承 LagunaRotaryEmbedding 的 RoPE 模块
 class ZayaRotaryEmbedding(LagunaRotaryEmbedding):
     pass
 
 
+# ZayaRMSNorm：继承 Qwen3MoeRMSNorm 的 RMS 归一化
 class ZayaRMSNorm(Qwen3MoeRMSNorm):
     pass
 
 
+# ZayaCCAProjection：CCA 投影：卷积混合 q/k + 延迟 v 状态
 class ZayaCCAProjection(nn.Module):
     """
     Projects hidden states into attention q/k/v states with ZAYA's Compressed Convolutional Attention (CCA) path.
@@ -259,6 +264,7 @@ class ZayaCCAProjection(nn.Module):
         return query, key, value
 
 
+# ZayaQKNorm：q/k L2 归一化与 per-KV-head 可学习缩放
 class ZayaQKNorm(nn.Module):
     """
     L2-normalizes q/k states to sqrt(head_dim) and applies ZAYA's learned per-KV-head key scale.
@@ -281,6 +287,7 @@ class ZayaQKNorm(nn.Module):
         return query_states, key_states
 
 
+# ZayaAttention：继承 Phi3Attention 并替换为 CCA + QKNorm 路径
 class ZayaAttention(Phi3Attention):
     def __init__(self, config: ZayaConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -348,6 +355,7 @@ class ZayaAttention(Phi3Attention):
         return attn_output, attn_weights
 
 
+# ZayaDecoderLayer：继承 LlamaDecoderLayer 并接入稀疏 MoE
 class ZayaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: ZayaConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -390,6 +398,7 @@ class ZayaDecoderLayer(LlamaDecoderLayer):
         return hidden_states, prev_router_hidden_states
 
 
+# ZayaResidualScaling：可学习残差流缩放/偏置模块
 class ZayaResidualScaling(nn.Module):
     def __init__(self, hidden_size: int):
         super().__init__()
@@ -405,6 +414,7 @@ class ZayaResidualScaling(nn.Module):
         return hidden_states + residual
 
 
+# ZayaRouterMLP：路由 MLP：RMSNorm + GELU + 专家 logits
 class ZayaRouterMLP(nn.Module):
     def __init__(self, hidden_size: int, num_experts: int, rms_norm_eps: float):
         super().__init__()
@@ -421,6 +431,7 @@ class ZayaRouterMLP(nn.Module):
         return self.out_proj(hidden_states)
 
 
+# ZayaRouter：MoE 路由：EDA 跨层状态与 skip expert 掩码
 class ZayaRouter(nn.Module):
     def __init__(
         self,
@@ -484,10 +495,12 @@ class ZayaRouter(nn.Module):
         )
 
 
+# ZayaExperts：继承 Qwen3MoeExperts 的专家计算模块
 class ZayaExperts(Qwen3MoeExperts):
     pass
 
 
+# ZayaSparseMoeBlock：稀疏 MoE：gate + experts 组合
 class ZayaSparseMoeBlock(nn.Module):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -512,6 +525,7 @@ class ZayaSparseMoeBlock(nn.Module):
         return expert_output, prev_router_hidden_states
 
 
+# ZayaPreTrainedModel：继承 LlamaPreTrainedModel 的预训练基类
 class ZayaPreTrainedModel(LlamaPreTrainedModel):
     config: ZayaConfig
     # ZAYA generation uses the native hybrid dynamic cache, which is not a compilable cache.
@@ -555,6 +569,7 @@ class ZayaPreTrainedModel(LlamaPreTrainedModel):
 
 
 @auto_docstring
+# ZayaModel：继承 LagunaModel 并添加输入 hidden 缩放/偏置
 class ZayaModel(LagunaModel):
     def __init__(self, config: ZayaConfig):
         super().__init__(config)
@@ -641,6 +656,7 @@ class ZayaModel(LagunaModel):
 
 
 @auto_docstring(checkpoint="Zyphra/ZAYA1-8B")
+# ZayaForCausalLM：多继承 AfmoeForCausalLM 的因果 LM 头
 class ZayaForCausalLM(AfmoeForCausalLM, ZayaPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _is_stateful = True

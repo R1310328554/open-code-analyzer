@@ -13,6 +13,7 @@
 # limitations under the License.
 """Image processor class for ZoeDepth."""
 
+# ZoeDepth Torchvision 图像处理：tensor 后端 resize/归一化流水线
 import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Union
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
 from torchvision.transforms.v2 import functional as tvF
 
 
+# ZoeDepthImageProcessorKwargs：预处理关键字：keep_aspect_ratio 与 ensure_multiple_of
 class ZoeDepthImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     keep_aspect_ratio (`bool`, *optional*, defaults to `self.keep_aspect_ratio`):
@@ -102,6 +104,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# ZoeDepthImageProcessor：Torchvision 后端：tensor 图像 resize 与归一化
 class ZoeDepthImageProcessor(TorchvisionBackend):
     valid_kwargs = ZoeDepthImageProcessorKwargs
     do_pad = True

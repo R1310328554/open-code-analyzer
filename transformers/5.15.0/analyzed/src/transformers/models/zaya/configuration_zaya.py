@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ZAYA 配置：混合 CCA 注意力 + MoE 路由的超参数与 RoPE 层类型
 from typing import Any, Literal
 
 from huggingface_hub.dataclasses import strict
@@ -29,6 +30,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="Zyphra/ZAYA1-8B")
 @strict
+# ZayaConfig：ZAYA 主配置：CCA 时序参数、MoE 专家数与混合 RoPE 层类型
 class ZayaConfig(PreTrainedConfig):
     r"""
     lm_head_bias (`bool`, *optional*, defaults to `False`):

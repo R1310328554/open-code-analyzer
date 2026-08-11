@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 音频分类 Pipeline：原始波形或音频文件的类别预测
 import subprocess
 from typing import Any
 
@@ -64,6 +65,7 @@ def ffmpeg_read(bpayload: bytes, sampling_rate: int) -> np.ndarray:
 
 
 @add_end_docstrings(build_pipeline_init_args(has_feature_extractor=True))
+# AudioClassificationPipeline：音频分类 Pipeline：波形/文件 → top-k 类别分数
 class AudioClassificationPipeline(Pipeline):
     # no-format
     """

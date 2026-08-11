@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch optimization for BERT model."""
 
+# 优化器与学习率调度：BERT 式 warmup/cosine 及 Adafactor、GreedyLR 等
 from __future__ import annotations
 
 import math
@@ -578,6 +579,7 @@ def get_wsd_schedule(
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 
+# StreamingAverage：滑动窗口均值：平滑指标用于 GreedyLR 决策
 class StreamingAverage:
     """Rolling window average for smoothing metric values.
 
@@ -618,6 +620,7 @@ class StreamingAverage:
         self.sum = state_dict.get("sum", 0.0)
 
 
+# GreedyLR：自适应 LR：指标改善时增大、平台期时减小学习率
 class GreedyLR:
     """Adaptive learning rate scheduler that responds to training metrics.
 
@@ -1054,6 +1057,7 @@ def get_scheduler(
     )
 
 
+# Adafactor：子线性内存优化器：分解二阶矩估计，适合 T5 等大模型
 class Adafactor(Optimizer):
     """
     AdaFactor pytorch implementation can be used as a drop in replacement for Adam original fairseq code:
@@ -1294,6 +1298,7 @@ class Adafactor(Optimizer):
         return loss
 
 
+# AdafactorSchedule：Adafactor 内置调度的 LR 代理调度器
 class AdafactorSchedule(LambdaLR):
     """
     Since [`~optimization.Adafactor`] performs its own scheduling, if the training loop relies on a scheduler (e.g.,

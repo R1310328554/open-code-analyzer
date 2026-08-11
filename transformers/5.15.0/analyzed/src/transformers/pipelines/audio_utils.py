@@ -1,3 +1,4 @@
+# 音频工具：ffmpeg 读写、麦克风采集与流式分块辅助函数
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 import datetime
 import platform

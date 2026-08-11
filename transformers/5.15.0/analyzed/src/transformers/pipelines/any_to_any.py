@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 任意到任意 Pipeline：多模态输入 + 文本生成的统一推理接口
 import enum
 import re
 from typing import Any, Union, overload
@@ -45,12 +46,14 @@ if is_vision_available():
 logger = logging.get_logger(__name__)
 
 
+# ReturnType：生成返回类型枚举：张量/新文本/完整文本
 class ReturnType(enum.Enum):
     TENSORS = 0
     NEW_TEXT = 1
     FULL_TEXT = 2
 
 
+# Chat：内部聊天容器：将消息列表包装为单样本对话
 class Chat:
     """This class is intended to just be used internally in this pipeline and not exposed to users. We convert chats
     to this format because the rest of the pipeline code tends to assume that lists of messages are
@@ -64,6 +67,7 @@ class Chat:
 
 
 @add_end_docstrings(build_pipeline_init_args(has_processor=True))
+# AnyToAnyPipeline：任意到任意 Pipeline：多模态输入 + 文本生成/对话续写
 class AnyToAnyPipeline(Pipeline):
     """
     Multimodal Generation pipeline using an `AutoModelForMultimodalLM`. This pipeline generates text given any

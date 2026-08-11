@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 自动语音识别 Pipeline：长音频分块、stride 对齐与 CTC/beam 解码
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Union
 
@@ -109,6 +110,7 @@ def _find_longest_common_sequence(sequences, tokenizer):
     return np.array(sequence)
 
 
+# AutomaticSpeechRecognitionPipeline：ASR Pipeline：分块转录 + stride 对齐 + beam/CTC 解码
 class AutomaticSpeechRecognitionPipeline(ChunkPipeline):
     """
     Pipeline that aims at extracting spoken text contained within some audio.

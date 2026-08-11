@@ -13,6 +13,7 @@
 # limitations under the License.
 """ZoeDepth model configuration"""
 
+# ZoeDepth 配置：ViT 骨干、特征融合颈与相对/度量深度头超参数
 from typing import Literal
 
 from huggingface_hub.dataclasses import strict
@@ -30,6 +31,7 @@ ZOEDEPTH_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 
 @auto_docstring(checkpoint="Intel/zoedepth-nyu")
 @strict
+# ZoeDepthConfig：ZoeDepth 主配置：骨干 readout、融合颈与 bin/attractor 参数
 class ZoeDepthConfig(PreTrainedConfig):
     r"""
     readout_type (`str`, *optional*, defaults to `"project"`):
