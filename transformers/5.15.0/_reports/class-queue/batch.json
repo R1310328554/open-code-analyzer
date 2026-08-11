@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:50:38Z",
-  "files": [
-    "src/transformers/models/pp_formulanet/image_processing_pp_formulanet.py",
-    "src/transformers/models/pp_formulanet/modeling_pp_formulanet.py",
-    "src/transformers/models/pp_formulanet/modular_pp_formulanet.py",
-    "src/transformers/models/pp_formulanet/processing_pp_formulanet.py",
-    "src/transformers/models/pp_lcnet/__init__.py",
-    "src/transformers/models/pp_lcnet/configuration_pp_lcnet.py",
-    "src/transformers/models/pp_lcnet/image_processing_pp_lcnet.py",
-    "src/transformers/models/pp_lcnet/modeling_pp_lcnet.py",
-    "src/transformers/models/pp_lcnet/modular_pp_lcnet.py",
-    "src/transformers/models/pp_lcnet_v3/__init__.py",
-    "src/transformers/models/pp_lcnet_v3/configuration_pp_lcnet_v3.py",
-    "src/transformers/models/pp_lcnet_v3/modeling_pp_lcnet_v3.py",
-    "src/transformers/models/pp_lcnet_v3/modular_pp_lcnet_v3.py",
-    "src/transformers/models/pp_lcnet_v4/__init__.py",
-    "src/transformers/models/pp_lcnet_v4/configuration_pp_lcnet_v4.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 879,
-  "done": 1785
+  "done": 1800
 }
