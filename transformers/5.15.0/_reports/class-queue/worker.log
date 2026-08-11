@@ -1738,3 +1738,18 @@
 2026-08-11T02:42:27Z DONE src/transformers/models/pix2struct/image_processing_pil_pix2struct.py wave58a Chinese class docs
 2026-08-11T02:42:27Z DONE src/transformers/models/pix2struct/image_processing_pix2struct.py wave58a Chinese class docs
 2026-08-11T02:42:27Z DONE src/transformers/models/pix2struct/modeling_pix2struct.py wave58a Chinese class docs
+2026-08-11T02:49:32Z DONE src/transformers/models/plbart/tokenization_plbart.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/poolformer/__init__.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/poolformer/configuration_poolformer.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/poolformer/image_processing_pil_poolformer.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/poolformer/image_processing_poolformer.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/poolformer/modeling_poolformer.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/__init__.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/configuration_pop2piano.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/feature_extraction_pop2piano.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/modeling_pop2piano.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/processing_pop2piano.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pop2piano/tokenization_pop2piano.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pp_chart2table/__init__.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pp_chart2table/configuration_pp_chart2table.py wave59a
+2026-08-11T02:49:32Z DONE src/transformers/models/pp_chart2table/image_processing_pil_pp_chart2table.py wave59a
