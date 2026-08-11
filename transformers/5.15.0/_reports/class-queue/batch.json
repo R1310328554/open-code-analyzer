@@ -15,23 +15,8 @@
     "src/transformers/models/bamba/configuration_bamba.py",
     "src/transformers/models/bamba/modeling_bamba.py",
     "src/transformers/models/bamba/modular_bamba.py",
-    "src/transformers/models/bark/__init__.py",
-    "src/transformers/models/bark/configuration_bark.py",
-    "src/transformers/models/bark/generation_configuration_bark.py",
-    "src/transformers/models/bark/modeling_bark.py",
-    "src/transformers/models/bark/processing_bark.py",
-    "src/transformers/models/bart/__init__.py",
-    "src/transformers/models/bart/configuration_bart.py",
-    "src/transformers/models/bart/modeling_bart.py",
-    "src/transformers/models/bart/tokenization_bart.py",
-    "src/transformers/models/barthez/__init__.py",
-    "src/transformers/models/barthez/tokenization_barthez.py",
-    "src/transformers/models/bartpho/__init__.py",
-    "src/transformers/models/bartpho/tokenization_bartpho.py",
-    "src/transformers/models/beit/__init__.py",
-    "src/transformers/models/beit/configuration_beit.py",
-    "src/transformers/models/beit/image_processing_beit.py"
+    "src/transformers/models/bark/__init__.py"
   ],
   "remaining_pending": 2409,
-  "done": 240
+  "done": 255
 }
