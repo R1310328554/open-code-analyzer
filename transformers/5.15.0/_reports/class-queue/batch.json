@@ -15,23 +15,8 @@
     "src/transformers/integrations/integration_utils.py",
     "src/transformers/integrations/liger.py",
     "src/transformers/integrations/metal_quantization.py",
-    "src/transformers/integrations/mistral/__init__.py",
-    "src/transformers/integrations/mistral/constants.py",
-    "src/transformers/integrations/mistral/tokenizer.py",
-    "src/transformers/integrations/moe.py",
-    "src/transformers/integrations/msa_attention.py",
-    "src/transformers/integrations/mxfp4.py",
-    "src/transformers/integrations/neftune.py",
-    "src/transformers/integrations/npu_flash_attention.py",
-    "src/transformers/integrations/peft.py",
-    "src/transformers/integrations/quanto.py",
-    "src/transformers/integrations/quark.py",
-    "src/transformers/integrations/sdpa_attention.py",
-    "src/transformers/integrations/sdpa_paged.py",
-    "src/transformers/integrations/sinq.py",
-    "src/transformers/integrations/sonicmoe.py",
-    "src/transformers/integrations/spqr.py"
+    "src/transformers/integrations/mistral/__init__.py"
   ],
   "remaining_pending": 2529,
-  "done": 120
+  "done": 135
 }
