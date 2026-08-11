@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:11:16Z",
-  "files": [
-    "lib/sqlalchemy/dialects/mysql/provision.py",
-    "lib/sqlalchemy/dialects/mysql/pymysql.py",
-    "lib/sqlalchemy/dialects/mysql/pyodbc.py",
-    "lib/sqlalchemy/dialects/mysql/reflection.py",
-    "lib/sqlalchemy/dialects/mysql/reserved_words.py",
-    "lib/sqlalchemy/dialects/mysql/types.py",
-    "lib/sqlalchemy/dialects/oracle/__init__.py",
-    "lib/sqlalchemy/dialects/oracle/base.py",
-    "lib/sqlalchemy/dialects/oracle/cx_oracle.py",
-    "lib/sqlalchemy/dialects/oracle/dictionary.py",
-    "lib/sqlalchemy/dialects/oracle/oracledb.py",
-    "lib/sqlalchemy/dialects/oracle/provision.py",
-    "lib/sqlalchemy/dialects/oracle/types.py",
-    "lib/sqlalchemy/dialects/oracle/vector.py",
-    "lib/sqlalchemy/dialects/postgresql/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 172,
-  "done": 45
+  "done": 60
 }
