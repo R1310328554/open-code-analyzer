@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:48:24Z",
   "files": [
-    "django/templatetags/i18n.py",
-    "django/templatetags/l10n.py",
-    "django/templatetags/static.py",
-    "django/templatetags/tz.py",
-    "django/urls/__init__.py",
-    "django/urls/base.py",
-    "django/urls/conf.py",
-    "django/urls/converters.py",
-    "django/urls/exceptions.py",
-    "django/urls/resolvers.py",
-    "django/urls/utils.py",
-    "django/utils/__init__.py",
-    "django/utils/_os.py",
-    "django/utils/archive.py",
-    "django/utils/asyncio.py",
     "django/utils/autoreload.py",
     "django/utils/cache.py",
     "django/utils/choices.py",
@@ -33,5 +18,5 @@
     "django/utils/duration.py"
   ],
   "remaining_pending": 72,
-  "done": 840
+  "done": 855
 }
