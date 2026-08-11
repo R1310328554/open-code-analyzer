@@ -1,8 +1,11 @@
+// SelectBox.js — 双栏多选框的选项缓存、过滤与左右移动
 "use strict";
 {
     const getOptionGroupName = (option) => option.parentElement.label;
+    // 管理 filtered horizontal/vertical 多选 widget 的选项状态
     const SelectBox = {
         cache: {},
+        // 从原生 select 元素初始化选项缓存
         init: function (id) {
             const box = document.getElementById(id);
             SelectBox.cache[id] = [];
@@ -21,6 +24,7 @@
                 SelectBox.sort(id);
             }
         },
+        // 根据缓存重建 select 的 option/optgroup DOM
         redisplay: function (id) {
             // Repopulate HTML select box from cache
             const box = document.getElementById(id);
@@ -54,6 +58,7 @@
             }
             box.scrollTop = scroll_value_from_top;
         },
+        // 按空格分词 AND 匹配过滤可见选项
         filter: function (id, text) {
             // Redisplay the HTML select box, displaying only the choices containing ALL
             // the words in text. (It's an AND search.)
@@ -102,6 +107,7 @@
             }
             return false;
         },
+        // 将 from 中选中的项移入 to 的缓存
         move: function (from, to) {
             const from_box = document.getElementById(from);
             for (const option of from_box.options) {
@@ -127,6 +133,7 @@
             SelectBox.redisplay(from);
             SelectBox.redisplay(to);
         },
+        // 将 from 中全部项移入 to
         move_all: function (from, to) {
             const from_box = document.getElementById(from);
             for (const option of from_box.options) {

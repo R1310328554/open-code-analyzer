@@ -1,8 +1,10 @@
+// cancel.js — 处理后台表单「取消」链接（弹窗关闭或 history.back）
 "use strict";
 {
     // Call function fn when the DOM is loaded and ready. If it is already
     // loaded, call the function now.
     // http://youmightnotneedjquery.com/#ready
+    // DOM 就绪时执行回调（无 jQuery 依赖）
     function ready(fn) {
         if (document.readyState !== "loading") {
             fn();

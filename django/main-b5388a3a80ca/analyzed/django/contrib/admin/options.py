@@ -1,3 +1,9 @@
+"""
+django.contrib.admin.options — ModelAdmin 与内联管理的核心配置。
+
+定义 BaseModelAdmin、ModelAdmin、InlineModelAdmin 及列表/表单/权限/动作等
+管理后台行为；子类通过覆盖类属性与方法定制各模型的后台界面。
+"""
 import copy
 import enum
 import itertools
@@ -88,18 +94,21 @@ IS_FACETS_VAR = "_facets"
 EMPTY_VALUE_STRING = "-"
 
 
+# 变更列表页是否展示 facet 计数的策略枚举
 class ShowFacets(enum.Enum):
     NEVER = "NEVER"
     ALLOW = "ALLOW"
     ALWAYS = "ALWAYS"
 
 
+# 自定义动作可出现的界面位置（变更表单或列表页）
 class ActionLocation(enum.Enum):
     CHANGE_FORM = "CHANGE_FORM"
     CHANGE_LIST = "CHANGE_LIST"
 
 
 @dataclass
+# 封装单个后台动作的可调用对象、名称与描述
 class Action:
     func: Callable
     name: str
@@ -174,6 +183,7 @@ FORMFIELD_FOR_DBFIELD_DEFAULTS = {
 csrf_protect_m = method_decorator(csrf_protect)
 
 
+# ModelAdmin 与 InlineModelAdmin 共用的表单字段、权限与 queryset 逻辑
 class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
     """Functionality common to both ModelAdmin and InlineAdmin."""
 
@@ -207,6 +217,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
             overrides.setdefault(k, {}).update(v)
         self.formfield_overrides = overrides
 
+    # 为数据库字段生成默认 Admin 表单字段，可被子类覆盖
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         """
         Hook for specifying the form Field instance for a given database Field
@@ -477,6 +488,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
         """
         return self.prepopulated_fields
 
+    # 返回变更列表与表单视图使用的 queryset
     def get_queryset(self, request):
         """
         Return a QuerySet of all model instances that can be edited by the
@@ -607,6 +619,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
 
         return False
 
+    # 当前用户是否具备新增权限
     def has_add_permission(self, request):
         """
         Return True if the given request has permission to add an object.
@@ -616,6 +629,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
         codename = get_permission_codename("add", opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
 
+    # 当前用户是否具备修改权限（obj 为 None 时表示列表级权限）
     def has_change_permission(self, request, obj=None):
         """
         Return True if the given request has permission to change the given
@@ -631,6 +645,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
         codename = get_permission_codename("change", opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
 
+    # 当前用户是否具备删除权限
     def has_delete_permission(self, request, obj=None):
         """
         Return True if the given request has permission to delete the given
@@ -683,6 +698,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
         return request.user.has_module_perms(self.opts.app_label)
 
 
+# 封装给定模型的全部 Admin 选项与视图逻辑（列表、表单、删除、历史等）
 class ModelAdmin(BaseModelAdmin):
     """Encapsulate all admin options and functionality for a given model."""
 
@@ -765,6 +781,7 @@ class ModelAdmin(BaseModelAdmin):
 
         return inline_instances
 
+    # 注册 changelist/add/change/delete/history 等 URL 模式
     def get_urls(self):
         from django.urls import path
 
@@ -841,6 +858,7 @@ class ModelAdmin(BaseModelAdmin):
     def _get_form_for_get_fields(self, request, obj):
         return self.get_form(request, obj, fields=None)
 
+    # 构造新增或编辑用的 ModelForm 类
     def get_form(self, request, obj=None, change=False, **kwargs):
         """
         Return a Form class for use in the admin add view. This is used by
@@ -1298,6 +1316,7 @@ class ModelAdmin(BaseModelAdmin):
         """
         return self.search_fields
 
+    # 按 search_fields 对 queryset 应用搜索过滤
     def get_search_results(self, request, queryset, search_term):
         """
         Return a tuple containing a queryset to implement the search
@@ -1448,6 +1467,7 @@ class ModelAdmin(BaseModelAdmin):
         """
         return form.save(commit=False)
 
+    # 保存主模型实例（默认 form.save(commit=False) 后 obj.save()）
     def save_model(self, request, obj, form, change):
         """
         Given a model instance save it to the database.
@@ -1464,6 +1484,7 @@ class ModelAdmin(BaseModelAdmin):
         """Given a queryset, delete it from the database."""
         queryset.delete()
 
+    # 保存内联 formset
     def save_formset(self, request, form, formset, change):
         """
         Given an inline formset save it to the database.
@@ -2225,9 +2246,11 @@ class ModelAdmin(BaseModelAdmin):
             request, context, add=add, change=not add, obj=obj, form_url=form_url
         )
 
+    # 渲染新增对象表单页
     def add_view(self, request, form_url="", extra_context=None):
         return self.changeform_view(request, None, form_url, extra_context)
 
+    # 渲染编辑已有对象表单页
     def change_view(self, request, object_id, form_url="", extra_context=None):
         return self.changeform_view(request, object_id, form_url, extra_context)
 
@@ -2299,6 +2322,7 @@ class ModelAdmin(BaseModelAdmin):
             self.message_user(request, msg, messages.SUCCESS)
 
     @csrf_protect_m
+    # 渲染模型变更列表页，处理过滤、搜索与批量动作
     def changelist_view(self, request, extra_context=None):
         """
         The 'change list' admin view for this model.
@@ -2481,6 +2505,7 @@ class ModelAdmin(BaseModelAdmin):
         return get_deleted_objects(objs, request, self.admin_site)
 
     @csrf_protect_m
+    # 渲染单对象删除确认页并执行删除
     def delete_view(self, request, object_id, extra_context=None):
         if request.method in ("GET", "HEAD", "OPTIONS", "TRACE"):
             return self._delete_view(request, object_id, extra_context)
@@ -2555,6 +2580,7 @@ class ModelAdmin(BaseModelAdmin):
 
         return self.render_delete_form(request, context)
 
+    # 展示指定对象的后台操作历史（LogEntry 列表）
     def history_view(self, request, object_id, extra_context=None):
         "The 'history' admin view for this model."
         from django.contrib.admin.models import LogEntry
@@ -2674,6 +2700,7 @@ class ModelAdmin(BaseModelAdmin):
         return formsets, inline_instances
 
 
+# 父模型编辑页内嵌的子模型内联编辑配置
 class InlineModelAdmin(BaseModelAdmin):
     """
     Options for inline editing of ``model`` instances.
@@ -2909,9 +2936,11 @@ class InlineModelAdmin(BaseModelAdmin):
         return super().has_view_permission(request)
 
 
+# 垂直堆叠式内联表单布局
 class StackedInline(InlineModelAdmin):
     template = "admin/edit_inline/stacked.html"
 
 
+# 表格式内联表单布局
 class TabularInline(InlineModelAdmin):
     template = "admin/edit_inline/tabular.html"

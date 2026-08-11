@@ -1,3 +1,4 @@
+// change_form.js — 打开变更/新增表单时聚焦第一个可编辑字段
 "use strict";
 {
     const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"];

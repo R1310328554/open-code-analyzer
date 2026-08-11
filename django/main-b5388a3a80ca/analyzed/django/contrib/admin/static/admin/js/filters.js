@@ -1,8 +1,10 @@
+// filters.js — 用 sessionStorage 持久化变更列表侧边栏过滤器展开状态
 /**
  * Persist changelist filters state (collapsed/expanded).
  */
 "use strict";
 {
+    // 从 sessionStorage 恢复各 details 过滤器的 open 状态
     // Init filters.
     let filters = JSON.parse(
         sessionStorage.getItem("django.admin.filtersState"),

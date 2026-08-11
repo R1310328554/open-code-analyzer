@@ -1,6 +1,8 @@
+// actions.js — 变更列表页批量选择与「全选 queryset」交互
 /*global gettext, interpolate, ngettext, Actions*/
 "use strict";
 {
+    // 移除 hidden 类以显示匹配元素
     function show(selector) {
         document.querySelectorAll(selector).forEach(function (el) {
             el.classList.remove("hidden");
@@ -59,6 +61,7 @@
         });
     }
 
+    // 更新已选计数并切换「跨页全选」提示状态
     function updateCounter(actionCheckboxes, options) {
         const sel = Array.from(actionCheckboxes).filter(function (el) {
             return el.checked;
@@ -99,6 +102,7 @@
         selectedClass: "selected",
     };
 
+    // 绑定列表复选框、全选 toggle 与 shift 多选逻辑
     window.Actions = function (actionCheckboxes, options) {
         options = Object.assign({}, defaults, options);
         let list_editable_changed = false;

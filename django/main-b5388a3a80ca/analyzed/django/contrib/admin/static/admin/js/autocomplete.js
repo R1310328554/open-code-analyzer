@@ -1,7 +1,9 @@
+// autocomplete.js — 初始化 Admin 自动完成 Select2 组件
 "use strict";
 {
     const $ = django.jQuery;
 
+    // jQuery 插件：为 .admin-autocomplete 绑定 AJAX Select2
     $.fn.djangoAdminSelect2 = function () {
         $.each(this, function (i, element) {
             $(element).select2({

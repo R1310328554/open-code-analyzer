@@ -1,3 +1,4 @@
+// calendar.js — Admin 弹出式 HTML 日历（依赖 core.js 工具函数）
 /*global gettext, pgettext, get_format, interpolate, quickElement, removeChildren*/
 /*
 calendar.js - Calendar functions by Adrian Holovaty
@@ -6,6 +7,7 @@ depends on core.js for utility functions like removeChildren or quickElement
 "use strict";
 {
     // CalendarNamespace -- Provides a collection of HTML calendar-related helper functions
+    // 月份/星期名称与 locale 格式相关的日历命名空间
     const CalendarNamespace = {
         monthsOfYear: [
             gettext("January"),
@@ -271,6 +273,7 @@ depends on core.js for utility functions like removeChildren or quickElement
     };
 
     // Calendar -- A calendar instance
+    // 构造可导航的月历 DOM，选中日期时调用 callback
     function Calendar(div_id, callback, selected) {
         // div_id (string) is the ID of the element in which the calendar will
         //     be displayed

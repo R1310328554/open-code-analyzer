@@ -1,3 +1,9 @@
+"""
+django.contrib.admin.sites — AdminSite 站点注册与 URL 路由。
+
+AdminSite 封装一套可挂载到 URLconf 的管理应用；register() 注册模型，
+get_urls() 生成完整后台视图与认证入口。
+"""
 from functools import update_wrapper
 from weakref import WeakSet
 
@@ -25,9 +31,11 @@ from django.views.decorators.common import no_append_slash
 from django.views.decorators.csrf import csrf_protect
 from django.views.i18n import JavaScriptCatalog
 
+# 全局弱引用集合，跟踪所有 AdminSite 实例
 all_sites = WeakSet()
 
 
+# 管理站点：模型注册表、全局动作与 index/login/logout 等视图
 class AdminSite:
     """
     An AdminSite object encapsulates an instance of the Django admin
@@ -92,6 +100,7 @@ class AdminSite:
                 errors.extend(modeladmin.check())
         return errors
 
+    # 将模型（或模型列表）注册到本站点，可选指定 ModelAdmin 子类
     def register(self, model_or_iterable, admin_class=None, **options):
         """
         Register the given model(s) with the given admin class.
@@ -148,6 +157,7 @@ class AdminSite:
                 # Instantiate the admin class to save in the registry
                 self._registry[model] = admin_class(model, self)
 
+    # 从本站点取消注册模型
     def unregister(self, model_or_iterable):
         """
         Unregister the given model(s).
@@ -208,6 +218,7 @@ class AdminSite:
         """
         return request.user.is_active and request.user.is_staff
 
+    # 包装视图：校验 staff 权限并注入 current_app
     def admin_view(self, view, cacheable=False):
         """
         Decorator to create an admin view attached to this ``AdminSite``. This
@@ -218,7 +229,8 @@ class AdminSite:
 
             class MyAdminSite(AdminSite):
 
-                def get_urls(self):
+                # 返回包含 index、各 app 与已注册模型 Admin URL 的 urlpatterns
+    def get_urls(self):
                     from django.urls import path
 
                     urls = super().get_urls()
@@ -568,6 +580,7 @@ class AdminSite:
 
         return app_list
 
+    # 后台首页：按 app 分组展示已注册模型入口
     def index(self, request, extra_context=None):
         """
         Display the main admin index page, which lists all of the installed
@@ -619,6 +632,7 @@ class AdminSite:
         return LogEntry.objects.select_related("content_type", "user")
 
 
+# 延迟实例化的默认 AdminSite（由 AdminConfig.default_site 指定类）
 class DefaultAdminSite(LazyObject):
     def _setup(self):
         AdminSiteClass = import_string(apps.get_app_config("admin").default_site)
@@ -632,4 +646,5 @@ class DefaultAdminSite(LazyObject):
 # You can provide your own AdminSite using the (Simple)AdminConfig.default_site
 # attribute. You can also instantiate AdminSite in your own code to create a
 # custom admin site.
+# 全局默认管理站点对象，常用 from django.contrib.admin import site
 site = DefaultAdminSite()

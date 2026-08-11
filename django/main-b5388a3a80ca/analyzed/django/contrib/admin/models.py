@@ -1,3 +1,7 @@
+"""django.contrib.admin.models — 后台操作审计日志模型。
+
+LogEntry 记录管理员对模型的增删改操作，供历史页与 django_admin_log 表使用。
+"""
 import json
 
 from django.conf import settings
@@ -10,8 +14,11 @@ from django.utils.text import get_text_list
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+# 操作类型常量：新增
 ADDITION = 1
+# 操作类型常量：修改
 CHANGE = 2
+# 操作类型常量：删除
 DELETION = 3
 
 ACTION_FLAG_CHOICES = [
@@ -21,9 +28,11 @@ ACTION_FLAG_CHOICES = [
 ]
 
 
+# 日志条目管理器：批量写入后台操作记录
 class LogEntryManager(models.Manager):
     use_in_migrations = True
 
+    # 为 queryset 中每个对象写入一条或多条 LogEntry
     def log_actions(
         self, user_id, queryset, action_flag, change_message="", *, single_object=False
     ):
@@ -54,6 +63,7 @@ class LogEntryManager(models.Manager):
         return self.model.objects.bulk_create(log_entry_list)
 
 
+# 单条后台操作日志，关联用户、内容类型与目标对象
 class LogEntry(models.Model):
     action_time = models.DateTimeField(
         _("action time"),
@@ -106,15 +116,19 @@ class LogEntry(models.Model):
 
         return gettext("LogEntry Object")
 
+    # 判断是否为「新增」操作
     def is_addition(self):
         return self.action_flag == ADDITION
 
+    # 判断是否为「修改」操作
     def is_change(self):
         return self.action_flag == CHANGE
 
+    # 判断是否为「删除」操作
     def is_deletion(self):
         return self.action_flag == DELETION
 
+    # 解析 change_message（支持 JSON 结构）并返回可读的变更描述
     def get_change_message(self):
         """
         If self.change_message is a JSON structure, interpret it as a change
@@ -179,10 +193,12 @@ class LogEntry(models.Model):
         else:
             return self.change_message
 
+    # 根据 content_type 与 object_id 取回被编辑的模型实例
     def get_edited_object(self):
         """Return the edited object represented by this log entry."""
         return self.content_type.get_object_for_this_type(pk=self.object_id)
 
+    # 返回指向该对象后台编辑页的 URL，无法解析时返回 None
     def get_admin_url(self):
         """
         Return the admin URL to edit the object represented by this log entry.

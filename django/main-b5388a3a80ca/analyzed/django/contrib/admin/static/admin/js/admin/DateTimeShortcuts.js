@@ -1,9 +1,11 @@
+// DateTimeShortcuts.js — 为 Admin 日期/时间输入框插入日历与时钟快捷按钮
 /*global Calendar, CalendarNamespace, findPosX, findPosY, get_format, gettext, gettext_noop, interpolate, ngettext, quickElement*/
 // Inserts shortcut buttons after all of the following:
 //     <input type="text" class="vDateField">
 //     <input type="text" class="vTimeField">
 "use strict";
 {
+    // 管理 vDateField / vTimeField 的弹出日历与时钟 widget
     const DateTimeShortcuts = {
         calendars: [],
         calendarInputs: [],
@@ -27,6 +29,7 @@
         shortCutsClass: "datetimeshortcuts", // class of the clock and cal shortcuts
         timezoneWarningClass: "timezonewarning", // class of the warning for timezone mismatch
         timezoneOffset: 0,
+        // 扫描页面 input，为日期/时间字段添加快捷控件
         init: function () {
             const serverOffset = document.body.dataset.adminUtcOffset;
             if (serverOffset) {

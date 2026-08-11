@@ -1,7 +1,9 @@
+// core.js — Admin 前端通用 DOM 工具与 Date/String 扩展
 // Core JavaScript helper functions
 "use strict";
 
 // quickElement(tagType, parentReference [, textInChildNode, attribute, attributeValue ...]);
+// 快速创建元素、设置属性并挂到父节点
 function quickElement() {
     const obj = document.createElement(arguments[0]);
     if (arguments[2]) {
@@ -17,6 +19,7 @@ function quickElement() {
 }
 
 // "a" is reference to an object
+// 清空节点的所有子元素
 function removeChildren(a) {
     while (a.hasChildNodes()) {
         a.removeChild(a.lastChild);
@@ -27,6 +30,7 @@ function removeChildren(a) {
 // Find-position functions by PPK
 // See https://www.quirksmode.org/js/findpos.html
 // ----------------------------------------------------------------------------
+// 计算元素相对文档的 X 坐标（PPK findPos 算法）
 function findPosX(obj) {
     let curleft = 0;
     if (obj.offsetParent) {
@@ -40,6 +44,7 @@ function findPosX(obj) {
     return curleft;
 }
 
+// 计算元素相对文档的 Y 坐标
 function findPosY(obj) {
     let curtop = 0;
     if (obj.offsetParent) {
@@ -117,6 +122,7 @@ function findPosY(obj) {
             : window.CalendarNamespace.monthsOfYear[this.getMonth()];
     };
 
+    // 按 strftime 风格格式化 Date（供日历 widget 使用）
     Date.prototype.strftime = function (format) {
         const fields = {
             a: this.getAbbrevDayName(),
@@ -155,6 +161,7 @@ function findPosY(obj) {
     // ----------------------------------------------------------------------------
     // String object extensions
     // ----------------------------------------------------------------------------
+    // 按格式解析日期字符串为 UTC Date
     String.prototype.strptime = function (format) {
         const split_format = format.split(/[.\-/]/);
         const date = this.split(/[.\-/]/);

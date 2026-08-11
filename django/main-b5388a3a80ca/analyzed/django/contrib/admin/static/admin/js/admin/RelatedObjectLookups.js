@@ -1,3 +1,4 @@
+// RelatedObjectLookups.js — raw_id 查找与「添加另一个」弹窗逻辑
 /*global SelectBox, interpolate*/
 // Handles related-objects functionality: lookup link for raw_id_fields
 // and Add Another links.
@@ -33,6 +34,7 @@
         return name.replace(new RegExp("__" + (popupIndex + 1) + "$"), "");
     }
 
+    // 打开后台新增/编辑弹窗并维护 relatedWindows 栈
     function showAdminPopup(triggeringLink, name_regexp, add_popup) {
         const name = addPopupIndex(triggeringLink.id.replace(name_regexp, ""));
         const href = new URL(triggeringLink.href);
@@ -157,6 +159,7 @@
         });
     }
 
+    // 弹窗保存成功后更新父页 SelectBox 或 raw_id 字段
     function dismissAddRelatedObjectPopup(win, newId, newRepr, optgroup) {
         const name = removePopupIndex(win.name);
         const elem = document.getElementById(name);

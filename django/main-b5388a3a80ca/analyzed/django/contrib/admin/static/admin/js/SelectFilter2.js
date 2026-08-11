@@ -1,3 +1,4 @@
+// SelectFilter2.js — 将多选 select 转为双栏「可用/已选」过滤界面
 /*global SelectBox, gettext, ngettext, interpolate, quickElement, SelectFilter*/
 /*
 SelectFilter2 - Turns a multiple-select box into a filter interface.
@@ -6,7 +7,9 @@ Requires core.js and SelectBox.js.
 */
 "use strict";
 {
+    // 双栏选择器：依赖 core.js 的 quickElement 与 SelectBox 缓存
     window.SelectFilter = {
+        // 替换原生 select，构建 available/chosen 双栏 UI
         init: function (field_id, field_name, is_stacked) {
             if (field_id.match(/__prefix__/)) {
                 // Don't initialize on empty forms.
