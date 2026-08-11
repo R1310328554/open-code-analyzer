@@ -15,23 +15,8 @@
     "src/transformers/quantizers/quantizer_gptq.py",
     "src/transformers/quantizers/quantizer_higgs.py",
     "src/transformers/quantizers/quantizer_hqq.py",
-    "src/transformers/quantizers/quantizer_metal.py",
-    "src/transformers/quantizers/quantizer_mxfp4.py",
-    "src/transformers/quantizers/quantizer_quanto.py",
-    "src/transformers/quantizers/quantizer_quark.py",
-    "src/transformers/quantizers/quantizer_sinq.py",
-    "src/transformers/quantizers/quantizer_spqr.py",
-    "src/transformers/quantizers/quantizer_torchao.py",
-    "src/transformers/quantizers/quantizer_vptq.py",
-    "src/transformers/quantizers/quantizers_utils.py",
-    "src/transformers/safetensors_conversion.py",
-    "src/transformers/testing_utils.py",
-    "src/transformers/time_series_utils.py",
-    "src/transformers/tokenization_mistral_common.py",
-    "src/transformers/tokenization_python.py",
-    "src/transformers/tokenization_utils_base.py",
-    "src/transformers/tokenization_utils_sentencepiece.py"
+    "src/transformers/quantizers/quantizer_metal.py"
   ],
   "remaining_pending": 129,
-  "done": 2520
+  "done": 2535
 }
