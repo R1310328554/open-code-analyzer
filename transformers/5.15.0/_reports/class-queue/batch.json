@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:17:12Z",
-  "files": [
-    "src/transformers/models/bertweet/tokenization_bertweet.py",
-    "src/transformers/models/big_bird/__init__.py",
-    "src/transformers/models/big_bird/configuration_big_bird.py",
-    "src/transformers/models/big_bird/modeling_big_bird.py",
-    "src/transformers/models/big_bird/tokenization_big_bird.py",
-    "src/transformers/models/bigbird_pegasus/__init__.py",
-    "src/transformers/models/bigbird_pegasus/configuration_bigbird_pegasus.py",
-    "src/transformers/models/bigbird_pegasus/modeling_bigbird_pegasus.py",
-    "src/transformers/models/biogpt/__init__.py",
-    "src/transformers/models/biogpt/configuration_biogpt.py",
-    "src/transformers/models/biogpt/modeling_biogpt.py",
-    "src/transformers/models/biogpt/modular_biogpt.py",
-    "src/transformers/models/biogpt/tokenization_biogpt.py",
-    "src/transformers/models/bit/__init__.py",
-    "src/transformers/models/bit/configuration_bit.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2379,
-  "done": 285
+  "done": 300
 }
