@@ -15,23 +15,8 @@
     "src/transformers/models/nemotron_asr_streaming/generation_nemotron_asr_streaming.py",
     "src/transformers/models/nemotron_asr_streaming/modeling_nemotron_asr_streaming.py",
     "src/transformers/models/nemotron_asr_streaming/modular_nemotron_asr_streaming.py",
-    "src/transformers/models/nemotron_asr_streaming/processing_nemotron_asr_streaming.py",
-    "src/transformers/models/nemotron_h/__init__.py",
-    "src/transformers/models/nemotron_h/configuration_nemotron_h.py",
-    "src/transformers/models/nemotron_h/modeling_nemotron_h.py",
-    "src/transformers/models/nemotron_h/modular_nemotron_h.py",
-    "src/transformers/models/nllb/__init__.py",
-    "src/transformers/models/nllb/tokenization_nllb.py",
-    "src/transformers/models/nllb_moe/__init__.py",
-    "src/transformers/models/nllb_moe/configuration_nllb_moe.py",
-    "src/transformers/models/nllb_moe/modeling_nllb_moe.py",
-    "src/transformers/models/nomic_bert/__init__.py",
-    "src/transformers/models/nomic_bert/configuration_nomic_bert.py",
-    "src/transformers/models/nomic_bert/modeling_nomic_bert.py",
-    "src/transformers/models/nomic_bert/modular_nomic_bert.py",
-    "src/transformers/models/nougat/__init__.py",
-    "src/transformers/models/nougat/configuration_nougat.py"
+    "src/transformers/models/nemotron_asr_streaming/processing_nemotron_asr_streaming.py"
   ],
   "remaining_pending": 1119,
-  "done": 1530
+  "done": 1545
 }
