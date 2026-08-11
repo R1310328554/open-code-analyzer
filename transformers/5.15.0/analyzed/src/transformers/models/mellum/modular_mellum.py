@@ -35,8 +35,12 @@ from ..qwen3_moe.modeling_qwen3_moe import (
 logger = logging.get_logger(__name__)
 
 
+# Mellum modular 源：Qwen3 MoE + Laguna 滑动窗口因果 LM 实现
+
+# MellumConfig：JetBrains Mellum2 MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="JetBrains/Mellum2-12B-A2.5B-Base")
 @strict
+# MellumConfig：JetBrains Mellum2 MoE 因果语言模型默认超参
 class MellumConfig(Qwen3MoeConfig):
     r"""
     mlp_layer_types (`list[str]`, *optional*):
@@ -95,26 +99,31 @@ class MellumConfig(Qwen3MoeConfig):
         return kwargs
 
 
+# MellumRotaryEmbedding：Mellum 旋转位置编码（RoPE，支持滑动窗口）
 class MellumRotaryEmbedding(LagunaRotaryEmbedding):
     pass
 
 
+# MellumAttention：Mellum 多头因果自注意力（GQA + 滑动窗口）
 class MellumAttention(Qwen3MoeAttention):
     def __init__(self, config: MellumConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.sliding_window = config.sliding_window if config.layer_types[layer_idx] == "sliding_attention" else None
 
 
+# MellumSparseMoeBlock：Mellum 混合专家层（路由 + 专家 FFN）
 class MellumSparseMoeBlock(Qwen3MoeSparseMoeBlock):
     pass
 
 
+# MellumDecoderLayer：Mellum 解码器单层（注意力 + 稠密/MoE FFN）
 class MellumDecoderLayer(LagunaDecoderLayer):
     def __init__(self, config: MellumConfig, layer_idx: int):
         super().__init__()
         self.self_attn = MellumAttention(config, layer_idx)
 
 
+# MellumPreTrainedModel：Mellum 预训练基类与权重初始化
 class MellumPreTrainedModel(Qwen3MoePreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -129,10 +138,12 @@ class MellumPreTrainedModel(Qwen3MoePreTrainedModel):
                 init.copy_(getattr(module, f"{layer_type}_original_inv_freq"), curr_inv_freq)
 
 
+# MellumModel：Mellum MoE Transformer 解码器主干
 class MellumModel(LagunaModel):
     pass
 
 
+# MellumForCausalLM：Mellum 因果语言建模条件生成
 class MellumForCausalLM(Qwen3MoeForCausalLM):
     pass
 

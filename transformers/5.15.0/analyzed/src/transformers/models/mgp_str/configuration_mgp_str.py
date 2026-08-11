@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MGP-STR 配置：阿里巴巴场景文本识别三头解码超参
+
+# MgpstrConfig：alibaba-damo/mgp-str-base 场景文本识别默认超参
 @auto_docstring(checkpoint="alibaba-damo/mgp-str-base")
 @strict
+# MgpstrConfig：alibaba-damo/mgp-str-base 场景文本识别默认超参
 class MgpstrConfig(PreTrainedConfig):
     r"""
     max_token_length (`int`, *optional*, defaults to 27):

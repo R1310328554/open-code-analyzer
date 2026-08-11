@@ -28,8 +28,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# MetaCLIP-2 配置：facebook/metaclip-2 图文对比学习模型超参
+
+# MetaClip2TextConfig：MetaCLIP-2 文本编码器（CLIP 变体）超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2TextConfig：MetaCLIP-2 文本编码器（CLIP 变体）超参
 class MetaClip2TextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -78,8 +82,10 @@ class MetaClip2TextConfig(PreTrainedConfig):
             )
 
 
+# MetaClip2VisionConfig：MetaCLIP-2 视觉编码器（ViT 变体）超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2VisionConfig：MetaCLIP-2 视觉编码器（ViT 变体）超参
 class MetaClip2VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -123,8 +129,10 @@ class MetaClip2VisionConfig(PreTrainedConfig):
             )
 
 
+# MetaClip2Config：facebook/metaclip-2 图文对比学习联合超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2Config：facebook/metaclip-2 图文对比学习联合超参
 class MetaClip2Config(PreTrainedConfig):
     r"""
     Example:

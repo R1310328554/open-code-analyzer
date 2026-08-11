@@ -38,8 +38,11 @@ from .configuration_mimi import MimiConfig
 logger = logging.get_logger(__name__)
 
 
+# Mimi 建模：SEANet 编解码 + Transformer 瓶颈 + 残差向量量化
+
 @auto_docstring
 @dataclass
+# MimiOutput：Mimi 编解码联合输出容器（离散码 + 波形）
 class MimiOutput(ModelOutput):
     r"""
     audio_codes (`torch.LongTensor`  of shape `(batch_size, num_quantizers, codes_length)`, *optional*):
@@ -70,6 +73,7 @@ class MimiOutput(ModelOutput):
     decoder_past_key_values: Cache | None = None
 
 
+# MimiConv1dPaddingCache：Mimi 因果卷积 1D 填充缓存（流式推理）
 class MimiConv1dPaddingCache:
     """
     Padding cache for MimiConv1d causal convolutions in order to support streaming via cache padding.
@@ -166,6 +170,7 @@ class MimiConv1dPaddingCache:
 
 @auto_docstring
 @dataclass
+# MimiEncoderOutput：Mimi 编码器输出容器
 class MimiEncoderOutput(ModelOutput):
     r"""
     audio_codes (`torch.LongTensor`  of shape `(batch_size, num_quantizers, codes_length)`, *optional*):
@@ -189,6 +194,7 @@ class MimiEncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# MimiDecoderOutput：Mimi 解码器输出容器
 class MimiDecoderOutput(ModelOutput):
     r"""
     audio_values (`torch.FloatTensor`  of shape `(batch_size, segment_length)`, *optional*):
@@ -207,6 +213,7 @@ class MimiDecoderOutput(ModelOutput):
     decoder_past_key_values: Cache | None = None
 
 
+# MimiConv1d：Mimi 因果/非因果 1D 卷积（支持 Snake 激活）
 class MimiConv1d(nn.Module):
     """Conv1d with asymmetric or causal padding and normalization."""
 
@@ -347,6 +354,7 @@ class MimiConv1d(nn.Module):
         return hidden_states
 
 
+# MimiConvTranspose1d：Mimi 转置 1D 卷积上采样层
 class MimiConvTranspose1d(nn.Module):
     """ConvTranspose1d with asymmetric or causal padding and normalization."""
 
@@ -405,6 +413,7 @@ class MimiConvTranspose1d(nn.Module):
         return hidden_states
 
 
+# MimiResnetBlock：Mimi 残差卷积块（Conv1d + 激活）
 class MimiResnetBlock(nn.Module):
     """
     Residual block from SEANet model as used by Mimi.
@@ -447,6 +456,7 @@ class MimiResnetBlock(nn.Module):
         return residual + hidden_states
 
 
+# MimiEncoder：Mimi SEANet 风格音频编码器（多级下采样）
 class MimiEncoder(nn.Module):
     """SEANet encoder as used by Mimi."""
 
@@ -492,6 +502,7 @@ class MimiEncoder(nn.Module):
         return hidden_states
 
 
+# MimiLayerScale：Mimi 可学习层缩放（LayerScale）
 class MimiLayerScale(nn.Module):
     """Layer scale from [Touvron et al 2021] (https://huggingface.co/papers/2103.17239).
     This rescales diagonally the residual outputs close to 0, with a learnt scale.
@@ -508,6 +519,7 @@ class MimiLayerScale(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Mimi
+# MimiRotaryEmbedding：Mimi Transformer 旋转位置编码
 class MimiRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MimiConfig, device=None):
@@ -566,6 +578,7 @@ class MimiRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -574,6 +587,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -599,6 +613,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MimiMLP：Mimi Transformer 前馈 MLP 子层
 class MimiMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -616,6 +631,7 @@ class MimiMLP(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -629,6 +645,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -654,6 +671,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MimiAttention：Mimi Transformer 多头自注意力
 class MimiAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -726,6 +744,7 @@ class MimiAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MimiTransformerLayer：Mimi Transformer 单层（注意力 + MLP）
 class MimiTransformerLayer(GradientCheckpointingLayer):
     def __init__(self, config: MimiConfig, layer_idx: int):
         super().__init__()
@@ -779,6 +798,7 @@ class MimiTransformerLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# MimiTransformerModel：Mimi 中间 Transformer 瓶颈
 class MimiTransformerModel(nn.Module):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MimiTransformerLayer`]
@@ -928,6 +948,7 @@ class MimiTransformerModel(nn.Module):
         )
 
 
+# MimiDecoder：Mimi SEANet 风格音频解码器（多级上采样）
 class MimiDecoder(nn.Module):
     """SEANet decoder as used by Mimi."""
 
@@ -961,6 +982,7 @@ class MimiDecoder(nn.Module):
         return hidden_states
 
 
+# MimiEuclideanCodebook：Mimi 欧氏距离向量量化码本
 class MimiEuclideanCodebook(nn.Module):
     """Codebook with Euclidean distance."""
 
@@ -1007,6 +1029,7 @@ class MimiEuclideanCodebook(nn.Module):
 
 
 # Copied from transformers.models.encodec.modeling_encodec.EncodecVectorQuantization with Encodec->Mimi
+# MimiVectorQuantization：Mimi 单码本向量量化层
 class MimiVectorQuantization(nn.Module):
     """
     Vector quantization implementation. Currently supports only euclidean distance.
@@ -1027,6 +1050,7 @@ class MimiVectorQuantization(nn.Module):
         return quantize
 
 
+# MimiResidualVectorQuantizer：Mimi 残差向量量化器（RVQ）
 class MimiResidualVectorQuantizer(nn.Module):
     """Residual Vector Quantizer."""
 
@@ -1081,6 +1105,7 @@ class MimiResidualVectorQuantizer(nn.Module):
         return quantized_out
 
 
+# MimiSplitResidualVectorQuantizer：Mimi 分组残差向量量化器
 class MimiSplitResidualVectorQuantizer(nn.Module):
     """Split Residual Vector Quantizer."""
 
@@ -1138,6 +1163,7 @@ class MimiSplitResidualVectorQuantizer(nn.Module):
 
 
 @auto_docstring
+# MimiPreTrainedModel：Mimi 预训练基类与权重初始化
 class MimiPreTrainedModel(PreTrainedModel):
     config: MimiConfig
     base_model_prefix = "mimi"
@@ -1183,6 +1209,7 @@ class MimiPreTrainedModel(PreTrainedModel):
     The Mimi neural audio codec model.
     """
 )
+# MimiModel：Mimi 神经音频编解码器（编码 + RVQ + 解码）
 class MimiModel(MimiPreTrainedModel):
     def __init__(self, config: MimiConfig):
         super().__init__(config)

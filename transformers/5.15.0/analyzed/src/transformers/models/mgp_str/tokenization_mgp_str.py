@@ -22,9 +22,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# MGP-STR 字符 tokenizer：基于 vocab.json 的场景文本词表
+
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json"}
 
 
+# MgpstrTokenizer：MGP-STR 字符级词表 tokenizer
 class MgpstrTokenizer(PreTrainedTokenizer):
     """
     Construct a MGP-STR char tokenizer.

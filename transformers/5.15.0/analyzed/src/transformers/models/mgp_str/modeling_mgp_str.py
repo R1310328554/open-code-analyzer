@@ -27,12 +27,15 @@ from ...utils import ModelOutput, auto_docstring
 from .configuration_mgp_str import MgpstrConfig
 
 
+# MGP-STR 建模：ViT 编码器 + A³ 三头场景文本识别
+
 @auto_docstring(
     custom_intro="""
     Base class for vision model's outputs that also contains image embeddings of the pooling of the last hidden states.
     """
 )
 @dataclass
+# MgpstrModelOutput：MGP-STR 三头（字符/BPE/WordPiece）输出容器
 class MgpstrModelOutput(ModelOutput):
     r"""
     logits (`tuple(torch.FloatTensor)` of shape `(batch_size, config.num_character_labels)`):
@@ -56,6 +59,7 @@ class MgpstrModelOutput(ModelOutput):
     a3_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# MgpstrEmbeddings：MGP-STR 图像 patch 嵌入与位置编码
 class MgpstrEmbeddings(nn.Module):
     """2D Image to Patch Embedding"""
 
@@ -102,6 +106,7 @@ class MgpstrEmbeddings(nn.Module):
         return embedding_output
 
 
+# MgpstrMlp：MGP-STR 前馈 MLP 子层
 class MgpstrMlp(nn.Module):
     """MLP as used in Vision Transformer, MLP-Mixer and related networks"""
 
@@ -122,6 +127,7 @@ class MgpstrMlp(nn.Module):
         return hidden_states
 
 
+# MgpstrAttention：MGP-STR 多头自注意力
 class MgpstrAttention(nn.Module):
     def __init__(self, config: MgpstrConfig):
         super().__init__()
@@ -154,6 +160,7 @@ class MgpstrAttention(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->MgpStrDropPath
+# MgpStrDropPath：MGP-STR 随机深度（DropPath）正则化
 class MgpStrDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -178,6 +185,7 @@ class MgpStrDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# MgpstrLayer：MGP-STR Transformer 编码器单层
 class MgpstrLayer(nn.Module):
     def __init__(self, config: MgpstrConfig, drop_path=None):
         super().__init__()
@@ -204,6 +212,7 @@ class MgpstrLayer(nn.Module):
         return outputs
 
 
+# MgpstrEncoder：MGP-STR ViT 编码器堆叠
 class MgpstrEncoder(nn.Module):
     def __init__(self, config: MgpstrConfig):
         super().__init__()
@@ -240,6 +249,7 @@ class MgpstrEncoder(nn.Module):
         )
 
 
+# MgpstrA3Module：MGP-STR A³ 注意力聚合模块（三头 logits 融合）
 class MgpstrA3Module(nn.Module):
     def __init__(self, config: MgpstrConfig):
         super().__init__()
@@ -269,6 +279,7 @@ class MgpstrA3Module(nn.Module):
 
 
 @auto_docstring
+# MgpstrPreTrainedModel：MGP-STR 预训练基类与权重初始化
 class MgpstrPreTrainedModel(PreTrainedModel):
     config: MgpstrConfig
     base_model_prefix = "mgp_str"
@@ -289,6 +300,7 @@ class MgpstrPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MgpstrModel：MGP-STR 视觉编码器主干
 class MgpstrModel(MgpstrPreTrainedModel):
     def __init__(self, config: MgpstrConfig):
         super().__init__(config)
@@ -344,6 +356,7 @@ class MgpstrModel(MgpstrPreTrainedModel):
     of the transformer encoder output) for scene text recognition (STR) .
     """
 )
+# MgpstrForSceneTextRecognition：MGP-STR 场景文本识别（三头解码）
 class MgpstrForSceneTextRecognition(MgpstrPreTrainedModel):
     config: MgpstrConfig
     main_input_name = "pixel_values"

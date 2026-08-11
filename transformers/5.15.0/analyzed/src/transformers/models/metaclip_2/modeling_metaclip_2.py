@@ -39,6 +39,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_metaclip_2 import MetaClip2Config, MetaClip2TextConfig, MetaClip2VisionConfig
 
 
+# MetaCLIP-2 建模：CLIP 变体图文对比学习（由 modular 自动生成）
+
+# MetaClip2TextEmbeddings：MetaCLIP-2 文本 token + 位置嵌入
 class MetaClip2TextEmbeddings(nn.Module):
     def __init__(self, config: MetaClip2TextConfig):
         super().__init__()
@@ -77,6 +80,7 @@ class MetaClip2TextEmbeddings(nn.Module):
         return embeddings
 
 
+# MetaClip2VisionEmbeddings：MetaCLIP-2 视觉 patch 嵌入与位置编码
 class MetaClip2VisionEmbeddings(nn.Module):
     def __init__(self, config: MetaClip2VisionConfig):
         super().__init__()
@@ -160,6 +164,7 @@ class MetaClip2VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -181,6 +186,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MetaClip2Attention：MetaCLIP-2 多头自注意力
 class MetaClip2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -239,6 +245,7 @@ class MetaClip2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# MetaClip2MLP：MetaCLIP-2 前馈 MLP 子层
 class MetaClip2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -254,6 +261,7 @@ class MetaClip2MLP(nn.Module):
         return hidden_states
 
 
+# MetaClip2EncoderLayer：MetaCLIP-2 编码器单层（注意力 + MLP）
 class MetaClip2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MetaClip2VisionConfig | MetaClip2TextConfig):
         super().__init__()
@@ -288,6 +296,7 @@ class MetaClip2EncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MetaClip2PreTrainedModel：MetaCLIP-2 预训练基类与权重初始化
 class MetaClip2PreTrainedModel(PreTrainedModel):
     config: MetaClip2Config
     base_model_prefix = "metaclip_2"
@@ -358,6 +367,7 @@ class MetaClip2PreTrainedModel(PreTrainedModel):
             init.constant_(module.logit_scale, self.config.logit_scale_init_value)
 
 
+# MetaClip2Encoder：MetaCLIP-2 Transformer 编码器堆叠
 class MetaClip2Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -397,6 +407,7 @@ class MetaClip2Encoder(nn.Module):
     The text model from METACLIP_2 without any head or projection on top.
     """
 )
+# MetaClip2TextModel：MetaCLIP-2 文本 Transformer 编码器
 class MetaClip2TextModel(MetaClip2PreTrainedModel):
     """
     The text model from MetaClip2 without any head or projection on top.
@@ -513,6 +524,7 @@ class MetaClip2TextModel(MetaClip2PreTrainedModel):
     """
 )
 @dataclass
+# MetaClip2TextModelOutput：MetaCLIP-2 文本模型输出容器
 class MetaClip2TextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -526,6 +538,7 @@ class MetaClip2TextModelOutput(ModelOutput):
 
 
 @auto_docstring
+# MetaClip2TextModelWithProjection：MetaCLIP-2 带投影头的文本编码器
 class MetaClip2TextModelWithProjection(MetaClip2PreTrainedModel):
     """
     MetaClip2 text model with a projection layer on top (a linear layer on top of the pooled output).
@@ -618,6 +631,7 @@ class MetaClip2TextModelWithProjection(MetaClip2PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# MetaClip2Output：MetaCLIP-2 图文联合模型输出容器
 class MetaClip2Output(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -652,16 +666,19 @@ class MetaClip2Output(ModelOutput):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-metaclip_2.html
+# contrastive_loss：CLIP 对比学习对称交叉熵损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文双向对比损失（logits + 转置 logits）
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# _get_vector_norm：计算张量 L2 范数（支持 fp16/bf16 安全累加）
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -674,6 +691,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# MetaClip2Model：MetaCLIP-2 图文对比学习联合模型
 class MetaClip2Model(MetaClip2PreTrainedModel):
     """
     This model inherits from [`PreTrainedModel`]. Check the superclass documentation for the generic methods the
@@ -890,6 +908,7 @@ class MetaClip2Model(MetaClip2PreTrainedModel):
     The vision model from METACLIP_2 without any head or projection on top.
     """
 )
+# MetaClip2VisionModel：MetaCLIP-2 视觉 Transformer 编码器
 class MetaClip2VisionModel(MetaClip2PreTrainedModel):
     """
     The vision model from MetaClip2 without any head or projection on top.
@@ -999,6 +1018,7 @@ class MetaClip2VisionModel(MetaClip2PreTrainedModel):
     """
 )
 @dataclass
+# MetaClip2VisionModelOutput：MetaCLIP-2 视觉模型输出容器
 class MetaClip2VisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -1012,6 +1032,7 @@ class MetaClip2VisionModelOutput(ModelOutput):
 
 
 @auto_docstring
+# MetaClip2VisionModelWithProjection：MetaCLIP-2 带投影头的视觉编码器
 class MetaClip2VisionModelWithProjection(MetaClip2PreTrainedModel):
     """
     MetaClip2 vision model with a projection layer on top (a linear layer on top of the pooled output).
@@ -1118,6 +1139,7 @@ class MetaClip2VisionModelWithProjection(MetaClip2PreTrainedModel):
     the patch tokens) e.g. for ImageNet.
     """
 )
+# MetaClip2ForImageClassification：MetaCLIP-2 图像分类头
 class MetaClip2ForImageClassification(MetaClip2PreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)

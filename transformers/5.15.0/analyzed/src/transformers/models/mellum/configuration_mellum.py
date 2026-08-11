@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Mellum 配置：JetBrains MoE 分组 top-k 路由与滑动窗口注意力超参
+
+# MellumConfig：JetBrains Mellum2 MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="JetBrains/Mellum2-12B-A2.5B-Base")
 @strict
+# MellumConfig：JetBrains Mellum2 MoE 因果语言模型默认超参
 class MellumConfig(PreTrainedConfig):
     r"""
     mlp_layer_types (`list[str]`, *optional*):

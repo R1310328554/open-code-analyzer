@@ -43,6 +43,9 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_mellum import MellumConfig
 
 
+# Mellum 建模：JetBrains MoE 解码器因果语言模型（由 modular 自动生成）
+
+# MellumRotaryEmbedding：Mellum 旋转位置编码（RoPE，支持滑动窗口）
 class MellumRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MellumConfig, device=None):
@@ -118,6 +121,7 @@ class MellumRotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# MellumRMSNorm：Mellum RMS 层归一化
 class MellumRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -138,6 +142,7 @@ class MellumRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -146,6 +151,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -171,6 +177,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -183,6 +190,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -209,6 +217,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# MellumAttention：Mellum 多头因果自注意力（GQA + 滑动窗口）
 class MellumAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -281,6 +290,7 @@ class MellumAttention(nn.Module):
 
 
 @use_experts_implementation
+# MellumExperts：Mellum MoE 多专家 FFN 并行计算模块
 class MellumExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -320,6 +330,7 @@ class MellumExperts(nn.Module):
         return final_hidden_states
 
 
+# MellumTopKRouter：Mellum MoE top-k 专家路由器
 class MellumTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -341,6 +352,7 @@ class MellumTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# MellumSparseMoeBlock：Mellum 混合专家层（路由 + 专家 FFN）
 class MellumSparseMoeBlock(nn.Module):
     def __init__(self, config: MellumConfig):
         super().__init__()
@@ -355,6 +367,7 @@ class MellumSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# MellumMLP：Mellum 稠密前馈 MLP 子层
 class MellumMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -371,6 +384,7 @@ class MellumMLP(nn.Module):
         return down_proj
 
 
+# MellumDecoderLayer：Mellum 解码器单层（注意力 + 稠密/MoE FFN）
 class MellumDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MellumConfig, layer_idx: int):
         super().__init__()
@@ -416,6 +430,7 @@ class MellumDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MellumPreTrainedModel：Mellum 预训练基类与权重初始化
 class MellumPreTrainedModel(PreTrainedModel):
     config: MellumConfig
     base_model_prefix = "model"
@@ -454,6 +469,7 @@ class MellumPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MellumModel：Mellum MoE Transformer 解码器主干
 class MellumModel(MellumPreTrainedModel):
     def __init__(self, config: MellumConfig):
         super().__init__(config)
@@ -537,6 +553,7 @@ class MellumModel(MellumPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -620,6 +637,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# MellumForCausalLM：Mellum 因果语言建模条件生成
 class MellumForCausalLM(MellumPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

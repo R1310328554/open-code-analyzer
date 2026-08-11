@@ -13,6 +13,8 @@
 # limitations under the License.
 """Processor class for MGP-STR."""
 
+# MGP-STR 处理器：图像预处理与字符/BPE/WordPiece 三 tokenizer 联合
+
 from transformers import AutoTokenizer
 from transformers.utils import is_torch_available
 from transformers.utils.generic import ExplicitEnum
@@ -26,6 +28,7 @@ if is_torch_available():
     import torch
 
 
+# DecodeType：MGP-STR 解码类型枚举（字符/BPE/WordPiece）
 class DecodeType(ExplicitEnum):
     CHARACTER = "char"
     BPE = "bpe"
@@ -37,6 +40,7 @@ SUPPORTED_ANNOTATION_FORMATS = (DecodeType.CHARACTER, DecodeType.BPE, DecodeType
 
 @requires(backends=("sentencepiece",))
 @auto_docstring
+# MgpstrProcessor：MGP-STR 图文联合预处理与三 tokenizer 对齐
 class MgpstrProcessor(ProcessorMixin):
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         self.char_tokenizer = tokenizer

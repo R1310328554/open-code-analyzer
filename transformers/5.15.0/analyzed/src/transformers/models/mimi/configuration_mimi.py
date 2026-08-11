@@ -23,8 +23,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Mimi 配置：Kyutai 神经音频编解码器 SEANet + RVQ 超参
+
+# MimiConfig：kyutai/mimi 神经音频编解码器默认超参
 @auto_docstring(checkpoint="kyutai/mimi")
 @strict
+# MimiConfig：kyutai/mimi 神经音频编解码器默认超参
 class MimiConfig(PreTrainedConfig):
     r"""
     audio_channels (`int`, *optional*, defaults to 1):

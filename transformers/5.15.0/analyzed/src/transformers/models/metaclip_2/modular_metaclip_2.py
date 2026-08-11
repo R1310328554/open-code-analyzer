@@ -41,12 +41,16 @@ from ..clip.modeling_clip import (
 logger = logging.get_logger(__name__)
 
 
+# MetaCLIP-2 modular 源：CLIP 文本/视觉编码器与对比损失实现
+
 _CHECKPOINT_FOR_DOC = "facebook/metaclip-2-worldwide-huge-quickgelu"
 _CONFIG_FOR_DOC = "MetaClip2Config"
 
 
+# MetaClip2TextConfig：MetaCLIP-2 文本编码器（CLIP 变体）超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2TextConfig：MetaCLIP-2 文本编码器（CLIP 变体）超参
 class MetaClip2TextConfig(CLIPTextConfig):
     r"""
     Example:
@@ -65,8 +69,10 @@ class MetaClip2TextConfig(CLIPTextConfig):
     ```"""
 
 
+# MetaClip2VisionConfig：MetaCLIP-2 视觉编码器（ViT 变体）超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2VisionConfig：MetaCLIP-2 视觉编码器（ViT 变体）超参
 class MetaClip2VisionConfig(CLIPVisionConfig):
     r"""
     Example:
@@ -85,8 +91,10 @@ class MetaClip2VisionConfig(CLIPVisionConfig):
     ```"""
 
 
+# MetaClip2Config：facebook/metaclip-2 图文对比学习联合超参
 @auto_docstring(checkpoint="facebook/metaclip-2-worldwide-huge-quickgelu")
 @strict
+# MetaClip2Config：facebook/metaclip-2 图文对比学习联合超参
 class MetaClip2Config(CLIPConfig):
     r"""
     Example:
@@ -114,23 +122,28 @@ class MetaClip2Config(CLIPConfig):
     ```"""
 
 
+# MetaClip2TextEmbeddings：MetaCLIP-2 文本 token + 位置嵌入
 class MetaClip2TextEmbeddings(CLIPTextEmbeddings):
     pass
 
 
+# MetaClip2VisionEmbeddings：MetaCLIP-2 视觉 patch 嵌入与位置编码
 class MetaClip2VisionEmbeddings(CLIPVisionEmbeddings):
     pass
 
 
+# MetaClip2Attention：MetaCLIP-2 多头自注意力
 class MetaClip2Attention(CLIPAttention):
     pass
 
 
+# MetaClip2MLP：MetaCLIP-2 前馈 MLP 子层
 class MetaClip2MLP(CLIPMLP):
     pass
 
 
 @auto_docstring
+# MetaClip2PreTrainedModel：MetaCLIP-2 预训练基类与权重初始化
 class MetaClip2PreTrainedModel(CLIPPreTrainedModel):
     base_model_prefix = "metaclip_2"
 
@@ -142,6 +155,7 @@ class MetaClip2PreTrainedModel(CLIPPreTrainedModel):
             init.constant_(module.logit_scale, self.config.logit_scale_init_value)
 
 
+# MetaClip2TextModel：MetaCLIP-2 文本 Transformer 编码器
 class MetaClip2TextModel(CLIPTextModel):
     """
     The text model from MetaClip2 without any head or projection on top.
@@ -234,6 +248,7 @@ class MetaClip2TextModel(CLIPTextModel):
         )
 
 
+# MetaClip2TextModelWithProjection：MetaCLIP-2 带投影头的文本编码器
 class MetaClip2TextModelWithProjection(CLIPTextModelWithProjection):
     """
     MetaClip2 text model with a projection layer on top (a linear layer on top of the pooled output).
@@ -294,6 +309,7 @@ class MetaClip2TextModelWithProjection(CLIPTextModelWithProjection):
         )
 
 
+# MetaClip2Model：MetaCLIP-2 图文对比学习联合模型
 class MetaClip2Model(CLIPModel):
     """
     This model inherits from [`PreTrainedModel`]. Check the superclass documentation for the generic methods the
@@ -465,6 +481,7 @@ class MetaClip2Model(CLIPModel):
         )
 
 
+# MetaClip2VisionModel：MetaCLIP-2 视觉 Transformer 编码器
 class MetaClip2VisionModel(CLIPVisionModel):
     """
     The vision model from MetaClip2 without any head or projection on top.
@@ -539,6 +556,7 @@ class MetaClip2VisionModel(CLIPVisionModel):
         )
 
 
+# MetaClip2VisionModelWithProjection：MetaCLIP-2 带投影头的视觉编码器
 class MetaClip2VisionModelWithProjection(CLIPVisionModelWithProjection):
     """
     MetaClip2 vision model with a projection layer on top (a linear layer on top of the pooled output).
@@ -611,6 +629,7 @@ class MetaClip2VisionModelWithProjection(CLIPVisionModelWithProjection):
         )
 
 
+# MetaClip2ForImageClassification：MetaCLIP-2 图像分类头
 class MetaClip2ForImageClassification(CLIPForImageClassification):
     pass
 
