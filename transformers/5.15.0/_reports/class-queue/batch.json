@@ -15,23 +15,8 @@
     "src/transformers/models/glm46v/image_processing_glm46v.py",
     "src/transformers/models/glm46v/image_processing_pil_glm46v.py",
     "src/transformers/models/glm46v/modeling_glm46v.py",
-    "src/transformers/models/glm46v/modular_glm46v.py",
-    "src/transformers/models/glm46v/processing_glm46v.py",
-    "src/transformers/models/glm46v/video_processing_glm46v.py",
-    "src/transformers/models/glm4_moe/__init__.py",
-    "src/transformers/models/glm4_moe/configuration_glm4_moe.py",
-    "src/transformers/models/glm4_moe/modeling_glm4_moe.py",
-    "src/transformers/models/glm4_moe/modular_glm4_moe.py",
-    "src/transformers/models/glm4_moe_lite/__init__.py",
-    "src/transformers/models/glm4_moe_lite/configuration_glm4_moe_lite.py",
-    "src/transformers/models/glm4_moe_lite/modeling_glm4_moe_lite.py",
-    "src/transformers/models/glm4_moe_lite/modular_glm4_moe_lite.py",
-    "src/transformers/models/glm4v/__init__.py",
-    "src/transformers/models/glm4v/configuration_glm4v.py",
-    "src/transformers/models/glm4v/image_processing_glm4v.py",
-    "src/transformers/models/glm4v/image_processing_pil_glm4v.py",
-    "src/transformers/models/glm4v/modeling_glm4v.py"
+    "src/transformers/models/glm46v/modular_glm46v.py"
   ],
   "remaining_pending": 1779,
-  "done": 870
+  "done": 885
 }
