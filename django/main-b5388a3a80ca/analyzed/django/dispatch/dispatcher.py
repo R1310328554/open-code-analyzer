@@ -1,4 +1,10 @@
-import asyncio
+"""
+django.dispatch.dispatcher — Signal 与 receiver 注册分发。
+
+支持同步/异步接收器、弱引用与 sender 级缓存。
+"""
+
+import asyncioimport asyncio
 import contextvars
 import logging
 import threading
@@ -65,6 +71,7 @@ async def _run_parallel(*coros):
         _restore_context(context=context)
 
 
+# 信号对象：connect/send/disconnect 管理接收器列表
 class Signal:
     """
     Base class for all signals

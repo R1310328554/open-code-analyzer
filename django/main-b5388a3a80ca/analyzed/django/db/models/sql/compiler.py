@@ -1,4 +1,10 @@
-import collections
+"""
+django.db.models.sql.compiler — 将 Query 编译为 SQL 并执行。
+
+SQLCompiler 及 Insert/Delete/Update/Aggregate 子类负责 as_sql 与 execute_sql。
+"""
+
+import collectionsimport collections
 import json
 import re
 import warnings
@@ -31,6 +37,7 @@ from django.utils.regex_helper import _lazy_re_compile
 from django.utils.warnings import django_file_prefixes
 
 
+# ORDER BY 中按 SELECT 列表序号引用列
 class PositionRef(Ref):
     def __init__(self, ordinal, refs, source):
         self.ordinal = ordinal
@@ -40,6 +47,7 @@ class PositionRef(Ref):
         return str(self.ordinal), ()
 
 
+# 通用 SELECT 编译器：FROM/JOIN/WHERE/GROUP/ORDER
 class SQLCompiler:
     # Multiline ordering SQL clause may appear from RawSQL.
     ordering_parts = _lazy_re_compile(
@@ -1680,6 +1688,7 @@ class SQLCompiler:
                     yield value
 
 
+# INSERT 编译：单行/批量占位符与 RETURNING
 class SQLInsertCompiler(SQLCompiler):
     returning_fields = None
     returning_params = ()
@@ -1970,6 +1979,7 @@ class SQLInsertCompiler(SQLCompiler):
         return list(rows)
 
 
+# DELETE 编译：单表或子查询形式
 class SQLDeleteCompiler(SQLCompiler):
     @cached_property
     def single_alias(self):
@@ -2030,6 +2040,7 @@ class SQLDeleteCompiler(SQLCompiler):
         return self._as_sql(outerq)
 
 
+# UPDATE 编译：SET 表达式与关联表预筛选
 class SQLUpdateCompiler(SQLCompiler):
     returning_fields = None
     returning_params = ()
@@ -2230,6 +2241,7 @@ class SQLUpdateCompiler(SQLCompiler):
         self.query.reset_refcounts(refcounts_before)
 
 
+# 聚合编译：内嵌子查询上 SELECT 注解
 class SQLAggregateCompiler(SQLCompiler):
     def as_sql(self):
         """

@@ -1,4 +1,9 @@
 """
+django.forms — 表单验证与 HTML 渲染。
+
+聚合 Field、Widget、Form、FormSet 与 ModelForm 公共 API。
+"""
+"""
 Django validation and HTML form handling.
 """
 

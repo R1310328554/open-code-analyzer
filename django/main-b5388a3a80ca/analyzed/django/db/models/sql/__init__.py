@@ -1,3 +1,9 @@
+"""
+django.db.models.sql — ORM SQL 查询构建与编译。
+
+Query、WhereNode、Compiler 等将 QuerySet 抽象转为可执行 SQL。
+"""
+
 from django.db.models.sql.query import *  # NOQA
 from django.db.models.sql.query import Query
 from django.db.models.sql.subqueries import *  # NOQA

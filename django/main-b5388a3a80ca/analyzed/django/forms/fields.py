@@ -1,4 +1,9 @@
 """
+django.forms.fields — 表单字段类型与 clean 校验链。
+
+Field 定义 widget、validators 与 to_python/clean 转换逻辑。
+"""
+"""
 Field classes.
 """
 
@@ -81,6 +86,7 @@ __all__ = (
 )
 
 
+# 字段基类：required、validators 与 BoundField 工厂
 class Field:
     widget = TextInput  # Default widget to use when rendering this type of Field.
     hidden_widget = (
@@ -273,6 +279,7 @@ class Field:
         return self.clean(value)
 
 
+# 字符串字段：max/min_length 与 strip
 class CharField(Field):
     def __init__(
         self, *, max_length=None, min_length=None, strip=True, empty_value="", **kwargs
@@ -309,6 +316,7 @@ class CharField(Field):
         return attrs
 
 
+# 整数字段：NumberInput 与 min/max/step
 class IntegerField(Field):
     widget = NumberInput
     default_error_messages = {
@@ -361,6 +369,7 @@ class IntegerField(Field):
         return attrs
 
 
+# 浮点数字段
 class FloatField(IntegerField):
     default_error_messages = {
         "invalid": _("Enter a number."),
@@ -400,6 +409,7 @@ class FloatField(IntegerField):
         return attrs
 
 
+# 定点小数字段：decimal_places 与 max_digits
 class DecimalField(IntegerField):
     default_error_messages = {
         "invalid": _("Enter a number."),
@@ -459,6 +469,7 @@ class DecimalField(IntegerField):
         return attrs
 
 
+# 日期/时间字段基类：input_formats 与 strptime
 class BaseTemporalField(Field):
     def __init__(self, *, input_formats=None, **kwargs):
         super().__init__(**kwargs)
@@ -479,6 +490,7 @@ class BaseTemporalField(Field):
         raise NotImplementedError("Subclasses must define this method.")
 
 
+# 日期字段
 class DateField(BaseTemporalField):
     widget = DateInput
     input_formats = formats.get_format_lazy("DATE_INPUT_FORMATS")
@@ -503,6 +515,7 @@ class DateField(BaseTemporalField):
         return datetime.datetime.strptime(value, format).date()
 
 
+# 时间字段
 class TimeField(BaseTemporalField):
     widget = TimeInput
     input_formats = formats.get_format_lazy("TIME_INPUT_FORMATS")
@@ -523,12 +536,14 @@ class TimeField(BaseTemporalField):
         return datetime.datetime.strptime(value, format).time()
 
 
+# 合并 DATETIME 与 DATE 输入格式迭代器
 class DateTimeFormatsIterator:
     def __iter__(self):
         yield from formats.get_format("DATETIME_INPUT_FORMATS")
         yield from formats.get_format("DATE_INPUT_FORMATS")
 
 
+# 日期时间字段：时区 prepare_value
 class DateTimeField(BaseTemporalField):
     widget = DateTimeInput
     input_formats = DateTimeFormatsIterator()
@@ -565,6 +580,7 @@ class DateTimeField(BaseTemporalField):
         return datetime.datetime.strptime(value, format)
 
 
+# 时长字段：parse_duration 与 duration_string
 class DurationField(Field):
     default_error_messages = {
         "invalid": _("Enter a valid duration."),
@@ -596,6 +612,7 @@ class DurationField(Field):
         return value
 
 
+# 正则校验字符串字段
 class RegexField(CharField):
     def __init__(self, regex, **kwargs):
         """
@@ -623,6 +640,7 @@ class RegexField(CharField):
     regex = property(_get_regex, _set_regex)
 
 
+# 邮箱字段：validate_email
 class EmailField(CharField):
     widget = EmailInput
     default_validators = [validators.validate_email]
@@ -634,6 +652,7 @@ class EmailField(CharField):
         super().__init__(strip=True, **kwargs)
 
 
+# 文件上传字段：大小与文件名校验
 class FileField(Field):
     widget = ClearableFileInput
     default_error_messages = {
@@ -710,6 +729,7 @@ class FileField(Field):
         return self.clean(value, bf.initial)
 
 
+# 图片上传：PIL 尺寸与格式校验
 class ImageField(FileField):
     default_validators = [validators.validate_image_file_extension]
     default_error_messages = {
@@ -769,6 +789,7 @@ class ImageField(FileField):
         return attrs
 
 
+# URL 字段：assume_scheme 与 URLValidator
 class URLField(CharField):
     widget = URLInput
     default_error_messages = {
@@ -802,6 +823,7 @@ class URLField(CharField):
         return value
 
 
+# 布尔复选框字段
 class BooleanField(Field):
     widget = CheckboxInput
 
@@ -829,6 +851,7 @@ class BooleanField(Field):
         return self.to_python(initial) != self.to_python(data)
 
 
+# 三态布尔：None/True/False
 class NullBooleanField(BooleanField):
     """
     A field whose valid values are None, True, and False. Clean invalid values
@@ -857,6 +880,7 @@ class NullBooleanField(BooleanField):
         pass
 
 
+# 单选下拉：choices 校验
 class ChoiceField(Field):
     widget = Select
     default_error_messages = {
@@ -915,6 +939,7 @@ class ChoiceField(Field):
         return False
 
 
+# 单选并 coerce 为目标类型
 class TypedChoiceField(ChoiceField):
     def __init__(self, *, coerce=lambda val: val, empty_value="", **kwargs):
         self.coerce = coerce
@@ -943,6 +968,7 @@ class TypedChoiceField(ChoiceField):
         return self._coerce(value)
 
 
+# 多选列表字段
 class MultipleChoiceField(ChoiceField):
     hidden_widget = MultipleHiddenInput
     widget = SelectMultiple
@@ -990,6 +1016,7 @@ class MultipleChoiceField(ChoiceField):
         return data_set != initial_set
 
 
+# 多选并对每项 coerce
 class TypedMultipleChoiceField(MultipleChoiceField):
     def __init__(self, *, coerce=lambda val: val, **kwargs):
         self.coerce = coerce
@@ -1026,6 +1053,7 @@ class TypedMultipleChoiceField(MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
+# 串联多个 Field 的 clean 管道
 class ComboField(Field):
     """
     A Field whose clean() method calls multiple Field clean() methods.
@@ -1051,6 +1079,7 @@ class ComboField(Field):
         return value
 
 
+# 多子字段聚合：decompress/clean/compress
 class MultiValueField(Field):
     """
     Aggregate the logic of multiple Fields.
@@ -1183,6 +1212,7 @@ class MultiValueField(Field):
         return False
 
 
+# 目录下文件/文件夹路径选择
 class FilePathField(ChoiceField):
     def __init__(
         self,
@@ -1239,6 +1269,7 @@ class FilePathField(ChoiceField):
         self.widget.choices = self.choices
 
 
+# 日期+时间拆分字段，合并为 datetime
 class SplitDateTimeField(MultiValueField):
     widget = SplitDateTimeWidget
     hidden_widget = SplitHiddenDateTimeWidget
@@ -1283,6 +1314,7 @@ class SplitDateTimeField(MultiValueField):
         return None
 
 
+# IPv4/IPv6 地址字段
 class GenericIPAddressField(CharField):
     def __init__(self, *, protocol="both", unpack_ipv4=False, **kwargs):
         self.unpack_ipv4 = unpack_ipv4
@@ -1303,6 +1335,7 @@ class GenericIPAddressField(CharField):
         return value
 
 
+# URL slug：字母数字与连字符
 class SlugField(CharField):
     default_validators = [validators.validate_slug]
 
@@ -1313,6 +1346,7 @@ class SlugField(CharField):
         super().__init__(**kwargs)
 
 
+# UUID 字符串字段
 class UUIDField(CharField):
     default_error_messages = {
         "invalid": _("Enter a valid UUID."),
@@ -1335,14 +1369,17 @@ class UUIDField(CharField):
         return value
 
 
+# JSON 解析失败时的占位字符串子类
 class InvalidJSONInput(str):
     pass
 
 
+# 已序列化 JSON 字符串标记类
 class JSONString(str):
     pass
 
 
+# JSON 文本字段：encoder/decoder 与 strict 模式
 class JSONField(CharField):
     default_error_messages = {
         "invalid": _("Enter a valid JSON."),

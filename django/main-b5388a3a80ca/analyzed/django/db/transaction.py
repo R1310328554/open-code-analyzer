@@ -1,4 +1,10 @@
-import warnings
+"""
+django.db.transaction — 数据库事务 API。
+
+atomic 上下文、savepoint、on_commit 与 autocommit 控制。
+"""
+
+import warningsimport warnings
 from contextlib import ContextDecorator, contextmanager
 from functools import wraps
 
@@ -13,6 +19,7 @@ from django.utils.deprecation import RemovedInDjango70Warning
 from django.utils.warnings import django_file_prefixes
 
 
+# 事务管理使用不当（如在 atomic 外手动 commit）
 class TransactionManagementError(ProgrammingError):
     """Transaction management is used improperly."""
 
@@ -152,6 +159,7 @@ def on_commit(func, using=None, robust=False):
 #################################
 
 
+# 保证代码块在事务或 savepoint 中原子执行
 class Atomic(ContextDecorator):
     """
     Guarantee the atomic execution of a given block.

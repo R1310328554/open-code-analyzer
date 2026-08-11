@@ -1,4 +1,9 @@
 """
+django.db.models.sql.subqueries — 专用 DML 查询子类。
+
+Delete/Update/Insert/Aggregate 各绑定对应 SQLCompiler。
+"""
+"""
 Query subclasses which provide extra functionality beyond simple data
 retrieval.
 """
@@ -14,6 +19,7 @@ from django.db.models.sql.query import Query
 __all__ = ["DeleteQuery", "UpdateQuery", "InsertQuery", "AggregateQuery"]
 
 
+# DELETE 查询：批量按主键删除
 class DeleteQuery(Query):
     """A DELETE SQL query."""
 
@@ -46,6 +52,7 @@ class DeleteQuery(Query):
         return num_deleted
 
 
+# UPDATE 查询：字段赋值与祖先表级联更新
 class UpdateQuery(Query):
     """An UPDATE SQL query."""
 
@@ -145,6 +152,7 @@ class UpdateQuery(Query):
         return result
 
 
+# INSERT 查询：字段列表、对象行与 upsert 冲突策略
 class InsertQuery(Query):
     compiler = "SQLInsertCompiler"
 
@@ -164,6 +172,7 @@ class InsertQuery(Query):
         self.raw = raw
 
 
+# 聚合子查询：FROM 内嵌查询并 SELECT 注解列
 class AggregateQuery(Query):
     """
     Take another query as a parameter to the FROM clause and only select the

@@ -1,4 +1,10 @@
-import pkgutil
+"""
+django.db.utils — 数据库连接、异常与路由。
+
+ConnectionHandler 管理多库连接，ConnectionRouter 决定读写路由。
+"""
+
+import pkgutilimport pkgutil
 from importlib import import_module
 
 from django.conf import settings
@@ -14,42 +20,52 @@ DEFAULT_DB_ALIAS = "default"
 DJANGO_VERSION_PICKLE_KEY = "_django_version"
 
 
+# Django 数据库异常基类
 class Error(Exception):
     pass
 
 
+# PEP-249 接口层错误
 class InterfaceError(Error):
     pass
 
 
+# 数据库通用错误基类
 class DatabaseError(Error):
     pass
 
 
+# 数据类型或值超出范围
 class DataError(DatabaseError):
     pass
 
 
+# 连接中断、超时等运行时错误
 class OperationalError(DatabaseError):
     pass
 
 
+# 唯一/外键等完整性约束违反
 class IntegrityError(DatabaseError):
     pass
 
 
+# 数据库内部逻辑错误
 class InternalError(DatabaseError):
     pass
 
 
+# SQL 语法或对象不存在
 class ProgrammingError(DatabaseError):
     pass
 
 
+# 当前后端不支持的操作
 class NotSupportedError(DatabaseError):
     pass
 
 
+# 将后端 PEP-249 异常映射为 Django 异常类
 class DatabaseErrorWrapper:
     """
     Context manager and decorator that reraises backend-specific database
@@ -138,6 +154,7 @@ def load_backend(backend_name):
             raise
 
 
+# 按 DATABASES 配置创建并缓存连接
 class ConnectionHandler(BaseConnectionHandler):
     settings_name = "DATABASES"
     # Connections needs to still be an actual thread local, as it's truly
@@ -197,6 +214,7 @@ class ConnectionHandler(BaseConnectionHandler):
         return backend.DatabaseWrapper(db, alias)
 
 
+# 多库路由：db_for_read/write 与 allow_migrate
 class ConnectionRouter:
     def __init__(self, routers=None):
         """

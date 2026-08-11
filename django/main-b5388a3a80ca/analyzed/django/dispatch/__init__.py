@@ -7,4 +7,8 @@ See license.txt for original license.
 Heavily modified for Django's purposes.
 """
 
+# django.dispatch — 多生产者多消费者信号分发
+Heavily modified for Django's purposes.
+"""
+
 from django.dispatch.dispatcher import Signal, receiver  # NOQA

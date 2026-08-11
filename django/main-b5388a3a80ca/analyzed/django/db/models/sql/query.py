@@ -1,4 +1,9 @@
 """
+django.db.models.sql.query — QuerySet 背后的 SQL 查询对象。
+
+维护 alias_map、WHERE、SELECT 与 JOIN 路径，供 Compiler 生成 SQL。
+"""
+"""
 Create SQL statements for QuerySets.
 
 The code in here encapsulates all of the SQL construction so that QuerySets
@@ -153,6 +158,7 @@ JoinInfo = namedtuple(
 )
 
 
+# 原始 SQL 查询：params 绑定与 cursor 迭代
 class RawQuery:
     """A single raw SQL query."""
 
@@ -229,6 +235,7 @@ class RawQuery:
 ExplainInfo = namedtuple("ExplainInfo", ("format", "options"))
 
 
+# 单条 SELECT/DML 查询的核心状态机
 class Query(BaseExpression):
     """A single SQL query."""
 
@@ -2806,6 +2813,7 @@ def get_order_dir(field, default="ASC"):
     return field, dirn[0]
 
 
+# 复杂过滤条件下 INNER/OUTER JOIN 升降级投票器
 class JoinPromoter:
     """
     A class to abstract away join promotion problems for complex filter

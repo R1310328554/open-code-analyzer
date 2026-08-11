@@ -1,4 +1,10 @@
-import functools
+"""
+django.db.models.utils — 模型层通用工具。
+
+模型元组解析、namedtuple Row 与 alters_data 元类传播。
+"""
+
+import functoolsimport functools
 from collections import namedtuple
 
 
@@ -52,6 +58,7 @@ def create_namedtuple_class(*names):
     )
 
 
+# 元类：子类重写方法时继承 alters_data 标记
 class AltersData:
     """
     Make subclasses preserve the alters_data attribute on overridden methods.

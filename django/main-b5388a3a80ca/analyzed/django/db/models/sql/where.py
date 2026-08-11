@@ -1,4 +1,9 @@
 """
+django.db.models.sql.where — WHERE/HAVING/QUALIFY 条件树。
+
+WhereNode 将 Lookup 与表达式编译为布尔 SQL 片段。
+"""
+"""
 Code to manage the creation and SQL rendering of 'where' constraints.
 """
 
@@ -18,6 +23,7 @@ OR = "OR"
 XOR = "XOR"
 
 
+# SQL 条件节点：AND/OR/XOR 组合与聚合/窗口拆分
 class WhereNode(tree.Node):
     """
     An SQL WHERE clause.
@@ -321,6 +327,7 @@ class WhereNode(tree.Node):
                 yield child
 
 
+# 永假节点，as_sql 时抛出 EmptyResultSet
 class NothingNode:
     """A node that matches nothing."""
 
@@ -331,6 +338,7 @@ class NothingNode:
         raise EmptyResultSet
 
 
+# extra() 注入的原始 SQL 条件片段
 class ExtraWhere:
     # The contents are a black box - assume no aggregates or windows are used.
     contains_aggregate = False

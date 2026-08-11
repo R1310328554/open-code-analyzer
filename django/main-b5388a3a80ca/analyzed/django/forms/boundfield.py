@@ -1,4 +1,10 @@
-import re
+"""
+django.forms.boundfield — 表单字段绑定与模板渲染。
+
+BoundField 将 Field 与提交数据绑定，提供 label/widget/errors。
+"""
+
+import reimport re
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import RenderableFieldMixin, pretty_name
@@ -10,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 __all__ = ("BoundField",)
 
 
+# 字段实例 + 表单数据：html_name、value 与 as_widget
 class BoundField(RenderableFieldMixin):
     "A Field plus data"
 
@@ -329,6 +336,7 @@ class BoundField(RenderableFieldMixin):
         return self.field.widget.use_fieldset
 
 
+# 多选控件（Radio/Checkbox）中单选项的渲染容器
 @html_safe
 class BoundWidget:
     """

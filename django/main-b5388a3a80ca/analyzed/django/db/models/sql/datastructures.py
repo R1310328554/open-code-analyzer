@@ -1,4 +1,9 @@
 """
+django.db.models.sql.datastructures — 查询 JOIN 与表别名辅助结构。
+
+Join/BaseTable 描述 FROM 子句中的表与连接关系。
+"""
+"""
 Useful auxiliary data structures for query construction. Not useful outside
 the SQL domain.
 """
@@ -7,6 +12,7 @@ from django.core.exceptions import FullResultSet
 from django.db.models.sql.constants import INNER, LOUTER
 
 
+# 多值关联 JOIN 时抛出，标记尝试路径与层级
 class MultiJoin(Exception):
     """
     Used by join construction code to indicate the point at which a
@@ -20,10 +26,12 @@ class MultiJoin(Exception):
         self.names_with_path = path_with_names
 
 
+# 占位符：表示 alias_map 中尚未解析的表别名
 class Empty:
     pass
 
 
+# JOIN 描述：表名、别名、ON 条件与 nullable 标志
 class Join:
     """
     Used by sql.Query and sql.SQLCompiler to generate JOIN clauses into the
@@ -178,6 +186,7 @@ class Join:
         return new
 
 
+# FROM 子句中的基表引用（无 JOIN 条件）
 class BaseTable:
     """
     The BaseTable class is used for base table references in FROM clause. For
