@@ -5,7 +5,7 @@ archive_eol_stable_branches — 将已 EOL 的稳定分支打 tag 并删除远�
 供发布经理在停止维护旧 stable 分支时归档提交历史。
 """
 
-import argparseimport argparse
+import argparse
 import os
 import subprocess
 import sys

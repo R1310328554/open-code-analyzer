@@ -1,5 +1,5 @@
 /* GIS OLMapWidget：OpenLayers 地图控件序列化、交互与底图行为 */
-/* global QUnit, MapWidget, ol *//* global QUnit, MapWidget, ol */
+/* global QUnit, MapWidget, ol */
 "use strict";
 
 // OpenLayers MapWidget 单元测试套件
@@ -61,7 +61,7 @@ QUnit.test("MapWidget.defaultCenter", function (assert) {
     assert.equal(Math.round(widget.map.getView().getZoom()), 17);
 });
 
-// 已有几何时 draw  inactive、modify active
+// 已有几何时 draw inactive、modify active
 QUnit.test("MapWidget.interactions", function (assert) {
     const options = {
         id: "id_point",
@@ -158,7 +158,6 @@ QUnit.test("MapWidget.layerBuilder.osm returns OSM layer", function (assert) {
 
 // nasaWorldview 底图使用 XYZ 源且 URL 含 earthdata.nasa.gov
 QUnit.test(
-    "MapWidget.layerBuilder.nasaWorldview returns XYZ layer",QUnit.test(
     "MapWidget.layerBuilder.nasaWorldview returns XYZ layer",
     function (assert) {
         const layer = MapWidget.layerBuilder.nasaWorldview();
@@ -173,7 +172,6 @@ QUnit.test(
 
 // 未指定 base_layer 时默认 OSM 底图
 QUnit.test(
-    "MapWidget uses default OSM base layer when none specified",QUnit.test(
     "MapWidget uses default OSM base layer when none specified",
     function (assert) {
         const widget = new MapWidget({
@@ -190,7 +188,6 @@ QUnit.test(
 
 // base_layer 字符串从 layerBuilder 解析命名底图
 QUnit.test(
-    "MapWidget uses named base layer from layerBuilder",QUnit.test(
     "MapWidget uses named base layer from layerBuilder",
     function (assert) {
         const widget = new MapWidget({
@@ -208,7 +205,6 @@ QUnit.test(
 
 // 传入 ol.layer 实例时直接使用，不经过 builder
 QUnit.test(
-    "MapWidget uses passed-in base layer object directly",QUnit.test(
     "MapWidget uses passed-in base layer object directly",
     function (assert) {
         const customLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
@@ -228,7 +224,6 @@ QUnit.test(
 
 // initMapWidgetInSection 扫描 dj_map_wrapper，跳过 formset __prefix__ 模板
 QUnit.test(
-    "initMapWidgetInSection initializes widgets and skips __prefix__",QUnit.test(
     "initMapWidgetInSection initializes widgets and skips __prefix__",
     function (assert) {
         const wrapper1 = document.createElement("div");
