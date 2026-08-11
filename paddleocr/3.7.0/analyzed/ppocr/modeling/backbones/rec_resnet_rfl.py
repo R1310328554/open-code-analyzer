@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ResNetRFL 互惠特征学习：共享 backbone + 计数/序列双分支后期层
 """
 This code is refer from:
 https://github.com/hikopensource/DAVAR-Lab-OCR/blob/main/davarocr/davar_rcg/models/backbones/ResNetRFL.py
@@ -30,6 +31,7 @@ zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 
 
+    # 3×3 残差基本块
 class BasicBlock(nn.Layer):
     """Res-net Basic Block"""
 
@@ -84,6 +86,7 @@ class BasicBlock(nn.Layer):
         return out
 
 
+    # RFL 总网络：共享 RFLBase，cnt/seq 分支分别 layer3/4
 class ResNetRFL(nn.Layer):
     def __init__(self, in_channels, out_channels=512, use_cnt=True, use_seq=True):
         """
@@ -93,6 +96,7 @@ class ResNetRFL(nn.Layer):
             out_channels (int): output channel
         """
         super(ResNetRFL, self).__init__()
+        # use_cnt 视觉计数分支 / use_seq 序列识别分支，至少启用其一
         assert use_cnt or use_seq
         self.use_cnt, self.use_seq = use_cnt, use_seq
         self.backbone = RFLBase(in_channels)
@@ -245,6 +249,7 @@ class ResNetRFL(nn.Layer):
         return [visual_feature_3, x_3]
 
 
+    # ResNet 前半：conv0 + layer1/2，输出共享中间特征
 class ResNetBase(nn.Layer):
     def __init__(self, in_channels, out_channels, block, layers):
         super(ResNetBase, self).__init__()
@@ -348,6 +353,7 @@ class ResNetBase(nn.Layer):
         return x
 
 
+    # RFL 共享骨干封装：ResNetBase(in, 512, BasicBlock, [1,2,5,3])
 class RFLBase(nn.Layer):
     """Reciprocal feature learning share backbone network"""
 

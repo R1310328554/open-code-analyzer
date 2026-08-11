@@ -35,6 +35,7 @@ from paddle.nn import (
 from paddle.regularizer import L2Decay
 from ppocr.modeling.backbones.rec_hgnet import MeanPool2D
 
+# LCNetV3 检测/识别两套分块配置：k/in_c/out_c/stride/use_se
 NET_CONFIG_det = {
     "blocks2":
     # k, in_c, out_c, s, use_se
@@ -78,6 +79,7 @@ NET_CONFIG_rec = {
 }
 
 
+    # 通道数向上对齐到 divisor 倍数，便于硬件加速
 def make_divisible(v, divisor=16, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -87,6 +89,7 @@ def make_divisible(v, divisor=16, min_value=None):
     return new_v
 
 
+    # 可学习仿射变换 scale*x+bias，小模型精度提升
 class LearnableAffineBlock(nn.Layer):
     def __init__(self, scale_value=1.0, bias_value=0.0, lr_mult=1.0, lab_lr=0.1):
         super().__init__()
@@ -111,6 +114,7 @@ class LearnableAffineBlock(nn.Layer):
         return self.scale * x + self.bias
 
 
+    # 基础 Conv+BN，Kaiming 初始化
 class ConvBNLayer(nn.Layer):
     def __init__(
         self, in_channels, out_channels, kernel_size, stride, groups=1, lr_mult=1.0
@@ -139,6 +143,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 激活+LAB：Hardswish/ReLU 后接 LearnableAffineBlock
 class Act(nn.Layer):
     def __init__(self, act="hswish", lr_mult=1.0, lab_lr=0.1):
         super().__init__()
@@ -153,6 +158,7 @@ class Act(nn.Layer):
         return self.lab(self.act(x))
 
 
+    # 可重参数化卷积分支：多 k×k/1×1/identity 求和
 class LearnableRepLayer(nn.Layer):
     def __init__(
         self,
@@ -234,6 +240,7 @@ class LearnableRepLayer(nn.Layer):
         return out
 
     @paddle.no_grad()
+    # 重参数化：多分支 Conv 融合为单卷积，删除训练分支
     def rep(self):
         if self.is_repped:
             return
@@ -317,6 +324,7 @@ class LearnableRepLayer(nn.Layer):
         return kernel * t, beta - running_mean * gamma / std
 
 
+    # 挤压激励：全局池化→1×1 降维/升维→Hardsigmoid 门控
 class SELayer(nn.Layer):
     def __init__(self, channel, reduction=4, lr_mult=1.0):
         super().__init__()
@@ -356,6 +364,7 @@ class SELayer(nn.Layer):
         return x
 
 
+    # LCNetV3 块：Rep 深度卷积→可选 SE→Rep 逐点卷积
 class LCNetV3Block(nn.Layer):
     def __init__(
         self,
@@ -400,6 +409,7 @@ class LCNetV3Block(nn.Layer):
         return x
 
 
+    # PPLCNetV3 主干：det 多尺度输出 / rec 自适应池化序列特征
 class PPLCNetV3(nn.Layer):
     def __init__(
         self,

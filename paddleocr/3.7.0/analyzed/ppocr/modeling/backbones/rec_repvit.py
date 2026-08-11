@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# RepViT 识别骨干：RepVGG 风格可重参数化 + ViT 式 token/channel mixer
 """
 This code is refer from:
 https://github.com/THU-MIG/RepViT
@@ -59,6 +60,7 @@ def make_divisible(v, divisor=8, min_value=None, round_limit=0.9):
     return new_v
 
 
+    # 挤压激励：全局 mean→1×1→ReLU→1×1→sigmoid 门控
 class SEModule(nn.Layer):
     """SE Module as defined in original SE-Nets with a few additions
     Additions include:
@@ -94,6 +96,7 @@ class SEModule(nn.Layer):
         return x * nn.functional.sigmoid(x_se)
 
 
+    # Conv+BN，fuse() 折叠 BN 参数
 class Conv2D_BN(nn.Sequential):
     def __init__(
         self,
@@ -138,6 +141,7 @@ class Conv2D_BN(nn.Sequential):
         return m
 
 
+    # 带随机深度的残差包装，fuse() 合并 identity 到 DW 核
 class Residual(nn.Layer):
     def __init__(self, m, drop=0.0):
         super().__init__()
@@ -177,6 +181,7 @@ class Residual(nn.Layer):
             return self
 
 
+    # RepVGG 深度卷积分支：3×3 DW + 1×1 DW + BN + identity
 class RepVGGDW(nn.Layer):
     def __init__(self, ed) -> None:
         super().__init__()
@@ -222,6 +227,8 @@ class RepVGGDW(nn.Layer):
         return conv
 
 
+    # RepViT 块：token_mixer（RepVGGDW/SE）+ channel_mixer（PW-MLP）
+    # RepViT 主干：det 多索引输出 / rec avg_pool 序列特征
 class RepViTBlock(nn.Layer):
     def __init__(self, inp, hidden_dim, oup, kernel_size, stride, use_se, use_hs):
         super(RepViTBlock, self).__init__()
@@ -346,6 +353,7 @@ class RepViT(nn.Layer):
         self.is_repped = True
 
 
+    # 识别 RepSVTR 配置：13 层 RepViTBlock，末层 avg_pool [h,2]
 def RepSVTR(in_channels=3):
     """
     Constructs a MobileNetV3-Large model

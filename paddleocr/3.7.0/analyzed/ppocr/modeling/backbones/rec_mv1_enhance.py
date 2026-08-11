@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 增强 MobileNetV1 识别骨干：PaddleClas PP-LCNet 风格深度可分离 + SE
 # This code is refer from: https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/arch/backbone/legendary_models/pp_lcnet.py
 
 from __future__ import absolute_import
@@ -31,6 +32,7 @@ from paddle.regularizer import L2Decay
 from paddle.nn.functional import hardswish, hardsigmoid
 
 
+    # Conv+BatchNorm(act)，Kaiming 初始化
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -69,6 +71,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # 深度可分离：DW ConvBN→可选 SE→PW ConvBN
 class DepthwiseSeparable(nn.Layer):
     def __init__(
         self,
@@ -110,6 +113,7 @@ class DepthwiseSeparable(nn.Layer):
         return y
 
 
+    # 增强 MV1：非对称 stride (2,1) 保宽，末层 SE + 池化
 class MobileNetV1Enhance(nn.Layer):
     def __init__(
         self,
@@ -193,6 +197,7 @@ class MobileNetV1Enhance(nn.Layer):
         )
         self.block_list.append(conv4_2)
 
+        # stage5 重复 5 次 512 通道 5×5 DW 块
         for _ in range(5):
             conv5 = DepthwiseSeparable(
                 num_channels=int(512 * scale),
@@ -251,6 +256,7 @@ class MobileNetV1Enhance(nn.Layer):
         return y
 
 
+    # SE 模块：AdaptiveAvgPool→1×1→ReLU→1×1→hardsigmoid
 class SEModule(nn.Layer):
     def __init__(self, channel, reduction=4):
         super(SEModule, self).__init__()

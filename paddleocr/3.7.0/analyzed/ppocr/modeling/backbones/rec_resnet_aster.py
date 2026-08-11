@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ASTER/CRNN ResNet 骨干：AsterBlock + 可选双向 LSTM 序列编码
 """
 This code is refer from:
 https://github.com/ayumiymk/aster.pytorch/blob/master/lib/models/resnet_aster.py
@@ -36,6 +37,7 @@ def conv1x1(in_planes, out_planes, stride=1):
     )
 
 
+    # 正弦位置编码，供 ASTER 注意力（本文件未直接使用）
 def get_sinusoid_encoding(n_position, feat_dim, wave_length=10000):
     # [n_position]
     positions = paddle.arange(0, n_position)
@@ -50,6 +52,7 @@ def get_sinusoid_encoding(n_position, feat_dim, wave_length=10000):
     return angles
 
 
+    # ASTER 残差块：1×1→3×3，与 ResNet bottleneck 类似
 class AsterBlock(nn.Layer):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(AsterBlock, self).__init__()
@@ -76,6 +79,7 @@ class AsterBlock(nn.Layer):
         return out
 
 
+    # ASTER ResNet：5 stage 至 [1,25]，可选 BiLSTM 输出序列特征
 class ResNet_ASTER(nn.Layer):
     """For aster or crnn"""
 

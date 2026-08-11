@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NRTR MTB 模块：多层 CNN 将图像特征转为序列，供 Transformer 解码
 from paddle import nn
 import paddle
 
 
+    # Modified Transformation Block：CNN 特征提取 + 维度重排为序列
 class MTB(nn.Layer):
     def __init__(self, cnn_num, in_channels):
         super(MTB, self).__init__()
         self.block = nn.Sequential()
         self.out_channels = in_channels
         self.cnn_num = cnn_num
+        # cnn_num=2 时两次 stride=2 卷积，输出展平为 [B,W,H*C]
         if self.cnn_num == 2:
             for i in range(self.cnn_num):
                 self.block.add_sublayer(

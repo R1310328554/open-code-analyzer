@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ResNet45 识别骨干（ABINet）：5 stage BasicBlock，1×1+3×3 瓶颈风格
 """
 This code is refer from:
 https://github.com/FangShancheng/ABINet/tree/main/modules
@@ -54,6 +55,7 @@ def conv3x3(in_channel, out_channel, stride=1):
     )
 
 
+    # 1×1 降维→3×3 卷积残差块（ABINet 变体）
 class BasicBlock(nn.Layer):
     expansion = 1
 
@@ -85,6 +87,7 @@ class BasicBlock(nn.Layer):
         return out
 
 
+    # ResNet-45：5 stage 堆叠，out_channels=512 供 ABINet 视觉模型
 class ResNet45(nn.Layer):
     def __init__(
         self,
@@ -107,6 +110,7 @@ class ResNet45(nn.Layer):
         self.bn1 = nn.BatchNorm2D(32)
         self.relu = nn.ReLU()
 
+        # 五层 stage：32→64→128→256→512，strides 控制下采样
         self.layer1 = self._make_layer(block, 32, layers[0], stride=strides[0])
         self.layer2 = self._make_layer(block, 64, layers[1], stride=strides[1])
         self.layer3 = self._make_layer(block, 128, layers[2], stride=strides[2])

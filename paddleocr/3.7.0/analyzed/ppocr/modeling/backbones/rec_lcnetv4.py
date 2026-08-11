@@ -32,6 +32,7 @@ from paddle.nn import (
 from paddle.regularizer import L2Decay
 
 
+# LCNetV4 检测/识别分规模配置：tiny/small/medium
 NET_CONFIG_DET = {
     "tiny": {
         # stem(mid=16, out=32)  channels: 32 → 48 → 64 → 160
@@ -173,6 +174,7 @@ NET_CONFIG_REC = {
 }
 
 
+    # Conv+BN 序列模块，支持 fuse() 折叠 BN 到卷积
 class Conv2D_BN(nn.Sequential):
     def __init__(
         self,
@@ -221,6 +223,7 @@ class Conv2D_BN(nn.Sequential):
         return m
 
 
+    # Conv+BN+ReLU，rep() 融合为单卷积
 class ConvBNAct(nn.Layer):
     def __init__(
         self,
@@ -286,6 +289,7 @@ class ConvBNAct(nn.Layer):
         self.is_repped = True
 
 
+    # 多分支 stem：总 stride=4，检测/识别共用
 class StemBlock(nn.Layer):
     """Multi-branch stem with total stride 4 (stem1 stride=2 + stem3 stride=2)."""
 
@@ -328,6 +332,7 @@ class StemBlock(nn.Layer):
         x = self.stem4(self.stem3(paddle.concat([x1, x2], axis=1)))
         return x
 
+    # 推理前融合 Conv2D_BN 与 RepDWConv 分支，加速部署
     def rep(self, fuse_lab=None):
         if self.is_repped:
             return
@@ -336,6 +341,7 @@ class StemBlock(nn.Layer):
         self.is_repped = True
 
 
+    # 通道 SE：mean 池化→两层 1×1→Hardsigmoid 重标定
 class SELayer(nn.Layer):
     def __init__(self, channel, reduction=4, lr_mult=1.0):
         super().__init__()
@@ -364,6 +370,7 @@ class SELayer(nn.Layer):
         return paddle.multiply(x=identity, y=x)
 
 
+    # 可重参数化深度卷积：3×3 DW + 1×1 DW + identity BN
 class RepDWConv(nn.Layer):
     """Reparameterizable depthwise convolution.
 
@@ -436,6 +443,7 @@ class RepDWConv(nn.Layer):
         return self._fuse_conv()
 
 
+    # Token mixer（RepDW/DW）+ Channel mixer（expand→act→compress）
 class LCNetV4Block(nn.Layer):
     """LCNetV4 block for detection and recognition.
 
@@ -518,6 +526,7 @@ class LCNetV4Block(nn.Layer):
         self.is_repped = True
 
 
+    # 统一 LCNetV4：det 四级特征 / rec 池化 [B,C,1,W]
 class PPLCNetV4(nn.Layer):
     """Unified PPLCNetV4 backbone for text detection and recognition.
 

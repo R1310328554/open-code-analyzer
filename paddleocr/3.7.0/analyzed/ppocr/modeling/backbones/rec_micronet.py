@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# MicroNet 超轻量识别骨干：动态 ShiftMax 激活 + 空间/深度分离卷积
 """
 This code is refer from:
 https://github.com/liyunsheng13/micronet/blob/main/backbone/micronet.py
@@ -26,6 +27,7 @@ import paddle.nn as nn
 
 from ppocr.modeling.backbones.det_mobilenet_v3 import make_divisible
 
+# 各模式 cfgs：s/n/c/ks/c1/c2/g1/g2/c3/g3/g4/y1/y2/y3/r
 M0_cfgs = [
     # s, n, c, ks, c1, c2, g1, g2, c3, g3, g4, y1, y2, y3, r
     [2, 1, 8, 3, 2, 2, 0, 4, 8, 2, 2, 2, 0, 1, 1],
@@ -75,10 +77,12 @@ M3_cfgs = [
 ]
 
 
+    # 按模式 M0/M1/M2/M3 返回对应层配置表
 def get_micronet_config(mode):
     return eval(mode + "_cfgs")
 
 
+    # 分组最大池化：沿通道组取 max 降维
 class MaxGroupPooling(nn.Layer):
     def __init__(self, channel_per_group=2):
         super(MaxGroupPooling, self).__init__()
@@ -96,6 +100,7 @@ class MaxGroupPooling(nn.Layer):
         return out
 
 
+    # 空间分离卷积：先 1×k 再 k×1 分解大核
 class SpatialSepConvSF(nn.Layer):
     def __init__(self, inp, oups, kernel_size, stride):
         super(SpatialSepConvSF, self).__init__()
@@ -130,6 +135,7 @@ class SpatialSepConvSF(nn.Layer):
         return out
 
 
+    # 通道混洗：分组后 transpose 增强组间信息
 class ChannelShuffle(nn.Layer):
     def __init__(self, groups):
         super(ChannelShuffle, self).__init__()
@@ -149,6 +155,7 @@ class ChannelShuffle(nn.Layer):
         return out
 
 
+    # MicroNet stem：SpatialSepConv + MaxGroupPooling
 class StemLayer(nn.Layer):
     def __init__(self, inp, oup, stride, groups=(4, 4)):
         super(StemLayer, self).__init__()
@@ -164,6 +171,7 @@ class StemLayer(nn.Layer):
         return out
 
 
+    # 深度+空间分离：expand→DW 空间分离→compress
 class DepthSpatialSepConv(nn.Layer):
     def __init__(self, inp, expand, kernel_size, stride):
         super(DepthSpatialSepConv, self).__init__()
@@ -201,6 +209,7 @@ class DepthSpatialSepConv(nn.Layer):
         return x
 
 
+    # 分组 1×1 卷积，按 g1/g2 控制分组数
 class GroupConv(nn.Layer):
     def __init__(self, inp, oup, groups=2):
         super(GroupConv, self).__init__()
@@ -217,6 +226,7 @@ class GroupConv(nn.Layer):
         return x
 
 
+    # 标准深度可分离卷积块
 class DepthConv(nn.Layer):
     def __init__(self, inp, oup, kernel_size, stride):
         super(DepthConv, self).__init__()
@@ -238,6 +248,7 @@ class DepthConv(nn.Layer):
         return out
 
 
+    # 动态 ShiftMax 激活：可学习 a/b 参数调制 max/relu
 class DYShiftMax(nn.Layer):
     def __init__(
         self,
@@ -333,6 +344,7 @@ class DYShiftMax(nn.Layer):
         return out
 
 
+    # MicroNet 核心块：多种 gs/depthsep 组合 + DYShiftMax
 class DYMicroBlock(nn.Layer):
     def __init__(
         self,
@@ -508,6 +520,7 @@ class DYMicroBlock(nn.Layer):
         return out
 
 
+    # MicroNet 识别骨干：M0–M3 四档算力，stride 非对称下采样
 class MicroNet(nn.Layer):
     """
     the MicroNet backbone network for recognition module.

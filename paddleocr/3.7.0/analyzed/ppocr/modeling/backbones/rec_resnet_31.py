@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ResNet31 识别骨干（MMOCR）：5 阶段 BasicBlock，非对称池化保宽
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textrecog/layers/conv_layer.py
@@ -30,6 +31,7 @@ import numpy as np
 __all__ = ["ResNet31"]
 
 
+    # 3×3 卷积工厂，无 bias
 def conv3x3(in_channel, out_channel, stride=1, conv_weight_attr=None):
     return nn.Conv2D(
         in_channel,
@@ -42,6 +44,7 @@ def conv3x3(in_channel, out_channel, stride=1, conv_weight_attr=None):
     )
 
 
+    # 两层 3×3 残差块，可选 1×1 downsample
 class BasicBlock(nn.Layer):
     expansion = 1
 
@@ -98,6 +101,7 @@ class BasicBlock(nn.Layer):
         return out
 
 
+    # ResNet-31：conv1 双卷积 + 4 stage（pool+block+conv），out_indices 可选
 class ResNet31(nn.Layer):
     """
     Args:

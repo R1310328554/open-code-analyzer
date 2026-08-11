@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ResNet32 识别骨干（FAN/ DAVAR）：Attention 识别专用特征提取器
 """
 This code is refer from:
 https://github.com/hikopensource/DAVAR-Lab-OCR/davarocr/davar_rcg/models/backbones/ResNet32.py
@@ -24,9 +25,12 @@ import paddle.nn as nn
 
 __all__ = ["ResNet32"]
 
+# 全局 Kaiming 初始化用于所有 3×3 卷积
 conv_weight_attr = nn.initializer.KaimingNormal()
 
 
+    # ResNet32 封装：ConvNet=ResNet，out_channels 默认 512
+    # ResNet 结构：双 conv0 + 4 stage，maxpool3 stride (2,1) 保宽
 class ResNet32(nn.Layer):
     """
     Feature Extractor is proposed in  FAN Ref [1]
@@ -57,6 +61,7 @@ class ResNet32(nn.Layer):
         return self.ConvNet(inputs)
 
 
+    # 标准 3×3 残差基本块
 class BasicBlock(nn.Layer):
     """Res-net Basic Block"""
 

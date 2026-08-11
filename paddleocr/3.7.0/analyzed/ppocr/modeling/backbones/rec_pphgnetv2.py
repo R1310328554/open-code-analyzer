@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PP-HGNetV2 识别/检测骨干：DiverseBranch 重参数化 + LAB 可学习仿射
 """
 This code is refer from:
 https://github.com/PaddlePaddle/PaddleClas/blob/2f36cab604e439b59d1a854df34ece3b10d888e3/ppcls/arch/backbone/legendary_models/pp_hgnet_v2.py
@@ -32,6 +33,8 @@ from typing import Tuple, List, Dict, Union, Callable, Any
 from ppocr.modeling.backbones.rec_donut_swin import DonutSwinModelOutput
 
 
+    # 恒等初始化 1×1 卷积：weight+id_tensor 实现 identity
+    # 占位恒等层
 class IdentityBasedConv1x1(nn.Conv2D):
     def __init__(self, channels, groups=1):
         super(IdentityBasedConv1x1, self).__init__(
@@ -69,6 +72,7 @@ class IdentityBasedConv1x1(nn.Conv2D):
         return self.weight + self.id_tensor
 
 
+    # BN 后按 pad_pixels 填充边界值，重参数化辅助
 class BNAndPad(nn.Layer):
     def __init__(
         self,
@@ -126,6 +130,7 @@ class BNAndPad(nn.Layer):
         return self.bn._epsilon
 
 
+    # 构造 Conv+BN 子模块，供 DiverseBranchBlock 分支融合
 def conv_bn(
     in_channels,
     out_channels,
@@ -214,6 +219,7 @@ def transVI_multiscale(kernel, target_kernel_size):
     )
 
 
+    # 多分支卷积块：1×1/3×3/identity/avg 训练，推理融合
 class DiverseBranchBlock(nn.Layer):
     def __init__(
         self,
@@ -433,6 +439,7 @@ class DiverseBranchBlock(nn.Layer):
             (b_origin, b_1x1, b_1x1_kxk_merged, b_1x1_avg_merged),
         )
 
+    # 重参数化：DiverseBranchBlock 多分支训练结构融合为单卷积
     def re_parameterize(self):
         if self.is_repped:
             return
@@ -468,6 +475,7 @@ class Identity(nn.Layer):
         return inputs
 
 
+    # 基类：提供 convert_to_deploy 遍历子层重参数化
 class TheseusLayer(nn.Layer):
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -832,6 +840,7 @@ def parse_pattern_str(
     return layer_list
 
 
+    # 自适应全局平均池化封装
 class AdaptiveAvgPool2D(nn.AdaptiveAvgPool2D):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -907,6 +916,7 @@ zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 
 
+    # 可学习 scale/bias 仿射，小模型精度提升
 class LearnableAffineBlock(TheseusLayer):
     """
     Create a learnable affine block module. This module can significantly improve accuracy on smaller models.
@@ -941,6 +951,7 @@ class LearnableAffineBlock(TheseusLayer):
         return self.scale * x + self.bias
 
 
+    # Conv+BN+ReLU，可选 LAB
 class ConvBNAct(TheseusLayer):
     """
     ConvBNAct is a combination of convolution and batchnorm layers.
@@ -1002,6 +1013,7 @@ class ConvBNAct(TheseusLayer):
         return x
 
 
+    # 轻量块：1×1 PW + DW ConvBNAct
 class LightConvBNAct(TheseusLayer):
     """
     LightConvBNAct is a combination of pw and dw layers.
@@ -1048,6 +1060,7 @@ class LightConvBNAct(TheseusLayer):
         return x
 
 
+    # HGNetV2 stem：多分支 stride=4，text_rec 识别模式
 class StemBlock(TheseusLayer):
     """
     StemBlock for PP-HGNetV2.
@@ -1128,6 +1141,7 @@ class StemBlock(TheseusLayer):
         return x
 
 
+    # HGNetV2 块：LightConv 或 DiverseBranch + ESE 注意力
 class HGV2_Block(TheseusLayer):
     """
     HGV2_Block, the basic unit that constitutes the HGV2_Stage.
@@ -1208,6 +1222,7 @@ class HGV2_Block(TheseusLayer):
         return x
 
 
+    # HGNetV2 阶段：下采样 + 多个 HGV2_Block 堆叠
 class HGV2_Stage(TheseusLayer):
     """
     HGV2_Stage, the basic unit that constitutes the PPHGNetV2.
@@ -1278,6 +1293,7 @@ class HGV2_Stage(TheseusLayer):
         return x
 
 
+    # PP-HGNetV2 主干：det 多尺度 / text_rec 池化序列特征
 class PPHGNetV2(TheseusLayer):
     """
     PPHGNetV2
@@ -1597,6 +1613,7 @@ def PPHGNetV2_B6(pretrained=False, use_ssld=False, **kwargs):
     return model
 
 
+    # 公式识别 B4：单通道扩 RGB，输出 DonutSwinModelOutput
 class PPHGNetV2_B4_Formula(nn.Layer):
     """
     PPHGNetV2_B4_Formula
@@ -1655,6 +1672,7 @@ class PPHGNetV2_B4_Formula(nn.Layer):
             return pphgnet_b4_output
 
 
+    # 公式识别 B6：更大容量，同样 Donut 序列输出
 class PPHGNetV2_B6_Formula(nn.Layer):
     """
     PPHGNetV2_B6_Formula

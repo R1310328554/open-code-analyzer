@@ -14,6 +14,7 @@
 
 from paddle import nn
 
+# 识别 MobileNetV3：复用检测版 MBConv/SE，large/small 两套 cfg
 from ppocr.modeling.backbones.det_mobilenet_v3 import (
     ResidualUnit,
     ConvBNLayer,
@@ -23,6 +24,7 @@ from ppocr.modeling.backbones.det_mobilenet_v3 import (
 __all__ = ["MobileNetV3"]
 
 
+    # 识别 MobileNetV3：conv1→MBConv 堆叠→conv2→MaxPool 序列特征
 class MobileNetV3(nn.Layer):
     def __init__(
         self,
@@ -54,6 +56,7 @@ class MobileNetV3(nn.Layer):
             len(small_stride) == 4
         ), "small_stride length must be " "4 but got {}".format(len(small_stride))
 
+        # large 版 15 层 MBConv，cls_ch_squeeze=960
         if model_name == "large":
             cfg = [
                 # k, exp, c,  se,     nl,  s,

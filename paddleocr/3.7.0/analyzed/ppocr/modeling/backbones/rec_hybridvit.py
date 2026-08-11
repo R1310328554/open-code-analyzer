@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 混合 ViT 识别骨干：CNN（ResNetV2）提取特征图 + Transformer 编码，用于 LaTeX-OCR
 """
 This code is refer from:
 https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer_hybrid.py
@@ -51,6 +52,7 @@ trunc_normal_ = TruncatedNormal(std=0.02)
 xavier_uniform_ = XavierUniform()
 
 
+    # 将标量转为 n 元组，便于统一处理 img_size/patch_size 等参数
 def _ntuple(n):
     def parse(x):
         if isinstance(x, collections.abc.Iterable):
@@ -67,6 +69,7 @@ to_4tuple = _ntuple(4)
 to_ntuple = _ntuple
 
 
+    # 带权重标准化的 2D 卷积，BiT ResNet-V2 风格
 class Conv2dAlign(nn.Conv2D):
     """Conv2d with Weight Standardization. Used for BiT ResNet-V2 models.
 
@@ -113,6 +116,7 @@ class Conv2dAlign(nn.Conv2D):
         return x
 
 
+    # CNN 特征图嵌入：backbone 输出→展平→线性投影到 embed_dim
 class HybridEmbed(nn.Layer):
     """CNN Feature Map Embedding
     Extract feature map from CNN, flatten, project to embedding dim.
@@ -166,6 +170,7 @@ class HybridEmbed(nn.Layer):
         return x
 
 
+    # 自定义 Linear：matmul 转置权重，兼容 ViT 权重布局
 class myLinear(nn.Linear):
     def __init__(self, in_channel, out_channels, weight_attr=True, bias_attr=True):
         super().__init__(
@@ -176,6 +181,7 @@ class myLinear(nn.Linear):
         return paddle.matmul(x, self.weight, transpose_y=True) + self.bias
 
 
+    # 多头自注意力：QKV 线性→缩放点积 softmax→投影
 class Attention(nn.Layer):
     def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0.0, proj_drop=0.0):
         super().__init__()
@@ -209,6 +215,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # ViT 前馈 MLP：fc1→GELU→dropout→fc2→dropout
 class Mlp(nn.Layer):
     """MLP as used in Vision Transformer, MLP-Mixer and related networks"""
 
@@ -240,6 +247,7 @@ class Mlp(nn.Layer):
         return x
 
 
+    # Transformer 块：LayerNorm→Attention→DropPath→MLP 残差
 class Block(nn.Layer):
     def __init__(
         self,
@@ -280,6 +288,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 混合 Transformer 识别骨干：ResNetV2 patch_embed + ViT blocks
 class HybridTransformer(nn.Layer):
     """Implementation of HybridTransformer.
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ResNet+FPN 识别骨干：ResNet stage 特征自顶向下融合为 512 维
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -24,6 +25,7 @@ import numpy as np
 __all__ = ["ResNetFPN"]
 
 
+    # ResNet+FPN：18/34/50/101/152 可选，输出 512 通道融合特征
 class ResNetFPN(nn.Layer):
     def __init__(self, in_channels=1, layers=50, **kwargs):
         super(ResNetFPN, self).__init__()
@@ -94,6 +96,7 @@ class ResNetFPN(nn.Layer):
         self.base_block = []
         self.conv_trans = []
         self.bn_block = []
+        # FPN 自顶向下：拼接浅层特征，1×1+3×3+BN 融合
         for i in [-2, -3]:
             in_channels = out_ch_list[i + 1] + out_ch_list[i]
 
@@ -176,6 +179,7 @@ class ResNetFPN(nn.Layer):
         return base
 
 
+    # 带命名参数的 Conv+BN，stride=(1,1) 时用 dilation=2
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -219,6 +223,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 残差捷径：通道/stride 不匹配时 1×1 投影
 class ShortCut(nn.Layer):
     def __init__(self, in_channels, out_channels, stride, name, is_first=False):
         super(ShortCut, self).__init__()
@@ -238,6 +243,7 @@ class ShortCut(nn.Layer):
         return x
 
 
+    # 1×1→3×3→1×1 瓶颈块，expansion=4
 class BottleneckBlock(nn.Layer):
     def __init__(self, in_channels, out_channels, stride, name):
         super(BottleneckBlock, self).__init__()
@@ -283,6 +289,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # 两层 3×3 基础块 + shortcut
 class BasicBlock(nn.Layer):
     def __init__(self, in_channels, out_channels, stride, name, is_first):
         super(BasicBlock, self).__init__()
