@@ -22,8 +22,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# KOSMOS-2.5 配置：microsoft/kosmos-2.5 视觉+文本多模态超参
+
+# Kosmos2_5TextConfig：microsoft/kosmos-2.5 文本解码器默认超参
 @auto_docstring(checkpoint="microsoft/kosmos-2.5")
 @strict
+# Kosmos2_5TextConfig：KOSMOS-2.5 文本解码器超参（Unidirectional Transformer）
 class Kosmos2_5TextConfig(PreTrainedConfig):
     model_type = "kosmos_2_5_text_model"
     base_config_key = "text_config"
@@ -55,8 +59,10 @@ class Kosmos2_5TextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 2
 
 
+# Kosmos2_5VisionConfig：microsoft/kosmos-2.5 视觉塔默认超参
 @auto_docstring(checkpoint="microsoft/kosmos-2.5")
 @strict
+# Kosmos2_5VisionConfig：KOSMOS-2.5 视觉塔超参（ViT 风格 patch 编码）
 class Kosmos2_5VisionConfig(PreTrainedConfig):
     r"""
     patch_embed_hidden_size (`int`, *optional*, defaults to 768):
@@ -100,8 +106,10 @@ class Kosmos2_5VisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Kosmos2_5Config：microsoft/kosmos-2.5 图文多模态顶层默认超参
 @auto_docstring(checkpoint="microsoft/kosmos-2.5")
 @strict
+# Kosmos2_5Config：KOSMOS-2.5 图文多模态顶层配置（视觉塔 + 文本解码器）
 class Kosmos2_5Config(PreTrainedConfig):
     r"""
     latent_query_num (`int`, *optional*, defaults to 2048):

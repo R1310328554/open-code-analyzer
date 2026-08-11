@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Laguna 配置：poolside/laguna-XS.2 per-layer MoE 解码器超参
+
+# LagunaConfig：poolside/laguna-XS.2 MoE 解码器默认超参
 @auto_docstring(checkpoint="poolside/laguna-XS.2")
 @strict
+# LagunaConfig：Poolside Laguna MoE 解码器超参（per-layer 注意力/MoE 配置）
 class LagunaConfig(PreTrainedConfig):
     r"""
     gating (`bool` or `str`, *optional*, defaults to `True`):

@@ -25,11 +25,14 @@ from ...utils import TensorType, auto_docstring, is_torch_available, requires_ba
 from ...utils.import_utils import requires
 
 
+# KOSMOS-2.5 图像预处理：PIL 后端 16x16 patch 提取与归一化
+
 if is_torch_available():
     import torch
 
 
 # Adapted from transformers.models.kosmos2_5.image_processing_kosmos2_5.Kosmos2_5ImageProcessorKwargs
+# Kosmos2_5ImageProcessorKwargs：KOSMOS-2.5 图像处理器可选参数字典类型
 class Kosmos2_5ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`Dict[str, int]`, *optional*, defaults to `{"height": 16, "width": 16}`):
@@ -45,6 +48,7 @@ class Kosmos2_5ImageProcessorKwargs(ImagesKwargs, total=False):
 
 # Adapted from transformers.models.kosmos2_5.image_processing_kosmos2_5.torch_extract_patches
 # Similar to transformers.models.pix2struct.image_processing_pix2struct.torch_extract_patches but dealing with a batch of images directly.
+# torch_extract_patches：将图像张量按 patch 尺寸切分为 patch 序列
 def torch_extract_patches(image_tensor, patch_height, patch_width):
     """
     Utility function to extract patches from a given tensor representing a batch of images. Returns a tensor of shape
@@ -71,6 +75,7 @@ def torch_extract_patches(image_tensor, patch_height, patch_width):
 
 @auto_docstring
 @requires(backends=("torch",))
+# Kosmos2_5ImageProcessorPil：KOSMOS-2.5 PIL 后端 patch 提取与归一化预处理
 class Kosmos2_5ImageProcessorPil(PilBackend):
     do_normalize = True
     do_convert_rgb = True

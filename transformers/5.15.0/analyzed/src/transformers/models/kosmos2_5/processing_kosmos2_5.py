@@ -26,6 +26,9 @@ if is_torch_available():
     import torch
 
 
+# KOSMOS-2.5 Processor：图像 patch 预处理与分词器联合多模态输入组装
+
+# Kosmos2_5ProcessorKwargs：KOSMOS-2.5 Processor 可选参数字典类型
 class Kosmos2_5ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -42,6 +45,7 @@ class Kosmos2_5ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Kosmos2_5Processor：封装图像 patch 预处理与分词器的多模态输入管线
 class Kosmos2_5Processor(ProcessorMixin):
     def __init__(self, image_processor, tokenizer, num_image_tokens: int = 2048):
         r"""

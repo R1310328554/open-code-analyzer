@@ -56,9 +56,12 @@ from .configuration_kosmos2_5 import (
 
 logger = logging.get_logger(__name__)
 
+
+# KOSMOS-2.5 建模：ViT 视觉塔 + latent query 投影 + 文本解码器多模态条件生成
 _CONFIG_FOR_DOC = Kosmos2_5Config
 
 
+# Kosmos2_5PreTrainedModel：KOSMOS-2.5 多模态预训练基类与权重初始化
 class Kosmos2_5PreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -88,6 +91,7 @@ class Kosmos2_5PreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.kosmos2.modeling_kosmos2._expand_mask
+# _expand_mask：将注意力 mask 扩展为加性 bias 张量
 def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: int | None = None):
     """
     Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
@@ -246,6 +250,7 @@ KOSMOS2_5_INPUTS_DOCSTRING = r"""
 
 
 @dataclass
+# Kosmos2_5ModelOutput：KOSMOS-2.5 多模态联合输出 dataclass
 class Kosmos2_5ModelOutput(ModelOutput):
     """
     Base class for text model's outputs that also contains a pooling of the last hidden states.
@@ -301,6 +306,7 @@ class Kosmos2_5ModelOutput(ModelOutput):
 
 
 @dataclass
+# Kosmos2_5ForConditionalGenerationModelOutput：KOSMOS-2.5 条件生成输出 dataclass
 class Kosmos2_5ForConditionalGenerationModelOutput(ModelOutput):
     """
     Model output class for `Kosmos2_5ForConditionalGeneration`.
@@ -359,6 +365,7 @@ class Kosmos2_5ForConditionalGenerationModelOutput(ModelOutput):
 
 
 # Copied from transformers.models.pix2struct.modeling_pix2struct.Pix2StructLayerNorm with Pix2Struct->Kosmos2_5
+# Kosmos2_5LayerNorm：KOSMOS-2.5 LayerNorm（带可学习缩放）
 class Kosmos2_5LayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -386,6 +393,7 @@ class Kosmos2_5LayerNorm(nn.Module):
 
 # similar to transformers.models.pix2struct.modeling_pix2struct.Pix2StructVisionEmbeddings but with `inplace=False`
 # TODO: check with krip
+# Kosmos2_5VisionEmbeddings：KOSMOS-2.5 视觉 patch 嵌入 + 位置编码
 class Kosmos2_5VisionEmbeddings(nn.Module):
     def __init__(self, config: Kosmos2_5VisionConfig) -> None:
         super().__init__()
@@ -418,6 +426,7 @@ class Kosmos2_5VisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5DenseGatedActDense->Pix2StructVisionMlp,T5Config->Pix2StructVisionConfig,config.d_model->config.hidden_size,dropout_rate->dropout_rate
+# Kosmos2_5VisionMlp：KOSMOS-2.5 视觉塔前馈 MLP
 class Kosmos2_5VisionMlp(nn.Module):
     def __init__(self, config: Kosmos2_5VisionConfig):
         super().__init__()
@@ -450,6 +459,7 @@ class Kosmos2_5VisionMlp(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -474,6 +484,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Kosmos2_5VisionAttention：KOSMOS-2.5 视觉塔多头自注意力
 class Kosmos2_5VisionAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -530,6 +541,7 @@ class Kosmos2_5VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Kosmos2_5VisionLayer：KOSMOS-2.5 视觉 Transformer 编码器单层
 class Kosmos2_5VisionLayer(GradientCheckpointingLayer):
     def __init__(self, config: Kosmos2_5VisionConfig) -> None:
         super().__init__()
@@ -568,6 +580,7 @@ class Kosmos2_5VisionLayer(GradientCheckpointingLayer):
 
 
 # Adapted from transformers.models.pix2struct.modeling_pix2struct.Pix2StructVisionEncoder with Pix2Struct->Kosmos2_5
+# Kosmos2_5VisionEncoder：KOSMOS-2.5 视觉 Transformer 多层编码器堆叠
 class Kosmos2_5VisionEncoder(Kosmos2_5PreTrainedModel):
     config_class = Kosmos2_5VisionConfig
     input_modalities = ("image",)
@@ -611,6 +624,7 @@ class Kosmos2_5VisionEncoder(Kosmos2_5PreTrainedModel):
 
 
 # Adapted from transformers.models.kosmos2.modeling_kosmos2.Kosmos2TextSinusoidalPositionalEmbedding with Kosmos2->Kosmos2_5
+# Kosmos2_5TextSinusoidalPositionalEmbedding：KOSMOS-2.5 文本正弦位置编码
 class Kosmos2_5TextSinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -721,6 +735,7 @@ class Kosmos2_5TextSinusoidalPositionalEmbedding(nn.Module):
 
 
 # Copied from transformers.models.kosmos2.modeling_kosmos2.Kosmos2TextFFN with Kosmos2->Kosmos2_5
+# Kosmos2_5TextFFN：KOSMOS-2.5 文本解码器前馈 FFN
 class Kosmos2_5TextFFN(nn.Module):
     def __init__(self, config: Kosmos2_5TextConfig):
         super().__init__()
@@ -744,6 +759,7 @@ class Kosmos2_5TextFFN(nn.Module):
         return hidden_states
 
 
+# Kosmos2_5TextAttention：KOSMOS-2.5 文本解码器多头自注意力
 class Kosmos2_5TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -828,6 +844,7 @@ class Kosmos2_5TextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Kosmos2_5TextBlock：KOSMOS-2.5 文本解码器单层（自注意力 + FFN）
 class Kosmos2_5TextBlock(GradientCheckpointingLayer):
     def __init__(self, config: Kosmos2_5TextConfig, layer_idx: int):
         super().__init__()
@@ -881,6 +898,7 @@ class Kosmos2_5TextBlock(GradientCheckpointingLayer):
 
 
 # Adapted from transformers.models.kosmos2.modeling_kosmos2.Kosmos2TextTransformer with Kosmos2->Kosmos2_5
+# Kosmos2_5TextTransformer：KOSMOS-2.5 文本解码器多层堆叠
 class Kosmos2_5TextTransformer(Kosmos2_5PreTrainedModel):
     config_class = Kosmos2_5TextConfig
     input_modalities = ("text",)
@@ -1001,6 +1019,7 @@ class Kosmos2_5TextTransformer(Kosmos2_5PreTrainedModel):
         )
 
 
+# Kosmos2_5ImageToTextProjection：KOSMOS-2.5 视觉 latent query 到文本维度的投影
 class Kosmos2_5ImageToTextProjection(nn.Module):
     """The layer that transforms the image model's output to part of the text model's input (namely, image features)"""
 
@@ -1037,6 +1056,7 @@ class Kosmos2_5ImageToTextProjection(nn.Module):
         return hidden_states, attn_weights
 
 
+# Kosmos2_5VisionModel：KOSMOS-2.5 视觉编码塔封装
 class Kosmos2_5VisionModel(Kosmos2_5PreTrainedModel):
     config_class = Kosmos2_5VisionConfig
     input_modalities = ("image",)
@@ -1087,6 +1107,7 @@ class Kosmos2_5VisionModel(Kosmos2_5PreTrainedModel):
 
 
 # Adapted from transformers.models.kosmos2.modeling_kosmos2.Kosmos2TextModel with KOSMOS2->KOSMOS2_5
+# Kosmos2_5TextModel：KOSMOS-2.5 文本解码器封装
 class Kosmos2_5TextModel(Kosmos2_5PreTrainedModel):
     config_class = Kosmos2_5TextConfig
     input_modalities = ("text",)
@@ -1141,6 +1162,7 @@ class Kosmos2_5TextModel(Kosmos2_5PreTrainedModel):
     """,
     KOSMOS2_5_START_DOCSTRING,
 )
+# Kosmos2_5Model：KOSMOS-2.5 视觉+文本多模态联合主干
 class Kosmos2_5Model(Kosmos2_5PreTrainedModel):
     config_class = Kosmos2_5Config
 
@@ -1256,6 +1278,7 @@ class Kosmos2_5Model(Kosmos2_5PreTrainedModel):
     """,
     KOSMOS2_5_START_DOCSTRING,
 )
+# Kosmos2_5TextForCausalLM：KOSMOS-2.5 文本因果语言建模头
 class Kosmos2_5TextForCausalLM(Kosmos2_5PreTrainedModel, GenerationMixin):
     config_class = Kosmos2_5TextConfig
     input_modalities = ("text",)
@@ -1402,6 +1425,7 @@ class Kosmos2_5TextForCausalLM(Kosmos2_5PreTrainedModel, GenerationMixin):
     """,
     KOSMOS2_5_START_DOCSTRING,
 )
+# Kosmos2_5ForConditionalGeneration：KOSMOS-2.5 图文条件生成
 class Kosmos2_5ForConditionalGeneration(Kosmos2_5PreTrainedModel, GenerationMixin):
     config_class = Kosmos2_5Config
 

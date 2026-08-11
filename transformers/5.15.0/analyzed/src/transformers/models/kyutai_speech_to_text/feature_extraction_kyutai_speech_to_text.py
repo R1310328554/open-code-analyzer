@@ -21,6 +21,7 @@
 
 import numpy as np
 
+# feature_extraction_kyutai 由 modular_kyutai_speech_to_text.py 自动生成
 from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
 from ...feature_extraction_utils import BatchFeature
 from ...utils import PaddingStrategy, TensorType, logging
@@ -29,6 +30,9 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# Kyutai STT 特征提取：音频波形预处理（由 modular_kyutai_speech_to_text.py 自动生成）
+
+# KyutaiSpeechToTextFeatureExtractor：Kyutai STT 音频波形预处理与 codec 编码特征提取
 class KyutaiSpeechToTextFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs an KyutaiSpeechToText feature extractor.

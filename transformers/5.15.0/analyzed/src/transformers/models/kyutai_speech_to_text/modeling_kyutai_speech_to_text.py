@@ -39,12 +39,16 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast
 from ..auto import AutoModel
+# modeling_kyutai 由 modular_kyutai_speech_to_text.py 自动生成
 from .configuration_kyutai_speech_to_text import KyutaiSpeechToTextConfig
 
 
 logger = logging.get_logger(__name__)
 
 
+# Kyutai STT 建模：Moshi 解码器 + codec 语音转文本（由 modular 自动生成）
+
+# KyutaiSpeechToTextFlexibleLinear：Kyutai STT 按层共享权重的灵活线性层
 class KyutaiSpeechToTextFlexibleLinear(nn.Module):
     def __init__(self, input_size, output_size, num_layers):
         super().__init__()
@@ -85,6 +89,7 @@ class KyutaiSpeechToTextFlexibleLinear(nn.Module):
 
 
 @auto_docstring
+# KyutaiSpeechToTextPreTrainedModel：Kyutai STT 预训练基类与权重初始化
 class KyutaiSpeechToTextPreTrainedModel(PreTrainedModel):
     config: KyutaiSpeechToTextConfig
     base_model_prefix = "model"
@@ -110,6 +115,7 @@ class KyutaiSpeechToTextPreTrainedModel(PreTrainedModel):
             init.copy_(module.audio_tokens_offsets, audio_tokens_offsets)
 
 
+# KyutaiSpeechToTextConv1dPaddingCache：Kyutai STT 因果 1D 卷积 padding 缓存
 class KyutaiSpeechToTextConv1dPaddingCache:
     """
     Padding cache for KyutaiSpeechToTextConv1d causal convolutions in order to support streaming via cache padding.
@@ -204,6 +210,7 @@ class KyutaiSpeechToTextConv1dPaddingCache:
         return current_cache
 
 
+# KyutaiSpeechToTextEmbeddings：Kyutai STT 文本+多码本音频 token 联合嵌入
 class KyutaiSpeechToTextEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -229,6 +236,7 @@ class KyutaiSpeechToTextEmbeddings(nn.Module):
         return inputs_embeds
 
 
+# KyutaiSpeechToTextRMSNorm：Kyutai STT RMS LayerNorm
 class KyutaiSpeechToTextRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -248,6 +256,7 @@ class KyutaiSpeechToTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# KyutaiSpeechToTextLinear：Kyutai STT 带门控的线性投影层
 class KyutaiSpeechToTextLinear(nn.Module):
     def __init__(self, input_dim, output_dim, num_codebooks, use_flexible_linear=False):
         super().__init__()
@@ -266,6 +275,7 @@ class KyutaiSpeechToTextLinear(nn.Module):
             return self.linear(x)
 
 
+# KyutaiSpeechToTextRotaryEmbedding：Kyutai STT 旋转位置编码（RoPE）嵌入
 class KyutaiSpeechToTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: KyutaiSpeechToTextConfig, device=None):
@@ -325,6 +335,7 @@ class KyutaiSpeechToTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# KyutaiSpeechToTextGatingMLP：Kyutai STT 门控前馈 MLP
 class KyutaiSpeechToTextGatingMLP(nn.Module):
     def __init__(self, config, use_flexible_linear=False):
         super().__init__()
@@ -350,6 +361,7 @@ class KyutaiSpeechToTextGatingMLP(nn.Module):
         return hidden_states
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -357,6 +369,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -382,6 +395,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -394,6 +408,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -419,6 +434,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# KyutaiSpeechToTextAttention：Kyutai STT 多头自注意力（GQA + RoPE）
 class KyutaiSpeechToTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -507,6 +523,7 @@ class KyutaiSpeechToTextAttention(nn.Module):
 
 # NO LONGER EXIST Copied from transformers.models.gemma.modeling_gemma.GemmaFlashAttention2 with Gemma->KyutaiSpeechToText
 # TODO cyril: modular
+# KyutaiSpeechToTextDecoderLayer：Kyutai STT 解码器单层（注意力 + FFN）
 class KyutaiSpeechToTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: KyutaiSpeechToTextConfig, layer_idx: int, use_flexible_linear: bool, use_rope=True):
         super().__init__()
@@ -569,6 +586,7 @@ class KyutaiSpeechToTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# KyutaiSpeechToTextModel：Kyutai STT Moshi 风格解码器主干
 class KyutaiSpeechToTextModel(KyutaiSpeechToTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -679,6 +697,7 @@ class KyutaiSpeechToTextModel(KyutaiSpeechToTextPreTrainedModel):
 
 
 @auto_docstring
+# KyutaiSpeechToTextForConditionalGeneration：Kyutai STT 语音转文本条件生成（含 codec 解码）
 class KyutaiSpeechToTextForConditionalGeneration(KyutaiSpeechToTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

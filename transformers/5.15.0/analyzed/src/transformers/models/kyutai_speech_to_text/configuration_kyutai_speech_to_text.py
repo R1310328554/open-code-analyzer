@@ -24,8 +24,12 @@ from ..auto.configuration_auto import AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Kyutai STT 配置：kyutai/stt-2.6b-en-trfs 语音转文本多模态超参
+
+# KyutaiSpeechToTextConfig：kyutai/stt-2.6b-en-trfs 语音转文本默认超参
 @auto_docstring(checkpoint="kyutai/stt-2.6b-en-trfs")
 @strict
+# KyutaiSpeechToTextConfig：Kyutai STT-2.6B 语音转文本多模态超参
 class KyutaiSpeechToTextConfig(PreTrainedConfig):
     r"""
     codebook_vocab_size (`int`, *optional*, defaults to 2049):

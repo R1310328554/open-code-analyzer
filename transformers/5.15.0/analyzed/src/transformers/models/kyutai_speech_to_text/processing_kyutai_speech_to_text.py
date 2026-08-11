@@ -17,6 +17,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Kyutai STT Processor：特征提取与分词器联合语音转文本输入管线
+
+# KyutaiSpeechToTextProcessorKwargs：Kyutai STT Processor 可选参数字典类型
 class KyutaiSpeechToTextProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -27,6 +30,7 @@ class KyutaiSpeechToTextProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# KyutaiSpeechToTextProcessor：封装特征提取与分词器的语音转文本输入管线
 class KyutaiSpeechToTextProcessor(ProcessorMixin):
     valid_processor_kwargs = KyutaiSpeechToTextProcessorKwargs
 

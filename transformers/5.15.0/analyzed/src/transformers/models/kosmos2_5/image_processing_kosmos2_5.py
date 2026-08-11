@@ -25,6 +25,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# KOSMOS-2.5 图像预处理：Torchvision 后端 16x16 patch 提取与归一化
+
+# Kosmos2_5ImageProcessorKwargs：KOSMOS-2.5 图像处理器可选参数字典类型
 class Kosmos2_5ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`Dict[str, int]`, *optional*, defaults to `{"height": 16, "width": 16}`):
@@ -39,6 +42,7 @@ class Kosmos2_5ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Similar to transformers.models.pix2struct.image_processing_pix2struct.torch_extract_patches but dealing with a batch of images directly.
+# torch_extract_patches：将图像张量按 patch 尺寸切分为 patch 序列
 def torch_extract_patches(image_tensor, patch_height, patch_width):
     """
     Utility function to extract patches from a given tensor representing a batch of images. Returns a tensor of shape
@@ -64,6 +68,7 @@ def torch_extract_patches(image_tensor, patch_height, patch_width):
 
 
 @auto_docstring
+# Kosmos2_5ImageProcessor：KOSMOS-2.5 Torchvision 后端 patch 提取与归一化预处理
 class Kosmos2_5ImageProcessor(TorchvisionBackend):
     do_normalize = True
     do_convert_rgb = True

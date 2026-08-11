@@ -34,6 +34,9 @@ from ..moshi.modeling_moshi import MoshiModel, MoshiPreTrainedModel
 logger = logging.get_logger(__name__)
 
 
+# Kyutai STT modular 源：复用 Encodec/Moshi/Llama 组件构建语音转文本
+
+# KyutaiSpeechToTextFeatureExtractor：基于 Encodec 的音频 codec 特征提取
 class KyutaiSpeechToTextFeatureExtractor(EncodecFeatureExtractor):
     r"""
     Constructs an KyutaiSpeechToText feature extractor.
@@ -211,6 +214,7 @@ class KyutaiSpeechToTextFeatureExtractor(EncodecFeatureExtractor):
         return padded_inputs
 
 
+# KyutaiSpeechToTextPreTrainedModel：Kyutai STT 预训练基类与权重初始化
 class KyutaiSpeechToTextPreTrainedModel(MoshiPreTrainedModel):
     def _init_weights(self, module):
         super()._init_weights(module)
@@ -221,10 +225,12 @@ class KyutaiSpeechToTextPreTrainedModel(MoshiPreTrainedModel):
             init.copy_(module.audio_tokens_offsets, audio_tokens_offsets)
 
 
+# KyutaiSpeechToTextConv1dPaddingCache：Kyutai STT 因果 1D 卷积 padding 缓存
 class KyutaiSpeechToTextConv1dPaddingCache(MimiConv1dPaddingCache):
     pass
 
 
+# KyutaiSpeechToTextEmbeddings：Kyutai STT 文本+多码本音频 token 联合嵌入
 class KyutaiSpeechToTextEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -250,12 +256,14 @@ class KyutaiSpeechToTextEmbeddings(nn.Module):
         return inputs_embeds
 
 
+# KyutaiSpeechToTextModel：Kyutai STT Moshi 风格解码器主干
 class KyutaiSpeechToTextModel(MoshiModel):
     def __init__(self, config):
         super().__init__(config)
         self.embed_tokens = KyutaiSpeechToTextEmbeddings(config)
 
 
+# KyutaiSpeechToTextForConditionalGeneration：Kyutai STT 语音转文本条件生成（含 codec 解码）
 class KyutaiSpeechToTextForConditionalGeneration(LlamaForCausalLM, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.embed_tokens.weight"}
     _keep_in_fp32_modules_strict = ["codec_model"]

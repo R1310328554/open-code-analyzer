@@ -45,8 +45,12 @@ from ..qwen3_moe.modeling_qwen3_moe import Qwen3MoeExperts, Qwen3MoeSparseMoeBlo
 logger = logging.get_logger(__name__)
 
 
+# Laguna modular 源：复用 Qwen2/3 MoE、Afmoe、Gemma3 组件构建 MoE 解码器
+
+# LagunaConfig：poolside/laguna-XS.2 MoE 解码器默认超参
 @auto_docstring(checkpoint="poolside/laguna-XS.2")
 @strict
+# LagunaConfig：Poolside Laguna MoE 解码器超参（per-layer 注意力/MoE 配置）
 class LagunaConfig(Qwen2MoeConfig):
     r"""
     gating (`bool` or `str`, *optional*, defaults to `True`):
@@ -180,10 +184,12 @@ class LagunaConfig(Qwen2MoeConfig):
             )
 
 
+# LagunaRMSNorm：Laguna RMS LayerNorm
 class LagunaRMSNorm(Qwen2MoeRMSNorm):
     pass
 
 
+# LagunaRotaryEmbedding：Laguna 旋转位置编码（RoPE）嵌入
 class LagunaRotaryEmbedding(Gemma3RotaryEmbedding):
     def __init__(self, config: LagunaConfig, device=None):
         super().__init__(config)
@@ -216,10 +222,12 @@ class LagunaRotaryEmbedding(Gemma3RotaryEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# LagunaMLP：Laguna 前馈 MLP（SiLU 激活）
 class LagunaMLP(Qwen2MoeMLP):
     pass
 
 
+# LagunaTopKRouter：Laguna MoE top-k 路由门控
 class LagunaTopKRouter(Qwen3_5MoeTopKRouter):
     def __init__(self, config):
         super().__init__()
@@ -247,10 +255,12 @@ class LagunaTopKRouter(Qwen3_5MoeTopKRouter):
         return router_logits, routing_weights, selected_experts
 
 
+# LagunaExperts：Laguna MoE 专家 FFN 集合
 class LagunaExperts(Qwen3MoeExperts):
     pass
 
 
+# LagunaSparseMoeBlock：Laguna 稀疏 MoE 路由与前馈层
 class LagunaSparseMoeBlock(Qwen3MoeSparseMoeBlock):
     def __init__(self, config: LagunaConfig):
         super().__init__(config)
@@ -273,6 +283,7 @@ class LagunaSparseMoeBlock(Qwen3MoeSparseMoeBlock):
 
 
 @no_inherit_decorator
+# LagunaAttention：Laguna 多头自注意力（Afmoe 风格 + RoPE + 输出门控）
 class LagunaAttention(AfmoeAttention):
     """Afmoe-style SWA/GQA attention with Laguna-specific gating and per-layer head count."""
 
@@ -345,6 +356,7 @@ class LagunaAttention(AfmoeAttention):
         return attn_output, attn_weights
 
 
+# LagunaDecoderLayer：Laguna 解码器单层（注意力 + dense/sparse FFN）
 class LagunaDecoderLayer(Glm4MoeLiteDecoderLayer):
     def __init__(self, config: LagunaConfig, layer_idx: int):
         nn.Module.__init__(self)
@@ -358,6 +370,7 @@ class LagunaDecoderLayer(Glm4MoeLiteDecoderLayer):
         self.post_attention_layernorm = LagunaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# LagunaPreTrainedModel：Laguna 预训练基类与权重初始化
 class LagunaPreTrainedModel(Qwen2MoePreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -374,6 +387,7 @@ class LagunaPreTrainedModel(Qwen2MoePreTrainedModel):
                 init.copy_(getattr(module, f"{layer_type}_original_inv_freq"), curr_inv_freq)
 
 
+# LagunaModel：Laguna MoE 解码器主干
 class LagunaModel(LlamaModel):
     def forward(
         self,
@@ -438,6 +452,7 @@ class LagunaModel(LlamaModel):
         )
 
 
+# LagunaForCausalLM：Laguna 因果语言建模与对话生成头
 class LagunaForCausalLM(Qwen2MoeForCausalLM):
     def forward(self, **super_kwargs):
         r"""
