@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# UniMERNet / HME100K 公式数据集格式转换：生成 PaddleOCR 训练/测试标签
 import os
 import cv2
 import glob
@@ -20,6 +21,7 @@ from os.path import join
 from tqdm import tqdm
 
 
+# 合并 UniMER-1M 与 HME100K 训练集，输出「相对路径\tLaTeX」标签文件
 def latexocr2paddleocr_train(image_path, math_unimernet_file, math_hwe_file, save_path):
     convert_f = open(save_path, "w")
     sub_dir = "UniMER-1M/images"
@@ -49,6 +51,7 @@ def latexocr2paddleocr_train(image_path, math_unimernet_file, math_hwe_file, sav
     convert_f.close()
 
 
+# 将 UniMERNet 测试集公式文本与对应 PNG 配对写入标签
 def unimernet2paddleocr_test(image_path, math_file, save_path):
     convert_f = open(save_path, "w")
     with open(math_file, "r") as f:

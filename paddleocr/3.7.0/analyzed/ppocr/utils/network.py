@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 模型与资源下载：分布式 rank0 拉取、进度条、tar 解压与 URL 解析
 import os
 import sys
 import time
@@ -30,6 +31,7 @@ MODELS_DIR = os.path.join(
 DOWNLOAD_RETRY_LIMIT = 3
 
 
+# 带重试的 HTTP 下载；多卡时 rank0 下载其余 rank 轮询等待
 def download_with_progressbar(url, save_path):
     logger = get_logger()
     if save_path and os.path.exists(save_path):
@@ -103,6 +105,7 @@ def _download(url, save_path):
     return save_path
 
 
+# 若本地无 inference 权重则从 tar 包下载并解压到指定目录
 def maybe_download(model_storage_directory, url):
     # using custom model
     tar_file_name_list = [".pdiparams", ".pdiparams.info", ".pdmodel"]

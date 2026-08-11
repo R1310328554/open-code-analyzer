@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 语义分割 IoU 损失辅助：在有效像素 mask 上逐类计算交并比
 """
 This code is refer from:
 https://github.com/whai362/PSENet/blob/python3/models/loss/iou.py
@@ -21,6 +22,7 @@ import paddle
 EPS = 1e-6
 
 
+# 单样本逐类 IoU 求平均，空 mask 时交并均为 0
 def iou_single(a, b, mask, n_class):
     valid = mask == 1
     a = a.masked_select(valid)
@@ -38,6 +40,7 @@ def iou_single(a, b, mask, n_class):
     return miou
 
 
+# 批量 IoU：展平后逐样本调用 iou_single，可选 batch 均值
 def iou(a, b, mask, n_class=2, reduce=True):
     batch_size = a.shape[0]
 

@@ -1,8 +1,10 @@
+# Weights & Biases 训练日志：指标曲线与模型 artifact 上传
 import os
 from .base_logger import BaseLogger
 from ppocr.utils.logging import get_logger
 
 
+    # W&B 后端：懒初始化 run、记录指标与 pdparams 模型 artifact
 class WandbLogger(BaseLogger):
     def __init__(
         self,

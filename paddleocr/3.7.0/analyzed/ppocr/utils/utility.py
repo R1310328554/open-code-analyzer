@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ppocr 通用工具：图像列表、GIF/PDF 读取、VQA 标签映射、随机种子等
 import logging
 import os
 import cv2
@@ -197,6 +198,7 @@ def check_install(module_name, install_name):
         print(f"{module_name} has been installed.")
 
 
+    # 滑动平均计数器：update 累加 val/sum/count 并维护 avg
 class AverageMeter:
     def __init__(self):
         self.reset()

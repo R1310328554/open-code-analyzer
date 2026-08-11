@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 训练过程滑动窗口统计：损失与指标的中位数平滑及日志格式化
 import collections
 import numpy as np
 import datetime
@@ -19,6 +20,7 @@ import datetime
 __all__ = ["TrainingStats", "Time"]
 
 
+    # 固定窗口 deque，提供 add_value 与 get_median_value 平滑
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
     window or the global series average.
@@ -34,10 +36,12 @@ class SmoothedValue(object):
         return np.median(self.deque)
 
 
+# 返回当前时间的格式化字符串，供日志时间戳使用
 def Time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
+    # 多键训练统计：update 写入、get 取中位数、log 拼接字符串
 class TrainingStats(object):
     def __init__(self, window_size, stats_keys):
         self.window_size = window_size

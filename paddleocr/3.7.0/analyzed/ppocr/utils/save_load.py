@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 模型 checkpoint 存取：支持断点续训、预训练、EMA 与 KIE/NLP 格式
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -63,6 +64,7 @@ def _mkdir_if_not_exist(path, logger):
                 raise OSError("Failed to mkdir {}".format(path))
 
 
+# 从 checkpoints 或 pretrained_model 恢复权重、优化器、EMA 与 metric 状态
 def load_model(config, model, optimizer=None, model_type="det", ema=None):
     """
     load model from checkpoint or pretrained_model
@@ -238,6 +240,7 @@ def load_pretrained_params(model, path):
     return is_float16
 
 
+# 保存 pdparams/pdopt/states；best 时额外写入 best_model 与 train_result.json
 def save_model(
     model,
     optimizer,

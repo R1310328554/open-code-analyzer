@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Paddle 训练性能分析：按 batch 区间启停 Profiler 并导出 Chrome trace
 import sys
 import paddle.profiler as profiler
 
@@ -24,6 +25,7 @@ _profiler_options = None
 _prof = None
 
 
+    # 解析分号分隔的 profiler 配置串（batch_range、state、profile_path 等）
 class ProfilerOptions(object):
     """
     Use a string to initialize a ProfilerOptions.
@@ -84,6 +86,7 @@ class ProfilerOptions(object):
         return self._options[name]
 
 
+# 每步递增计数；到达 batch_range 上界时 summary 并按需 exit
 def add_profiler_step(options_str=None):
     """
     Enable the operator-level timing using PaddlePaddle's profiler.

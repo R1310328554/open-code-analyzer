@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 多边形检测 NMS：Shapely 求 IoU，按置信度降序抑制重叠框
 import numpy as np
 from shapely.geometry import Polygon
 
@@ -124,6 +125,7 @@ def poly_iou(poly_det, poly_gt):
     return area_inters / area_union
 
 
+# 多边形 NMS：末位为 score，IoU 超阈则从候选集中剔除
 def poly_nms(polygons, threshold):
     assert isinstance(polygons, list)
 

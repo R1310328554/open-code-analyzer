@@ -1,6 +1,8 @@
+# 多后端日志聚合器：将 metrics/model 同步转发至各 Logger
 from .wandb_logger import WandbLogger
 
 
+    # 组合多个 BaseLogger，统一 log_metrics / log_model / close
 class Loggers(object):
     def __init__(self, loggers):
         super().__init__()

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ppocr 全局日志工厂：按 rank 控制级别，支持控制台与文件双输出
 """
 This code is refer from:
 https://github.com/WenmuZhou/PytorchOCR/blob/master/torchocr/utils/logging.py
@@ -26,6 +27,7 @@ logger_initialized = {}
 
 
 @functools.lru_cache()
+# 按名称缓存 Logger；仅 log_ranks 指定 GPU rank 输出 DEBUG 及以上
 def get_logger(name="ppocr", log_file=None, log_level=logging.DEBUG, log_ranks="0"):
     """Initialize and get a logger by name.
     If the logger has not been initialized, this method will initialize the

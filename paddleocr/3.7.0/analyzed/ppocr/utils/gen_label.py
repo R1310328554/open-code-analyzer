@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 训练标签生成工具：识别(rec)与检测(det)两种格式互转
 import os
 import argparse
 import json
 
 
+# 识别标签：CSV「路径,文本」→ tab 分隔的 img\tlabel
 def gen_rec_label(input_path, out_label):
     with open(out_label, "w") as out_file:
         with open(input_path, "r") as f:
@@ -26,6 +28,7 @@ def gen_rec_label(input_path, out_label):
                 out_file.write(img_path + "\t" + label + "\n")
 
 
+# 检测标签：逐文件解析四点多边形与 transcription，输出 JSON 行
 def gen_det_label(root_path, input_dir, out_label):
     with open(out_label, "w") as out_file:
         for label_file in os.listdir(input_dir):

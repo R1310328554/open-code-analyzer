@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 数学公式 OCR 数据预处理：将 PNG 图像与 LaTeX 标注按尺寸分桶并序列化为 pickle
 import pickle
 from tqdm import tqdm
 import os
@@ -23,6 +24,7 @@ from os.path import join
 import argparse
 
 
+# 读取图像目录与公式文本，按 16 对齐尺寸分组写入 latexocr_*.pkl
 def txt2pickle(images, equations, save_dir):
     imagesize = try_import("imagesize")
     save_p = os.path.join(save_dir, "latexocr_{}.pkl".format(images.split("/")[-1]))
