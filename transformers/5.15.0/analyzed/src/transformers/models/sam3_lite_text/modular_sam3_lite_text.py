@@ -31,6 +31,8 @@ from ...utils.generic import TransformersKwargs, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import CONFIG_MAPPING, AutoConfig, AutoModel
 from ..sam3.configuration_sam3 import (
+# SAM3 Lite Text modular 源：复用 SAM3 组件并集成轻量文本编码器
+
     Sam3DETRDecoderConfig,
     Sam3DETREncoderConfig,
     Sam3GeometryEncoderConfig,
@@ -42,30 +44,35 @@ from ..siglip.modeling_siglip import SiglipAttention, SiglipEncoderLayer, Siglip
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextGeometryEncoderConfig：Lite Text 几何编码器配置
 class Sam3LiteTextGeometryEncoderConfig(Sam3GeometryEncoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextDETREncoderConfig：Lite Text DETR 编码器配置
 class Sam3LiteTextDETREncoderConfig(Sam3DETREncoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextDETRDecoderConfig：Lite Text DETR 解码器配置
 class Sam3LiteTextDETRDecoderConfig(Sam3DETRDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextMaskDecoderConfig：Lite Text 掩码解码器配置
 class Sam3LiteTextMaskDecoderConfig(Sam3MaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextTextConfig：Lite Text 文本编码器配置：RepMixer 与嵌入维度
 class Sam3LiteTextTextConfig(PreTrainedConfig):
     r"""
     use_repmixer_blocks (`bool`, *optional*, defaults to `True`):
@@ -96,6 +103,7 @@ class Sam3LiteTextTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextConfig：Lite Text 联合配置：文本、几何、DETR 与掩码超参数
 class Sam3LiteTextConfig(PreTrainedConfig):
     r"""
     geometry_encoder_config (`dict` or `Sam3LiteTextGeometryEncoderConfig`, *optional*):
@@ -186,6 +194,7 @@ class Sam3LiteTextConfig(PreTrainedConfig):
 
 
 @dataclass
+# Sam3LiteTextTextEncoderOutput：Lite Text 文本编码输出：序列隐状态与池化
 class Sam3LiteTextTextEncoderOutput(BaseModelOutputWithPooling):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -199,13 +208,16 @@ class Sam3LiteTextTextEncoderOutput(BaseModelOutputWithPooling):
     """
 
 
+# Sam3LiteTextTextPositionEmbedding：Lite Text 文本位置嵌入：1D 正弦编码
 class Sam3LiteTextTextPositionEmbedding(nn.Module):
     """Learnable positional embedding with bilinear interpolation for variable sequence lengths."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, max_position_embeddings: int, hidden_size: int):
         super().__init__()
         self.position_embedding = nn.Parameter(torch.empty(1, 1, max_position_embeddings, hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, seq_len: int) -> torch.Tensor:
         position_embedding = self.position_embedding
         if seq_len != position_embedding.shape[2]:
@@ -217,9 +229,11 @@ class Sam3LiteTextTextPositionEmbedding(nn.Module):
         return position_embedding.reshape(1, seq_len, -1)
 
 
+# Sam3LiteTextMobileOneBlock：Lite Text MobileOne 块：重参数化深度卷积
 class Sam3LiteTextMobileOneBlock(nn.Module):
     """Depthwise conv branch with batch norm on the skip path and after the conv (MobileOne-style)."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size: int, kernel_size: int = 3):
         super().__init__()
         self.batchnorm_skip = nn.BatchNorm2d(hidden_size)
@@ -234,6 +248,7 @@ class Sam3LiteTextMobileOneBlock(nn.Module):
         )
         self.batchnorm_conv = nn.BatchNorm2d(hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.batchnorm_conv(self.conv(hidden_states))
@@ -241,9 +256,11 @@ class Sam3LiteTextMobileOneBlock(nn.Module):
         return hidden_states
 
 
+# Sam3LiteTextConvMLP：Lite Text 卷积 MLP：1×1 卷积前馈网络
 class Sam3LiteTextConvMLP(SiglipMLP):
     """Pointwise MLP using 1×1 convolutions, compatible with 4-D (B, C, H, W) feature maps."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         nn.Module.__init__(self)
         self.activation_fn = ACT2FN[config.hidden_act]
@@ -251,9 +268,11 @@ class Sam3LiteTextConvMLP(SiglipMLP):
         self.fc2 = nn.Conv2d(config.intermediate_size, config.hidden_size, kernel_size=1)
 
 
+# Sam3LiteTextConvolutionalFeedForward：Lite Text 卷积 FFN：深度可分离卷积前馈
 class Sam3LiteTextConvolutionalFeedForward(nn.Module):
     """Convolutional feed-forward network: depthwise conv + two pointwise projections."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__()
         self.depthwise_conv = nn.Conv2d(
@@ -267,14 +286,17 @@ class Sam3LiteTextConvolutionalFeedForward(nn.Module):
         self.depthwise_batchnorm = nn.BatchNorm2d(config.hidden_size)
         self.mlp = Sam3LiteTextConvMLP(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.depthwise_batchnorm(self.depthwise_conv(hidden_states))
         return self.mlp(hidden_states)
 
 
+# Sam3LiteTextLayerScaledResidual：Lite Text 层缩放残差：可学习缩放因子
 class Sam3LiteTextLayerScaledResidual(nn.Module):
     """Common layer-scale residual pattern shared by the RepMixer and feed-forward branches."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size: int, layer_scale_init_value: float):
         super().__init__()
         self.layer_scale = nn.Parameter(layer_scale_init_value * torch.ones((hidden_size, 1, 1)), requires_grad=True)
@@ -283,28 +305,34 @@ class Sam3LiteTextLayerScaledResidual(nn.Module):
         return hidden_states + self.layer_scale * update
 
 
+# Sam3LiteTextRepMixer：Lite Text RepMixer：token 混合与通道重排
 class Sam3LiteTextRepMixer(Sam3LiteTextLayerScaledResidual):
     """Re-parameterisable depthwise-conv token mixer operating on 1D sequence data."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__(config.hidden_size, config.layer_scale_init_value)
         self.reference_batchnorm = nn.BatchNorm2d(config.hidden_size)
         self.mixer = Sam3LiteTextMobileOneBlock(config.hidden_size, kernel_size=config.repmixer_kernel_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         return self.layer_scale_residual(
             hidden_states, self.mixer(hidden_states) - self.reference_batchnorm(hidden_states)
         )
 
 
+# Sam3LiteTextRepMixerBlock：Lite Text RepMixer 块：RepMixer + FFN 堆叠
 class Sam3LiteTextRepMixerBlock(Sam3LiteTextLayerScaledResidual):
     """Token-mixing RepMixer plus a convolutional feed-forward path, each with layer scale."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__(config.hidden_size, config.layer_scale_init_value)
         self.token_mixer = Sam3LiteTextRepMixer(config)
         self.conv_feed_forward = Sam3LiteTextConvolutionalFeedForward(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -317,29 +345,36 @@ class Sam3LiteTextRepMixerBlock(Sam3LiteTextLayerScaledResidual):
         return hidden_states.squeeze(2).transpose(1, 2)
 
 
+# Sam3LiteTextTextAttention：Lite Text 文本注意力：轻量多头自注意力
 class Sam3LiteTextTextAttention(SiglipAttention):
     pass
 
 
+# Sam3LiteTextTextMLP：Lite Text 文本 MLP：两层线性前馈
 class Sam3LiteTextTextMLP(SiglipMLP):
     pass
 
 
+# Sam3LiteTextTextEncoderLayer：Lite Text 文本编码层：注意力 + FFN
 class Sam3LiteTextTextEncoderLayer(SiglipEncoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__(config)
         self.self_attn = Sam3LiteTextTextAttention(config)
         self.mlp = Sam3LiteTextTextMLP(config)
 
 
+# Sam3LiteTextTextEmbeddings：Lite Text 文本嵌入：token + 位置编码
 class Sam3LiteTextTextEmbeddings(nn.Module):
     """Token embedding + interpolatable positional embedding for the text encoder."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__()
         self.token_embedding = nn.Embedding(config.vocab_size, config.hidden_size)
         self.position_embedding = Sam3LiteTextTextPositionEmbedding(config.max_position_embeddings, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.LongTensor) -> torch.Tensor:
         hidden_states = self.token_embedding(input_ids)
         hidden_states = hidden_states + self.position_embedding(input_ids.shape[1]).to(hidden_states.dtype)
@@ -347,12 +382,14 @@ class Sam3LiteTextTextEmbeddings(nn.Module):
 
 
 @auto_docstring
+# Sam3LiteTextPreTrainedModel：Lite Text 预训练基类：权重初始化策略
 class Sam3LiteTextPreTrainedModel(Sam3PreTrainedModel):
     config_class = Sam3LiteTextConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         PreTrainedModel._init_weights(module)
         if isinstance(module, Sam3LiteTextTextPositionEmbedding):
@@ -369,6 +406,7 @@ class Sam3LiteTextPreTrainedModel(Sam3PreTrainedModel):
     `Sam3LiteTextRepMixerBlock` modules; the rest are standard `Sam3LiteTextTextEncoderLayer` layers.
 """
 )
+# Sam3LiteTextTextModel：Lite Text 文本模型：RepMixer 轻量文本编码器
 class Sam3LiteTextTextModel(Sam3LiteTextPreTrainedModel):
     config_class = Sam3LiteTextTextConfig
     config: Sam3LiteTextTextConfig
@@ -377,6 +415,7 @@ class Sam3LiteTextTextModel(Sam3LiteTextPreTrainedModel):
         "attentions": Sam3LiteTextTextAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextTextConfig):
         super().__init__(config)
         self.embeddings = Sam3LiteTextTextEmbeddings(config)
@@ -394,6 +433,7 @@ class Sam3LiteTextTextModel(Sam3LiteTextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -418,11 +458,13 @@ class Sam3LiteTextTextModel(Sam3LiteTextPreTrainedModel):
         )
 
 
+# Sam3LiteTextModel：Lite Text 完整模型：文本条件开放词汇分割检测
 class Sam3LiteTextModel(Sam3Model):
     # DETR components create float masks from features, so flash/flex attention cannot be dispatched safely.
     _supports_flash_attn = False
     _supports_flex_attn = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3LiteTextConfig):
         super().__init__(config)
         self.text_encoder = Sam3LiteTextTextModel(config.text_config)

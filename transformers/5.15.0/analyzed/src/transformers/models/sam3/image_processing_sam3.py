@@ -33,6 +33,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_utils import (
+# SAM3 图像预处理：自动掩码生成、多尺度裁剪与 RLE 掩码后处理
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     ChannelDimension,
@@ -48,6 +50,7 @@ if is_vision_available():
     import PIL
 
 
+# Sam3ImageProcessorKwargs：SAM3 图像处理器参数：裁剪、NMS 与稳定性阈值
 class Sam3ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     mask_size (`dict[str, int]`, *optional*):
@@ -57,6 +60,7 @@ class Sam3ImageProcessorKwargs(ImagesKwargs, total=False):
     mask_size: dict[str, int]
 
 
+# _compute_stability_score：稳定性评分：掩码在不同阈值下的 IoU 一致性
 def _compute_stability_score(masks: "torch.Tensor", mask_threshold: float, stability_score_offset: int):
     # One mask is always contained inside the other.
     # Save memory by preventing unnecessary cast to torch.int64
@@ -68,6 +72,7 @@ def _compute_stability_score(masks: "torch.Tensor", mask_threshold: float, stabi
     return stability_scores
 
 
+# _batched_mask_to_box：批量掩码转框：从二值掩码提取外接矩形
 def _batched_mask_to_box(masks: "torch.Tensor"):
     """
     Computes the bounding boxes around the given input masks. The bounding boxes are in the XYXY format which
@@ -117,6 +122,7 @@ def _batched_mask_to_box(masks: "torch.Tensor"):
     return out
 
 
+# _is_box_near_crop_edge：判断框是否靠近裁剪边缘
 def _is_box_near_crop_edge(boxes, crop_box, orig_box, atol=20.0):
     """Filter masks at the edge of a crop, but not at the edge of the original image."""
     crop_box_torch = torch.as_tensor(crop_box, dtype=torch.float, device=boxes.device)
@@ -135,6 +141,7 @@ def _is_box_near_crop_edge(boxes, crop_box, orig_box, atol=20.0):
     return torch.any(near_crop_edge, dim=1)
 
 
+# _pad_masks：填充掩码：将裁剪区域掩码还原至原图尺寸
 def _pad_masks(masks, crop_box: list[int], orig_height: int, orig_width: int):
     left, top, right, bottom = crop_box
     if left == 0 and top == 0 and right == orig_width and bottom == orig_height:
@@ -145,6 +152,7 @@ def _pad_masks(masks, crop_box: list[int], orig_height: int, orig_width: int):
     return torch.nn.functional.pad(masks, pad, value=0)
 
 
+# _generate_crop_boxes：生成裁剪框：多尺度网格裁剪坐标
 def _generate_crop_boxes(
     image,
     target_size: int,
@@ -198,6 +206,7 @@ def _generate_crop_boxes(
     return crop_boxes, points_per_crop, cropped_images, input_labels
 
 
+# _generate_per_layer_crops：逐层裁剪：按层数与重叠率生成裁剪
 def _generate_per_layer_crops(crop_n_layers, overlap_ratio, original_size):
     """
     Generates 2 ** (layers idx + 1) crops for each crop_n_layers. Crops are in the XYWH format : The XYWH format
@@ -232,6 +241,7 @@ def _generate_per_layer_crops(crop_n_layers, overlap_ratio, original_size):
     return crop_boxes, layer_idxs
 
 
+# _build_point_grid：构建点网格：均匀采样提示点坐标
 def _build_point_grid(n_per_side: int) -> torch.Tensor:
     """Generates a 2D grid of points evenly spaced in [0,1]x[0,1]."""
     offset = 1 / (2 * n_per_side)
@@ -242,6 +252,7 @@ def _build_point_grid(n_per_side: int) -> torch.Tensor:
     return points
 
 
+# _generate_crop_images：生成裁剪图像：按裁剪框切分子图
 def _generate_crop_images(
     crop_boxes, image, points_grid, layer_idxs, target_size, original_size, input_data_format=None
 ):
@@ -267,6 +278,7 @@ def _generate_crop_images(
     return cropped_images, total_points_per_crop
 
 
+# _normalize_coordinates：归一化坐标：映射至 [0,1] 相对坐标
 def _normalize_coordinates(
     target_size: int, coords: torch.Tensor, original_size: tuple[int, int], is_bounding_box=False
 ) -> torch.Tensor:
@@ -295,6 +307,7 @@ def _normalize_coordinates(
     return coords
 
 
+# _rle_to_mask：RLE 转掩码：游程编码解码为二值张量
 def _rle_to_mask(rle: dict[str, Any]) -> torch.Tensor:
     """Compute a binary mask from an uncompressed RLE."""
     height, width = rle["size"]
@@ -309,6 +322,7 @@ def _rle_to_mask(rle: dict[str, Any]) -> torch.Tensor:
     return mask.transpose(0, 1)  # Reshape to original shape
 
 
+# _post_process_for_mask_generation：掩码生成后处理：NMS 过滤与排序
 def _post_process_for_mask_generation(rle_masks, iou_scores, mask_boxes, amg_crops_nms_thresh=0.7):
     """
     Perform NMS (Non Maximum Suppression) on the outputs.
@@ -338,6 +352,7 @@ def _post_process_for_mask_generation(rle_masks, iou_scores, mask_boxes, amg_cro
     return masks, iou_scores, rle_masks, mask_boxes
 
 
+# _mask_to_rle：掩码转 RLE：二值掩码编码为游程格式
 def _mask_to_rle(input_mask: "torch.Tensor"):
     """
     Encodes masks the run-length encoding (RLE), in the format expected by pycoco tools.
@@ -369,6 +384,7 @@ def _mask_to_rle(input_mask: "torch.Tensor"):
     return out
 
 
+# _scale_boxes：缩放边界框：按目标尺寸等比调整框坐标
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -398,6 +414,7 @@ def _scale_boxes(boxes, target_sizes):
 
 
 @auto_docstring
+# Sam3ImageProcessor：SAM3 图像处理器：自动掩码生成与多尺度裁剪推理
 class Sam3ImageProcessor(TorchvisionBackend):
     valid_kwargs = Sam3ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -415,10 +432,12 @@ class Sam3ImageProcessor(TorchvisionBackend):
     pad_size = None
     mask_pad_size = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Sam3ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

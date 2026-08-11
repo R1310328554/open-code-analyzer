@@ -21,8 +21,11 @@ from ...image_processing_utils import BatchFeature
 from ...image_utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, PILImageResampling, SizeDict
 from ...utils import TensorType
 from ...video_processing_utils import BaseVideoProcessor
+# SAM2 视频帧预处理：缩放归一化并打包为模型 BatchFeature
 
 
+
+# Sam2VideoVideoProcessor：SAM2 视频帧处理器：帧缩放归一化与尺寸对齐
 class Sam2VideoVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN

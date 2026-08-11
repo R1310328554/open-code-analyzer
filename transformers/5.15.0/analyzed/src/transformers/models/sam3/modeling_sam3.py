@@ -23,6 +23,8 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from ...utils import is_torchvision_available
+# SAM3 建模：ViT 视觉骨干、DETR 检测解码与像素级掩码分割头
+
 
 
 if is_torchvision_available():
@@ -67,6 +69,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# Sam3VisionEncoderOutput：SAM3 视觉编码输出：多尺度特征与池化状态
 class Sam3VisionEncoderOutput(BaseModelOutputWithPooling):
     r"""
     fpn_hidden_states (`tuple[torch.FloatTensor]`):
@@ -81,6 +84,7 @@ class Sam3VisionEncoderOutput(BaseModelOutputWithPooling):
 
 @auto_docstring
 @dataclass
+# Sam3GeometryEncoderOutput：SAM3 几何编码输出：框/点提示的 dense 嵌入
 class Sam3GeometryEncoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_prompts, hidden_size)`):
@@ -95,6 +99,7 @@ class Sam3GeometryEncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Sam3DETREncoderOutput：SAM3 DETR 编码输出：序列隐状态与位置编码
 class Sam3DETREncoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -121,6 +126,7 @@ class Sam3DETREncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Sam3DETRDecoderOutput：SAM3 DETR 解码输出：object query 隐状态与参考点
 class Sam3DETRDecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(num_layers, batch_size, num_queries, hidden_size)`):
@@ -144,6 +150,7 @@ class Sam3DETRDecoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Sam3MaskDecoderOutput：SAM3 掩码解码输出：低/高分辨率掩码 logits
 class Sam3MaskDecoderOutput(ModelOutput):
     r"""
     pred_masks (`torch.FloatTensor` of shape `(batch_size, num_queries, height, width)`):
@@ -161,6 +168,7 @@ class Sam3MaskDecoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Sam3ImageSegmentationOutput：SAM3 图像分割输出：检测框、分数与掩码
 class Sam3ImageSegmentationOutput(ModelOutput):
     r"""
     pred_masks (`torch.FloatTensor` of shape `(batch_size, num_queries, height, width)`):
@@ -209,6 +217,7 @@ class Sam3ImageSegmentationOutput(ModelOutput):
     mask_decoder_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# inverse_sigmoid：逆 sigmoid：将 [0,1] 概率映射回 logit 空间
 def inverse_sigmoid(x: torch.Tensor, eps: float = 1e-3) -> torch.Tensor:
     """The inverse function for sigmoid activation function."""
     x = x.clamp(min=0, max=1)
@@ -217,6 +226,7 @@ def inverse_sigmoid(x: torch.Tensor, eps: float = 1e-3) -> torch.Tensor:
     return torch.log(x1 / x2)
 
 
+# concat_padded_sequences：拼接填充序列：合并两段带 mask 的 token 序列
 def concat_padded_sequences(seq1, mask1, seq2, mask2, return_index: bool = False):
     """
     Concatenates two right-padded sequences, such that the resulting sequence
@@ -271,6 +281,7 @@ def concat_padded_sequences(seq1, mask1, seq2, mask2, return_index: bool = False
     return concatenated_sequence, concatenated_mask
 
 
+# box_cxcywh_to_xyxy：框格式转换：中心宽高 → 左上右下坐标
 def box_cxcywh_to_xyxy(x):
     """Convert boxes from (cx, cy, w, h) format to (x1, y1, x2, y2) format."""
     x_c, y_c, w, h = x.unbind(-1)
@@ -278,7 +289,9 @@ def box_cxcywh_to_xyxy(x):
     return torch.stack(b, dim=-1)
 
 
+# Sam3MLP：SAM3 MLP：两层线性 + ReLU 前馈网络
 class Sam3MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -287,6 +300,7 @@ class Sam3MLP(nn.Module):
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -295,6 +309,7 @@ class Sam3MLP(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -323,12 +338,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Sam3Attention：SAM3 注意力：标准多头缩放点积注意力
 class Sam3Attention(nn.Module):
     """
     Multi-head attention.
     Handles standard [batch_size, seq_len, hidden_size] tensors.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -343,6 +360,7 @@ class Sam3Attention(nn.Module):
         self.v_proj = nn.Linear(self.hidden_size, self.hidden_size)
         self.o_proj = nn.Linear(self.hidden_size, self.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: torch.Tensor,
@@ -406,12 +424,14 @@ class Sam3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam3ViTRotaryEmbedding：SAM3 ViT RoPE：2D 旋转位置编码
 class Sam3ViTRotaryEmbedding(nn.Module):
     """
     Vision Rotary Position Embedding for SAM3, following transformers library standards.
     Supports 2D (axial) rotary embeddings for spatial dimensions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig, end_x: int, end_y: int, scale: float = 1.0):
         super().__init__()
         dim = config.hidden_size // config.num_attention_heads
@@ -436,11 +456,13 @@ class Sam3ViTRotaryEmbedding(nn.Module):
         self.rope_embeddings_sin = nn.Buffer(inv_freq.sin(), persistent=False)
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         # As the feature map size is fixed for each stage, we can just return the pre-computed embeddings.
         return self.rope_embeddings_cos, self.rope_embeddings_sin
 
 
+# rotate_pairwise：成对旋转：将特征拆分为复数对并应用 RoPE
 def rotate_pairwise(x):
     """
     pairwise rotation of the hidden dims of the input. Different from Llama Half-Tensor Rotation.
@@ -459,6 +481,7 @@ def rotate_pairwise(x):
     return x.flatten(start_dim=-2)
 
 
+# apply_rotary_pos_emb_2d：2D RoPE 应用：在 H/W 维度注入旋转位置编码
 def apply_rotary_pos_emb_2d(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -486,9 +509,11 @@ def apply_rotary_pos_emb_2d(
     return q_embed.type_as(q), k_embed.type_as(k)
 
 
+# Sam3ViTRoPEAttention：SAM3 ViT RoPE 注意力：窗口内带 RoPE 的自注意力
 class Sam3ViTRoPEAttention(nn.Module):
     """Self-attention with rotary position encoding."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig):
         super().__init__()
         self.config = config
@@ -504,6 +529,7 @@ class Sam3ViTRoPEAttention(nn.Module):
         self.v_proj = nn.Linear(self.hidden_size, self.hidden_size)
         self.o_proj = nn.Linear(self.hidden_size, self.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -539,6 +565,7 @@ class Sam3ViTRoPEAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam3ViTPatchEmbeddings：SAM3 ViT patch 嵌入：图像分块线性投影
 class Sam3ViTPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -546,6 +573,7 @@ class Sam3ViTPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig):
         super().__init__()
         image_size, patch_size = config.pretrain_image_size, config.patch_size
@@ -561,11 +589,13 @@ class Sam3ViTPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         embeddings = self.projection(pixel_values.to(self.projection.weight.dtype)).flatten(2).transpose(1, 2)
         return embeddings
 
 
+# Sam3ViTEmbeddings：SAM3 ViT 嵌入：patch + 位置编码组合
 class Sam3ViTEmbeddings(nn.Module):
     """
     Construct the patch embeddings and position embeddings for SAM3 ViT.
@@ -573,6 +603,7 @@ class Sam3ViTEmbeddings(nn.Module):
     Position embeddings are tiled (not interpolated) when resizing to match different input sizes.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig):
         super().__init__()
 
@@ -615,6 +646,7 @@ class Sam3ViTEmbeddings(nn.Module):
         pos_embed = pos_embed.tile([1, 1, repeat_h, repeat_w])[:, :, :height, :width]
         return pos_embed.permute(0, 2, 3, 1).reshape(1, height * width, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -638,6 +670,7 @@ class Sam3ViTEmbeddings(nn.Module):
         return embeddings
 
 
+# window_partition：窗口划分：将特征图切分为不重叠窗口
 def window_partition(hidden_state, window_size):
     """
     Partition into non-overlapping windows with padding if needed.
@@ -669,6 +702,7 @@ def window_partition(hidden_state, window_size):
     return windows, (padded_height, padded_width)
 
 
+# window_unpartition：窗口合并：将窗口 token 还原为完整特征图
 def window_unpartition(windows, window_size, pad_height_width, height_width):
     """
     Window unpartition into original sequences and removing padding.
@@ -700,18 +734,23 @@ def window_unpartition(windows, window_size, pad_height_width, height_width):
     return hidden_state
 
 
+# Sam3ViTLayerScale：SAM3 ViT 层缩放：可学习 per-channel 残差缩放
 class Sam3ViTLayerScale(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.lambda1 = nn.Parameter(config.layer_scale_init_value * torch.ones(config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         return hidden_state * self.lambda1
 
 
+# Sam3ViTLayer：SAM3 ViT 层：窗口自注意力 + FFN 的 Transformer 块
 class Sam3ViTLayer(GradientCheckpointingLayer):
     """Vision Transformer layer with rotary position embeddings and optional windowed attention."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig, window_size: int = 0) -> None:
         super().__init__()
 
@@ -736,6 +775,7 @@ class Sam3ViTLayer(GradientCheckpointingLayer):
 
         self.window_size = window_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -768,6 +808,7 @@ class Sam3ViTLayer(GradientCheckpointingLayer):
 
 @auto_docstring
 @requires(backends=("torch", "torchvision"))
+# Sam3PreTrainedModel：SAM3 预训练基类：检测分割权重初始化
 class Sam3PreTrainedModel(PreTrainedModel):
     config_class = Sam3Config
     base_model_prefix = "sam3"
@@ -778,6 +819,7 @@ class Sam3PreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
     _supports_attention_backend = True
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Sam3ViTEmbeddings):
@@ -798,6 +840,7 @@ class Sam3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Sam3ViTModel：SAM3 ViT 模型：Hiera 风格窗口 Transformer 骨干
 class Sam3ViTModel(Sam3PreTrainedModel):
     config: Sam3ViTConfig
     _can_record_outputs = {
@@ -805,6 +848,7 @@ class Sam3ViTModel(Sam3PreTrainedModel):
         "attentions": Sam3ViTRoPEAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3ViTConfig):
         super().__init__(config)
         self.config = config
@@ -824,6 +868,7 @@ class Sam3ViTModel(Sam3PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -849,12 +894,14 @@ class Sam3ViTModel(Sam3PreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# Sam3SinePositionEmbedding：SAM3 正弦位置编码：多尺度 2D 参考点嵌入
 class Sam3SinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
     need paper, generalized to work on images.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         num_position_features: int = 64,
@@ -970,6 +1017,7 @@ class Sam3SinePositionEmbedding(nn.Module):
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         shape: torch.Size,
@@ -982,7 +1030,9 @@ class Sam3SinePositionEmbedding(nn.Module):
         )
 
 
+# Sam3FPNLayer：SAM3 FPN 层：横向连接与自顶向下特征融合
 class Sam3FPNLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, fpn_dim: int, scale_factor: float):
         super().__init__()
         self.scale_factor = scale_factor
@@ -1009,6 +1059,7 @@ class Sam3FPNLayer(nn.Module):
         self.proj1 = nn.Conv2d(in_channels=intermediate_channels, out_channels=fpn_dim, kernel_size=1)
         self.proj2 = nn.Conv2d(in_channels=fpn_dim, out_channels=fpn_dim, kernel_size=3, padding=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = hidden_states.to(self.proj1.weight.dtype)
         for layer in self.scale_layers:
@@ -1020,7 +1071,9 @@ class Sam3FPNLayer(nn.Module):
         return hidden_states
 
 
+# Sam3VisionNeck：SAM3 视觉颈部：FPN 多尺度特征金字塔
 class Sam3VisionNeck(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3VisionConfig):
         super().__init__()
         self.config = config
@@ -1039,6 +1092,7 @@ class Sam3VisionNeck(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
         fpn_hidden_states = ()
         fpn_position_encoding = ()
@@ -1058,10 +1112,12 @@ class Sam3VisionNeck(nn.Module):
     The vision model from Sam without any head or projection on top.
     """
 )
+# Sam3VisionModel：SAM3 视觉模型：ViT 骨干 + FPN 颈部
 class Sam3VisionModel(Sam3PreTrainedModel):
     config_class = Sam3VisionConfig
     main_input_name = "pixel_values"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3VisionConfig):
         super().__init__(config)
         self.config = config
@@ -1074,6 +1130,7 @@ class Sam3VisionModel(Sam3PreTrainedModel):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1101,7 +1158,9 @@ class Sam3VisionModel(Sam3PreTrainedModel):
         )
 
 
+# Sam3GeometryEncoderLayer：SAM3 几何编码层：提示 token 自注意力 + FFN
 class Sam3GeometryEncoderLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3GeometryEncoderConfig):
         super().__init__()
         self.layer_norm1 = nn.LayerNorm(config.hidden_size)
@@ -1114,6 +1173,7 @@ class Sam3GeometryEncoderLayer(nn.Module):
         self.mlp = Sam3MLP(config)
         self.layer_norm3 = nn.LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prompt_feats: Tensor,
@@ -1141,6 +1201,7 @@ class Sam3GeometryEncoderLayer(nn.Module):
         return hidden_states
 
 
+# Sam3GeometryEncoder：SAM3 几何编码器：框/点提示转为 dense 特征
 class Sam3GeometryEncoder(nn.Module):
     """
     Encoder for geometric prompts (boxes).
@@ -1153,6 +1214,7 @@ class Sam3GeometryEncoder(nn.Module):
     These encodings are combined additively and further processed with transformer layers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3GeometryEncoderConfig):
         super().__init__()
         self.config = config
@@ -1236,6 +1298,7 @@ class Sam3GeometryEncoder(nn.Module):
         label_embed = self.label_embed(boxes_labels.long())
         return label_embed + boxes_embed, boxes_mask
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         box_embeddings: torch.Tensor,
@@ -1307,9 +1370,11 @@ class Sam3GeometryEncoder(nn.Module):
         )
 
 
+# Sam3DetrEncoderLayer：SAM3 DETR 编码层：自注意力 + FFN
 class Sam3DetrEncoderLayer(nn.Module):
     """DETR encoder layer with self-attention and cross-attention."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3DETREncoderConfig):
         super().__init__()
         self.config = config
@@ -1323,6 +1388,7 @@ class Sam3DetrEncoderLayer(nn.Module):
         self.mlp = Sam3MLP(config)
         self.layer_norm3 = nn.LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         vision_feats: Tensor,
@@ -1377,6 +1443,7 @@ class Sam3DetrEncoderLayer(nn.Module):
         return hidden_states
 
 
+# Sam3DetrEncoder：SAM3 DETR 编码器：视觉+几何特征序列编码
 class Sam3DetrEncoder(Sam3PreTrainedModel):
     """
     DETR-style encoder that processes multi-level vision features with text fusion.
@@ -1390,6 +1457,7 @@ class Sam3DetrEncoder(Sam3PreTrainedModel):
         "attentions": Sam3Attention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3DETREncoderConfig):
         super().__init__(config)
         self.config = config
@@ -1443,6 +1511,7 @@ class Sam3DetrEncoder(Sam3PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         vision_features: list[torch.Tensor],
@@ -1507,9 +1576,11 @@ class Sam3DetrEncoder(Sam3PreTrainedModel):
         )
 
 
+# Sam3DecoderMLP：SAM3 解码 MLP：bbox/class 回归前馈网络
 class Sam3DecoderMLP(nn.Module):
     """Simple 2 or 3-layer MLP for decoder components."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int = 2):
         super().__init__()
         if num_layers == 2:
@@ -1523,6 +1594,7 @@ class Sam3DecoderMLP(nn.Module):
         else:
             raise ValueError(f"Only 2 or 3 layers supported, got {num_layers}")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.layer1(x))
         if self.layer3 is not None:
@@ -1533,9 +1605,11 @@ class Sam3DecoderMLP(nn.Module):
         return x
 
 
+# Sam3DetrDecoderLayer：SAM3 DETR 解码层：自注意力 + 交叉注意力 + FFN
 class Sam3DetrDecoderLayer(nn.Module):
     """DETR decoder layer with self-attention, text cross-attention, and vision cross-attention."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3DETRDecoderConfig):
         super().__init__()
         self.config = config
@@ -1555,6 +1629,7 @@ class Sam3DetrDecoderLayer(nn.Module):
         self.mlp_layer_norm = nn.LayerNorm(config.hidden_size)
         self.mlp_dropout = nn.Dropout(config.dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1634,6 +1709,7 @@ class Sam3DetrDecoderLayer(nn.Module):
         return hidden_states
 
 
+# Sam3DetrDecoder：SAM3 DETR 解码器：可学习 query 迭代 refine 检测
 class Sam3DetrDecoder(Sam3PreTrainedModel):
     """
     DETR-style decoder with box refinement and presence token.
@@ -1650,6 +1726,7 @@ class Sam3DetrDecoder(Sam3PreTrainedModel):
         "attentions": Sam3Attention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: Sam3DETRDecoderConfig,
@@ -1741,6 +1818,7 @@ class Sam3DetrDecoder(Sam3PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         vision_features: torch.Tensor,
@@ -1843,12 +1921,14 @@ class Sam3DetrDecoder(Sam3PreTrainedModel):
         )
 
 
+# Sam3DotProductScoring：SAM3 点积评分：文本-视觉相似度打分头
 class Sam3DotProductScoring(nn.Module):
     """
     Computes classification scores by computing dot product between projected decoder queries and pooled text features.
     This is used to determine confidence/presence scores for each query.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3Config):
         super().__init__()
         self.config = config
@@ -1900,6 +1980,7 @@ class Sam3DotProductScoring(nn.Module):
 
         return pooled_text
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         decoder_hidden_states: torch.Tensor,
@@ -1937,12 +2018,14 @@ class Sam3DotProductScoring(nn.Module):
         return scores
 
 
+# Sam3MaskEmbedder：SAM3 掩码嵌入器：object query 映射为掩码特征
 class Sam3MaskEmbedder(nn.Module):
     """
     MLP that embeds object queries for mask prediction.
     Similar to MaskFormer's mask embedder.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3MaskDecoderConfig):
         super().__init__()
         self.config = config
@@ -1957,6 +2040,7 @@ class Sam3MaskEmbedder(nn.Module):
         )
         self.activation = nn.ReLU()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, queries: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -1973,12 +2057,14 @@ class Sam3MaskEmbedder(nn.Module):
         return hidden_states
 
 
+# Sam3PixelDecoder：SAM3 像素解码器：上采样多尺度特征至像素分辨率
 class Sam3PixelDecoder(nn.Module):
     """
     Feature Pyramid Network (FPN) decoder that generates pixel-level features.
     Inspired by MaskFormer's pixel decoder.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3MaskDecoderConfig):
         super().__init__()
         self.config = config
@@ -1996,6 +2082,7 @@ class Sam3PixelDecoder(nn.Module):
 
         self.out_channels = hidden_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, backbone_features: list[torch.Tensor]) -> torch.Tensor:
         """
         Args:
@@ -2023,6 +2110,7 @@ class Sam3PixelDecoder(nn.Module):
         return prev_fpn
 
 
+# Sam3MaskDecoder：SAM3 掩码解码器：生成实例级高分辨率掩码
 class Sam3MaskDecoder(Sam3PreTrainedModel):
     """
     Mask decoder that combines object queries with pixel-level features to predict instance masks.
@@ -2033,6 +2121,7 @@ class Sam3MaskDecoder(Sam3PreTrainedModel):
         "attentions": Sam3Attention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3MaskDecoderConfig):
         super().__init__(config)
         self.config = config
@@ -2058,6 +2147,7 @@ class Sam3MaskDecoder(Sam3PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         decoder_queries: torch.Tensor,
@@ -2154,6 +2244,7 @@ class Sam3MaskDecoder(Sam3PreTrainedModel):
         return pixel_embed
 
 
+# Sam3Model：SAM3 完整模型：视觉 + 几何 + DETR + 掩码端到端分割检测
 class Sam3Model(Sam3PreTrainedModel):
     input_modalities = ["image", "text"]
     base_model_prefix = "detector_model"
@@ -2162,6 +2253,7 @@ class Sam3Model(Sam3PreTrainedModel):
         r"^tracker_neck.",
     ]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3Config):
         # loading from a sam3_video config
         if hasattr(config, "detector_config") and config.detector_config is not None:
@@ -2269,6 +2361,7 @@ class Sam3Model(Sam3PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

@@ -24,6 +24,8 @@ from ...processing_utils import ProcessorMixin
 from ...tokenization_utils_base import BatchEncoding, PreTokenizedInput, TextInput
 from ...utils import TensorType, auto_docstring, is_torch_available, logging
 from ...utils.import_utils import requires
+# SAM3 处理器：文本/几何提示与图像预处理协调打包
+
 
 
 logger = logging.get_logger(__name__)
@@ -32,42 +34,49 @@ if is_torch_available():
     import torch
 
 
+# box_cxcywh_to_xyxy：框格式转换：中心宽高 → 左上右下坐标
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(-1)
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
     return torch.stack(b, dim=-1)
 
 
+# box_cxcywh_to_xywh：框格式转换：中心宽高 → 左上宽高
 def box_cxcywh_to_xywh(x):
     x_c, y_c, w, h = x.unbind(-1)
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (w), (h)]
     return torch.stack(b, dim=-1)
 
 
+# box_xywh_to_xyxy：框格式转换：左上宽高 → 左上右下
 def box_xywh_to_xyxy(x):
     x, y, w, h = x.unbind(-1)
     b = [(x), (y), (x + w), (y + h)]
     return torch.stack(b, dim=-1)
 
 
+# box_xywh_to_cxcywh：框格式转换：左上宽高 → 中心宽高
 def box_xywh_to_cxcywh(x):
     x, y, w, h = x.unbind(-1)
     b = [(x + 0.5 * w), (y + 0.5 * h), (w), (h)]
     return torch.stack(b, dim=-1)
 
 
+# box_xyxy_to_xywh：框格式转换：左上右下 → 左上宽高
 def box_xyxy_to_xywh(x):
     x, y, X, Y = x.unbind(-1)
     b = [(x), (y), (X - x), (Y - y)]
     return torch.stack(b, dim=-1)
 
 
+# box_xyxy_to_cxcywh：框格式转换：左上右下 → 中心宽高
 def box_xyxy_to_cxcywh(x):
     x0, y0, x1, y1 = x.unbind(-1)
     b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
     return torch.stack(b, dim=-1)
 
 
+# box_area：计算框面积：宽高乘积
 def box_area(boxes):
     """
     Batched version of box area. Boxes should be in [x0, y0, x1, y1] format.
@@ -84,7 +93,9 @@ def box_area(boxes):
 
 @requires(backends=("torch",))
 @auto_docstring
+# Sam3Processor：SAM3 处理器：文本/框提示与图像预处理协调
 class Sam3Processor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, image_processor, tokenizer, target_size: int | None = None, point_pad_value: int = -10, **kwargs
     ):
@@ -99,6 +110,7 @@ class Sam3Processor(ProcessorMixin):
         self.target_size = target_size if target_size is not None else self.image_processor.size["height"]
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

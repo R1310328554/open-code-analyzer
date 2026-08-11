@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM3 Lite Text 配置：RepMixer 文本编码器与 DETR/掩码解码超参数
+
 
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextGeometryEncoderConfig：Lite Text 几何编码器配置
 class Sam3LiteTextGeometryEncoderConfig(PreTrainedConfig):
     r"""
     roi_size (`int`, *optional*, defaults to 7):
@@ -49,6 +52,7 @@ class Sam3LiteTextGeometryEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextDETREncoderConfig：Lite Text DETR 编码器配置
 class Sam3LiteTextDETREncoderConfig(PreTrainedConfig):
     r"""
     hidden_dropout (`float`, *optional*, defaults to 0.0):
@@ -70,6 +74,7 @@ class Sam3LiteTextDETREncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextDETRDecoderConfig：Lite Text DETR 解码器配置
 class Sam3LiteTextDETRDecoderConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 200):
@@ -92,6 +97,7 @@ class Sam3LiteTextDETRDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextMaskDecoderConfig：Lite Text 掩码解码器配置
 class Sam3LiteTextMaskDecoderConfig(PreTrainedConfig):
     r"""
     num_upsampling_stages (`int`, *optional*, defaults to 3):
@@ -110,6 +116,7 @@ class Sam3LiteTextMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextTextConfig：Lite Text 文本编码器配置：RepMixer 与嵌入维度
 class Sam3LiteTextTextConfig(PreTrainedConfig):
     r"""
     use_repmixer_blocks (`bool`, *optional*, defaults to `True`):
@@ -140,6 +147,7 @@ class Sam3LiteTextTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/sam3-litetext-s0")
 @strict
+# Sam3LiteTextConfig：Lite Text 联合配置：文本、几何、DETR 与掩码超参数
 class Sam3LiteTextConfig(PreTrainedConfig):
     r"""
     geometry_encoder_config (`dict` or `Sam3LiteTextGeometryEncoderConfig`, *optional*):

@@ -17,12 +17,15 @@ import torch
 
 from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_utils import (
+# SAM3 modular 源：复用 SAM2 图像处理器并扩展 SAM3 专用逻辑
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
 )
 from ..sam2.image_processing_sam2 import Sam2ImageProcessor
 
 
+# _scale_boxes：缩放边界框：按目标尺寸等比调整框坐标
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -51,6 +54,7 @@ def _scale_boxes(boxes, target_sizes):
     return boxes
 
 
+# Sam3ImageProcessor：SAM3 图像处理器：自动掩码生成与多尺度裁剪推理
 class Sam3ImageProcessor(Sam2ImageProcessor):
     image_mean = IMAGENET_STANDARD_MEAN
     image_std = IMAGENET_STANDARD_STD

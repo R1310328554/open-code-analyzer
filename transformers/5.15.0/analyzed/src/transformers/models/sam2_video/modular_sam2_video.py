@@ -35,6 +35,8 @@ from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from ...processing_utils import ProcessorMixin, Unpack
 from ...utils import (
+# SAM2 视频 modular 源：复用 SAM2 组件并实现视频记忆与推理会话
+
     ModelOutput,
     auto_docstring,
     logging,
@@ -63,16 +65,19 @@ from ..sam2.processing_sam2 import Sam2Processor
 logger = logging.get_logger(__name__)
 
 
+# Sam2VideoPromptEncoderConfig：SAM2 提示编码器配置：嵌入维度与输入类型
 class Sam2VideoPromptEncoderConfig(Sam2PromptEncoderConfig):
     pass
 
 
+# Sam2VideoMaskDecoderConfig：SAM2 掩码解码器配置：Transformer 层数与上采样
 class Sam2VideoMaskDecoderConfig(Sam2MaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2VideoConfig：SAM2 视频联合配置：编码器、记忆与解码器超参数
 class Sam2VideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam2PromptEncoderConfig`], *optional*):
@@ -256,9 +261,11 @@ class Sam2VideoConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Sam2VideoInferenceCache：视频推理缓存：存储跨帧记忆特征与对象状态
 class Sam2VideoInferenceCache:
     """Cache for vision features and model constants."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         inference_device: torch.device | str = "cpu",
@@ -308,6 +315,7 @@ class Sam2VideoInferenceCache:
         self._vision_features.clear()
 
 
+# Sam2VideoInferenceSession：视频推理会话：管理多帧输入、提示与跟踪状态
 class Sam2VideoInferenceSession:
     r"""
     Manages video inference session parameters, state and cache.
@@ -331,6 +339,7 @@ class Sam2VideoInferenceSession:
             The maximum number of vision features to cache.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         video: torch.FloatTensor | None = None,
@@ -548,7 +557,9 @@ class Sam2VideoInferenceSession:
         self.cache.clear_all()
 
 
+# Sam2VideoProcessor：SAM2 视频处理器：图像/视频与点框掩码提示打包
 class Sam2VideoProcessor(Sam2Processor):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, image_processor, video_processor, target_size: int | None = None, point_pad_value: int = -10, **kwargs
     ):
@@ -845,22 +856,27 @@ class Sam2VideoProcessor(Sam2Processor):
         inference_session.obj_with_new_inputs = obj_ids
 
 
+# Sam2VideoLayerNorm：SAM2 视频 LayerNorm：通道归一化适配视觉特征
 class Sam2VideoLayerNorm(Sam2LayerNorm):
     pass
 
 
+# Sam2VideoPositionEmbeddingSine：SAM2 视频正弦位置编码：2D 空间坐标嵌入
 class Sam2VideoPositionEmbeddingSine(Sam2SinePositionEmbedding):
     pass
 
 
+# Sam2VideoTwoWayAttentionBlock：SAM2 双向注意力块：query 与图像特征双向交互
 class Sam2VideoTwoWayAttentionBlock(Sam2TwoWayAttentionBlock):
     pass
 
 
+# Sam2VideoFeedForward：SAM2 视频 FFN：两层线性 + 激活的前馈网络
 class Sam2VideoFeedForward(Sam2FeedForward):
     pass
 
 
+# Sam2VideoImageSegmentationOutput：SAM2 图像分割输出：掩码 logits 与 IoU 预测
 class Sam2VideoImageSegmentationOutput(Sam2ImageSegmentationOutput):
     r"""
     iou_scores (`torch.FloatTensor` of shape `(batch_size, point_batch_size, num_masks)`):
@@ -894,6 +910,7 @@ class Sam2VideoImageSegmentationOutput(Sam2ImageSegmentationOutput):
 
 @auto_docstring(custom_intro="Base class for the Sam2 model's output.")
 @dataclass
+# Sam2VideoSegmentationOutput：SAM2 视频分割输出：逐帧掩码与对象分数
 class Sam2VideoSegmentationOutput(ModelOutput):
     r"""
     object_ids (`list[int]`, *optional*):
@@ -913,6 +930,7 @@ class Sam2VideoSegmentationOutput(ModelOutput):
 
 
 @auto_docstring
+# Sam2VideoPreTrainedModel：SAM2 视频预训练基类：权重初始化与输出录制
 class Sam2VideoPreTrainedModel(PreTrainedModel):
     config_class = Sam2VideoConfig
     base_model_prefix = "sam2_video"
@@ -923,6 +941,7 @@ class Sam2VideoPreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Sam2VideoModel):
@@ -945,12 +964,14 @@ class Sam2VideoPreTrainedModel(PreTrainedModel):
             init.normal_(module.positional_embedding, std=module.scale)
 
 
+# Sam2VideoVisionRotaryEmbedding：SAM2 视觉 RoPE：2D 旋转位置编码基频
 class Sam2VideoVisionRotaryEmbedding(nn.Module):
     """
     Vision Rotary Position Embedding for SAM2, following transformers library standards.
     Supports 2D (axial) rotary embeddings for spatial dimensions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
         self.dim = config.memory_attention_hidden_size // (
@@ -968,6 +989,7 @@ class Sam2VideoVisionRotaryEmbedding(nn.Module):
         self.rope_embeddings_sin = nn.Buffer(inv_freq.sin(), persistent=False)
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         # As the feature map size is fixed, we can just return the pre-computed embeddings.
         return self.rope_embeddings_cos, self.rope_embeddings_sin
@@ -987,6 +1009,7 @@ class Sam2VideoVisionRotaryEmbedding(nn.Module):
         return inv_freq
 
 
+# rotate_pairwise：成对旋转：将特征拆分为复数对并应用 RoPE
 def rotate_pairwise(x):
     """
     pairwise rotation of the hidden dims of the input. Different from Llama Half-Tensor Rotation.
@@ -1006,6 +1029,7 @@ def rotate_pairwise(x):
 
 
 # TODO: This leads to ~1e-07 max diff and ~1e-09 avg diff for q_embed and k_embed from the original implementation, most likely due to the use of complex tensors in the original implementation.
+# apply_rotary_pos_emb_2d：2D RoPE 应用：在 H/W 维度注入旋转位置编码
 def apply_rotary_pos_emb_2d(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -1053,9 +1077,11 @@ def apply_rotary_pos_emb_2d(
     return q_embed.type_as(q), k_embed
 
 
+# Sam2VideoRoPEAttention：SAM2 RoPE 注意力：带 2D 旋转位置编码的多头注意力
 class Sam2VideoRoPEAttention(nn.Module):
     """Attention with rotary position encoding."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: Sam2VideoConfig,
@@ -1081,6 +1107,7 @@ class Sam2VideoRoPEAttention(nn.Module):
         self.rope_k_repeat = rope_k_repeat
         self.dropout_p = config.memory_attention_rope_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: torch.Tensor,
@@ -1126,7 +1153,9 @@ class Sam2VideoRoPEAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam2VideoMemoryAttentionLayer：记忆注意力层：当前帧与历史记忆特征交互
 class Sam2VideoMemoryAttentionLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
         hidden_size = config.memory_attention_hidden_size
@@ -1147,6 +1176,7 @@ class Sam2VideoMemoryAttentionLayer(nn.Module):
 
         self.activation = ACT2FN[config.memory_attention_feed_forward_hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         queries: Tensor,
@@ -1177,7 +1207,9 @@ class Sam2VideoMemoryAttentionLayer(nn.Module):
         return queries
 
 
+# Sam2VideoMemoryAttention：记忆注意力模块：堆叠多层记忆 cross-attention
 class Sam2VideoMemoryAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
         self.layers = nn.ModuleList(
@@ -1186,6 +1218,7 @@ class Sam2VideoMemoryAttention(nn.Module):
         self.layer_norm = nn.LayerNorm(config.memory_attention_hidden_size)
         self.rotary_emb = Sam2VideoVisionRotaryEmbedding(config=config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         current_vision_features: torch.Tensor,
@@ -1234,7 +1267,9 @@ class Sam2VideoMemoryAttention(nn.Module):
 
 
 # Lightly adapted from ConvNext (https://github.com/facebookresearch/ConvNeXt)
+# Sam2VideoMemoryFuserCXBlock：记忆融合 CX 块：ConvNeXt 风格特征融合
 class Sam2VideoMemoryFuserCXBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
         self.depthwise_conv = nn.Conv2d(
@@ -1255,6 +1290,7 @@ class Sam2VideoMemoryFuserCXBlock(GradientCheckpointingLayer):
             requires_grad=True,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         input = hidden_states
         hidden_states = self.depthwise_conv(hidden_states)
@@ -1270,13 +1306,16 @@ class Sam2VideoMemoryFuserCXBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Sam2VideoMemoryFuser：记忆融合器：将记忆特征注入当前帧表示
 class Sam2VideoMemoryFuser(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
         self.layers = nn.ModuleList(
             [Sam2VideoMemoryFuserCXBlock(config) for _ in range(config.memory_fuser_num_layers)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # normally hidden_states: (N, C, H, W)
         for layer in self.layers:
@@ -1284,7 +1323,9 @@ class Sam2VideoMemoryFuser(nn.Module):
         return hidden_states
 
 
+# Sam2VideoMaskDownSamplerLayer：掩码下采样层：逐步降低掩码空间分辨率
 class Sam2VideoMaskDownSamplerLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig, in_channels: int, out_channels: int):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -1297,10 +1338,12 @@ class Sam2VideoMaskDownSamplerLayer(nn.Module):
         self.layer_norm = Sam2VideoLayerNorm(out_channels, eps=1e-6, data_format="channels_first")
         self.activation = ACT2FN[config.mask_downsampler_hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         return self.activation(self.layer_norm(self.conv(x)))
 
 
+# Sam2VideoMaskDownSampler：掩码下采样器：多层卷积压缩掩码提示
 class Sam2VideoMaskDownSampler(nn.Module):
     """
     Progressively downsample a mask by total_stride, each time by stride.
@@ -1310,6 +1353,7 @@ class Sam2VideoMaskDownSampler(nn.Module):
     In the end, we linearly project to embed_dim channels.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
 
@@ -1325,6 +1369,7 @@ class Sam2VideoMaskDownSampler(nn.Module):
 
         self.final_conv = nn.Conv2d(mask_out_chans, config.mask_downsampler_embed_dim, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)
@@ -1332,7 +1377,9 @@ class Sam2VideoMaskDownSampler(nn.Module):
         return x
 
 
+# Sam2VideoMemoryEncoder：记忆编码器：将 past 帧掩码与特征编码为记忆
 class Sam2VideoMemoryEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__()
 
@@ -1346,6 +1393,7 @@ class Sam2VideoMemoryEncoder(nn.Module):
         )
         self.projection = nn.Conv2d(hidden_size, output_channels, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         vision_features: torch.Tensor,
@@ -1365,6 +1413,7 @@ class Sam2VideoMemoryEncoder(nn.Module):
         return vision_features, vision_pos_enc
 
 
+# Sam2VideoPositionalEmbedding：SAM2 位置嵌入：可学习或固定空间位置编码
 class Sam2VideoPositionalEmbedding(Sam2PositionalEmbedding):
     pass
 
@@ -1373,6 +1422,7 @@ class Sam2VideoPositionalEmbedding(Sam2PositionalEmbedding):
 NO_OBJ_SCORE = -1024.0
 
 
+# get_1d_sine_pe：1D 正弦位置编码：按索引生成 sin/cos 嵌入
 def get_1d_sine_pe(pos_inds, dim, temperature=10000):
     """
     Get 1D sine positional embedding as in the original Transformer paper.
@@ -1387,11 +1437,13 @@ def get_1d_sine_pe(pos_inds, dim, temperature=10000):
 
 
 @auto_docstring
+# Sam2VideoModel：SAM2 视频完整模型：编码器 + 记忆 + 提示 + 掩码解码
 class Sam2VideoModel(Sam2Model):
     input_modalities = ("video", "text")
     _keys_to_ignore_on_load_unexpected = []
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(Sam2VideoTwoWayAttentionBlock, index=2)}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VideoConfig):
         super().__init__(config)
         self.config = config
@@ -2271,6 +2323,7 @@ class Sam2VideoModel(Sam2Model):
 
     @torch.inference_mode()
     @auto_docstring(custom_intro="Propagate the objects through a streamed video frame.")
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inference_session: Sam2VideoInferenceSession,

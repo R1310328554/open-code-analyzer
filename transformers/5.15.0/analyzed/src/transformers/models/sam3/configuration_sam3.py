@@ -20,10 +20,13 @@ from transformers import CLIPTextConfig
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM3 配置：ViT 骨干、几何/DETR 编码解码器与掩码头超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3ViTConfig：SAM3 ViT 配置：patch 尺寸、RoPE 与窗口注意力参数
 class Sam3ViTConfig(PreTrainedConfig):
     r"""
     rope_theta (`float`, *optional*, defaults to 10000.0):
@@ -67,6 +70,7 @@ class Sam3ViTConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3VisionConfig：SAM3 视觉配置：ViT 骨干与 FPN 颈部超参数
 class Sam3VisionConfig(PreTrainedConfig):
     r"""
     fpn_hidden_size (`int`, *optional*, defaults to 256):
@@ -117,6 +121,7 @@ class Sam3VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3GeometryEncoderConfig：SAM3 几何编码器配置：框/点提示嵌入维度
 class Sam3GeometryEncoderConfig(PreTrainedConfig):
     r"""
     roi_size (`int`, *optional*, defaults to 7):
@@ -139,6 +144,7 @@ class Sam3GeometryEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3DETREncoderConfig：SAM3 DETR 编码器配置：层数、头数与 FFN 维度
 class Sam3DETREncoderConfig(PreTrainedConfig):
     r"""
     hidden_dropout (`float`, *optional*, defaults to 0.0):
@@ -160,6 +166,7 @@ class Sam3DETREncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3DETRDecoderConfig：SAM3 DETR 解码器配置：query 数与解码层深度
 class Sam3DETRDecoderConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 200):
@@ -182,6 +189,7 @@ class Sam3DETRDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3MaskDecoderConfig：SAM3 掩码解码器配置：像素解码与掩码头参数
 class Sam3MaskDecoderConfig(PreTrainedConfig):
     r"""
     num_upsampling_stages (`int`, *optional*, defaults to 3):
@@ -200,6 +208,7 @@ class Sam3MaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3Config：SAM3 联合配置：视觉、几何、DETR 与掩码模块超参数
 class Sam3Config(PreTrainedConfig):
     r"""
     geometry_encoder_config (`dict` or `Sam3GeometryEncoderConfig`, *optional*):
