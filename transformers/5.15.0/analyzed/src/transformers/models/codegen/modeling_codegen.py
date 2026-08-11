@@ -37,6 +37,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.gptj.modeling_gptj.create_sinusoidal_positions
+# create_sinusoidal_positions：正弦位置编码表（GPT-J 风格）
 def create_sinusoidal_positions(num_pos: int, dim: int) -> torch.Tensor:
     inv_freq = 1.0 / (10000 ** (torch.arange(0, dim, 2, dtype=torch.int64) / dim))
     sinusoid_inp = torch.einsum("i , j -> i j", torch.arange(num_pos, dtype=torch.int64).float(), inv_freq).float()
@@ -44,6 +45,7 @@ def create_sinusoidal_positions(num_pos: int, dim: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.gptj.modeling_gptj.rotate_every_two
+# rotate_every_two：相邻维度两两旋转（部分 RoPE）
 def rotate_every_two(x: torch.Tensor) -> torch.Tensor:
     x1 = x[:, :, :, ::2]
     x2 = x[:, :, :, 1::2]
@@ -52,12 +54,14 @@ def rotate_every_two(x: torch.Tensor) -> torch.Tensor:
 
 
 # Copied from transformers.models.gptj.modeling_gptj.apply_rotary_pos_emb
+# apply_rotary_pos_emb：仅对前 rotary_dim 维应用旋转位置编码
 def apply_rotary_pos_emb(tensor: torch.Tensor, sin: torch.Tensor, cos: torch.Tensor) -> torch.Tensor:
     sin = torch.repeat_interleave(sin[:, :, None, :], 2, 3)
     cos = torch.repeat_interleave(cos[:, :, None, :], 2, 3)
     return (tensor * cos) + (rotate_every_two(tensor) * sin)
 
 
+# CodeGenAttention：因果自注意力，QKV 合并 Conv1D + 可选 rotary
 class CodeGenAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -202,6 +206,7 @@ class CodeGenAttention(nn.Module):
 
 
 # Copied from transformers.models.gptj.modeling_gptj.GPTJMLP with GPTJ->CodeGen
+# CodeGenMLP：Conv1D 前馈（扩展 4x + 激活 + 投影）
 class CodeGenMLP(nn.Module):
     def __init__(self, intermediate_size, config):  # in MLP: intermediate_size= 4 * embed_dim
         super().__init__()
@@ -222,6 +227,7 @@ class CodeGenMLP(nn.Module):
 
 
 # Copied from transformers.models.gptj.modeling_gptj.GPTJBlock with GPTJ->CodeGen
+# CodeGenBlock：单层（LayerNorm→Attention→FFN 残差）
 class CodeGenBlock(GradientCheckpointingLayer):
     # Ignore copy
     def __init__(self, config, layer_idx=None):
@@ -258,6 +264,7 @@ class CodeGenBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CodeGenPreTrainedModel：权重初始化基类
 class CodeGenPreTrainedModel(PreTrainedModel):
     config: CodeGenConfig
     base_model_prefix = "transformer"
@@ -273,6 +280,7 @@ class CodeGenPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CodeGenModel：堆叠 n_layer 个 CodeGenBlock 骨干
 class CodeGenModel(CodeGenPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -408,6 +416,7 @@ class CodeGenModel(CodeGenPreTrainedModel):
     The CodeGen Model transformer with a language modeling head on top.
     """
 )
+# CodeGenForCausalLM：带 lm_head 的代码因果语言建模
 class CodeGenForCausalLM(CodeGenPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 

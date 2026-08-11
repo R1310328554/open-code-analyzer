@@ -27,6 +27,7 @@ from ...utils import TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# ClvpFeatureExtractor：22050Hz 单声道 Mel 特征，支持 mel_norms 逐滤波器归一化
 class ClvpFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a CLVP feature extractor.
@@ -65,6 +66,7 @@ class ClvpFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "attention_mask"]
 
+# __init__：构建 Slaney/HTK Mel 滤波器组与 chunk 长度上限
     def __init__(
         self,
         feature_size=80,
@@ -103,6 +105,7 @@ class ClvpFeatureExtractor(SequenceFeatureExtractor):
             mel_scale="htk",
         )
 
+# _np_extract_fbank_features：STFT→log-mel→可选 mel_norms 归一化
     def _np_extract_fbank_features(self, waveform: np.ndarray) -> np.ndarray:
         """
         This method first computes the log-mel spectrogram of the provided audio then applies normalization along the
@@ -125,6 +128,7 @@ class ClvpFeatureExtractor(SequenceFeatureExtractor):
 
         return log_spec
 
+# __call__：填充/截断至 default_audio_length 秒并批量输出 input_features
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

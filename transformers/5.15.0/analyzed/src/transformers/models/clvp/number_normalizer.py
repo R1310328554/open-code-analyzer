@@ -24,7 +24,9 @@ else:
     import regex as re
 
 
+# EnglishNormalizer：ASCII 化、小写、数字口语化与缩写展开流水线
 class EnglishNormalizer:
+# __init__：预编译缩写正则与 ones/teens/tens 查表
     def __init__(self):
         # List of (regular expression, replacement) pairs for abbreviations:
         self._abbreviations = [
@@ -66,6 +68,7 @@ class EnglishNormalizer:
         ]
         self.tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
 
+# number_to_words：整数递归转英文（最大至 quadrillion）
     def number_to_words(self, num: int) -> str:
         """
         Converts numbers(`int`) to words(`str`).
@@ -125,12 +128,14 @@ class EnglishNormalizer:
         else:
             return "number out of range"
 
+# convert_to_ascii：Unicode 转 ASCII，忽略不可映射字符
     def convert_to_ascii(self, text: str) -> str:
         """
         Converts unicode to ascii
         """
         return text.encode("ascii", "ignore").decode("utf-8")
 
+# _expand_dollars：美元金额口语化（dollars/cents）
     def _expand_dollars(self, m: str) -> str:
         """
         This method is used to expand numerical dollar values into spoken words.
@@ -155,18 +160,21 @@ class EnglishNormalizer:
         else:
             return "zero dollars"
 
+# _remove_commas：移除数字中的千位逗号
     def _remove_commas(self, m: str) -> str:
         """
         This method is used to remove commas from sentences.
         """
         return m.group(1).replace(",", "")
 
+# _expand_decimal_point：小数点读作 point
     def _expand_decimal_point(self, m: str) -> str:
         """
         This method is used to expand '.' into spoken word ' point '.
         """
         return m.group(1).replace(".", " point ")
 
+# _expand_ordinal：序数词 1st/2nd 转英文
     def _expand_ordinal(self, num: str) -> str:
         """
         This method is used to expand ordinals such as '1st', '2nd' into spoken words.
@@ -180,6 +188,7 @@ class EnglishNormalizer:
             suffix = ordinal_suffixes.get(num % 10, "th")
         return self.number_to_words(num) + suffix
 
+# _expand_number：1000–3000 区间特殊读法（年份风格）
     def _expand_number(self, m: str) -> str:
         """
         This method acts as a preprocessing step for numbers between 1000 and 3000 (same as the original repository,
@@ -200,6 +209,7 @@ class EnglishNormalizer:
         else:
             return self.number_to_words(num)
 
+# normalize_numbers：串联货币/序数/小数/整数规范化
     def normalize_numbers(self, text: str) -> str:
         """
         This method is used to normalize numbers within a text such as converting the numbers to words, removing
@@ -213,6 +223,7 @@ class EnglishNormalizer:
         text = re.sub(r"[0-9]+", self._expand_number, text)
         return text
 
+# expand_abbreviations：Mr./Dr. 等缩写展开为完整词
     def expand_abbreviations(self, text: str) -> str:
         """
         Expands the abbreviate words.
@@ -221,12 +232,14 @@ class EnglishNormalizer:
             text = re.sub(regex, replacement, text)
         return text
 
+# collapse_whitespace：合并连续空白为单空格
     def collapse_whitespace(self, text: str) -> str:
         """
         Removes multiple whitespaces
         """
         return re.sub(re.compile(r"\s+"), " ", text)
 
+# __call__：完整规范化入口（ASCII→小写→数字→缩写→空白）
     def __call__(self, text):
         """
         Converts text to ascii, numbers / number-like quantities to their spelt-out counterparts and expands

@@ -24,11 +24,14 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# ClvpProcessor：组合 feature_extractor 与 tokenizer
 class ClvpProcessor(ProcessorMixin):
+# __init__：注册特征提取器与 CLVP 分词器
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     @auto_docstring
+# __call__：将已弃用 raw_speech 参数映射为 audio
     def __call__(self, *args, **kwargs):
         raw_speech = kwargs.pop("raw_speech", None)
         if raw_speech is not None:

@@ -32,6 +32,7 @@ VOCAB_FILES_NAMES = {
 
 
 @lru_cache
+# bytes_to_unicode：UTF-8 字节到 Unicode 可逆映射，避免 BPE 控制字符冲突
 def bytes_to_unicode():
     """
     Returns list of utf-8 byte and a mapping to unicode strings. We specifically avoids mapping to whitespace/control
@@ -56,6 +57,7 @@ def bytes_to_unicode():
     return dict(zip(bs, cs))
 
 
+# get_pairs：BPE 合并候选：词内相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -70,6 +72,7 @@ def get_pairs(word):
     return pairs
 
 
+# ClvpTokenizer：Tortoise 词表 BPE，句首空格影响分词
 class ClvpTokenizer(PreTrainedTokenizer):
     """
     Construct a CLVP tokenizer. Based on byte-level Byte-Pair-Encoding.
@@ -128,6 +131,7 @@ class ClvpTokenizer(PreTrainedTokenizer):
         "attention_mask",
     ]
 
+# __init__：加载 vocab/merges，懒加载 EnglishNormalizer
     def __init__(
         self,
         vocab_file,
@@ -178,6 +182,7 @@ class ClvpTokenizer(PreTrainedTokenizer):
         return len(self.encoder)
 
     @property
+# normalizer：延迟实例化 EnglishNormalizer
     def normalizer(self):
         if self._normalizer is None:
             self._normalizer = EnglishNormalizer()
@@ -186,6 +191,7 @@ class ClvpTokenizer(PreTrainedTokenizer):
     def get_vocab(self):
         return dict(self.encoder, **self.added_tokens_encoder)
 
+# bpe：按 merge 秩迭代合并 byte token
     def bpe(self, token):
         if token in self.cache:
             return self.cache[token]
@@ -228,6 +234,7 @@ class ClvpTokenizer(PreTrainedTokenizer):
         self.cache[token] = word
         return word
 
+# _tokenize：规范化→正则切分→byte 映射→BPE→[SPACE] 替换
     def _tokenize(self, text):
         """Tokenize a string."""
         bpe_tokens = []
@@ -245,20 +252,24 @@ class ClvpTokenizer(PreTrainedTokenizer):
 
         return bpe_tokens
 
+# _convert_token_to_id：词表查 id，未知回退 unk
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         return self.encoder.get(token, self.encoder.get(self.unk_token))
 
+# _convert_id_to_token：id 反查 BPE token
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         return self.decoder.get(index)
 
+# convert_tokens_to_string：BPE token 拼接后 byte 解码为 UTF-8
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         text = "".join(tokens)
         text = bytearray([self.byte_decoder[c] for c in text]).decode("utf-8", errors=self.errors)
         return text
 
+# clean_up_tokenization：还原 [SPACE]/[STOP] 并清理多余空白
     def clean_up_tokenization(self, text):
         text = "".join(text) if isinstance(text, list) else text
         vocab_tokens = list(self.encoder.keys()) + list(self.added_tokens_encoder.keys())

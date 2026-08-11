@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="susnato/clvp_dev")
 @strict
+# ClvpEncoderConfig：文本或语音编码塔，RoPE 自注意力 + summary 池化策略
 class ClvpEncoderConfig(PreTrainedConfig):
     r"""
     use_rotary_embedding (`bool`, *optional*, defaults to `True`):
@@ -73,6 +74,7 @@ class ClvpEncoderConfig(PreTrainedConfig):
     pad_token_id: int | None = None
 
     @classmethod
+# from_pretrained：从嵌套 ClvpConfig 加载 text_config 或 speech_config 子配置
     def from_pretrained(
         cls, pretrained_model_name_or_path: str | os.PathLike, config_type: str = "text_config", **kwargs
     ):
@@ -100,6 +102,7 @@ class ClvpEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="susnato/clvp_dev")
 @strict
+# ClvpDecoderConfig：GPT 风格 Mel token 自回归解码器，含 conditioning 与 fixing codes
 class ClvpDecoderConfig(PreTrainedConfig):
     r"""
     max_text_tokens (`int`, *optional*, defaults to 404):
@@ -182,6 +185,7 @@ class ClvpDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="susnato/clvp_dev")
 @strict
+# ClvpConfig：聚合 text/speech/decoder 三子配置与 logit_scale 初值
 class ClvpConfig(PreTrainedConfig):
     r"""
     speech_config (`dict`, *optional*):
@@ -228,6 +232,7 @@ class ClvpConfig(PreTrainedConfig):
     logit_scale_init_value: float = 2.6592
     initializer_factor: float = 1.0
 
+# __post_init__：将 dict 子配置实例化为对应 Config 类并填充默认值
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = ClvpEncoderConfig()

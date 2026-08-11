@@ -38,6 +38,7 @@ correct. If you don't know the answer to a question, please don't share false in
 # fmt: on
 
 
+# CodeLlamaTokenizer：Llama 词表，支持 FIM 填空与 Instruct 模板
 class CodeLlamaTokenizer(TokenizersBackend):
     """
     Construct a Llama tokenizer. Based on byte-level Byte-Pair-Encoding.
@@ -109,6 +110,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+# __init__：Metaspace 预分词 + ByteFallback，注册填空特殊 token
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -187,6 +189,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
         self.fill_token = fill_token
 
     @property
+# prefix_token：<PRE> 填空前缀 token
     def prefix_token(self):
         return self._prefix_token
 
@@ -197,6 +200,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
         return self.convert_tokens_to_ids(self.prefix_token)
 
     @property
+# middle_token：<MID> 填空中间分隔 token
     def middle_token(self):
         return self._middle_token
 
@@ -207,6 +211,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
         return self.convert_tokens_to_ids(self.middle_token)
 
     @property
+# suffix_token：<SUF> 填空后缀 token
     def suffix_token(self):
         return self._suffix_token
 
@@ -226,6 +231,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
     def eot_token(self):
         return self._eot_token
 
+# set_infilling_processor：切换 FIM 后处理器（PRE/SUF/MID 排列）
     def set_infilling_processor(self, reset, suffix_first=False, add_special_tokens=True):
         """
         Updates the normalizer to make sure the prompt format for `infilling` is respected. The infilling format is the
@@ -274,6 +280,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
             single="$A", pair=pair, special_tokens=special_tokens
         )
 
+# tokenize：检测 FILL_ME 或 suffix 触发 infilling 分词
     def tokenize(self, text, suffix=None, suffix_first=False, **kwargs):
         # Handle fill_token splitting
         if self.fill_token is not None and self.fill_token in text and suffix is None:
@@ -308,6 +315,7 @@ class CodeLlamaTokenizer(TokenizersBackend):
 
         return result
 
+# _encode_plus：编码时可选 infilling 文本对
     def _encode_plus(self, text, text_pair=None, suffix=None, suffix_first=False, add_special_tokens=True, **kwargs):
         is_infilling = False
 

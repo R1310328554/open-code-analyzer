@@ -34,6 +34,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt"}
 
 
+# CodeGenTokenizer：byte-level BPE，add_prefix_space 控制词首空格
 class CodeGenTokenizer(TokenizersBackend):
     """
     Construct a CodeGen tokenizer (backed by HuggingFace's *tokenizers* library). Based on byte-level
@@ -90,6 +91,7 @@ class CodeGenTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+# __init__：构建 BPE 模型与 GPT-2 风格 ByteLevel 预分词
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -138,6 +140,7 @@ class CodeGenTokenizer(TokenizersBackend):
             **kwargs,
         )
 
+# decode：解码 token 序列，可选 skip_special_tokens
     def decode(
         self,
         token_ids: Union[int, list[int], np.ndarray, "torch.Tensor"],
@@ -183,6 +186,7 @@ class CodeGenTokenizer(TokenizersBackend):
 
         return decoded_text
 
+# truncate：按正则模式截断生成补全（防止越界续写）
     def truncate(self, completion, truncate_before_pattern):
         def find_re(string, pattern, start_pos):
             m = pattern.search(string, start_pos)

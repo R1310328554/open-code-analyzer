@@ -56,11 +56,13 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.clip.modeling_clip.contrastive_loss
+# contrastive_loss：对称 InfoNCE 对比损失（CLIP 同款）
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss with image->speech
+# speech_text_contrastive_loss：音文相似度矩阵双向交叉熵
 def speech_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     speech_loss = contrastive_loss(similarity.T)
@@ -68,6 +70,7 @@ def speech_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 旋转辅助，后半维取反
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -75,6 +78,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 Q/K
 def apply_rotary_pos_emb(q, k, v, cos, sin, position_ids, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -104,6 +108,7 @@ def apply_rotary_pos_emb(q, k, v, cos, sin, position_ids, unsqueeze_dim=1):
     return q_embed, k_embed, v_embed
 
 
+# _pad_extra_bos_eos_tokens：为 conditioning 文本序列追加 BOS/EOS
 def _pad_extra_bos_eos_tokens(
     input_ids,
     attention_mask=None,
@@ -155,6 +160,7 @@ def _pad_extra_bos_eos_tokens(
     """
 )
 @dataclass
+# ClvpEncoderOutput：编码塔输出，含 pooler 与投影 embeds
 class ClvpEncoderOutput(ModelOutput):
     r"""
     embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)`, *optional*, returned when model is initialized with `with_projection=True`):
@@ -174,6 +180,7 @@ class ClvpEncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# ClvpOutput：联合输出，含对比损失、音文 logits 与 decoder 生成 speech_ids
 class ClvpOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -218,6 +225,7 @@ class ClvpOutput(ModelOutput):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Clvp
+# ClvpRMSNorm：RMS 归一化，等价 T5 LayerNorm
 class ClvpRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -238,6 +246,7 @@ class ClvpRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# ClvpRotaryPositionalEmbedding：RoPE 频率缓存与 cos/sin 查表
 class ClvpRotaryPositionalEmbedding(nn.Module):
     """
     Rotary Position Embedding Class for CLVP. It was proposed in the paper 'ROFORMER: ENHANCED TRANSFORMER WITH ROTARY
@@ -268,6 +277,7 @@ class ClvpRotaryPositionalEmbedding(nn.Module):
         return self.cached_rotary_positional_embedding
 
 
+# ClvpSelfAttention：多头自注意力，可选 RoPE 与 bias
 class ClvpSelfAttention(nn.Module):
     """
     Multi-headed attention to combine Absolute and Rotary Positional Embeddings into a single Attention module.
@@ -382,6 +392,7 @@ class ClvpSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ClvpGatedLinearUnit：GLU 门控线性单元（Tortoise 风格 FFN 门）
 class ClvpGatedLinearUnit(nn.Module):
     """
     `ClvpGatedLinearUnit` uses the second half of the `hidden_states` to act as a gate for the first half of the
@@ -398,6 +409,7 @@ class ClvpGatedLinearUnit(nn.Module):
         return hidden_states * self.activation_fn(gate)
 
 
+# ClvpEncoderMLP：编码塔前馈网络（GLU + 投影）
 class ClvpEncoderMLP(nn.Module):
     """
     This MLP is used in CLVP speech or text encoder models.
@@ -418,6 +430,7 @@ class ClvpEncoderMLP(nn.Module):
         return hidden_states
 
 
+# ClvpEncoderLayer：编码单层（自注意力 + FFN + 残差）
 class ClvpEncoderLayer(nn.Module):
     def __init__(self, config: ClvpConfig):
         super().__init__()
@@ -460,6 +473,7 @@ class ClvpEncoderLayer(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->Clvp
+# ClvpSequenceSummary：序列池化（mean/first/last/cls_index）+ 可选投影
 class ClvpSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -560,6 +574,7 @@ class ClvpSequenceSummary(nn.Module):
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.GPT2MLP with GPT2->ClvpDecoderMLP
+# ClvpDecoderMLP：解码器 Conv1D 前馈（GPT-2 风格）
 class ClvpDecoderMLP(nn.Module):
     def __init__(self, intermediate_size, config):
         super().__init__()
@@ -577,6 +592,7 @@ class ClvpDecoderMLP(nn.Module):
         return hidden_states
 
 
+# ClvpDecoderLayer：解码单层（因果自注意力 + FFN）
 class ClvpDecoderLayer(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -620,6 +636,7 @@ class ClvpDecoderLayer(nn.Module):
         return hidden_states
 
 
+# ClvpConditioningEncoder：Mel 谱图 + 文本嵌入拼接，作为解码前缀 conditioning
 class ClvpConditioningEncoder(nn.Module):
     """
     This class processes the log-mel spectrograms(extracted by the Feature Extractor) and text tokens(produced by the
@@ -662,6 +679,7 @@ class ClvpConditioningEncoder(nn.Module):
 
         self.gradient_checkpointing = False
 
+# compute_groupnorm_groups：按通道数自适应 GroupNorm 分组（Tortoise 逻辑）
     def compute_groupnorm_groups(self, channels: int, groups: int = 32):
         """
         Calculates the value of `num_groups` for nn.GroupNorm. This logic is taken from the official tortoise
@@ -759,6 +777,7 @@ class ClvpConditioningEncoder(nn.Module):
 
 
 @auto_docstring
+# ClvpPreTrainedModel：权重初始化与 gradient checkpointing 基类
 class ClvpPreTrainedModel(PreTrainedModel):
     config: ClvpConfig
     base_model_prefix = "model"
@@ -812,6 +831,7 @@ class ClvpPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# ClvpEncoder：文本或语音塔，输出 pooler 与投影 embeds
 class ClvpEncoder(ClvpPreTrainedModel):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -902,6 +922,7 @@ class ClvpEncoder(ClvpPreTrainedModel):
         )
 
 
+# ClvpDecoder：GPT 风格因果 Transformer，生成 Mel 离散 token
 class ClvpDecoder(ClvpPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`ClvpDecoderLayer`]
@@ -1010,6 +1031,7 @@ class ClvpDecoder(ClvpPreTrainedModel):
 
 
 @auto_docstring
+# ClvpModel：纯解码器骨干（无 LM head）
 class ClvpModel(ClvpPreTrainedModel):
     config: ClvpDecoderConfig
 
@@ -1066,6 +1088,7 @@ class ClvpModel(ClvpPreTrainedModel):
     The CLVP decoder model with a language modelling head on top.
     """
 )
+# ClvpForCausalLM：Mel token 因果 LM，支持 conditioning_embeds 生成
 class ClvpForCausalLM(ClvpPreTrainedModel, GenerationMixin):
     config: ClvpDecoderConfig
 
@@ -1090,6 +1113,7 @@ class ClvpForCausalLM(ClvpPreTrainedModel, GenerationMixin):
     def set_input_embeddings(self, new_embeddings):
         self.model.decoder.input_embeds_layer = new_embeddings
 
+# _prepare_model_inputs：生成时将 conditioning 嵌入与 BOS 位置编码拼接
     def _prepare_model_inputs(
         self,
         inputs: torch.Tensor | None,
@@ -1157,6 +1181,7 @@ class ClvpForCausalLM(ClvpPreTrainedModel, GenerationMixin):
         inputs = self._maybe_initialize_input_ids_for_generation(inputs, bos_token_id, model_kwargs)
         return inputs, input_name, model_kwargs
 
+# prepare_inputs_for_generation：迭代生成时维护 conditioning 相关 position_ids
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -1244,6 +1269,7 @@ class ClvpForCausalLM(ClvpPreTrainedModel, GenerationMixin):
     The composite CLVP model with a text encoder, speech encoder and speech decoder model.
     """
 )
+# ClvpModelForConditionalGeneration：文本+语音编码 + conditioning + 解码完整 TTS 流水线
 class ClvpModelForConditionalGeneration(ClvpPreTrainedModel, GenerationMixin):
     def __init__(self, config: ClvpConfig):
         super().__init__(config)

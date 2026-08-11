@@ -48,6 +48,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_cohere import CohereConfig
 
 
+# CohereLayerNorm：可配置 hidden_size 的 LayerNorm（QK Norm 复用）
 class CohereLayerNorm(nn.Module):
     def __init__(self, hidden_size=None, eps=1e-5, bias=False):
         """The hidden size can be a tuple or an int. The tuple is used for QKNorm to normalize across head_dim"""
@@ -65,6 +66,7 @@ class CohereLayerNorm(nn.Module):
         return hidden_states.to(input_dtype)
 
 
+# CohereRotaryEmbedding：动态 RoPE，支持长上下文缩放
 class CohereRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: CohereConfig, device=None):
@@ -119,6 +121,7 @@ class CohereRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# CohereMLP：SwiGLU 门控前馈（gate/up/down 三投影）
 class CohereMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -135,6 +138,7 @@ class CohereMLP(nn.Module):
         return down_proj
 
 
+# repeat_kv：GQA 下重复 KV 头以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -147,6 +151,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -172,6 +177,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 旋转辅助
 def rotate_half(x):
     # Split and rotate. Note that this function is different from e.g. Llama.
     x1 = x[..., ::2]
@@ -180,6 +186,7 @@ def rotate_half(x):
     return rot_x
 
 
+# apply_rotary_pos_emb：RoPE 应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -208,6 +215,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(dtype=dtype), k_embed.to(dtype=dtype)
 
 
+# CohereAttention：GQA 因果自注意力，可选 QK LayerNorm
 class CohereAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -292,6 +300,7 @@ class CohereAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CohereDecoderLayer：Pre-LN 解码层（Attn + MLP 残差）
 class CohereDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CohereConfig, layer_idx: int):
         super().__init__()
@@ -346,6 +355,7 @@ class CohereDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CoherePreTrainedModel：权重初始化与 attention 后端注册基类
 class CoherePreTrainedModel(PreTrainedModel):
     config: CohereConfig
     base_model_prefix = "model"
@@ -365,6 +375,7 @@ class CoherePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CohereModel：embed + N 层 CohereDecoderLayer + 最终 LayerNorm
 class CohereModel(CoherePreTrainedModel):
     def __init__(self, config: CohereConfig):
         super().__init__(config)
@@ -439,6 +450,7 @@ class CohereModel(CoherePreTrainedModel):
 
 
 @auto_docstring
+# CohereForCausalLM：因果 LM head，logit_scale 缩放输出 logits
 class CohereForCausalLM(CoherePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

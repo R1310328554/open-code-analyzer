@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="Salesforce/codegen-2B-mono")
 @strict
+# CodeGenConfig：Salesforce codegen 超参，attribute_map 映射 GPT-2 命名
 class CodeGenConfig(PreTrainedConfig):
     r"""
     n_ctx (`int`, *optional*, defaults to 2048):

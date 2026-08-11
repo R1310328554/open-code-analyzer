@@ -27,6 +27,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="CohereForAI/c4ai-command-r-v01")
 @strict
+# CohereConfig：8192 上下文、SiLU FFN、可选 QK Norm 与 RoPE 参数
 class CohereConfig(PreTrainedConfig):
     r"""
     logit_scale (`float`, *optional*, defaults to 0.0625):
@@ -85,6 +86,7 @@ class CohereConfig(PreTrainedConfig):
     attention_dropout: float | int | None = 0.0
     use_qk_norm: bool | None = False
 
+# __post_init__：num_key_value_heads 默认等于 num_attention_heads（MHA）
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
