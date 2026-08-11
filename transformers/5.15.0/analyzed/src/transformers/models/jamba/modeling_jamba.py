@@ -53,10 +53,14 @@ from ...utils.import_utils import (
     is_torchdynamo_exporting,
 )
 from ...utils.output_capturing import OutputRecorder, capture_outputs
+# modeling_jamba 由 modular_jamba.py 自动生成
 from .configuration_jamba import JambaConfig
 
 
+# Jamba 建模：Mamba SSM + 稀疏注意力 + MoE（由 modular_jamba.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# JambaRMSNorm：Jamba RMS LayerNorm
 class JambaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -77,6 +81,7 @@ class JambaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -85,6 +90,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -110,6 +116,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -122,6 +129,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -148,6 +156,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# JambaAttention：Jamba 多头自注意力（GQA + RoPE）
 class JambaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -202,6 +211,7 @@ class JambaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# apply_mask_to_padding_states：对 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/jamba/issues/66
@@ -215,6 +225,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积增量更新（流式推理）
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -235,6 +246,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积前向（全序列）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -258,6 +270,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_inner_fn", "mamba_ssm")
+# mamba_inner_fn：Mamba 选择性状态空间内层前向
 def mamba_inner_fn(
     xz: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -282,6 +295,7 @@ def mamba_inner_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba_selective_state_update：Mamba 选择性状态增量更新
 def mamba_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -328,6 +342,7 @@ def mamba_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_scan_fn", "mamba_ssm")
+# mamba_selective_scan：Mamba 选择性扫描（SSM 核心）
 def mamba_selective_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -438,6 +453,7 @@ def mamba_selective_scan(
 @use_kernelized_func(
     [mamba_inner_fn, mamba_selective_scan, mamba_selective_state_update, causal_conv1d_fn, causal_conv1d_update]
 )
+# JambaMambaMixer：Jamba Mamba SSM 混合层（替代部分注意力层）
 class JambaMambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -611,6 +627,7 @@ class JambaMambaMixer(nn.Module):
         return contextualized_states
 
 
+# JambaMLP：Jamba 前馈 MLP（SiLU 激活）
 class JambaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -628,6 +645,7 @@ class JambaMLP(nn.Module):
 
 
 @use_experts_implementation
+# JambaExperts：Jamba MoE 专家 FFN 集合
 class JambaExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -667,6 +685,7 @@ class JambaExperts(nn.Module):
         return final_hidden_states
 
 
+# JambaSparseMoeBlock：Jamba 稀疏 MoE 路由与前馈层
 class JambaSparseMoeBlock(nn.Module):
     """
     This implementation is
@@ -704,6 +723,7 @@ class JambaSparseMoeBlock(nn.Module):
         return hidden_states
 
 
+# JambaAttentionDecoderLayer：Jamba 注意力解码器单层
 class JambaAttentionDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: JambaConfig, layer_idx: int):
         super().__init__()
@@ -742,6 +762,7 @@ class JambaAttentionDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# JambaMambaDecoderLayer：Jamba Mamba 解码器单层
 class JambaMambaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: JambaConfig, layer_idx: int):
         super().__init__()
@@ -775,6 +796,7 @@ class JambaMambaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# JambaPreTrainedModel：Jamba 预训练基类与权重初始化
 class JambaPreTrainedModel(PreTrainedModel):
     config: JambaConfig
     base_model_prefix = "model"
@@ -808,6 +830,7 @@ ALL_DECODER_LAYER_TYPES = {"attention": JambaAttentionDecoderLayer, "mamba": Jam
 
 
 @auto_docstring
+# JambaModel：Jamba Mamba+注意力+MoE 混合解码器主干
 class JambaModel(JambaPreTrainedModel):
     def __init__(self, config: JambaConfig):
         super().__init__(config)
@@ -887,6 +910,7 @@ class JambaModel(JambaPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -970,6 +994,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# JambaForCausalLM：Jamba 因果语言建模与对话生成头
 class JambaForCausalLM(JambaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -1073,6 +1098,7 @@ class JambaForCausalLM(JambaPreTrainedModel, GenerationMixin):
         )
 
 
+# JambaForSequenceClassification：Jamba 序列分类头
 class JambaForSequenceClassification(GenericForSequenceClassification, JambaPreTrainedModel):
     pass
 

@@ -21,8 +21,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Jamba 配置：ai21labs/Jamba-v0.1 混合 Mamba+注意力+MoE 解码器超参
+
+# JambaConfig：ai21labs/Jamba-v0.1 混合 Mamba+注意力+MoE 默认超参
 @auto_docstring(checkpoint="ai21labs/Jamba-v0.1")
 @strict
+# JambaConfig：AI21 Jamba 混合 Mamba+注意力+MoE 解码器超参
 class JambaConfig(PreTrainedConfig):
     r"""
     expert_layer_period (`int`, *optional*, defaults to 2):

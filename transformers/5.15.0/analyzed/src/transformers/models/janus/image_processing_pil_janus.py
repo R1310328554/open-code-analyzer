@@ -40,7 +40,10 @@ from ...utils import (
 )
 
 
+# Janus 图像预处理：PIL 后端 resize 与 CLIP 风格归一化
+
 # Adapted from transformers.models.janus.image_processing_janus.JanusImageProcessorKwargs
+# JanusImageProcessorKwargs：Janus 图像处理器可选参数字典类型
 class JanusImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -52,6 +55,7 @@ class JanusImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# JanusImageProcessorPil：Janus PIL 后端图像 resize/归一化预处理
 class JanusImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

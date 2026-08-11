@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# JetMoe 配置：jetmoe/jetmoe-8b MoE+MoA 混合解码器超参
+
+# JetMoeConfig：jetmoe/jetmoe-8b MoE+MoA 混合解码器默认超参
 @auto_docstring(checkpoint="jetmoe/jetmoe-8b")
 @strict
+# JetMoeConfig：JetMoe MoE+MoA 混合解码器超参
 class JetMoeConfig(PreTrainedConfig):
     r"""
     kv_channels (`int`, *optional*, defaults to 128):

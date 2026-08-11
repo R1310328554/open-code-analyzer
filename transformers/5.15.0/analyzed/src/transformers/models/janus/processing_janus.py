@@ -24,6 +24,8 @@ from ...utils import auto_docstring, logging
 
 logger = logging.get_logger(__name__)
 
+
+# Janus Processor：图像预处理与分词器联合多模态输入组装
 DEFAULT_SYSTEM_PROMPT = (
     "You are a helpful language and vision assistant. "
     "You are able to understand the visual content that the user provides, "
@@ -31,6 +33,7 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 
+# JanusTextKwargs：Janus Processor 文本侧可选参数字典类型
 class JanusTextKwargs(TextKwargs, total=False):
     """
     generation_mode (`str`, *optional*, defaults to `"text"`):
@@ -42,6 +45,7 @@ class JanusTextKwargs(TextKwargs, total=False):
     generation_mode: str
 
 
+# JanusProcessorKwargs：Janus Processor 可选参数字典类型
 class JanusProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: JanusTextKwargs
     _defaults = {
@@ -51,6 +55,7 @@ class JanusProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# JanusProcessor：封装图像预处理与分词器的多模态输入管线
 class JanusProcessor(ProcessorMixin):
     valid_processor_kwargs = JanusProcessorKwargs
 

@@ -42,10 +42,14 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_jetmoe import JetMoeConfig
 
 
+# modeling_jetmoe 由 modular_jetmoe.py 自动生成
 logger = logging.get_logger(__name__)
 
 
+# JetMoe 建模：MoE 前馈 + MoA 注意力混合解码器（由 modular_jetmoe.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# JetMoeRMSNorm：JetMoe RMS LayerNorm
 class JetMoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -66,6 +70,7 @@ class JetMoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# JetMoeRotaryEmbedding：JetMoe 旋转位置编码（RoPE）嵌入
 class JetMoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: JetMoeConfig, device=None):
@@ -123,6 +128,7 @@ class JetMoeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# JetMoeParallelExperts：JetMoe 并行 MoE 专家 FFN 集合
 class JetMoeParallelExperts(nn.Module):
     def __init__(self, num_experts: int, input_size: int, output_size: int) -> None:
         """
@@ -168,6 +174,7 @@ class JetMoeParallelExperts(nn.Module):
         return results
 
 
+# JetMoeTopKGating：JetMoe MoE/MoA top-k 路由门控
 class JetMoeTopKGating(nn.Module):
     def __init__(self, input_size: int, num_experts: int, top_k: int):
         """
@@ -217,6 +224,7 @@ class JetMoeTopKGating(nn.Module):
         return index_sorted_experts, batch_index, batch_gates, expert_size, logits
 
 
+# JetMoeMoE：JetMoe 混合专家前馈层（MoE）
 class JetMoeMoE(nn.Module):
     """
     A Sparsely gated mixture of experts layer with 1-layer Feed-Forward networks as experts.
@@ -275,6 +283,7 @@ class JetMoeMoE(nn.Module):
         return layer_output
 
 
+# JetMoeMoA：JetMoe 混合注意力层（MoA，多专家注意力）
 class JetMoeMoA(nn.Module):
     """
     A Sparsely gated mixture of attention layer with pairs of query- and output-projections as experts.
@@ -351,6 +360,7 @@ class JetMoeMoA(nn.Module):
         raise NotImplementedError("This module doesn't support call and forward.")
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -359,6 +369,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -384,6 +395,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -396,6 +408,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -421,6 +434,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# JetMoeAttention：JetMoe 标准多头自注意力（GQA + RoPE）
 class JetMoeAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -509,6 +523,7 @@ class JetMoeAttention(nn.Module):
         return attn_output, attn_weights, router_logits
 
 
+# JetMoeDecoderLayer：JetMoe 解码器单层（MoA/MoE 或标准注意力 + FFN）
 class JetMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: JetMoeConfig, layer_idx: int | None = None):
         super().__init__()
@@ -551,6 +566,7 @@ class JetMoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# JetMoePreTrainedModel：JetMoe 预训练基类与权重初始化
 class JetMoePreTrainedModel(PreTrainedModel):
     config: JetMoeConfig
     base_model_prefix = "model"
@@ -579,6 +595,7 @@ class JetMoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# JetMoeModel：JetMoe MoE+MoA 混合解码器主干
 class JetMoeModel(JetMoePreTrainedModel):
     def __init__(self, config: JetMoeConfig):
         super().__init__(config)
@@ -656,6 +673,7 @@ class JetMoeModel(JetMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -738,6 +756,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# JetMoeForCausalLM：JetMoe 因果语言建模与对话生成头
 class JetMoeForCausalLM(JetMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
@@ -816,6 +835,7 @@ class JetMoeForCausalLM(JetMoePreTrainedModel, GenerationMixin):
         )
 
 
+# JetMoeForSequenceClassification：JetMoe 序列分类头
 class JetMoeForSequenceClassification(GenericForSequenceClassification, JetMoePreTrainedModel): ...
 
 

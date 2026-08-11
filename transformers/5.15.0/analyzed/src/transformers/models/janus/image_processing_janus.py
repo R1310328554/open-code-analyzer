@@ -33,6 +33,9 @@ from ...utils import (
 )
 
 
+# Janus 图像预处理：Torchvision 后端 resize 与 CLIP 风格归一化
+
+# JanusImageProcessorKwargs：Janus 图像处理器可选参数字典类型
 class JanusImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -44,6 +47,7 @@ class JanusImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# JanusImageProcessor：Janus Torchvision 后端图像 resize/归一化预处理
 class JanusImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

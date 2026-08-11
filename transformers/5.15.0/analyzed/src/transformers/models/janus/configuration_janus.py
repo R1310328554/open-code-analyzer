@@ -28,8 +28,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Janus 配置：deepseek-community/Janus-Pro-1B 视觉+VQ-VAE+文本多模态超参
+
+# JanusVisionConfig：deepseek-community/Janus-Pro-1B 视觉塔默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusVisionConfig：Janus 视觉塔超参（SigLIP 风格 ViT）
 class JanusVisionConfig(PreTrainedConfig):
     r"""
     projection_dropout (`float`, *optional*, defaults to 0.0):
@@ -61,8 +65,10 @@ class JanusVisionConfig(PreTrainedConfig):
     num_image_tokens: int = 576
 
 
+# JanusVQVAEConfig：deepseek-community/Janus-Pro-1B VQ-VAE 默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusVQVAEConfig：Janus VQ-VAE 图像编解码超参
 class JanusVQVAEConfig(PreTrainedConfig):
     r"""
     base_channels (`int`, *optional*, defaults to 128):
@@ -100,8 +106,10 @@ class JanusVQVAEConfig(PreTrainedConfig):
     image_token_embed_dim: int = 2048
 
 
+# JanusConfig：deepseek-community/Janus-Pro-1B 图文统一多模态顶层默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusConfig：Janus 图文统一多模态顶层配置
 class JanusConfig(PreTrainedConfig):
     r"""
     Example:

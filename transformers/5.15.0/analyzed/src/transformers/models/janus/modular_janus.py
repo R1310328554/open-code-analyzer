@@ -54,11 +54,15 @@ from ..siglip.modeling_siglip import SiglipEncoder, SiglipEncoderLayer, SiglipVi
 
 logger = logging.get_logger(__name__)
 
+
+# Janus modular 源：复用 SigLIP/Blip2/Chameleon/Idefics 组件构建统一多模态
 # General docstring
 
 
+# JanusVisionConfig：deepseek-community/Janus-Pro-1B 视觉塔默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusVisionConfig：Janus 视觉塔超参（SigLIP 风格 ViT）
 class JanusVisionConfig(SiglipVisionConfig):
     r"""
     projection_dropout (`float`, *optional*, defaults to 0.0):
@@ -84,8 +88,10 @@ class JanusVisionConfig(SiglipVisionConfig):
     intermediate_size = AttributeError()
 
 
+# JanusVQVAEConfig：deepseek-community/Janus-Pro-1B VQ-VAE 默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusVQVAEConfig：Janus VQ-VAE 图像编解码超参
 class JanusVQVAEConfig(ChameleonVQVAEConfig):
     r"""
     base_channels (`int`, *optional*, defaults to 128):
@@ -124,8 +130,10 @@ class JanusVQVAEConfig(ChameleonVQVAEConfig):
     attn_type = AttributeError()
 
 
+# JanusConfig：deepseek-community/Janus-Pro-1B 图文统一多模态顶层默认超参
 @auto_docstring(checkpoint="deepseek-community/Janus-Pro-1B")
 @strict
+# JanusConfig：Janus 图文统一多模态顶层配置
 class JanusConfig(PreTrainedConfig):
     r"""
     Example:
@@ -191,6 +199,7 @@ class JanusConfig(PreTrainedConfig):
 
 
 @auto_docstring
+# JanusPreTrainedModel：Janus 多模态预训练基类与权重初始化
 class JanusPreTrainedModel(PreTrainedModel):
     config: JanusConfig
     base_model_prefix = "model"
@@ -215,6 +224,7 @@ class JanusPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# JanusVQVAEOutput：Janus VQ-VAE 重建输出 dataclass
 class JanusVQVAEOutput(ModelOutput):
     r"""
     decoded_pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, image_size, image_size)`):
@@ -227,14 +237,17 @@ class JanusVQVAEOutput(ModelOutput):
     embedding_loss: torch.FloatTensor | None = None
 
 
+# JanusBaseModelOutputWithPast：Janus 多模态输出 dataclass（含 past_key_values）
 class JanusBaseModelOutputWithPast(IdeficsBaseModelOutputWithPast):
     pass
 
 
+# JanusCausalLMOutputWithPast：Janus 因果 LM 输出 dataclass（含 logits 与 past）
 class JanusCausalLMOutputWithPast(IdeficsCausalLMOutputWithPast):
     pass
 
 
+# JanusVisionEmbeddings：Janus 视觉 patch 嵌入 + 位置编码
 class JanusVisionEmbeddings(SiglipVisionEmbeddings):
     def forward(self, pixel_values: torch.Tensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:
         _, _, height, width = pixel_values.shape
@@ -252,6 +265,7 @@ class JanusVisionEmbeddings(SiglipVisionEmbeddings):
         return embeddings
 
 
+# JanusVisionAttention：Janus 视觉塔多头自注意力
 class JanusVisionAttention(nn.Module):
     """Attention Class for Janus Vision Encoder"""
 
@@ -328,6 +342,7 @@ class JanusVisionAttention(nn.Module):
         return output, attn_weights
 
 
+# JanusVisionMLP：Janus 视觉塔前馈 MLP
 class JanusVisionMLP(nn.Module):
     def __init__(self, config: JanusVisionConfig):
         super().__init__()
@@ -348,6 +363,7 @@ class JanusVisionMLP(nn.Module):
         return hidden_states
 
 
+# JanusVisionEncoderLayer：Janus 视觉 Transformer 编码器单层
 class JanusVisionEncoderLayer(SiglipEncoderLayer):
     def __init__(self, config: JanusVisionConfig):
         super().__init__(config)
@@ -359,12 +375,14 @@ class JanusVisionEncoderLayer(SiglipEncoderLayer):
         self.mlp = JanusVisionMLP(config)
 
 
+# JanusVisionEncoder：Janus 视觉 Transformer 多层编码器堆叠
 class JanusVisionEncoder(SiglipEncoder):
     def __init__(self, config: JanusVisionConfig):
         super().__init__(config)
         self.layers = nn.ModuleList([JanusVisionEncoderLayer(config) for _ in range(config.num_hidden_layers)])
 
 
+# JanusVisionModel：Janus SigLIP 风格视觉编码塔
 class JanusVisionModel(Blip2VisionModel):
     _can_record_outputs = {
         "hidden_states": JanusVisionEncoderLayer,
@@ -403,6 +421,7 @@ class JanusVisionModel(Blip2VisionModel):
         )
 
 
+# JanusVisionAlignerMLP：Janus 视觉特征到 LLM 维度的对齐 MLP
 class JanusVisionAlignerMLP(nn.Module):
     def __init__(self, config: JanusVisionConfig):
         super().__init__()
@@ -421,6 +440,7 @@ class JanusVisionAlignerMLP(nn.Module):
         return hidden_states
 
 
+# JanusVQVAEVectorQuantizer：Janus VQ-VAE 向量量化器
 class JanusVQVAEVectorQuantizer(ChameleonVQVAEVectorQuantizer):
     def __init__(self, config: JanusVQVAEConfig):
         super().__init__(config)
@@ -442,18 +462,22 @@ class JanusVQVAEVectorQuantizer(ChameleonVQVAEVectorQuantizer):
         return hidden_state_quant
 
 
+# JanusVQVAEResnetBlock：Janus VQ-VAE ResNet 残差块
 class JanusVQVAEResnetBlock(ChameleonVQVAEEncoderResnetBlock):
     pass
 
 
+# JanusVQVAEAttnBlock：Janus VQ-VAE 自注意力块
 class JanusVQVAEAttnBlock(ChameleonVQVAEEncoderAttnBlock):
     pass
 
 
+# JanusVQVAEConvDownsample：Janus VQ-VAE 卷积下采样层
 class JanusVQVAEConvDownsample(ChameleonVQVAEEncoderConvDownsample):
     pass
 
 
+# JanusVQVAEConvUpsample：Janus VQ-VAE 卷积上采样层
 class JanusVQVAEConvUpsample(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -465,6 +489,7 @@ class JanusVQVAEConvUpsample(nn.Module):
         return hidden_states
 
 
+# JanusVQVAEMidBlock：Janus VQ-VAE 中间 ResNet+注意力块
 class JanusVQVAEMidBlock(nn.Module):
     def __init__(self, config: JanusVQVAEConfig, channels: int):
         super().__init__()
@@ -487,6 +512,7 @@ class JanusVQVAEMidBlock(nn.Module):
         return hidden_states
 
 
+# JanusVQVAEEncoder：Janus VQ-VAE 图像编码器
 class JanusVQVAEEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -564,6 +590,7 @@ class JanusVQVAEEncoder(nn.Module):
         return last_hidden_state
 
 
+# JanusVQVAEDecoder：Janus VQ-VAE 图像解码器
 class JanusVQVAEDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -632,6 +659,7 @@ class JanusVQVAEDecoder(nn.Module):
         return hidden_state
 
 
+# JanusVQVAE：Janus VQ-VAE 图像离散 token 编解码模块
 class JanusVQVAE(ChameleonVQVAE):
     _no_split_modules = [
         "JanusVQVAEAttnBlock",
@@ -685,6 +713,7 @@ class JanusVQVAE(ChameleonVQVAE):
         return JanusVQVAEOutput(decoded_pixel_values, encode_outputs.embedding_loss)
 
 
+# JanusVQVAEAlignerMLP：Janus VQ token 到 LLM 维度的对齐 MLP
 class JanusVQVAEAlignerMLP(nn.Module):
     def __init__(self, config: JanusVQVAEConfig):
         super().__init__()
@@ -703,6 +732,7 @@ class JanusVQVAEAlignerMLP(nn.Module):
         return hidden_states
 
 
+# JanusVQVAEHead：Janus VQ-VAE 图像生成解码头
 class JanusVQVAEHead(nn.Module):
     """Head used for sampling tokens in image generation, replacing the usual lm head."""
 
@@ -724,6 +754,7 @@ class JanusVQVAEHead(nn.Module):
     The Janus model which consists of a siglip vision backbone, a Llama language model and a VQ model.
     """
 )
+# JanusModel：Janus 视觉+VQ-VAE+文本统一多模态联合主干
 class JanusModel(JanusPreTrainedModel):
     def __init__(self, config: JanusConfig):
         super().__init__(config)
@@ -829,6 +860,7 @@ class JanusModel(JanusPreTrainedModel):
         )
 
 
+# JanusForConditionalGeneration：Janus 图文理解与生成（含图像生成）
 class JanusForConditionalGeneration(JanusPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     output_modalities = ("image", "text")

@@ -49,10 +49,14 @@ from .configuration_jamba import JambaConfig
 logger = logging.get_logger(__name__)
 
 
+# Jamba modular 源：复用 Llama/Mamba/Mixtral 组件构建混合解码器
+
+# JambaRMSNorm：Jamba RMS LayerNorm
 class JambaRMSNorm(LlamaRMSNorm):
     pass
 
 
+# JambaAttention：Jamba 多头自注意力（GQA + RoPE）
 class JambaAttention(LlamaAttention):
     def __init__(self, config: JambaConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -98,6 +102,7 @@ class JambaAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# JambaMambaMixer：Jamba Mamba SSM 混合层（替代部分注意力层）
 class JambaMambaMixer(FalconMambaMixer):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -273,14 +278,17 @@ class JambaMambaMixer(FalconMambaMixer):
         return contextualized_states
 
 
+# JambaMLP：Jamba 前馈 MLP（SiLU 激活）
 class JambaMLP(MistralMLP):
     pass
 
 
+# JambaExperts：Jamba MoE 专家 FFN 集合
 class JambaExperts(MixtralExperts):
     pass
 
 
+# JambaSparseMoeBlock：Jamba 稀疏 MoE 路由与前馈层
 class JambaSparseMoeBlock(nn.Module):
     """
     This implementation is
@@ -318,6 +326,7 @@ class JambaSparseMoeBlock(nn.Module):
         return hidden_states
 
 
+# JambaAttentionDecoderLayer：Jamba 注意力解码器单层
 class JambaAttentionDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: JambaConfig, layer_idx: int):
         super().__init__()
@@ -356,6 +365,7 @@ class JambaAttentionDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# JambaMambaDecoderLayer：Jamba Mamba 解码器单层
 class JambaMambaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: JambaConfig, layer_idx: int):
         super().__init__()
@@ -392,6 +402,7 @@ class JambaMambaDecoderLayer(GradientCheckpointingLayer):
 ALL_DECODER_LAYER_TYPES = {"attention": JambaAttentionDecoderLayer, "mamba": JambaMambaDecoderLayer}
 
 
+# JambaPreTrainedModel：Jamba 预训练基类与权重初始化
 class JambaPreTrainedModel(PreTrainedModel):
     config: JambaConfig
     base_model_prefix = "model"
@@ -422,6 +433,7 @@ class JambaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# JambaModel：Jamba Mamba+注意力+MoE 混合解码器主干
 class JambaModel(JambaPreTrainedModel):
     def __init__(self, config: JambaConfig):
         super().__init__(config)
@@ -501,6 +513,7 @@ class JambaModel(JambaPreTrainedModel):
         )
 
 
+# JambaForCausalLM：Jamba 因果语言建模与对话生成头
 class JambaForCausalLM(MixtralForCausalLM):
     def __init__(self, config: JambaConfig):
         super().__init__(config)
@@ -554,6 +567,7 @@ class JambaForCausalLM(MixtralForCausalLM):
         )
 
 
+# JambaForSequenceClassification：Jamba 序列分类头
 class JambaForSequenceClassification(GenericForSequenceClassification, JambaPreTrainedModel):
     pass
 
