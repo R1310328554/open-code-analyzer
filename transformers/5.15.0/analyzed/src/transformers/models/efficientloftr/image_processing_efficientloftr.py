@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from .modeling_efficientloftr import EfficientLoFTRKeypointMatchingOutput
 
 
+# EfficientLoFTRImageProcessorKwargs：do_grayscale 等图像对预处理参数
 class EfficientLoFTRImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -48,6 +49,7 @@ def _is_valid_image(image):
     )
 
 
+# validate_and_format_image_pairs：校验并格式化为图像对列表
 def validate_and_format_image_pairs(images: ImageInput):
     error_message = (
         "Input images must be a one of the following :",
@@ -87,6 +89,7 @@ def is_grayscale(
     )
 
 
+# convert_to_grayscale：RGB 转单通道灰度图
 def convert_to_grayscale(
     image: "torch.Tensor",
 ) -> "torch.Tensor":
@@ -107,6 +110,7 @@ def convert_to_grayscale(
 
 
 @auto_docstring
+# EfficientLoFTRImageProcessor：640 默认输入，关键点匹配后处理
 class EfficientLoFTRImageProcessor(TorchvisionBackend):
     valid_kwargs = EfficientLoFTRImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -122,6 +126,7 @@ class EfficientLoFTRImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：图像对 resize/normalize 批处理入口
     def preprocess(self, images: ImageInput, **kwargs: Unpack[EfficientLoFTRImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
@@ -177,6 +182,7 @@ class EfficientLoFTRImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": stacked_pairs}, tensor_type=return_tensors)
 
+# post_process_keypoint_matching：匹配点坐标还原至原图尺寸
     def post_process_keypoint_matching(
         self,
         outputs: "EfficientLoFTRKeypointMatchingOutput",

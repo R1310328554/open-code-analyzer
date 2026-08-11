@@ -24,8 +24,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# EdgeTAM checkpoint：yonigozlan/EdgeTAM-hf 默认超参
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVisionConfig：backbone 通道列表、FPN 隐藏维与 top-down 层级
 class EdgeTamVisionConfig(PreTrainedConfig):
     r"""
     backbone_channel_list (`List[int]`, *optional*, defaults to `[384, 192, 96, 48]`):
@@ -87,6 +89,7 @@ class EdgeTamVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamPromptEncoderConfig：点/框 prompt 嵌入维度与 mask 输入通道
 class EdgeTamPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -111,6 +114,7 @@ class EdgeTamPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamMaskDecoderConfig：双向 Transformer 层数、注意力头与上采样因子
 class EdgeTamMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -149,6 +153,7 @@ class EdgeTamMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamConfig：聚合 vision/prompt_encoder/mask_decoder 子配置
 class EdgeTamConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `EdgeTamPromptEncoderConfig`], *optional*):

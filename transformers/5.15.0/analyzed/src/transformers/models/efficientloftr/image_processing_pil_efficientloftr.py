@@ -32,6 +32,7 @@ if is_torch_available():
     import torch
 
 
+# EfficientLoFTRImageProcessorKwargs：PIL 后端共享预处理参数
 class EfficientLoFTRImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -41,12 +42,14 @@ class EfficientLoFTRImageProcessorKwargs(ImagesKwargs, total=False):
     do_grayscale: bool
 
 
+# is_grayscale：判断 NumPy 数组是否为灰度图
 def is_grayscale(image: np.ndarray):
     if image.shape[0] == 1:
         return True
     return np.all(image[0, ...] == image[1, ...]) and np.all(image[1, ...] == image[2, ...])
 
 
+# convert_to_grayscale：PIL/NumPy 图像转灰度
 def convert_to_grayscale(image: ImageInput) -> ImageInput:
     """
     Converts an image to grayscale format using the NTSC formula. Only support numpy and PIL Image.
@@ -105,6 +108,7 @@ def validate_and_format_image_pairs(images: ImageInput):
 
 
 @auto_docstring
+# EfficientLoFTRImageProcessorPil：无 torch 依赖的 PIL 图像处理器
 class EfficientLoFTRImageProcessorPil(PilBackend):
     valid_kwargs = EfficientLoFTRImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -120,6 +124,7 @@ class EfficientLoFTRImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：PIL 图像对批预处理
     def preprocess(self, images: ImageInput, **kwargs: Unpack[EfficientLoFTRImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
@@ -161,6 +166,7 @@ class EfficientLoFTRImageProcessorPil(PilBackend):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
     @requires(backends=("torch",))
+# post_process_keypoint_matching：匹配结果坐标映射回原图
     def post_process_keypoint_matching(
         self,
         outputs: "EfficientLoFTRKeypointMatchingOutput",

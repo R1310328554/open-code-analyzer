@@ -59,18 +59,21 @@ from ..sam2_video.modeling_sam2_video import (
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoPromptEncoderConfig：继承 SAM2-Video prompt 配置
 class EdgeTamVideoPromptEncoderConfig(Sam2VideoPromptEncoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoMaskDecoderConfig：继承 SAM2-Video mask 解码配置
 class EdgeTamVideoMaskDecoderConfig(Sam2VideoMaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoConfig：视频分割顶层配置 modular 源
 class EdgeTamVideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `EdgeTamVideoPromptEncoderConfig`], *optional*):
@@ -305,6 +308,7 @@ class EdgeTamVideoVisionEncoderOutput(Sam2VideoVisionEncoderOutput):
     pass
 
 
+# EdgeTamVideoVisionRotaryEmbedding：继承 SAM2-Video 2D RoPE
 class EdgeTamVideoVisionRotaryEmbedding(Sam2VideoVisionRotaryEmbedding):
     def __init__(self, config: EdgeTamVideoConfig, end_x: int | None = None, end_y: int | None = None):
         nn.Module.__init__()
@@ -431,6 +435,7 @@ def apply_rotary_pos_emb_2d_cross_attn(
     return q_embed.type_as(q), k_embed
 
 
+# EdgeTamVideoRoPESelfAttention：2D RoPE 自注意力 modular 源
 class EdgeTamVideoRoPESelfAttention(nn.Module):
     """Self-attention with rotary position encoding."""
 
@@ -492,6 +497,7 @@ class EdgeTamVideoRoPESelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EdgeTamVideoRoPECrossAttention：2D RoPE 交叉注意力 modular 源
 class EdgeTamVideoRoPECrossAttention(nn.Module):
     """Cross-attention with rotary position encoding."""
 
@@ -597,6 +603,7 @@ class EdgeTamVideoPreTrainedModel(Sam2VideoPreTrainedModel):
             init.copy_(module.rope_embeddings_sin, inv_freq.sin())
 
 
+# EdgeTamVideoInferenceSession：视频推理会话状态管理
 class EdgeTamVideoInferenceSession(Sam2VideoInferenceSession):
     pass
 
@@ -667,6 +674,7 @@ class EdgeTamVideoMemoryAttentionLayer(nn.Module):
         return queries
 
 
+# EdgeTamVideoMemoryAttention：跨帧记忆注意力 modular 源
 class EdgeTamVideoMemoryAttention(Sam2VideoMemoryAttention):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -859,6 +867,7 @@ class EdgeTamVideoPerceiverEncoderLayer(nn.Module):
         return latents
 
 
+# EdgeTamVideoPerceiverResampler：Perceiver 空间 token 重采样
 class EdgeTamVideoPerceiverResampler(nn.Module):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -971,6 +980,7 @@ class EdgeTamVideoSegmentationOutput(Sam2VideoSegmentationOutput):
 
 
 @auto_docstring
+# EdgeTamVideoModel：完整视频分割模型 modular 源
 class EdgeTamVideoModel(Sam2VideoModel):
     _keys_to_ignore_on_load_unexpected = []
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(EdgeTamVideoTwoWayAttentionBlock, index=2)}

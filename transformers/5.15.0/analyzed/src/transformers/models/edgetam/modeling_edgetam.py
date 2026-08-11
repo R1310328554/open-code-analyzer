@@ -50,6 +50,7 @@ from .configuration_edgetam import (
 logger = logging.get_logger(__name__)
 
 
+# EdgeTamLayerNorm：支持 channels_last/channels_first 的 LayerNorm
 class EdgeTamLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -78,6 +79,7 @@ class EdgeTamLayerNorm(nn.LayerNorm):
 
 @auto_docstring(custom_intro="Base class for the vision encoder's outputs.")
 @dataclass
+# EdgeTamVisionEncoderOutput：含 FPN 多尺度特征与位置编码
 class EdgeTamVisionEncoderOutput(BaseModelOutputWithPooling):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, height, width, hidden_size)`):
@@ -94,6 +96,7 @@ class EdgeTamVisionEncoderOutput(BaseModelOutputWithPooling):
     fpn_position_encoding: torch.FloatTensor | None = None
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -116,6 +119,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# EdgeTamAttention：多头自注意力，支持 downsample_rate 降采样 Q/K/V
 class EdgeTamAttention(nn.Module):
     """
     EDGETAM's attention layer that allows for downscaling the size of the embedding after projection to queries, keys, and
@@ -187,6 +191,7 @@ class EdgeTamAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EdgeTamTwoWayAttentionBlock：自注意力 + 交叉注意力 + MLP 双向块
 class EdgeTamTwoWayAttentionBlock(GradientCheckpointingLayer):
     def __init__(self, config: EdgeTamMaskDecoderConfig, skip_first_layer_pe: bool = False):
         """
@@ -264,6 +269,7 @@ class EdgeTamTwoWayAttentionBlock(GradientCheckpointingLayer):
         return queries, keys, attn_out
 
 
+# EdgeTamFeedForward：两层 MLP 前馈网络
 class EdgeTamFeedForward(nn.Module):
     def __init__(
         self,
@@ -295,6 +301,7 @@ class EdgeTamFeedForward(nn.Module):
 
 
 @auto_docstring
+# EdgeTamPreTrainedModel：权重初始化与 Flash/SDPA 注意力支持
 class EdgeTamPreTrainedModel(PreTrainedModel):
     config_class = EdgeTamConfig
     base_model_prefix = "edgetam"
@@ -315,6 +322,7 @@ class EdgeTamPreTrainedModel(PreTrainedModel):
             init.normal_(module.positional_embedding, std=module.scale)
 
 
+# EdgeTamSinePositionEmbedding：2D 正弦位置编码，用于 FPN 特征图
 class EdgeTamSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -392,6 +400,7 @@ class EdgeTamSinePositionEmbedding(nn.Module):
         )
 
 
+# EdgeTamVisionNeck：FPN 自顶向下融合，输出多尺度特征
 class EdgeTamVisionNeck(nn.Module):
     def __init__(self, config: EdgeTamVisionConfig):
         super().__init__()
@@ -449,6 +458,7 @@ class EdgeTamVisionNeck(nn.Module):
     The vision model from EdgeTAM without any head or projection on top.
     """
 )
+# EdgeTamVisionModel：RepViT 骨干 + FPN 颈部视觉编码器
 class EdgeTamVisionModel(EdgeTamPreTrainedModel):
     config_class = EdgeTamVisionConfig
     main_input_name = "pixel_values"
@@ -497,6 +507,7 @@ class EdgeTamVisionModel(EdgeTamPreTrainedModel):
 
 @auto_docstring(custom_intro="Base class for the EdgeTam model's output.")
 @dataclass
+# EdgeTamImageSegmentationOutput：单帧分割 mask、IoU 与 object pointer
 class EdgeTamImageSegmentationOutput(ModelOutput):
     r"""
     iou_scores (`torch.FloatTensor` of shape `(batch_size, point_batch_size, num_masks)`):
@@ -529,6 +540,7 @@ class EdgeTamImageSegmentationOutput(ModelOutput):
     mask_decoder_attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# EdgeTamPositionalEmbedding：prompt 编码器随机/可学习位置嵌入
 class EdgeTamPositionalEmbedding(nn.Module):
     def __init__(self, config: EdgeTamPromptEncoderConfig):
         super().__init__()
@@ -554,6 +566,7 @@ class EdgeTamPositionalEmbedding(nn.Module):
         return torch.cat([torch.sin(coordinates), torch.cos(coordinates)], dim=-1)
 
 
+# EdgeTamMaskEmbedding：低分辨率 mask 输入的卷积嵌入
 class EdgeTamMaskEmbedding(nn.Module):
     def __init__(self, config: EdgeTamPromptEncoderConfig):
         super().__init__()
@@ -581,6 +594,7 @@ class EdgeTamMaskEmbedding(nn.Module):
         return dense_embeddings
 
 
+# EdgeTamPromptEncoder：点/框/mask prompt 编码为稀疏与稠密嵌入
 class EdgeTamPromptEncoder(nn.Module):
     def __init__(self, config: EdgeTamPromptEncoderConfig):
         super().__init__()
@@ -676,6 +690,7 @@ class EdgeTamPromptEncoder(nn.Module):
         return sparse_embeddings, dense_embeddings
 
 
+# EdgeTamTwoWayTransformer：堆叠双向注意力块，融合 prompt 与图像特征
 class EdgeTamTwoWayTransformer(nn.Module):
     def __init__(self, config: EdgeTamMaskDecoderConfig):
         super().__init__()
@@ -733,6 +748,7 @@ class EdgeTamTwoWayTransformer(nn.Module):
         return queries, keys
 
 
+# EdgeTamMaskDecoder：上采样 mask logits，输出多 mask 候选与 IoU 预测
 class EdgeTamMaskDecoder(nn.Module):
     def __init__(self, config: EdgeTamMaskDecoderConfig):
         super().__init__()
@@ -942,6 +958,7 @@ class EdgeTamMaskDecoder(nn.Module):
     input points and labels, boxes, or masks.
     """
 )
+# EdgeTamModel：完整交互式图像分割模型，prompt→mask 预测
 class EdgeTamModel(EdgeTamPreTrainedModel):
     input_modalities = ("image", "text")
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(EdgeTamTwoWayAttentionBlock, index=2)}

@@ -53,6 +53,7 @@ from .configuration_edgetam_video import (
 logger = logging.get_logger(__name__)
 
 
+# EdgeTamVideoLayerNorm：支持 channels_last/first 的 LayerNorm
 class EdgeTamVideoLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -80,6 +81,7 @@ class EdgeTamVideoLayerNorm(nn.LayerNorm):
 
 
 # Lightly adapted from ConvNext (https://github.com/facebookresearch/ConvNeXt)
+# EdgeTamVideoMemoryFuserCXBlock：ConvNeXt 风格记忆融合块
 class EdgeTamVideoMemoryFuserCXBlock(GradientCheckpointingLayer):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -118,6 +120,7 @@ class EdgeTamVideoMemoryFuserCXBlock(GradientCheckpointingLayer):
 
 @auto_docstring(custom_intro="Base class for the vision encoder's outputs.")
 @dataclass
+# EdgeTamVideoVisionEncoderOutput：含 FPN 特征与 2D RoPE 位置编码
 class EdgeTamVideoVisionEncoderOutput(BaseModelOutputWithPooling):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, height, width, hidden_size)`):
@@ -134,6 +137,7 @@ class EdgeTamVideoVisionEncoderOutput(BaseModelOutputWithPooling):
     fpn_position_encoding: torch.FloatTensor | None = None
 
 
+# EdgeTamVideoVisionRotaryEmbedding：视觉特征 2D 旋转位置嵌入
 class EdgeTamVideoVisionRotaryEmbedding(nn.Module):
     """
     Vision Rotary Position Embedding for SAM2, following transformers library standards.
@@ -176,6 +180,7 @@ class EdgeTamVideoVisionRotaryEmbedding(nn.Module):
         return inv_freq
 
 
+# eager_attention_forward：标准缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -198,6 +203,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# EdgeTamVideoAttention：多头自注意力模块
 class EdgeTamVideoAttention(nn.Module):
     """
     EDGETAM_VIDEO's attention layer that allows for downscaling the size of the embedding after projection to queries, keys, and
@@ -269,6 +275,7 @@ class EdgeTamVideoAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# rotate_pairwise：RoPE 成对维度旋转辅助函数
 def rotate_pairwise(x):
     """
     pairwise rotation of the hidden dims of the input. Different from Llama Half-Tensor Rotation.
@@ -316,6 +323,7 @@ def apply_rotary_pos_emb_2d_self_attn(
     return q_embed.type_as(q), k_embed.type_as(k)
 
 
+# EdgeTamVideoRoPESelfAttention：带 2D RoPE 的自注意力
 class EdgeTamVideoRoPESelfAttention(nn.Module):
     """Self-attention with rotary position encoding."""
 
@@ -452,6 +460,7 @@ def apply_rotary_pos_emb_2d_cross_attn(
     return q_embed.type_as(q), k_embed
 
 
+# EdgeTamVideoRoPECrossAttention：带 2D RoPE 的交叉注意力
 class EdgeTamVideoRoPECrossAttention(nn.Module):
     """Cross-attention with rotary position encoding."""
 
@@ -528,6 +537,7 @@ class EdgeTamVideoRoPECrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EdgeTamVideoTwoWayAttentionBlock：自/交叉注意力 + MLP 双向块
 class EdgeTamVideoTwoWayAttentionBlock(GradientCheckpointingLayer):
     def __init__(self, config: EdgeTamVideoMaskDecoderConfig, skip_first_layer_pe: bool = False):
         """
@@ -744,6 +754,7 @@ class EdgeTamVideoMaskDownSampler(nn.Module):
         return x
 
 
+# EdgeTamVideoMemoryEncoder：将 mask 特征编码为记忆帧
 class EdgeTamVideoMemoryEncoder(nn.Module):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -833,6 +844,7 @@ class EdgeTamVideoPositionalEmbedding(nn.Module):
 
 
 @auto_docstring
+# EdgeTamVideoPreTrainedModel：视频分割权重初始化基类
 class EdgeTamVideoPreTrainedModel(PreTrainedModel):
     config_class = EdgeTamVideoConfig
     base_model_prefix = "edgetam_video"
@@ -921,6 +933,7 @@ class EdgeTamVideoInferenceCache:
         self._vision_features.clear()
 
 
+# EdgeTamVideoInferenceSession：管理视频帧缓存、对象 ID 与传播状态
 class EdgeTamVideoInferenceSession:
     r"""
     Manages video inference session parameters, state and cache.
@@ -1227,6 +1240,7 @@ class EdgeTamVideoMemoryAttentionLayer(nn.Module):
         return queries
 
 
+# EdgeTamVideoMemoryAttention：跨帧记忆注意力，融合历史 mask 特征
 class EdgeTamVideoMemoryAttention(nn.Module):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -1455,6 +1469,7 @@ def window_partition(hidden_state, window_size):
     return windows, (padded_height, padded_width)
 
 
+# EdgeTamVideoPerceiverResampler：Perceiver 重采样压缩空间 token
 class EdgeTamVideoPerceiverResampler(nn.Module):
     def __init__(self, config: EdgeTamVideoConfig):
         super().__init__()
@@ -1646,6 +1661,7 @@ class EdgeTamVideoMaskEmbedding(nn.Module):
         return dense_embeddings
 
 
+# EdgeTamVideoPromptEncoder：视频点/框/mask prompt 编码
 class EdgeTamVideoPromptEncoder(nn.Module):
     def __init__(self, config: EdgeTamVideoPromptEncoderConfig):
         super().__init__()
@@ -1798,6 +1814,7 @@ class EdgeTamVideoTwoWayTransformer(nn.Module):
         return queries, keys
 
 
+# EdgeTamVideoMaskDecoder：上采样输出逐帧分割 mask
 class EdgeTamVideoMaskDecoder(nn.Module):
     def __init__(self, config: EdgeTamVideoMaskDecoderConfig):
         super().__init__()
@@ -2019,6 +2036,7 @@ def get_1d_sine_pe(pos_inds, dim, temperature=10000):
 
 
 @auto_docstring
+# EdgeTamVideoModel：完整视频交互分割，支持 propagate_in_video
 class EdgeTamVideoModel(EdgeTamVideoPreTrainedModel):
     input_modalities = ("video", "text")
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(EdgeTamVideoTwoWayAttentionBlock, index=2)}

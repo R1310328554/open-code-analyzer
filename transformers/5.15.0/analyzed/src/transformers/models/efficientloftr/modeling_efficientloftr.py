@@ -46,6 +46,7 @@ from .configuration_efficientloftr import EfficientLoFTRConfig
     """
 )
 @dataclass
+# EfficientLoFTRKeypointMatchingOutput：关键点、匹配索引与置信分数
 class EfficientLoFTRKeypointMatchingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -87,6 +88,7 @@ def compute_embeddings(inv_freq: torch.Tensor, embed_height: int, embed_width: i
     return emb
 
 
+# EfficientLoFTRRotaryEmbedding：2D RoPE 位置嵌入，用于局部 Transformer
 class EfficientLoFTRRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: EfficientLoFTRConfig, device=None):
@@ -168,6 +170,7 @@ class EfficientLoFTRConvNormLayer(nn.Module):
         return hidden_state
 
 
+# EfficientLoFTRRepVGGBlock：RepVGG 重参数化卷积块
 class EfficientLoFTRRepVGGBlock(GradientCheckpointingLayer):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
@@ -217,6 +220,7 @@ class EfficientLoFTRRepVGGStage(nn.Module):
         return hidden_states
 
 
+# EfficientLoFTRepVGG：多 stage RepVGG 骨干，输出多尺度特征图
 class EfficientLoFTRepVGG(nn.Module):
     def __init__(self, config: EfficientLoFTRConfig):
         super().__init__()
@@ -353,6 +357,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# EfficientLoFTRAttention：带 RoPE 的多头自注意力
 class EfficientLoFTRAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -523,6 +528,7 @@ class EfficientLoFTRLocalFeatureTransformerLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# EfficientLoFTRLocalFeatureTransformer：局部特征自/交叉 Transformer 堆叠
 class EfficientLoFTRLocalFeatureTransformer(nn.Module):
     def __init__(self, config: EfficientLoFTRConfig):
         super().__init__()
@@ -569,6 +575,7 @@ class EfficientLoFTROutConvBlock(nn.Module):
         return residual_states
 
 
+# EfficientLoFTRFineFusionLayer：细粒度特征融合与 sub-pixel 偏移回归
 class EfficientLoFTRFineFusionLayer(nn.Module):
     def __init__(self, config: EfficientLoFTRConfig):
         super().__init__()
@@ -641,6 +648,7 @@ class EfficientLoFTRFineFusionLayer(nn.Module):
 
 
 @auto_docstring
+# EfficientLoFTRPreTrainedModel：RepVGG/Transformer 权重初始化
 class EfficientLoFTRPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -695,6 +703,7 @@ class EfficientLoFTRPreTrainedModel(PreTrainedModel):
     EfficientLoFTR model taking images as inputs and outputting the features of the images.
     """
 )
+# EfficientLoFTRModel：骨干 + 局部 Transformer + 粗/细匹配头
 class EfficientLoFTRModel(EfficientLoFTRPreTrainedModel):
     def __init__(self, config: EfficientLoFTRConfig):
         super().__init__(config)
@@ -806,6 +815,7 @@ def mask_border(tensor: torch.Tensor, border_margin: int, value: bool | float | 
     return tensor
 
 
+# create_meshgrid：生成归一化坐标网格，供匹配与偏移计算
 def create_meshgrid(
     height: int | torch.Tensor,
     width: int | torch.Tensor,
@@ -918,6 +928,7 @@ def spatial_expectation2d(input: torch.Tensor, normalized_coordinates: bool = Tr
     EfficientLoFTR model taking images as inputs and outputting the matching of them.
     """
 )
+# EfficientLoFTRForKeypointMatching：关键点检测与匹配任务头
 class EfficientLoFTRForKeypointMatching(EfficientLoFTRPreTrainedModel):
     """EfficientLoFTR dense image matcher
 

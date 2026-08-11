@@ -13,7 +13,11 @@ if TYPE_CHECKING:
     from .modeling_efficientloftr import EfficientLoFTRKeypointMatchingOutput
 
 
+# EfficientLoFTR 模块化图像处理：继承 SuperGlue 处理器，扩展关键点匹配后处理。
+
+# EfficientLoFTRImageProcessor：Torch 后端，post_process 还原原图坐标
 class EfficientLoFTRImageProcessor(SuperGlueImageProcessor):
+# post_process_keypoint_matching：按 threshold 过滤低分匹配并缩放坐标
     def post_process_keypoint_matching(
         self,
         outputs: "EfficientLoFTRKeypointMatchingOutput",
@@ -74,6 +78,7 @@ class EfficientLoFTRImageProcessor(SuperGlueImageProcessor):
         return results
 
 
+# EfficientLoFTRImageProcessorPil：PIL 后端关键点匹配后处理
 class EfficientLoFTRImageProcessorPil(SuperGlueImageProcessorPil):
     @requires(backends=("torch",))
     def post_process_keypoint_matching(

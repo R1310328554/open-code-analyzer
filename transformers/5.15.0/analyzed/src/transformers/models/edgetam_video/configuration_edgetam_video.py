@@ -27,6 +27,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoPromptEncoderConfig：视频 prompt 编码维度与 mask 输入通道
 class EdgeTamVideoPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -51,6 +52,7 @@ class EdgeTamVideoPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoMaskDecoderConfig：双向 Transformer 与上采样配置
 class EdgeTamVideoMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -89,6 +91,7 @@ class EdgeTamVideoMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVideoConfig：vision/memory/prompt/mask 子配置与推理缓存参数
 class EdgeTamVideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `EdgeTamVideoPromptEncoderConfig`], *optional*):

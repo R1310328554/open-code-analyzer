@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 from torchvision.transforms.v2 import functional as tvF
 
 
+# get_resize_output_image_size：按目标尺寸、倍数约束与保宽高比计算输出宽高
 def get_resize_output_image_size(
     input_image: "torch.Tensor",
     output_size: int | Iterable[int],
@@ -78,6 +79,7 @@ def get_resize_output_image_size(
     return SizeDict(height=new_height, width=new_width)
 
 
+# DPTImageProcessorKwargs：ensure_multiple_of/keep_aspect_ratio/do_reduce_labels 等参数
 class DPTImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ensure_multiple_of (`int`, *optional*, defaults to 1):
@@ -99,6 +101,7 @@ class DPTImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DPTImageProcessor：ImageNet 标准化，384 默认输入，深度/分割预处理与后处理
 class DPTImageProcessor(BeitImageProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN
@@ -119,6 +122,7 @@ class DPTImageProcessor(BeitImageProcessor):
 
     valid_kwargs = DPTImageProcessorKwargs
 
+# resize：保宽高比缩放至目标尺寸，并对齐 ensure_multiple_of 倍数
     def resize(
         self,
         image: "torch.Tensor",
@@ -159,6 +163,7 @@ class DPTImageProcessor(BeitImageProcessor):
         )
         return TorchvisionBackend.resize(self, image, output_size, resample=resample, antialias=antialias)
 
+# pad_image：中心 padding 使 H/W 成为 size_divisor 的倍数
     def pad_image(
         self,
         image: "torch.Tensor",
@@ -187,6 +192,7 @@ class DPTImageProcessor(BeitImageProcessor):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+# _preprocess：分组批处理 resize→crop→rescale/normalize→pad 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -245,6 +251,7 @@ class DPTImageProcessor(BeitImageProcessor):
 
         return processed_images
 
+# post_process_depth_estimation：深度图双三次上采样至原图尺寸
     def post_process_depth_estimation(
         self,
         outputs: "DepthEstimatorOutput",

@@ -39,6 +39,7 @@ from ..sam2.modeling_sam2 import (
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamVisionConfig：modular 源定义的视觉骨干与 FPN 配置
 class EdgeTamVisionConfig(PreTrainedConfig):
     r"""
     backbone_channel_list (`List[int]`, *optional*, defaults to `[384, 192, 96, 48]`):
@@ -100,18 +101,21 @@ class EdgeTamVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamPromptEncoderConfig：继承 SAM2 prompt 编码器配置
 class EdgeTamPromptEncoderConfig(Sam2PromptEncoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamMaskDecoderConfig：继承 SAM2 mask 解码器配置
 class EdgeTamMaskDecoderConfig(Sam2MaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="yonigozlan/EdgeTAM-hf")
 @strict
+# EdgeTamConfig：聚合 vision/prompt/mask 子配置的顶层配置
 class EdgeTamConfig(Sam2Config):
     r"""
     prompt_encoder_config (Union[`dict`, `EdgeTamPromptEncoderConfig`], *optional*):
@@ -151,6 +155,7 @@ class EdgeTamConfig(Sam2Config):
     pass
 
 
+# EdgeTamLayerNorm：继承 SAM2 LayerNorm
 class EdgeTamLayerNorm(Sam2LayerNorm):
     pass
 
@@ -159,10 +164,12 @@ class EdgeTamVisionEncoderOutput(Sam2VisionEncoderOutput):
     pass
 
 
+# EdgeTamAttention：继承 SAM2 注意力模块
 class EdgeTamAttention(Sam2Attention):
     pass
 
 
+# EdgeTamTwoWayAttentionBlock：继承 SAM2 双向注意力块
 class EdgeTamTwoWayAttentionBlock(Sam2TwoWayAttentionBlock):
     pass
 
@@ -172,6 +179,7 @@ class EdgeTamFeedForward(Sam2FeedForward):
 
 
 @auto_docstring
+# EdgeTamPreTrainedModel：自定义 positional_embedding 初始化
 class EdgeTamPreTrainedModel(Sam2PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = None
 
@@ -190,6 +198,7 @@ class EdgeTamPreTrainedModel(Sam2PreTrainedModel):
     The vision model from EdgeTAM without any head or projection on top.
     """
 )
+# EdgeTamVisionModel：RepViT + FPN 视觉编码 modular 源
 class EdgeTamVisionModel(Sam2VisionModel):
     config_class = EdgeTamVisionConfig
     main_input_name = "pixel_values"
@@ -228,6 +237,7 @@ class EdgeTamVisionModel(Sam2VisionModel):
         )
 
 
+# EdgeTamModel：完整 EdgeTAM 分割模型，忽略 video 相关权重键
 class EdgeTamModel(Sam2Model):
     _keys_to_ignore_on_load_unexpected = [
         r"^memory_.*",

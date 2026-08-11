@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# EfficientLoFTRConfig：zju-community/efficientloftr checkpoint 默认配置
 @auto_docstring(checkpoint="zju-community/efficientloftr")
 @strict
+# EfficientLoFTRConfig：stage 块数、聚合核大小、fine 分辨率与匹配阈值
 class EfficientLoFTRConfig(PreTrainedConfig):
     r"""
     stage_num_blocks (`List`, *optional*, defaults to [1, 2, 4, 14]):
