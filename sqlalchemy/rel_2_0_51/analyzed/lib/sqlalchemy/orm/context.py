@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# ORM 查询/DML 编译上下文：CompileState 与 QueryContext
+
 from __future__ import annotations
 
 import itertools
@@ -99,6 +101,7 @@ _EMPTY_DICT = util.immutabledict()
 LABEL_STYLE_LEGACY_ORM = SelectLabelStyle.LABEL_STYLE_LEGACY_ORM
 
 
+# 查询执行上下文：loader 选项、autoflush 与 post_load 路径
 class QueryContext:
     __slots__ = (
         "top_level_context",
@@ -220,6 +223,7 @@ _orm_load_exec_options = util.immutabledict(
 )
 
 
+# ORM CompileState 抽象基类：全局属性与 criteria 处理
 class AbstractORMCompileState(CompileState):
     is_dml_returning = False
 
@@ -328,6 +332,7 @@ class AbstractORMCompileState(CompileState):
         raise NotImplementedError()
 
 
+# 仅 autoflush 的轻量 CompileState（compound select 等）
 class AutoflushOnlyORMCompileState(AbstractORMCompileState):
     """ORM compile state that is a passthrough, except for autoflush."""
 
@@ -373,6 +378,7 @@ class AutoflushOnlyORMCompileState(AbstractORMCompileState):
         return result
 
 
+# ORM 编译状态核心：实体解析、eager join 与 column 命名
 class ORMCompileState(AbstractORMCompileState):
     class default_compile_options(CacheableOptions):
         _cache_key_traversal = [
@@ -670,6 +676,7 @@ class ORMCompileState(AbstractORMCompileState):
         )
 
 
+# DML RETURNING 列过滤基类：ORM 对象回填适配
 class _DMLReturningColFilter:
     """a base for an adapter used for the DML RETURNING cases
 
@@ -709,6 +716,7 @@ class _DMLReturningColFilter:
         raise NotImplementedError()
 
 
+# INSERT RETURNING 列过滤：新行映射到 ORM 实例
 class _DMLBulkInsertReturningColFilter(_DMLReturningColFilter):
     """an adapter used for the DML RETURNING case specifically
     for ORM bulk insert (or any hypothetical DML that is splitting out a class
@@ -728,6 +736,7 @@ class _DMLBulkInsertReturningColFilter(_DMLReturningColFilter):
         return mapper.local_table.c.corresponding_column(col)
 
 
+# UPDATE/DELETE RETURNING 列过滤
 class _DMLUpdateDeleteReturningColFilter(_DMLReturningColFilter):
     """an adapter used for the DML RETURNING case specifically
     for ORM enabled UPDATE/DELETE
@@ -753,6 +762,7 @@ class _DMLUpdateDeleteReturningColFilter(_DMLReturningColFilter):
 
 
 @sql.base.CompileState.plugin_for("orm", "orm_from_statement")
+# FromStatement 编译状态：从任意 SQL 构造加载 ORM 实体
 class ORMFromStatementCompileState(ORMCompileState):
     _from_obj_alias = None
     _has_mapper_entities = False
@@ -939,6 +949,7 @@ class ORMFromStatementCompileState(ORMCompileState):
             entity.setup_dml_returning_compile_state(self, adapter)
 
 
+# ORM 构造：包装 Select/Text/DML 并指定返回实体列
 class FromStatement(GroupedElement, Generative, TypedReturnsRows[_TP]):
     """Core construct that represents a load of ORM objects from various
     :class:`.ReturnsRows` and other classes including:
@@ -1060,6 +1071,7 @@ class FromStatement(GroupedElement, Generative, TypedReturnsRows[_TP]):
 
 
 @sql.base.CompileState.plugin_for("orm", "compound_select")
+# UNION 等复合 SELECT 的 ORM 编译插件
 class CompoundSelectCompileState(
     AutoflushOnlyORMCompileState, CompoundSelectState
 ):
@@ -1067,6 +1079,7 @@ class CompoundSelectCompileState(
 
 
 @sql.base.CompileState.plugin_for("orm", "select")
+# SELECT 的 ORM 编译插件：join、where 与 loader 策略
 class ORMSelectCompileState(ORMCompileState, SelectState):
     _already_joined_edges = ()
 
@@ -2576,6 +2589,7 @@ def _determine_last_joined_entity(
         return target
 
 
+# 查询实体抽象：CompileState 中单个 SELECT 列/实体的描述
 class _QueryEntity:
     """represent an entity column returned within a Query result."""
 
@@ -2671,6 +2685,7 @@ class _QueryEntity:
         return entities_collection
 
 
+# Mapper 实体：整表/多态 mapper 作为 SELECT 目标
 class _MapperEntity(_QueryEntity):
     """mapper/class/AliasedClass entity"""
 
@@ -2843,6 +2858,7 @@ class _MapperEntity(_QueryEntity):
         compile_state._fallback_from_clauses.append(self.selectable)
 
 
+# Bundle 实体：命名列组打包为结构化结果
 class _BundleEntity(_QueryEntity):
     _extra_entities = ()
 
@@ -2973,6 +2989,7 @@ class _BundleEntity(_QueryEntity):
         return proc, self._label_name, self._extra_entities
 
 
+# 列实体基类：单个 mapped column 或 SQL 表达式
 class _ColumnEntity(_QueryEntity):
     __slots__ = (
         "_fetch_column",
@@ -3094,6 +3111,7 @@ class _ColumnEntity(_QueryEntity):
             return ret
 
 
+# 原始列实体：无 ORM 适配的直接 ColumnElement
 class _RawColumnEntity(_ColumnEntity):
     entity_zero = None
     mapper = None
@@ -3172,6 +3190,7 @@ class _RawColumnEntity(_ColumnEntity):
         self._fetch_column = column
 
 
+# ORM 列实体：带 mapper 适配与 label 约定
 class _ORMColumnEntity(_ColumnEntity):
     """Column/expression based entity."""
 
@@ -3321,6 +3340,7 @@ class _ORMColumnEntity(_ColumnEntity):
         self._fetch_column = column
 
 
+# identity token 实体：复合/分片主键的 token 列
 class _IdentityTokenEntity(_ORMColumnEntity):
     translate_raw_column = False
 

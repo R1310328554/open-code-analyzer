@@ -30,6 +30,8 @@ alternate instrumentation forms.
 
 """
 
+# 类 instrumentation：ClassManager 与属性/实例状态挂钩
+
 from __future__ import annotations
 
 from typing import Any
@@ -78,6 +80,7 @@ _T = TypeVar("_T", bound=Any)
 DEL_ATTR = util.symbol("DEL_ATTR")
 
 
+# 过期属性加载协议：lazy load 过期列的回调签名
 class _ExpiredAttributeLoaderProto(Protocol):
     def __call__(
         self,
@@ -87,10 +90,12 @@ class _ExpiredAttributeLoaderProto(Protocol):
     ) -> None: ...
 
 
+# ClassManager 工厂协议：按类创建 instrumentation manager
 class _ManagerFactory(Protocol):
     def __call__(self, class_: Type[_O]) -> ClassManager[_O]: ...
 
 
+# 类管理器：维护 mapped 类的 Instrumentation 与 QueryableAttribute 字典
 class ClassManager(
     HasMemoized,
     Dict[str, "QueryableAttribute[Any]"],
@@ -569,6 +574,7 @@ class ClassManager(
         )
 
 
+# ClassManager 序列化：pickle 场景下重建 manager
 class _SerializeManager:
     """Provide serialization of a :class:`.ClassManager`.
 
@@ -603,6 +609,7 @@ class _SerializeManager:
         manager.dispatch.unpickle(state, state_dict)
 
 
+# Instrumentation 工厂：注册/替换 class manager 并分发事件
 class InstrumentationFactory(EventTarget):
     """Factory for new ClassManager instances."""
 

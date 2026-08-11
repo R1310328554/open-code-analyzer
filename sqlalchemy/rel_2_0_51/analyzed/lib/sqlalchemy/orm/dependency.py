@@ -9,6 +9,8 @@
 
 """Relationship dependencies."""
 
+# 关系依赖处理器：flush 时维护 FK 与关联集合一致性
+
 from __future__ import annotations
 
 from . import attributes
@@ -24,6 +26,7 @@ from .. import sql
 from .. import util
 
 
+# 依赖处理器基类：per-state flush 前/后钩子与 save/delete 排序
 class DependencyProcessor:
     def __init__(self, prop):
         self.prop = prop
@@ -329,6 +332,7 @@ class DependencyProcessor:
         return "%s(%s)" % (self.__class__.__name__, self.prop)
 
 
+# 一对多依赖：子端 FK 更新与 orphan 处理
 class OneToManyDP(DependencyProcessor):
     def per_property_dependencies(
         self,
@@ -638,6 +642,7 @@ class OneToManyDP(DependencyProcessor):
         )
 
 
+# 多对一依赖：父端引用切换与 post_update
 class ManyToOneDP(DependencyProcessor):
     def __init__(self, prop):
         DependencyProcessor.__init__(self, prop)
@@ -863,6 +868,7 @@ class ManyToOneDP(DependencyProcessor):
             )
 
 
+# 主键变更检测：PK/FK 变化时的额外同步逻辑
 class DetectKeySwitch(DependencyProcessor):
     """For many-to-one relationships with no one-to-many backref,
     searches for parents through the unit of work when a primary
@@ -980,6 +986,7 @@ class DetectKeySwitch(DependencyProcessor):
         )
 
 
+# 多对多依赖：secondary 表行与关联集合双向维护
 class ManyToManyDP(DependencyProcessor):
     def per_property_dependencies(
         self,

@@ -17,6 +17,8 @@ basic add/delete mutation.
 
 """
 
+# 动态集合（lazy='dynamic'）：可过滤 Query 式关系访问
+
 from __future__ import annotations
 
 from typing import Any
@@ -58,6 +60,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound=Any)
 
 
+# 动态集合历史：跟踪 added/deleted 并与 Query 对账
 class DynamicCollectionHistory(WriteOnlyHistory[_T]):
     def __init__(
         self,
@@ -79,6 +82,7 @@ class DynamicCollectionHistory(WriteOnlyHistory[_T]):
             self._reconcile_collection = False
 
 
+# 动态属性实现：关系返回 AppenderQuery 而非 materialized 集合
 class DynamicAttributeImpl(WriteOnlyAttributeImpl):
     _supports_dynamic_iteration = True
     collection_history_cls = DynamicCollectionHistory[Any]
@@ -109,10 +113,12 @@ class DynamicAttributeImpl(WriteOnlyAttributeImpl):
 
 
 @relationships.RelationshipProperty.strategy_for(lazy="dynamic")
+# 动态 loader 策略：加载时构造 AppenderQuery
 class DynaLoader(WriteOnlyLoader):
     impl_class = DynamicAttributeImpl
 
 
+# Appender 混入：向动态集合 append/remove 而不预加载全部行
 class AppenderMixin(AbstractCollectionWriter[_T]):
     """A mixin that expects to be mixing in a Query class with
     AbstractAppender.
@@ -289,6 +295,7 @@ class AppenderMixin(AbstractCollectionWriter[_T]):
         self._remove_impl(item)
 
 
+# AppenderQuery：继承 Query 的动态关系查询与变更接口
 class AppenderQuery(AppenderMixin[_T], Query[_T]):  # type: ignore[misc]
     """A dynamic query that supports basic collection storage operations.
 

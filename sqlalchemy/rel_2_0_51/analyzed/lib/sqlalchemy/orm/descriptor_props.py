@@ -11,6 +11,8 @@ as actively in the load/persist ORM loop.
 
 """
 
+# 描述符型 MapperProperty：Composite、Synonym 与用户 descriptor
+
 from __future__ import annotations
 
 from dataclasses import is_dataclass
@@ -88,6 +90,7 @@ _T = TypeVar("_T", bound=Any)
 _PT = TypeVar("_PT", bound=Any)
 
 
+# 描述符属性基类：代理用户自定义 descriptor 的 MapperProperty
 class DescriptorProperty(MapperProperty[_T]):
     """:class:`.MapperProperty` which proxies access to a
     user-defined descriptor."""
@@ -182,6 +185,8 @@ _composite_getters: weakref.WeakKeyDictionary[
 ] = weakref.WeakKeyDictionary()
 
 
+# 复合属性：多列组合为单一 Python 值（composite()）
+# 声明式 composite 构造：CompositeProperty 的公开别名
 class CompositeProperty(
     _MapsColumns[_CC], _IntrospectsAnnotations, DescriptorProperty[_CC]
 ):
@@ -880,6 +885,7 @@ class Composite(CompositeProperty[_T], _DeclarativeMapped[_T]):
     """:meta private:"""
 
 
+# 具体继承表中的 descriptor 属性转发
 class ConcreteInheritedProperty(DescriptorProperty[_T]):
     """A 'do nothing' :class:`.MapperProperty` that disables
     an attribute on a concrete subclass that is only present
@@ -936,6 +942,8 @@ class ConcreteInheritedProperty(DescriptorProperty[_T]):
         self.descriptor = NoninheritedConcreteProp()
 
 
+# 同义词属性：将列映射到另一个属性名（synonym()）
+# 声明式 synonym 构造：SynonymProperty 的公开别名
 class SynonymProperty(DescriptorProperty[_T]):
     """Denote an attribute name as a synonym to a mapped property,
     in that the attribute will mirror the value and expression behavior

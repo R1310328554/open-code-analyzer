@@ -7,6 +7,8 @@
 
 """Public API functions and helpers for declarative."""
 
+# 声明式映射公开 API：DeclarativeBase、registry 与 declared_attr
+
 from __future__ import annotations
 
 import itertools
@@ -128,6 +130,7 @@ def has_inherited_table(cls: Type[_O]) -> bool:
     return False
 
 
+# 动态属性元类：mapper 存在时拦截 setattr/delattr
 class _DynamicAttributesType(type):
     def __setattr__(cls, key: str, value: Any) -> None:
         if "__mapper__" in cls.__dict__:
@@ -142,6 +145,7 @@ class _DynamicAttributesType(type):
             type.__delattr__(cls, key)
 
 
+# 声明式属性拦截元类：支持运行时动态添加 mapped 属性
 class DeclarativeAttributeIntercept(
     _DynamicAttributesType,
     # Inspectable is used only by the mypy plugin
@@ -167,10 +171,12 @@ class DeclarativeAttributeIntercept(
         deferred,
     ),
 )
+# 带 @dataclass_transform 的声明式元类
 class DCTransformDeclarative(DeclarativeAttributeIntercept):
     """metaclass that includes @dataclass_transforms"""
 
 
+# 旧版 declarative 元类（兼容 ext.declarative）
 class DeclarativeMeta(DeclarativeAttributeIntercept):
     metadata: MetaData
     registry: RegistryType
@@ -243,6 +249,7 @@ def synonym_for(
     return decorate
 
 
+# declared_attr 公共基类：类级延迟属性描述符
 class _declared_attr_common:
     def __init__(
         self,
@@ -308,6 +315,7 @@ class _declared_attr_common:
             return obj
 
 
+# 内部 directive 变体（如 __tablename__）
 class _declared_directive(_declared_attr_common, Generic[_T]):
     # see mapping_api.rst for docstring
 
@@ -330,6 +338,7 @@ class _declared_directive(_declared_attr_common, Generic[_T]):
             ...
 
 
+# 类级延迟属性装饰器：首次访问时在子类上求值
 class declared_attr(interfaces._MappedAttribute[_T_co], _declared_attr_common):
     """Mark a class-level method as representing the definition of
     a mapped property or Declarative directive.
@@ -466,6 +475,7 @@ class declared_attr(interfaces._MappedAttribute[_T_co], _declared_attr_common):
         return cls._stateful(cascading=True)
 
 
+# 带实例状态的 declared_attr 变体
 class _stateful_declared_attr(declared_attr[_T_co]):
     kw: Dict[str, Any]
 
@@ -572,6 +582,7 @@ def _setup_declarative_base(cls: Type[Any]) -> None:
         cls.__init__ = cls.registry.constructor
 
 
+# Mixin：为 mapped class 启用 dataclass 转换
 class MappedAsDataclass(metaclass=DCTransformDeclarative):
     """Mixin class to indicate when mapping this class, also convert it to be
     a dataclass.
@@ -637,6 +648,7 @@ class MappedAsDataclass(metaclass=DCTransformDeclarative):
             )
 
 
+# 声明式基类：metaclass 拦截属性并配合 registry 建立 mapper
 class DeclarativeBase(
     # Inspectable is used only by the mypy plugin
     inspection.Inspectable[InstanceState[Any]],
@@ -865,6 +877,7 @@ def _check_not_declarative(cls: Type[Any], base: Type[Any]) -> None:
         )
 
 
+# 无 metaclass 的声明式基类：适用于自定义 metaclass 场景
 class DeclarativeBaseNoMeta(
     # Inspectable is used only by the mypy plugin
     inspection.Inspectable[InstanceState[Any]]
@@ -1114,6 +1127,7 @@ def declarative_base(
     )
 
 
+# 映射注册表：Declarative/Imperative 映射的统一配置中心
 class registry:
     """Generalized registry for mapping classes.
 

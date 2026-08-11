@@ -16,6 +16,8 @@ This module is **private, for internal use by SQLAlchemy**.
 
 """
 
+# 内存求值器：将 SQL 表达式编译为 Python predicate（session synchronize）
+
 from __future__ import annotations
 
 from typing import Type
@@ -33,10 +35,12 @@ from ..sql.sqltypes import Numeric
 from ..util import warn_deprecated
 
 
+# 不可求值错误：WHERE 子句含 DB 函数等无法在 Python 复现
 class UnevaluatableError(exc.InvalidRequestError):
     pass
 
 
+# 空对象占位：比较运算中对 None/missing 返回 None
 class _NoObject(operators.ColumnOperators):
     def operate(self, *arg, **kw):
         return None
@@ -45,6 +49,7 @@ class _NoObject(operators.ColumnOperators):
         return None
 
 
+# 过期对象占位：比较时视为仍匹配（passive expired）
 class _ExpiredObject(operators.ColumnOperators):
     def operate(self, *arg, **kw):
         return self
@@ -57,6 +62,7 @@ _NO_OBJECT = _NoObject()
 _EXPIRED_OBJECT = _ExpiredObject()
 
 
+# 求值编译器：遍历 SQL AST 生成 (instance)->bool 闭包
 class _EvaluatorCompiler:
     def __init__(self, target_cls=None):
         self.target_cls = target_cls

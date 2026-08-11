@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# Identity Map：Session 内 (mapper, key) → InstanceState 索引
+
 from __future__ import annotations
 
 from typing import Any
@@ -34,6 +36,7 @@ _T = TypeVar("_T", bound=Any)
 _O = TypeVar("_O", bound=object)
 
 
+# 身份映射基类：跟踪 modified 状态与主键查找
 class IdentityMap:
     _wr: weakref.ref[IdentityMap]
 
@@ -123,6 +126,7 @@ class IdentityMap:
         return len(self._dict)
 
 
+# 弱引用身份映射：实例 GC 后自动移除条目（默认 Session 用）
 class WeakInstanceDict(IdentityMap):
     _dict: Dict[_IdentityKeyType[Any], InstanceState[Any]]
 

@@ -7,6 +7,8 @@
 
 """ORM event interfaces."""
 
+# ORM 事件钩子：Instrumentation/Mapper/Session/Attribute/Query
+
 from __future__ import annotations
 
 from typing import Any
@@ -72,6 +74,7 @@ _KT = TypeVar("_KT", bound=Any)
 _ET2 = TypeVar("_ET2", bound=EventTarget)
 
 
+# 类 instrumentation 事件：instrument_class/new/init 等
 class InstrumentationEvents(event.Events[InstrumentationFactory]):
     """Events related to class instrumentation events.
 
@@ -187,6 +190,7 @@ class InstrumentationEvents(event.Events[InstrumentationFactory]):
         """Called when an attribute is instrumented."""
 
 
+# Instrumentation 事件 hold：按任意 type 注册监听器
 class _InstrumentationEventsHold:
     """temporary marker object used to transfer from _accept_with() to
     _listen() on the InstrumentationEvents class.
@@ -199,6 +203,7 @@ class _InstrumentationEventsHold:
     dispatch = event.dispatcher(InstrumentationEvents)
 
 
+# 实例生命周期事件：init/load/refresh/expire/pickle
 class InstanceEvents(event.Events[ClassManager[Any]]):
     """Define events specific to object lifecycle.
 
@@ -633,6 +638,7 @@ class InstanceEvents(event.Events[ClassManager[Any]]):
         """
 
 
+# 事件 hold 基类：弱引用 target 上的监听器集合
 class _EventsHold(event.RefCollection[_ET]):
     """Hold onto listeners against unmapped, uninstrumented classes.
 
@@ -728,6 +734,7 @@ class _EventsHold(event.RefCollection[_ET]):
                         )
 
 
+# InstanceEvents hold：ClassManager 实例事件代理
 class _InstanceEventsHold(_EventsHold[_ET]):
     all_holds: weakref.WeakKeyDictionary[Any, Any] = (
         weakref.WeakKeyDictionary()
@@ -743,6 +750,7 @@ class _InstanceEventsHold(_EventsHold[_ET]):
     dispatch = event.dispatcher(HoldInstanceEvents)
 
 
+# Mapper 事件：before/after insert/update/delete 与 mapper 配置
 class MapperEvents(event.Events[mapperlib.Mapper[Any]]):
     """Define events specific to mappings.
 
@@ -1518,6 +1526,7 @@ class MapperEvents(event.Events[mapperlib.Mapper[Any]]):
         """
 
 
+# MapperEvents hold：未映射类上的 mapper 事件代理
 class _MapperEventsHold(_EventsHold[_ET]):
     all_holds = weakref.WeakKeyDictionary()
 
@@ -1536,6 +1545,7 @@ class _MapperEventsHold(_EventsHold[_ET]):
 _sessionevents_lifecycle_event_names: Set[str] = set()
 
 
+# Session 事件：flush/commit/rollback/after_begin 等
 class SessionEvents(event.Events[Session]):
     """Define events specific to :class:`.Session` lifecycle.
 
@@ -2431,6 +2441,7 @@ class SessionEvents(event.Events[Session]):
         """
 
 
+# 属性事件：set/init/get/history 与 collection 变更
 class AttributeEvents(event.Events[QueryableAttribute[Any]]):
     r"""Define events for object attributes.
 
@@ -3041,6 +3052,7 @@ class AttributeEvents(event.Events[QueryableAttribute[Any]]):
         """
 
 
+# Query 事件：before/after compile 与 lazy load
 class QueryEvents(event.Events[Query[Any]]):
     """Represent events within the construction of a :class:`_query.Query`
     object.

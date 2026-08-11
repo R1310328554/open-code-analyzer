@@ -12,6 +12,8 @@ This system allows specification of classes and expressions used in
 
 """
 
+# 声明式类名注册表：relationship 字符串引用解析
+
 from __future__ import annotations
 
 import re
@@ -180,12 +182,14 @@ def _key_is_empty(
         return not test(thing)
 
 
+# 类注册表值标记基类
 class ClsRegistryToken:
     """an object that can be in the registry._class_registry as a value."""
 
     __slots__ = ()
 
 
+# 同名多类标记：decl_class_registry 中类名冲突占位
 class _MultipleClassMarker(ClsRegistryToken):
     """refers to multiple classes of the same name
     within _decl_class_registry.
@@ -255,6 +259,7 @@ class _MultipleClassMarker(ClsRegistryToken):
         self.contents.add(weakref.ref(item, self._remove_item))
 
 
+# 模块级注册标记：按模块组织待解析类
 class _ModuleMarker(ClsRegistryToken):
     """Refers to a module name within
     _decl_class_registry.
@@ -327,6 +332,7 @@ class _ModuleMarker(ClsRegistryToken):
             existing.remove_item(cls)
 
 
+# 模块命名空间：延迟解析 relationship 中的类名字符串
 class _ModNS:
     __slots__ = ("__parent",)
 
@@ -353,6 +359,7 @@ class _ModNS:
         )
 
 
+# 列访问代理：字符串表达式解析为 Column 集合
 class _GetColumns:
     __slots__ = ("cls",)
 
@@ -390,6 +397,7 @@ inspection._inspects(_GetColumns)(
 )
 
 
+# 表访问代理：字符串表达式解析为 Table/FromClause
 class _GetTable:
     __slots__ = "key", "metadata"
 
@@ -410,6 +418,7 @@ def _determine_container(key: str, value: Any) -> _GetColumns:
     return _GetColumns(value)
 
 
+# 类名解析器：从 registry 查找并实例化目标 mapped class
 class _class_resolver:
     __slots__ = (
         "cls",

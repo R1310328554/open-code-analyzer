@@ -58,7 +58,8 @@ bookkeeping properties.  This isn't possible (or desirable) for built-in
 classes like ``list``, so trivial sub-classes are substituted to hold
 decoration::
 
-  class InstrumentedList(list):
+  # instrumented list：内置 list 的 ORM 跟踪子类
+class InstrumentedList(list):
       pass
 
 Collection classes can be specified in ``relationship(collection_class=)`` as
@@ -105,6 +106,8 @@ The owning object and :class:`.CollectionAttributeImpl` are also reachable
 through the adapter, allowing for some very sophisticated behavior.
 
 """
+
+# ORM 集合 instrumentation：装饰器挂钩 append/remove/iterate
 
 from __future__ import annotations
 
@@ -171,10 +174,12 @@ _COL = TypeVar("_COL", bound="Collection[Any]")
 _FN = TypeVar("_FN", bound="Callable[..., Any]")
 
 
+# 集合转换器协议：instrument 前/后类型转换
 class _CollectionConverterProtocol(Protocol):
     def __call__(self, collection: _COL) -> _COL: ...
 
 
+# 已适配集合协议：暴露 _sa_adapter 等 ORM 钩子
 class _AdaptedCollectionProtocol(Protocol):
     _sa_adapter: CollectionAdapter
     _sa_appender: Callable[..., Any]
@@ -183,6 +188,7 @@ class _AdaptedCollectionProtocol(Protocol):
     _sa_converter: _CollectionConverterProtocol
 
 
+# 集合装饰器命名空间：appender/remover/iterator/converter 标记
 class collection:
     """Decorators for entity collection classes.
 
@@ -461,6 +467,7 @@ else:
     collection_adapter = operator.attrgetter("_sa_adapter")
 
 
+# 集合适配器：桥接 Python 集合并发射 add/remove 事件
 class CollectionAdapter:
     """Bridges between the ORM and arbitrary Python collections.
 
@@ -1555,10 +1562,12 @@ class InstrumentedList(List[_T]):
     """An instrumented version of the built-in list."""
 
 
+# instrumented set：内置 set 的 ORM 跟踪子类
 class InstrumentedSet(Set[_T]):
     """An instrumented version of the built-in set."""
 
 
+# instrumented dict：内置 dict 的 ORM 跟踪子类
 class InstrumentedDict(Dict[_KT, _VT]):
     """An instrumented version of the built-in dict."""
 

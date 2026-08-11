@@ -12,6 +12,8 @@ specifically outside of the flush() process.
 
 """
 
+# ORM 批量持久化：flush 之外的 bulk insert/update/delete 编译与执行
+
 from __future__ import annotations
 
 from typing import Any
@@ -384,6 +386,7 @@ def _expand_composites(mapper, mappings):
             populators[key](mapping)
 
 
+# ORM DML 编译状态基类：处理 RETURNING 与 mapper 列映射
 class ORMDMLState(AbstractORMCompileState):
     is_dml_returning = True
     from_statement_ctx: Optional[ORMFromStatementCompileState] = None
@@ -643,6 +646,7 @@ class ORMDMLState(AbstractORMCompileState):
             return result
 
 
+# 批量 UPDATE/DELETE 编译状态：会话同步策略与 evaluator 条件
 class BulkUDCompileState(ORMDMLState):
     class default_update_options(Options):
         _dml_strategy: DMLStrategyArgument = "auto"
@@ -1162,6 +1166,7 @@ class BulkUDCompileState(ORMDMLState):
 
 
 @CompileState.plugin_for("orm", "insert")
+# ORM INSERT 编译插件：bulk/orm 策略、return_defaults 与 populate_existing
 class BulkORMInsert(ORMDMLState, InsertDMLState):
     class default_insert_options(Options):
         _dml_strategy: DMLStrategyArgument = "auto"
@@ -1422,6 +1427,7 @@ class BulkORMInsert(ORMDMLState, InsertDMLState):
 
 
 @CompileState.plugin_for("orm", "update")
+# ORM UPDATE 编译插件：bulk 更新、RETURNING 与 session synchronize
 class BulkORMUpdate(BulkUDCompileState, UpdateDMLState):
     @classmethod
     def create_for_statement(cls, statement, compiler, **kw):
@@ -1909,6 +1915,7 @@ class BulkORMUpdate(BulkUDCompileState, UpdateDMLState):
 
 
 @CompileState.plugin_for("orm", "delete")
+# ORM DELETE 编译插件：bulk 删除与 identity map 失效
 class BulkORMDelete(BulkUDCompileState, DeleteDMLState):
     @classmethod
     def create_for_statement(cls, statement, compiler, **kw):

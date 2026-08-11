@@ -7,6 +7,8 @@
 
 """Internal implementation for declarative."""
 
+# 声明式映射内部实现：类扫描、mapper 配置与 dataclass 集成
+
 from __future__ import annotations
 
 import collections
@@ -87,6 +89,7 @@ _MapperKwArgs = Mapping[str, Any]
 _TableArgsType = Union[Tuple[Any, ...], Dict[str, Any]]
 
 
+# 已映射类协议：__mapper__/__table__ 等 typing 约束
 class MappedClassProtocol(Protocol[_O]):
     """A protocol representing a SQLAlchemy mapped class.
 
@@ -101,6 +104,7 @@ class MappedClassProtocol(Protocol[_O]):
     def __call__(self, **kw: Any) -> _O: ...
 
 
+# 内部扩展映射类协议：含 __table_args__ 等声明式钩子
 class _DeclMappedClassProtocol(MappedClassProtocol[_O], Protocol):
     "Internal more detailed version of ``MappedClassProtocol``."
 
@@ -116,6 +120,7 @@ class _DeclMappedClassProtocol(MappedClassProtocol[_O], Protocol):
     def __declare_last__(self) -> None: ...
 
 
+# dataclass 转换参数 TypedDict
 class _DataclassArguments(TypedDict):
     init: Union[_NoArg, bool]
     repr: Union[_NoArg, bool]
@@ -277,6 +282,7 @@ def _check_declared_props_nocascade(
         return False
 
 
+# Mapper 配置基类：收集 properties 与 declared_attr
 class _MapperConfig:
     __slots__ = (
         "cls",
@@ -367,6 +373,7 @@ class _MapperConfig:
         self.map(mapper_kw)
 
 
+# 命令式映射配置：无类扫描的直接 mapper()
 class _ImperativeMapperConfig(_MapperConfig):
     __slots__ = ("local_table", "inherits")
 
@@ -429,6 +436,7 @@ class _ImperativeMapperConfig(_MapperConfig):
         self.inherits = inherits
 
 
+# 扫描阶段收集的 PEP 593 Annotated 信息
 class _CollectedAnnotation(NamedTuple):
     raw_annotation: _AnnotationScanType
     mapped_container: Optional[Type[Mapped[Any]]]
@@ -439,6 +447,7 @@ class _CollectedAnnotation(NamedTuple):
     originating_class: Type[Any]
 
 
+# 类扫描 mapper 配置：解析 Mapped/relationship 等
 class _ClassScanMapperConfig(_MapperConfig):
     __slots__ = (
         "registry",
@@ -2011,6 +2020,7 @@ def _as_dc_declaredattr(
         return obj
 
 
+# 延迟 mapper 配置：首次访问时再完成映射
 class _DeferredMapperConfig(_ClassScanMapperConfig):
     _cls: weakref.ref[Type[Any]]
 

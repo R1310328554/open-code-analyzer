@@ -16,6 +16,8 @@ are exposed when inspecting mappings.
 
 """
 
+# ORM 核心接口：MapperProperty、LoaderStrategy 与编译/加载选项
+
 from __future__ import annotations
 
 import collections
@@ -113,6 +115,7 @@ _T_co = TypeVar("_T_co", bound=Any, covariant=True)
 _TLS = TypeVar("_TLS", bound="Type[LoaderStrategy]")
 
 
+# ORM 语句角色：可执行 SQL 的 ORM 感知构造
 class ORMStatementRole(roles.StatementRole):
     __slots__ = ()
     _role_name = (
@@ -120,6 +123,7 @@ class ORMStatementRole(roles.StatementRole):
     )
 
 
+# ORM 列子句角色：mapped entity 或 Column 表达式
 class ORMColumnsClauseRole(
     roles.ColumnsClauseRole, roles.TypedColumnsClauseRole[_T]
 ):
@@ -127,16 +131,19 @@ class ORMColumnsClauseRole(
     _role_name = "ORM mapped entity, aliased entity, or Column expression"
 
 
+# ORM 实体列角色：必须是 mapped/aliased entity
 class ORMEntityColumnsClauseRole(ORMColumnsClauseRole[_T]):
     __slots__ = ()
     _role_name = "ORM mapped or aliased entity"
 
 
+# ORM FROM 角色：实体或 FROM 表达式
 class ORMFromClauseRole(roles.StrictFromClauseRole):
     __slots__ = ()
     _role_name = "ORM mapped entity, aliased entity, or FROM expression"
 
 
+# 列描述 TypedDict：column_descriptions() 返回结构
 class ORMColumnDescription(TypedDict):
     name: str
     # TODO: add python_type and sql_type here; combining them
@@ -147,6 +154,7 @@ class ORMColumnDescription(TypedDict):
     entity: Optional[_ColumnsClauseArgument[Any]]
 
 
+# 注解内省 mixin：declarative 扫描 PEP 593 Annotated
 class _IntrospectsAnnotations:
     __slots__ = ()
 
@@ -191,6 +199,7 @@ class _IntrospectsAnnotations:
         )
 
 
+# 属性选项 NamedTuple：init/compare/repr 等 dataclass 标志
 class _AttributeOptions(NamedTuple):
     """define Python-local attribute behavior options common to all
     :class:`.MapperProperty` objects.
@@ -325,6 +334,7 @@ _DEFAULT_READONLY_ATTRIBUTE_OPTIONS = _AttributeOptions(
 )
 
 
+# dataclass 属性选项：字段级 dataclass 参数
 class _DCAttributeOptions:
     """mixin for descriptors or configurational objects that include dataclass
     field options.
@@ -348,6 +358,7 @@ class _DCAttributeOptions:
     _has_dataclass_arguments: bool
 
 
+# 列映射 mixin：Composite 等映射到多列的属性
 class _MapsColumns(_DCAttributeOptions, _MappedAttribute[_T]):
     """interface for declarative-capable construct that delivers one or more
     Column objects to the declarative process to be part of a Table.
@@ -379,6 +390,7 @@ class _MapsColumns(_DCAttributeOptions, _MappedAttribute[_T]):
 # use of sqlalchemy.util.typing.DescriptorReference to avoid mis-interpretation
 # by typing tools
 @inspection._self_inspects
+# Mapper 属性基类：column/relationship 等映射描述符
 class MapperProperty(
     HasCacheKey,
     _DCAttributeOptions,
@@ -670,6 +682,7 @@ class MapperProperty(
 
 
 @inspection._self_inspects
+# 属性比较器：QueryableAttribute 的 ==、in_ 等 SQL 运算
 class PropComparator(SQLORMOperations[_T_co], Generic[_T_co], ColumnOperators):
     r"""Defines SQL operations for ORM mapped attributes.
 
@@ -979,6 +992,7 @@ class PropComparator(SQLORMOperations[_T_co], Generic[_T_co], ColumnOperators):
         return self.operate(PropComparator.has_op, criterion, **kwargs)
 
 
+# 策略化属性：关联 loader strategy 的 MapperProperty
 class StrategizedProperty(MapperProperty[_T]):
     """A MapperProperty which uses selectable strategies to affect
     loading behavior.
@@ -1170,6 +1184,7 @@ class StrategizedProperty(MapperProperty[_T]):
         )
 
 
+# ORM 可执行选项基类：with_loader_criteria 等链式选项
 class ORMOption(ExecutableOption):
     """Base class for option objects that are passed to ORM queries.
 
@@ -1250,6 +1265,7 @@ class ORMOption(ExecutableOption):
             return self
 
 
+# 编译状态选项：修改 ORMCompileState 的 ExecutableOption
 class CompileStateOption(HasCacheKey, ORMOption):
     """base for :class:`.ORMOption` classes that affect the compilation of
     a SQL query and therefore need to be part of the cache key.
@@ -1305,6 +1321,7 @@ class CompileStateOption(HasCacheKey, ORMOption):
         """
 
 
+# Loader 选项：defaultload/joinedload 等加载策略
 class LoaderOption(CompileStateOption):
     """Describe a loader modification to an ORM statement at compilation time.
 
@@ -1322,6 +1339,7 @@ class LoaderOption(CompileStateOption):
         self.process_compile_state(compile_state)
 
 
+# Criteria 选项：with_loader_criteria 额外 WHERE
 class CriteriaOption(CompileStateOption):
     """Describe a WHERE criteria modification to an ORM statement at
     compilation time.
@@ -1341,6 +1359,7 @@ class CriteriaOption(CompileStateOption):
         """
 
 
+# 用户自定义 ORM 选项扩展点
 class UserDefinedOption(ORMOption):
     """Base class for a user-defined option that can be consumed from the
     :meth:`.SessionEvents.do_orm_execute` event hook.
@@ -1374,6 +1393,7 @@ class UserDefinedOption(ORMOption):
     ":meth:`.SessionEvents.before_orm_execute` hook to consume them.",
     constructor=None,
 )
+# Mapper 级选项：legacy Query 时代的 mapper 选项
 class MapperOption(ORMOption):
     """Describe a modification to a Query"""
 
@@ -1405,6 +1425,7 @@ class MapperOption(ORMOption):
         self.process_query(query)
 
 
+# Loader 策略基类：lazy/joined/subquery/selectin 等实现
 class LoaderStrategy:
     """Describe the loading behavior of a StrategizedProperty object.
 

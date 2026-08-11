@@ -7,6 +7,8 @@
 
 """SQLAlchemy ORM exceptions."""
 
+# ORM 专用异常：StaleData、Unmapped、Detached 等
+
 from __future__ import annotations
 
 from typing import Any
@@ -33,6 +35,7 @@ NO_STATE = (AttributeError, KeyError)
 """Exception types that may be raised by instrumentation implementations."""
 
 
+# 陈旧数据错误：UPDATE/DELETE 影响行数或 version_id 不匹配
 class StaleDataError(sa_exc.SQLAlchemyError):
     """An operation encountered database state that is unaccounted for.
 
@@ -61,10 +64,12 @@ class StaleDataError(sa_exc.SQLAlchemyError):
 ConcurrentModificationError = StaleDataError
 
 
+# Flush 错误：flush 过程中无法继续的 ORM 状态
 class FlushError(sa_exc.SQLAlchemyError):
     """A invalid condition was detected during flush()."""
 
 
+# Mapped 注解错误：Mapped[]/relationship 类型注解无效
 class MappedAnnotationError(sa_exc.ArgumentError):
     """Raised when ORM annotated declarative cannot interpret the
     expression present inside of the :class:`.Mapped` construct.
@@ -74,10 +79,12 @@ class MappedAnnotationError(sa_exc.ArgumentError):
     """
 
 
+# 未映射错误：实例/类尚未 configure mapper
 class UnmappedError(sa_exc.InvalidRequestError):
     """Base for exceptions that involve expected mappings not present."""
 
 
+# 对象解引用错误：弱引用实例已被 GC
 class ObjectDereferencedError(sa_exc.SQLAlchemyError):
     """An operation cannot complete due to an object being garbage
     collected.
@@ -85,6 +92,7 @@ class ObjectDereferencedError(sa_exc.SQLAlchemyError):
     """
 
 
+# 游离实例错误：实例未绑定 Session 却访问持久化状态
 class DetachedInstanceError(sa_exc.SQLAlchemyError):
     """An attempt to access unloaded attributes on a
     mapped instance that is detached."""
@@ -92,6 +100,7 @@ class DetachedInstanceError(sa_exc.SQLAlchemyError):
     code = "bhk3"
 
 
+# 未映射实例错误：InstanceState 无对应 Mapper
 class UnmappedInstanceError(UnmappedError):
     """An mapping operation was requested for an unknown instance."""
 
@@ -122,6 +131,7 @@ class UnmappedInstanceError(UnmappedError):
         return self.__class__, (None, self.args[0])
 
 
+# 未映射类错误：类未注册或未声明为 mapped
 class UnmappedClassError(UnmappedError):
     """An mapping operation was requested for an unknown class."""
 
@@ -134,6 +144,7 @@ class UnmappedClassError(UnmappedError):
         return self.__class__, (None, self.args[0])
 
 
+# 已删除对象错误：访问 pending-deleted 实例属性
 class ObjectDeletedError(sa_exc.InvalidRequestError):
     """A refresh operation failed to retrieve the database
     row corresponding to an object's known primary key identity.
@@ -170,10 +181,12 @@ class ObjectDeletedError(sa_exc.InvalidRequestError):
         return self.__class__, (None, self.args[0])
 
 
+# 未映射列错误：列名不在 mapper 属性中
 class UnmappedColumnError(sa_exc.InvalidRequestError):
     """Mapping operation was requested on an unknown column."""
 
 
+# Loader 策略异常：lazy/eager 选项与属性类型不兼容
 class LoaderStrategyException(sa_exc.InvalidRequestError):
     """A loader strategy for an attribute does not exist."""
 
