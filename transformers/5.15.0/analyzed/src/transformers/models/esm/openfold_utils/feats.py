@@ -34,6 +34,7 @@ def pseudo_beta_fn(
 ) -> tuple[torch.Tensor, torch.Tensor]: ...
 
 
+# pseudo_beta_fn：甘氨酸取 CA、其余取 CB 作为 pseudo-beta 坐标
 def pseudo_beta_fn(aatype, all_atom_positions, all_atom_masks):
     is_gly = aatype == rc.restype_order["G"]
     ca_idx = rc.atom_order["CA"]
@@ -55,6 +56,7 @@ def pseudo_beta_fn(aatype, all_atom_positions, all_atom_masks):
         return pseudo_beta
 
 
+# atom14_to_atom37：14 维原子表示 gather 映射到 37 维标准原子序
 def atom14_to_atom37(atom14: torch.Tensor, batch: dict[str, torch.Tensor]) -> torch.Tensor:
     atom37_data = batched_gather(
         atom14,
@@ -68,6 +70,7 @@ def atom14_to_atom37(atom14: torch.Tensor, batch: dict[str, torch.Tensor]) -> to
     return atom37_data
 
 
+# build_template_angle_feat：拼接模板氨基酸 one-hot 与扭转角 sin/cos
 def build_template_angle_feat(template_feats: dict[str, torch.Tensor]) -> torch.Tensor:
     template_aatype = template_feats["template_aatype"]
     torsion_angles_sin_cos = template_feats["template_torsion_angles_sin_cos"]
@@ -86,6 +89,7 @@ def build_template_angle_feat(template_feats: dict[str, torch.Tensor]) -> torch.
     return template_angle_feat
 
 
+# build_template_pair_feat：构建模板残基对距离/方向特征
 def build_template_pair_feat(
     batch: dict[str, torch.Tensor],
     min_bin: torch.types.Number,
@@ -147,6 +151,7 @@ def build_template_pair_feat(
     return act
 
 
+# build_extra_msa_feat：extra MSA 序列 one-hot 特征
 def build_extra_msa_feat(batch: dict[str, torch.Tensor]) -> torch.Tensor:
     msa_1hot: torch.LongTensor = nn.functional.one_hot(batch["extra_msa"], 23)
     msa_feat = [
@@ -157,6 +162,7 @@ def build_extra_msa_feat(batch: dict[str, torch.Tensor]) -> torch.Tensor:
     return torch.cat(msa_feat, dim=-1)
 
 
+# torsion_angles_to_frames：扭转角预测转为局部刚性坐标帧
 def torsion_angles_to_frames(
     r: Rigid,
     alpha: torch.Tensor,
@@ -219,6 +225,7 @@ def torsion_angles_to_frames(
     return all_frames_to_global
 
 
+# frames_and_literature_positions_to_atom14_pos：帧+文献坐标生成 atom14 原子位置
 def frames_and_literature_positions_to_atom14_pos(
     r: Rigid,
     aatype: torch.Tensor,

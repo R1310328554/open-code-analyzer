@@ -1,3 +1,4 @@
+# OpenFold 工具包导出：chunk 分块、atom14 掩码、刚性变换与结构损失指标。
 from .chunk_utils import chunk_layer
 from .data_transforms import make_atom14_masks
 from .feats import atom14_to_atom37, frames_and_literature_positions_to_atom14_pos, torsion_angles_to_frames

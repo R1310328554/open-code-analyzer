@@ -34,6 +34,7 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_VLMoeImageProcessorKwargs：patch/temporal/merge 尺寸等图像预处理参数
 class Ernie4_5_VLMoeImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -49,6 +50,7 @@ class Ernie4_5_VLMoeImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：保持宽高比，将高宽对齐 factor 并约束像素总数在 min/max 范围
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -79,6 +81,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Ernie4_5_VLMoeImageProcessor：CLIP 归一化、resize、patch 切分与 grid_thw 输出
 class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -99,6 +102,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：批量图像入口，委托 _preprocess 生成 pixel_values
     def preprocess(
         self,
         images: ImageInput,
@@ -106,6 +110,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+# resize：按 smart_resize 规则缩放图像张量
     def resize(
         self,
         images: "torch.Tensor",
@@ -132,6 +137,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
             resample=resample,
         )
 
+# patchify：将图像切为 patch 序列并记录 temporal/height/width grid
     def patchify(
         self,
         images: "torch.Tensor",
@@ -167,6 +173,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
         )
         return flatten_patches, grid_h, grid_w
 
+# _preprocess：按形状分组批处理 resize/normalize/patchify
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -224,6 +231,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
             data={"pixel_values": pixel_values, "image_grid_thw": image_grid_thw}, tensor_type=return_tensors
         )
 
+# get_number_of_image_patches：给定分辨率估算视觉 token 数
     def get_number_of_image_patches(self, height: int, width: int, images_kwargs: dict | None = None) -> int:
         """
         A utility that returns number of image patches for a given image size.
@@ -255,6 +263,7 @@ class Ernie4_5_VLMoeImageProcessor(TorchvisionBackend):
         return grid_h * grid_w
 
 
+# Ernie4_5_VL_MoeImageProcessor：已弃用别名，请改用 Ernie4_5_VLMoeImageProcessor
 class Ernie4_5_VL_MoeImageProcessor(Ernie4_5_VLMoeImageProcessor):
     def __init__(self, *args, **kwargs):
         logger.warning_once(

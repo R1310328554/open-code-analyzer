@@ -31,6 +31,7 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_VLMoeImageProcessorKwargs：PIL 后端图像预处理可选参数
 class Ernie4_5_VLMoeImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -46,6 +47,7 @@ class Ernie4_5_VLMoeImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：PIL 路径复用的智能缩放尺寸计算
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -76,6 +78,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Ernie4_5_VLMoeImageProcessorPil：PIL 图像 resize/normalize/patchify 与 grid_thw
 class Ernie4_5_VLMoeImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -248,6 +251,7 @@ class Ernie4_5_VLMoeImageProcessorPil(PilBackend):
         return grid_h * grid_w
 
 
+# Ernie4_5_VL_MoeImageProcessorPil：已弃用 PIL 处理器别名
 class Ernie4_5_VL_MoeImageProcessorPil(Ernie4_5_VLMoeImageProcessorPil):
     def __init__(self, *args, **kwargs):
         logger.warning_once(

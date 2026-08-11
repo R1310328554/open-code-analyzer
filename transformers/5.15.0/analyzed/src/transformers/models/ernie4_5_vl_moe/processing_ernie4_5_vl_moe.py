@@ -24,6 +24,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...video_utils import VideoInput
 
 
+# Ernie4_5_VLMoeProcessorKwargs：文本/图像/视频处理默认 kwargs
 class Ernie4_5_VLMoeProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -34,6 +35,7 @@ class Ernie4_5_VLMoeProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# Ernie4_5_VLMoeProcessor：多模态 chat 输入 token 化与 pixel/video 特征对齐
 class Ernie4_5_VLMoeProcessor(ProcessorMixin):
     r"""
     Constructs a Ernie 4.5 VL processor which wraps a Ernie 4.5 VL image processor and a Llama tokenizer into a single processor.
@@ -67,6 +69,7 @@ class Ernie4_5_VLMoeProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
 
+# save_pretrained：额外复制视频时间戳渲染字体到保存目录
     def save_pretrained(self, save_directory, push_to_hub: bool = False, **kwargs):
         """We additionally save a copy of the font to the `save_directory` (if we found a file there)"""
         os.makedirs(save_directory, exist_ok=True)
@@ -79,6 +82,7 @@ class Ernie4_5_VLMoeProcessor(ProcessorMixin):
 
         return super().save_pretrained(save_directory, push_to_hub, **kwargs)
 
+# __call__：文本+图像+视频联合预处理并插入特殊 token
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -194,6 +198,7 @@ class Ernie4_5_VLMoeProcessor(ProcessorMixin):
         return BatchFeature(data={**text_inputs, **image_inputs, **videos_inputs}, tensor_type=return_tensors)
 
     @property
+# model_input_names：汇总子处理器 model_input_names
     def model_input_names(self):
         """Additional `mm_token_type_ids` used for modality isolated MoE"""
         model_input_names = super().model_input_names
@@ -201,6 +206,7 @@ class Ernie4_5_VLMoeProcessor(ProcessorMixin):
         model_input_names.append("moe_mm_token_type_ids")
         return model_input_names
 
+# _get_num_multimodal_tokens：估算图像/视频占位 token 数量
     def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.

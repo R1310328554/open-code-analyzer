@@ -21,6 +21,7 @@ from . import residue_constants as rc
 from .tensor_utils import tensor_tree_map, tree_map
 
 
+# make_atom14_masks：为每种氨基酸构建 14 维原子掩码与 atom37 映射
 def make_atom14_masks(protein: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
     """Construct denser atom positions (14 dimensions instead of 37)."""
     restype_atom14_to_atom37_list = []
@@ -84,6 +85,7 @@ def make_atom14_masks(protein: dict[str, torch.Tensor]) -> dict[str, torch.Tenso
     return protein
 
 
+# make_atom14_masks_np：numpy 版 atom14 掩码生成
 def make_atom14_masks_np(batch: dict[str, torch.Tensor]) -> dict[str, np.ndarray]:
     batch = tree_map(lambda n: torch.tensor(n, device=batch["aatype"].device), batch, np.ndarray)
     out = tensor_tree_map(lambda t: np.array(t), make_atom14_masks(batch))

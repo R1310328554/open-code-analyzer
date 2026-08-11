@@ -57,6 +57,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# EsmForProteinFoldingOutput：折叠输出（坐标/角度/distogram/lddt 等）
 class EsmForProteinFoldingOutput(ModelOutput):
     r"""
     frames (`torch.FloatTensor`):
@@ -134,6 +135,7 @@ class EsmForProteinFoldingOutput(ModelOutput):
     max_predicted_aligned_error: torch.FloatTensor | None = None
 
 
+# is_fp16_enabled：检测 FP16 是否可用
 def is_fp16_enabled(device_type):
     # Autocast world
     autocast_dtype = torch.get_autocast_dtype(device_type)
@@ -143,6 +145,7 @@ def is_fp16_enabled(device_type):
     return fp16_enabled
 
 
+# is_deepspeed_initialized：检测 DeepSpeed 是否初始化
 def is_deepspeed_initialized():
     if is_deepspeed_available():
         return False
@@ -156,6 +159,7 @@ def is_deepspeed_initialized():
             return False
 
 
+# collate_dense_tensors：变长张量 batch padding 拼接
 def collate_dense_tensors(samples: list[torch.Tensor], pad_v: float = 0) -> torch.Tensor:
     """
     Takes a list of tensors with the following dimensions:
@@ -202,6 +206,7 @@ def dict_multimap(fn, dicts):
     return new_dict
 
 
+# EsmFoldLinear：支持 FP16 的自定义 Linear
 class EsmFoldLinear(nn.Linear):
     """
     A Linear layer with built-in nonstandard initializations. Called just like torch.nn.Linear.
@@ -248,6 +253,7 @@ class EsmFoldLinear(nn.Linear):
             raise ValueError("Invalid init string.")
 
 
+# EsmFoldLayerNorm：折叠模块 LayerNorm
 class EsmFoldLayerNorm(nn.Module):
     def __init__(self, c_in, eps=1e-5):
         super().__init__()
@@ -284,6 +290,7 @@ def softmax_no_cast(t: torch.Tensor, dim: int = -1) -> torch.Tensor:
     return s
 
 
+# EsmFoldAttention：序列/对表示通用多头注意力
 class EsmFoldAttention(nn.Module):
     """
     Standard multi-head attention using AlphaFold's default layer initialization. Allows multiple bias vectors.
@@ -436,6 +443,7 @@ class EsmFoldAttention(nn.Module):
         return output
 
 
+# EsmFoldTriangleAttention：三角乘法注意力（pair 表示）
 class EsmFoldTriangleAttention(nn.Module):
     def __init__(self, c_in, c_hidden, no_heads, starting=True, inf=1e9):
         """
@@ -546,6 +554,7 @@ class EsmFoldTriangleAttention(nn.Module):
         return x
 
 
+# EsmFoldTriangleMultiplicativeUpdate：三角乘法更新 pair 特征
 class EsmFoldTriangleMultiplicativeUpdate(nn.Module):
     """
     Implements Algorithms 11 and 12.
@@ -876,6 +885,7 @@ class EsmFoldTriangleMultiplicativeUpdate(nn.Module):
         return x
 
 
+# EsmFoldPreTrainedModel：ESMFold 预训练基类
 class EsmFoldPreTrainedModel(EsmPreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -1095,6 +1105,7 @@ class EsmFoldResidueMLP(nn.Module):
         return x + self.mlp(x)
 
 
+# EsmFoldTriangularSelfAttentionBlock：三角自注意力块堆叠
 class EsmFoldTriangularSelfAttentionBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1366,6 +1377,7 @@ class EsmFoldAngleResnet(nn.Module):
         return unnormalized_s, s
 
 
+# EsmFoldInvariantPointAttention：IPA 不变点注意力更新结构
 class EsmFoldInvariantPointAttention(nn.Module):
     """
     Implements Algorithm 22.
@@ -1633,6 +1645,7 @@ class EsmFoldStructureModuleTransition(nn.Module):
         return s
 
 
+# EsmFoldStructureModule：结构模块，预测骨架与侧链坐标
 class EsmFoldStructureModule(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1831,6 +1844,7 @@ class EsmFoldStructureModule(nn.Module):
         )
 
 
+# EsmFoldingTrunk：折叠主干，ESM 隐状态到 pair/single 表示
 class EsmFoldingTrunk(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1960,6 +1974,7 @@ class EsmFoldingTrunk(nn.Module):
     protein(s).
     """
 )
+# EsmForProteinFolding：端到端序列到 3D 结构预测
 class EsmForProteinFolding(EsmPreTrainedModel):
     _no_split_modules = ["EsmFoldStructureModule", "EsmFoldTriangularSelfAttentionBlock"]
     _supports_flash_attn = False

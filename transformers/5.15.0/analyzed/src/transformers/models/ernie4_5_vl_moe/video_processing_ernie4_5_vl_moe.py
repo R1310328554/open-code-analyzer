@@ -64,6 +64,7 @@ if is_torchvision_available():
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_VLMoeVideoProcessorInitKwargs：patch/帧数/字体等视频预处理参数
 class Ernie4_5_VLMoeVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -94,6 +95,7 @@ class Ernie4_5_VLMoeVideoProcessorInitKwargs(VideosKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torchvision",))
+# Ernie4_5_VLMoeVideoProcessor：视频 resize/normalize/patchify 与 grid_thw
 class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 299 * 28 * 28, "longest_edge": 1196 * 28 * 28}
@@ -307,6 +309,7 @@ class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
 
         return super()._standardize_kwargs(size=size, **kwargs)
 
+# sample_frames：按 min/max_frames 均匀采样视频帧
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -354,6 +357,7 @@ class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
         time_stamp_in_seconds = time_stamp_in_seconds % 60
         return f"time: {int(hours):02d}:{int(mins):02d}:{time_stamp_in_seconds:05.02f}"
 
+# _render_image_with_timestamp：在帧上绘制时间戳水印
     def _render_image_with_timestamp(self, image: torch.Tensor, timestamp: str, size_factor: float = 0.1):
         """Draws a black timestamp with a white border on the corner of the frame"""
         if self.font is None:
@@ -382,6 +386,7 @@ class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
         )
         return pil_to_tensor(image)
 
+# _prepare_input_videos：标准化视频输入格式与元数据
     def _prepare_input_videos(
         self,
         videos: VideoInput,
@@ -441,6 +446,7 @@ class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
             processed_videos.append(video)
         return processed_videos
 
+# _preprocess：单视频 resize/normalize/patchify 流水线
     def _preprocess(
         self,
         videos: list[torch.Tensor],
@@ -535,6 +541,7 @@ class Ernie4_5_VLMoeVideoProcessor(BaseVideoProcessor):
         )
 
     @auto_docstring
+# preprocess：批量视频预处理入口
     def preprocess(
         self,
         videos: VideoInput,

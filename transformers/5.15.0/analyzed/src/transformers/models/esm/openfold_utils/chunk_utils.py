@@ -22,6 +22,7 @@ import torch
 from .tensor_utils import tensor_tree_map, tree_map
 
 
+# _fetch_dims：递归收集张量树中各张量 shape
 def _fetch_dims(tree: dict | list | tuple | torch.Tensor) -> list[tuple[int, ...]]:
     shapes = []
     if isinstance(tree, dict):
@@ -39,6 +40,7 @@ def _fetch_dims(tree: dict | list | tuple | torch.Tensor) -> list[tuple[int, ...
 
 
 @torch.jit.ignore
+# _flat_idx_to_idx：扁平索引还原为多维坐标
 def _flat_idx_to_idx(flat_idx: int, dims: tuple[int, ...]) -> tuple[int, ...]:
     idx = []
     for d in reversed(dims):
@@ -49,6 +51,7 @@ def _flat_idx_to_idx(flat_idx: int, dims: tuple[int, ...]) -> tuple[int, ...]:
 
 
 @torch.jit.ignore
+# _get_minimal_slice_set：计算覆盖 flat 索引范围的最小切片集合
 def _get_minimal_slice_set(
     start: Sequence[int],
     end: Sequence[int],
@@ -164,6 +167,7 @@ def _get_minimal_slice_set(
 
 
 @torch.jit.ignore
+# _chunk_slice：按 flat 索引区间提取张量子块
 def _chunk_slice(t: torch.Tensor, flat_start: int, flat_end: int, no_batch_dims: int) -> torch.Tensor:
     """
     Equivalent to
@@ -192,6 +196,7 @@ def _chunk_slice(t: torch.Tensor, flat_start: int, flat_end: int, no_batch_dims:
     return torch.cat([s.view((-1,) + t.shape[no_batch_dims:]) for s in sliced_tensors])
 
 
+# chunk_layer：对 layer 前向按 chunk_size 分块调用并拼接输出
 def chunk_layer(
     layer: Callable,
     inputs: dict[str, Any],
@@ -312,6 +317,7 @@ def chunk_layer(
     return out
 
 
+# ChunkSizeTuner：自动探测最大可用 chunk_size 以平衡速度与显存
 class ChunkSizeTuner:
     def __init__(
         self,

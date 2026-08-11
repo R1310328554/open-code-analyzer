@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 
 @strict
+# StructureModuleConfig：ESMFold 结构模块 IPA/ResNet 角度预测超参
 class StructureModuleConfig(PreTrainedConfig):
     """
     Args:
@@ -79,6 +80,7 @@ class StructureModuleConfig(PreTrainedConfig):
 
 
 @strict
+# TrunkConfig：折叠主干三角注意力与 pair 表示维度配置
 class TrunkConfig(PreTrainedConfig):
     sub_configs = {"structure_module": StructureModuleConfig}
 
@@ -130,6 +132,7 @@ class TrunkConfig(PreTrainedConfig):
 
 
 @strict
+# EsmFoldConfig：组合 trunk + structure_module 的折叠模型配置
 class EsmFoldConfig(PreTrainedConfig):
     sub_configs = {"trunk": TrunkConfig}
 
@@ -152,8 +155,10 @@ class EsmFoldConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# EsmConfig：facebook/esm-1b checkpoint 默认超参
 @auto_docstring(checkpoint="facebook/esm-1b")
 @strict
+# EsmConfig：ESM-2 蛋白质 LM hidden/层数/注意力头与 mask token 配置
 class EsmConfig(PreTrainedConfig):
     r"""
     mask_token_id (`int`, *optional*):
@@ -239,6 +244,7 @@ class EsmConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# get_default_vocab_list：返回 ESM 默认氨基酸词表
 def get_default_vocab_list():
     return (
         "<cls>",

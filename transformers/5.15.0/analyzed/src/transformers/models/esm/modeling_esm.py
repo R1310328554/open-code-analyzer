@@ -45,6 +45,7 @@ from .configuration_esm import EsmConfig
 logger = logging.get_logger(__name__)
 
 
+# rotate_half：RoPE 半维旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -53,6 +54,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -79,6 +81,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# gelu：自定义 GELU 激活（兼容旧 checkpoint）
 def gelu(x):
     """
     This is the gelu implementation from the original ESM repo. Using F.gelu yields subtly wrong results.
@@ -86,11 +89,13 @@ def gelu(x):
     return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
 
 
+# symmetrize：对称化 pair 表示矩阵
 def symmetrize(x):
     "Make layer symmetric in final two dimensions, used for contact prediction."
     return x + x.transpose(-1, -2)
 
 
+# average_product_correct：APC 去偏 contact  logits
 def average_product_correct(x):
     "Perform average product correct, used for contact prediction."
     a1 = x.sum(-1, keepdims=True)
@@ -103,6 +108,7 @@ def average_product_correct(x):
     return normalized
 
 
+# EsmRotaryEmbedding：ESM RoPE 逆频率缓存，支持 dynamic_rope_update
 class EsmRotaryEmbedding(nn.Module):
     """
     Rotary position embeddings.
@@ -160,6 +166,7 @@ class EsmRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# EsmContactPredictionHead：从 hidden 预测残基接触 map
 class EsmContactPredictionHead(nn.Module):
     """Performs symmetrization, apc, and computes a logistic regression on the output features"""
 
@@ -195,6 +202,7 @@ class EsmContactPredictionHead(nn.Module):
         return self.activation(self.regression(attentions).squeeze(3))
 
 
+# EsmEmbeddings：氨基酸 token + 位置嵌入，支持 padding_idx
 class EsmEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -289,6 +297,7 @@ class EsmEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：双向/因果注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -318,6 +327,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# EsmSelfAttention：RoPE 多头自注意力
 class EsmSelfAttention(nn.Module):
     def __init__(self, config, position_embedding_type=None, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -396,6 +406,7 @@ class EsmSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EsmSelfOutput：注意力输出投影 + dropout
 class EsmSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -409,6 +420,7 @@ class EsmSelfOutput(nn.Module):
         return hidden_states
 
 
+# EsmAttention：SelfAttention + SelfOutput 封装
 class EsmAttention(nn.Module):
     def __init__(self, config, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -439,6 +451,7 @@ class EsmAttention(nn.Module):
         return attn_output
 
 
+# EsmIntermediate：FFN 中间层（GELU）
 class EsmIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -450,6 +463,7 @@ class EsmIntermediate(nn.Module):
         return hidden_states
 
 
+# EsmOutput：FFN 输出投影 + 残差 dropout
 class EsmOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -463,6 +477,7 @@ class EsmOutput(nn.Module):
         return hidden_states
 
 
+# EsmLayer：Pre-LN 自注意力 + FFN 残差块
 class EsmLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -521,6 +536,7 @@ class EsmLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# EsmEncoder：堆叠 EsmLayer 编码器
 class EsmEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -556,6 +572,7 @@ class EsmEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# EsmPooler：首 token 池化用于序列分类
 class EsmPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -572,6 +589,7 @@ class EsmPooler(nn.Module):
 
 
 @auto_docstring
+# EsmPreTrainedModel：ESM 权重初始化与 contact head 偏置
 class EsmPreTrainedModel(PreTrainedModel):
     config: EsmConfig
     base_model_prefix = "esm"
@@ -611,6 +629,7 @@ class EsmPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# EsmModel：embeddings + encoder，输出 last_hidden_state
 class EsmModel(EsmPreTrainedModel):
     """
 
@@ -800,6 +819,7 @@ class EsmModel(EsmPreTrainedModel):
 
 
 @auto_docstring
+# EsmForMaskedLM：掩码语言建模 LM 头
 class EsmForMaskedLM(EsmPreTrainedModel):
     _tied_weights_keys = {"lm_head.decoder.weight": "esm.embeddings.word_embeddings.weight"}
 
@@ -873,6 +893,7 @@ class EsmForMaskedLM(EsmPreTrainedModel):
         return self.esm.predict_contacts(tokens, attention_mask=attention_mask)
 
 
+# EsmLMHead：LM 解码头（dense + decoder）
 class EsmLMHead(nn.Module):
     """ESM Head for masked language modeling."""
 
@@ -900,6 +921,7 @@ class EsmLMHead(nn.Module):
     output) e.g. for GLUE tasks.
     """
 )
+# EsmForSequenceClassification：序列级分类头
 class EsmForSequenceClassification(EsmPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -973,6 +995,7 @@ class EsmForSequenceClassification(EsmPreTrainedModel):
 
 
 @auto_docstring
+# EsmForTokenClassification：逐残基 token 分类头
 class EsmForTokenClassification(EsmPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1028,6 +1051,7 @@ class EsmForTokenClassification(EsmPreTrainedModel):
         )
 
 
+# EsmClassificationHead：dense + tanh + 线性分类层
 class EsmClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1047,6 +1071,7 @@ class EsmClassificationHead(nn.Module):
         return x
 
 
+# create_position_ids_from_input_ids：从 input_ids 生成 position_ids
 def create_position_ids_from_input_ids(input_ids, padding_idx):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols

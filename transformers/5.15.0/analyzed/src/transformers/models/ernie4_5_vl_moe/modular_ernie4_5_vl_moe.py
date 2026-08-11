@@ -77,6 +77,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeVisionConfig：继承 Qwen2VL 视觉配置，增加 temporal_merge_size
 class Ernie4_5_VLMoeVisionConfig(Qwen2VLVisionConfig):
     r"""
     temporal_merge_size (`int`, *optional*, defaults to 2):
@@ -104,6 +105,7 @@ class Ernie4_5_VLMoeVisionConfig(Qwen2VLVisionConfig):
 
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeTextConfig：文本 MoE 解码器配置，mlp_layer_types 逐层 dense/sparse
 class Ernie4_5_VLMoeTextConfig(Ernie4_5_MoeConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `False`):
@@ -158,6 +160,7 @@ class Ernie4_5_VLMoeTextConfig(Ernie4_5_MoeConfig):
 
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeConfig：组合 vision_config + text_config 与多模态 token ID
 class Ernie4_5_VLMoeConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 101304):
@@ -216,6 +219,7 @@ class Ernie4_5_VLMoeConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Ernie4_5_VLMoeTextRotaryEmbedding：MRoPE 模块化实现
 class Ernie4_5_VLMoeTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config, device=None):
@@ -297,6 +301,7 @@ class Ernie4_5_VLMoeTextRotaryEmbedding(nn.Module):
         return freq_hwt.repeat_interleave(2, dim=-1)
 
 
+# rotate_half_text：文本 RoPE 旋转辅助
 def rotate_half_text(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -304,6 +309,7 @@ def rotate_half_text(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：MRoPE 施加于 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -334,34 +340,41 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @no_inherit_decorator
+# Ernie4_5_VLMoeTextAttention：继承 Ernie4.5 MoE 文本注意力
 class Ernie4_5_VLMoeTextAttention(Ernie4_5_MoeAttention):
     pass
 
 
+# Ernie4_5_VLMoeRMSNorm：继承 MoE RMSNorm
 class Ernie4_5_VLMoeRMSNorm(Ernie4_5_MoeRMSNorm):
     pass
 
 
+# Ernie4_5_VLMoeMLP：继承 MoE Dense MLP
 class Ernie4_5_VLMoeMLP(Ernie4_5_MoeMLP):
     pass
 
 
+# Ernie4_5_VLMoeMoeStatics：继承 MoE 路由统计
 class Ernie4_5_VLMoeMoeStatics(Ernie4_5_MoeStatics):
     pass
 
 
+# Ernie4_5_VLMoeMoeTopKRouter：继承 Top-K 路由器
 class Ernie4_5_VLMoeMoeTopKRouter(Ernie4_5_MoeTopKRouter):
     def __init__(self, config):
         super().__init__(config)
         self.moe_statics = Ernie4_5_VLMoeMoeStatics(config)
 
 
+# Ernie4_5_VLMoeMoeExperts：继承 grouped GEMM 专家
 class Ernie4_5_VLMoeMoeExperts(Ernie4_5_MoeExperts):
     def __init__(self, config, intermediate_size=None):
         super().__init__(config)
         self.intermediate_dim = config.moe_intermediate_size if intermediate_size is None else intermediate_size
 
 
+# Ernie4_5_VLMoeSparseMoeBlock：稀疏 MoE 块 modular 定义
 class Ernie4_5_VLMoeSparseMoeBlock(nn.Module):
     def __init__(self, config, intermediate_size):
         super().__init__()
@@ -384,6 +397,7 @@ class Ernie4_5_VLMoeSparseMoeBlock(nn.Module):
         return final_hidden_states.flatten(), router_logits.flatten()
 
 
+# Ernie4_5_VLMoeMoeBlock：按层索引选择 Dense 或 Sparse MoE
 class Ernie4_5_VLMoeMoeBlock(nn.Module):
     """
     Similar to `Ernie4_5_Moe` where we have modality isolated experts:
@@ -449,6 +463,7 @@ class Ernie4_5_VLMoeMoeBlock(nn.Module):
         return final_hidden_states, router_logits
 
 
+# Ernie4_5_VLMoeDecoderLayer：文本解码层 modular 实现
 class Ernie4_5_VLMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -501,10 +516,12 @@ class Ernie4_5_VLMoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Ernie4_5_VLMoeVisionAttention：继承 Qwen2.5-VL 视觉注意力
 class Ernie4_5_VLMoeVisionAttention(Qwen2_5_VLVisionAttention):
     pass
 
 
+# Ernie4_5_VLMoeVisionBlock：继承 Qwen2.5-VL 视觉块
 class Ernie4_5_VLMoeVisionBlock(Qwen2_5_VLVisionBlock):
     def __init__(self, config) -> None:
         super().__init__(config, None)
@@ -518,6 +535,7 @@ class Ernie4_5_VLMoeVisionBlock(Qwen2_5_VLVisionBlock):
         )
 
 
+# Ernie4_5_VLMoePreTrainedModel：继承 Qwen2.5-VL 预训练基类
 class Ernie4_5_VLMoePreTrainedModel(Qwen2_5_VLPreTrainedModel):
     _can_compile_fullgraph = False
 
@@ -541,6 +559,7 @@ class Ernie4_5_VLMoePreTrainedModel(Qwen2_5_VLPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Ernie4_5_VLMoeTextModel：基于 Ernie4.5 MoE 文本塔
 class Ernie4_5_VLMoeTextModel(Ernie4_5_MoeModel):
     config: Ernie4_5_VLMoeTextConfig
 
@@ -628,10 +647,12 @@ class Ernie4_5_VLMoeTextModel(Ernie4_5_MoeModel):
         )
 
 
+# Ernie4_5VLVisionMLP：继承 Qwen2VL VisionMlp
 class Ernie4_5VLVisionMLP(VisionMlp):
     pass
 
 
+# Ernie4_5_VLMoePatchEmbed：继承 Qwen2.5 视觉 patch 嵌入
 class Ernie4_5_VLMoePatchEmbed(Qwen2_5_VisionPatchEmbed):
     def __init__(
         self,
@@ -650,10 +671,12 @@ class Ernie4_5_VLMoePatchEmbed(Qwen2_5_VisionPatchEmbed):
         return self.proj(hidden_states.to(target_dtype))
 
 
+# Ernie4_5_VLMoeVisionRotaryEmbedding：继承视觉 RoPE
 class Ernie4_5_VLMoeVisionRotaryEmbedding(Qwen2_5_VisionRotaryEmbedding):
     pass
 
 
+# Ernie4_5_VLMoeVisionTransformerPretrainedModel：继承 Qwen2 视觉 Transformer
 class Ernie4_5_VLMoeVisionTransformerPretrainedModel(Qwen2VisionTransformerPretrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(Ernie4_5_VLMoeMoeBlock, index=1),
@@ -725,6 +748,7 @@ class Ernie4_5_VLMoeVisionMLP(nn.Module):
         return hidden_states
 
 
+# Ernie4_5_VLMoeVariableResolutionResamplerModel：可变分辨率重采样 modular 源
 class Ernie4_5_VLMoeVariableResolutionResamplerModel(nn.Module):
     def __init__(self, config: Ernie4_5_VLMoeConfig):
         super().__init__()
@@ -826,6 +850,7 @@ class Ernie4_5_VLMoeVariableResolutionResamplerModel(nn.Module):
         return hidden_states
 
 
+# Ernie4_5_VLMoeModel：继承 Qwen2VL 多模态融合逻辑
 class Ernie4_5_VLMoeModel(Qwen2VLModel):
     config: Ernie4_5_VLMoeConfig
     _no_split_modules = ["Ernie4_5_VLMoeDecoderLayer", "Ernie4_5_VLMoeVisionBlock"]
@@ -1058,6 +1083,7 @@ class Ernie4_5_VLMoeModel(Qwen2VLModel):
         )
 
 
+# Ernie4_5_VLMoeForConditionalGeneration：继承 Glm4v 条件生成
 class Ernie4_5_VLMoeForConditionalGeneration(Glm4vForConditionalGeneration, GenerationMixin):
     def __init__(self, config):
         super().__init__(config)
@@ -1189,6 +1215,7 @@ class Ernie4_5_VLMoeImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# Ernie4_5_VLMoeImageProcessorPil：继承 Qwen2VL PIL 图像处理器
 class Ernie4_5_VLMoeImageProcessorPil(Qwen2VLImageProcessorPil):
     size = {"shortest_edge": 56 * 56, "longest_edge": 28 * 28 * 6177}
     temporal_patch_size = 1
@@ -1200,6 +1227,7 @@ class Ernie4_5_VLMoeImageProcessorPil(Qwen2VLImageProcessorPil):
         raise NotImplementedError("Model doesn't need an override")
 
 
+# Ernie4_5_VLMoeImageProcessor：继承 Qwen2VL Torchvision 图像处理器
 class Ernie4_5_VLMoeImageProcessor(Qwen2VLImageProcessor):
     size = {"shortest_edge": 56 * 56, "longest_edge": 28 * 28 * 6177}
     temporal_patch_size = 1

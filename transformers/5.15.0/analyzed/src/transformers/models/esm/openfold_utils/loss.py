@@ -17,6 +17,7 @@
 import torch
 
 
+# _calculate_bin_centers：由 bin 边界计算各 bin 中心值
 def _calculate_bin_centers(boundaries: torch.Tensor) -> torch.Tensor:
     step = boundaries[1] - boundaries[0]
     bin_centers = boundaries + step / 2
@@ -24,6 +25,7 @@ def _calculate_bin_centers(boundaries: torch.Tensor) -> torch.Tensor:
     return bin_centers
 
 
+# _calculate_expected_aligned_error：对齐误差概率加权期望
 def _calculate_expected_aligned_error(
     alignment_confidence_breaks: torch.Tensor,
     aligned_distance_error_probs: torch.Tensor,
@@ -35,6 +37,7 @@ def _calculate_expected_aligned_error(
     )
 
 
+# compute_predicted_aligned_error：从 PAE logits 计算残基对对齐置信度
 def compute_predicted_aligned_error(
     logits: torch.Tensor,
     max_bin: int = 31,
@@ -70,6 +73,7 @@ def compute_predicted_aligned_error(
     }
 
 
+# compute_tm：从 distogram logits 估计 TM-score
 def compute_tm(
     logits: torch.Tensor,
     residue_weights: torch.Tensor | None = None,

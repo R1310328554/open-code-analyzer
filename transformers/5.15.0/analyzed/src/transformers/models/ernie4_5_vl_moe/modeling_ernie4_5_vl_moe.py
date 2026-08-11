@@ -56,6 +56,7 @@ from .configuration_ernie4_5_vl_moe import Ernie4_5_VLMoeConfig, Ernie4_5_VLMoeT
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_VLMoeTextRotaryEmbedding：文本 MRoPE，支持 hw 维预旋转
 class Ernie4_5_VLMoeTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config, device=None):
@@ -137,6 +138,7 @@ class Ernie4_5_VLMoeTextRotaryEmbedding(nn.Module):
         return freq_hwt.repeat_interleave(2, dim=-1)
 
 
+# repeat_kv：GQA 将 KV 头重复扩展至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -149,6 +151,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -174,6 +177,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half_text：文本 RoPE 半维旋转辅助
 def rotate_half_text(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -181,6 +185,7 @@ def rotate_half_text(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：对 Q/K 施加 MRoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -210,6 +215,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# Ernie4_5_VLMoeTextAttention：GQA 文本自注意力 + RoPE
 class Ernie4_5_VLMoeTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -271,6 +277,7 @@ class Ernie4_5_VLMoeTextAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Ernie4_5_VLMoeRMSNorm：RMS 层归一化
 class Ernie4_5_VLMoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -291,6 +298,7 @@ class Ernie4_5_VLMoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Ernie4_5_VLMoeMLP：Dense SwiGLU 前馈
 class Ernie4_5_VLMoeMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -308,6 +316,7 @@ class Ernie4_5_VLMoeMLP(nn.Module):
         return down_proj
 
 
+# Ernie4_5_VLMoeMoeStatics：MoE 路由 e_score_correction_bias 统计参数
 class Ernie4_5_VLMoeMoeStatics(nn.Module):
     """
     Stores MoE (Mixture of Experts) statistics
@@ -335,6 +344,7 @@ class Ernie4_5_VLMoeMoeStatics(nn.Module):
         return hidden_states + self.e_score_correction_bias.squeeze()
 
 
+# Ernie4_5_VLMoeMoeTopKRouter：Top-K 专家路由 gate
 class Ernie4_5_VLMoeMoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -364,6 +374,7 @@ class Ernie4_5_VLMoeMoeTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# Ernie4_5_VLMoeMoeExperts：Grouped GEMM 稀疏专家 SwiGLU
 class Ernie4_5_VLMoeMoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -403,6 +414,7 @@ class Ernie4_5_VLMoeMoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Ernie4_5_VLMoeSparseMoeBlock：路由 + 稀疏/共享专家融合
 class Ernie4_5_VLMoeSparseMoeBlock(nn.Module):
     def __init__(self, config, intermediate_size):
         super().__init__()
@@ -425,6 +437,7 @@ class Ernie4_5_VLMoeSparseMoeBlock(nn.Module):
         return final_hidden_states.flatten(), router_logits.flatten()
 
 
+# Ernie4_5_VLMoeMoeBlock：按层切换 Dense MLP 或 SparseMoeBlock
 class Ernie4_5_VLMoeMoeBlock(nn.Module):
     """
     Similar to `Ernie4_5_Moe` where we have modality isolated experts:
@@ -490,6 +503,7 @@ class Ernie4_5_VLMoeMoeBlock(nn.Module):
         return final_hidden_states, router_logits
 
 
+# Ernie4_5_VLMoeDecoderLayer：Pre-RMSNorm 自注意力 + MoE/Dense MLP
 class Ernie4_5_VLMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -542,6 +556,7 @@ class Ernie4_5_VLMoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# rotate_half：视觉 RoPE 半维旋转
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -549,6 +564,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：视觉塔 RoPE 施加
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -563,6 +579,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# Ernie4_5_VLMoeVisionAttention：视觉 ViT 多头自注意力
 class Ernie4_5_VLMoeVisionAttention(nn.Module):
     def __init__(self, config: Ernie4_5_VLMoeVisionConfig) -> None:
         super().__init__()
@@ -646,6 +663,7 @@ class Ernie4_5_VLMoeVisionAttention(nn.Module):
         return attn_output
 
 
+# Ernie4_5_VLMoeVisionBlock：视觉编码层（注意力 + MLP）
 class Ernie4_5_VLMoeVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -682,6 +700,7 @@ class Ernie4_5_VLMoeVisionBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Ernie4_5_VLMoePreTrainedModel：VL MoE 预训练基类与权重初始化
 class Ernie4_5_VLMoePreTrainedModel(PreTrainedModel):
     config: Ernie4_5_VLMoeConfig
     base_model_prefix = "model"
@@ -715,6 +734,7 @@ class Ernie4_5_VLMoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5_VLMoeTextModel：文本 MoE 解码器堆叠
 class Ernie4_5_VLMoeTextModel(Ernie4_5_VLMoePreTrainedModel):
     config: Ernie4_5_VLMoeTextConfig
 
@@ -814,6 +834,7 @@ class Ernie4_5_VLMoeTextModel(Ernie4_5_VLMoePreTrainedModel):
         )
 
 
+# Ernie4_5VLVisionMLP：视觉 MLP 前馈
 class Ernie4_5VLVisionMLP(nn.Module):
     def __init__(self, dim: int, hidden_dim: int, hidden_act: str) -> None:
         super().__init__()
@@ -825,6 +846,7 @@ class Ernie4_5VLVisionMLP(nn.Module):
         return self.fc2(self.act(self.fc1(x)))
 
 
+# Ernie4_5_VLMoePatchEmbed：3D patch 嵌入（空间+时间维）
 class Ernie4_5_VLMoePatchEmbed(nn.Module):
     def __init__(
         self,
@@ -843,6 +865,7 @@ class Ernie4_5_VLMoePatchEmbed(nn.Module):
         return self.proj(hidden_states.to(target_dtype))
 
 
+# Ernie4_5_VLMoeVisionRotaryEmbedding：视觉 2D RoPE 位置编码
 class Ernie4_5_VLMoeVisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -856,6 +879,7 @@ class Ernie4_5_VLMoeVisionRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Ernie4_5_VLMoeVisionTransformerPretrainedModel：视觉 ViT 塔
 class Ernie4_5_VLMoeVisionTransformerPretrainedModel(Ernie4_5_VLMoePreTrainedModel):
     config: Ernie4_5_VLMoeVisionConfig
     input_modalities = ("image", "video")
@@ -926,6 +950,7 @@ class Ernie4_5_VLMoeVisionTransformerPretrainedModel(Ernie4_5_VLMoePreTrainedMod
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# Ernie4_5_VLMoeVisionMLP：视觉块内 MLP
 class Ernie4_5_VLMoeVisionMLP(nn.Module):
     def __init__(self, config, in_dim, out_dim):
         super().__init__()
@@ -943,6 +968,7 @@ class Ernie4_5_VLMoeVisionMLP(nn.Module):
         return hidden_states
 
 
+# Ernie4_5_VLMoeVariableResolutionResamplerModel：可变分辨率视觉特征重采样
 class Ernie4_5_VLMoeVariableResolutionResamplerModel(nn.Module):
     def __init__(self, config: Ernie4_5_VLMoeConfig):
         super().__init__()
@@ -1045,6 +1071,7 @@ class Ernie4_5_VLMoeVariableResolutionResamplerModel(nn.Module):
 
 
 @auto_docstring
+# Ernie4_5_VLMoeModel：视觉塔 + 文本 MoE 多模态融合
 class Ernie4_5_VLMoeModel(Ernie4_5_VLMoePreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1425,6 +1452,7 @@ class Ernie4_5_VLMoeModel(Ernie4_5_VLMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1507,6 +1535,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# Ernie4_5_VLMoeForConditionalGeneration：多模态条件生成 + LM 头
 class Ernie4_5_VLMoeForConditionalGeneration(Ernie4_5_VLMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
@@ -1832,6 +1861,7 @@ class Ernie4_5_VLMoeForConditionalGeneration(Ernie4_5_VLMoePreTrainedModel, Gene
 
 
 # Keep aliases for BC
+# Ernie4_5_VL_MoeForConditionalGeneration：已弃用生成模型别名
 class Ernie4_5_VL_MoeForConditionalGeneration(Ernie4_5_VLMoeForConditionalGeneration):
     def __init__(self, *args, **kwargs):
         logger.warning_once(
