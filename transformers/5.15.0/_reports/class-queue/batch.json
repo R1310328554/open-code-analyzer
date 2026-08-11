@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:23:16Z",
-  "files": [
-    "src/transformers/models/squeezebert/modeling_squeezebert.py",
-    "src/transformers/models/squeezebert/tokenization_squeezebert.py",
-    "src/transformers/models/stablelm/__init__.py",
-    "src/transformers/models/stablelm/configuration_stablelm.py",
-    "src/transformers/models/stablelm/modeling_stablelm.py",
-    "src/transformers/models/starcoder2/__init__.py",
-    "src/transformers/models/starcoder2/configuration_starcoder2.py",
-    "src/transformers/models/starcoder2/modeling_starcoder2.py",
-    "src/transformers/models/starcoder2/modular_starcoder2.py",
-    "src/transformers/models/superglue/__init__.py",
-    "src/transformers/models/superglue/configuration_superglue.py",
-    "src/transformers/models/superglue/image_processing_pil_superglue.py",
-    "src/transformers/models/superglue/image_processing_superglue.py",
-    "src/transformers/models/superglue/modeling_superglue.py",
-    "src/transformers/models/superpoint/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 519,
-  "done": 2145
+  "done": 2160
 }
