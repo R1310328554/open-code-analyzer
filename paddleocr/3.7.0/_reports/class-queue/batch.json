@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T06:52:07Z",
   "files": [
-    "mcp_server/paddleocr_mcp/tasks/factory.py",
-    "mcp_server/paddleocr_mcp/tasks/mcp_image.py",
-    "mcp_server/paddleocr_mcp/tasks/ocr.py",
-    "mcp_server/paddleocr_mcp/utils.py",
-    "overrides/hooks/expiry.py",
-    "paddleocr-js/apps/demo/src/main.ts",
-    "paddleocr-js/apps/demo/vite.config.js",
-    "paddleocr-js/eslint.config.js",
-    "paddleocr-js/packages/core/src/index.ts",
-    "paddleocr-js/packages/core/src/models/common.ts",
-    "paddleocr-js/packages/core/src/models/det.ts",
-    "paddleocr-js/packages/core/src/models/index.ts",
-    "paddleocr-js/packages/core/src/models/infer.ts",
-    "paddleocr-js/packages/core/src/models/rec.ts",
-    "paddleocr-js/packages/core/src/pipelines/index.ts",
     "paddleocr-js/packages/core/src/pipelines/ocr/config.ts",
     "paddleocr-js/packages/core/src/pipelines/ocr/core.ts",
     "paddleocr-js/packages/core/src/pipelines/ocr/crop.ts",
@@ -33,5 +18,5 @@
     "paddleocr-js/packages/core/src/runtime/index.ts"
   ],
   "remaining_pending": 422,
-  "done": 150
+  "done": 165
 }
