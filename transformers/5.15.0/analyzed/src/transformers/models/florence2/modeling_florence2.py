@@ -53,6 +53,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Florence-2 建模：Microsoft 视觉-语言统一基础模型（DaViT 视觉 + BART 解码）
 class Florence2VisionLearnedAbsolutePositionEmbedding2D(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -78,6 +79,7 @@ class Florence2VisionLearnedAbsolutePositionEmbedding2D(nn.Module):
         return pos
 
 
+# Florence2VisionPositionalEmbeddingCosine1D：1D 余弦位置嵌入（时序/序列维）
 class Florence2VisionPositionalEmbeddingCosine1D(nn.Module):
     """
     This module generates 1D cosine positional embeddings using precomputed sinusoidal functions.
@@ -113,6 +115,7 @@ class Florence2VisionPositionalEmbeddingCosine1D(nn.Module):
         return pos_embeds
 
 
+# Florence2VisionMLP：视觉塔前馈 MLP（GELU 激活）
 class Florence2VisionMLP(nn.Module):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__()
@@ -128,6 +131,7 @@ class Florence2VisionMLP(nn.Module):
         return hidden_states
 
 
+# Florence2VisionConvEmbed：卷积 patch 嵌入与下采样
 class Florence2VisionConvEmbed(nn.Module):
     """Image to Patch Embedding"""
 
@@ -168,6 +172,7 @@ class Florence2VisionConvEmbed(nn.Module):
         return hidden_states
 
 
+# Florence2DropPath：随机深度 DropPath 正则化
 class Florence2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -192,6 +197,7 @@ class Florence2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -220,6 +226,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Florence2VisionChannelAttention：通道维自注意力（DaViT 通道块）
 class Florence2VisionChannelAttention(nn.Module):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__()
@@ -259,6 +266,7 @@ class Florence2VisionChannelAttention(nn.Module):
         return hidden_states
 
 
+# Florence2VisionChannelBlock：通道注意力 + MLP 残差块
 class Florence2VisionChannelBlock(nn.Module):
     def __init__(
         self,
@@ -321,6 +329,7 @@ class Florence2VisionChannelBlock(nn.Module):
         return hidden_states
 
 
+# Florence2VisionWindowAttention：窗口化空间自注意力
 class Florence2VisionWindowAttention(nn.Module):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__()
@@ -398,6 +407,7 @@ class Florence2VisionWindowAttention(nn.Module):
         return hidden_states
 
 
+# Florence2VisionSpatialBlock：空间窗口注意力 + MLP 残差块
 class Florence2VisionSpatialBlock(nn.Module):
     def __init__(
         self,
@@ -458,6 +468,7 @@ class Florence2VisionSpatialBlock(nn.Module):
         return hidden_states
 
 
+# Florence2VisionBlock：DaViT 单阶段（通道块 + 空间块）
 class Florence2VisionBlock(nn.Module):
     def __init__(
         self,
@@ -485,6 +496,7 @@ class Florence2VisionBlock(nn.Module):
 
 
 @auto_docstring
+# Florence2VisionPreTrainedModel：Florence-2 视觉塔预训练基类
 class Florence2VisionPreTrainedModel(PreTrainedModel):
     config_class = Florence2VisionConfig
     main_input_name = "pixel_values"
@@ -501,6 +513,7 @@ class Florence2VisionPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Florence2VisionBackbone：多阶段 DaViT 视觉骨干网络
 class Florence2VisionBackbone(Florence2VisionPreTrainedModel):
     def __init__(self, config: Florence2VisionConfig):
         super().__init__(config)
@@ -565,6 +578,7 @@ class Florence2VisionBackbone(Florence2VisionPreTrainedModel):
         )
 
 
+# Florence2MultiModalProjector：视觉特征投影到语言模型嵌入空间
 class Florence2MultiModalProjector(nn.Module):
     def __init__(self, config: Florence2Config):
         super().__init__()
@@ -597,6 +611,7 @@ class Florence2MultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# Florence2Seq2SeqModelOutput：编码器-解码器主干输出 dataclass
 class Florence2Seq2SeqModelOutput(Seq2SeqModelOutput):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -614,6 +629,7 @@ class Florence2Seq2SeqModelOutput(Seq2SeqModelOutput):
     """
 )
 @dataclass
+# Florence2Seq2SeqLMOutput：条件生成 LM 输出 dataclass
 class Florence2Seq2SeqLMOutput(Seq2SeqLMOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -629,6 +645,7 @@ class Florence2Seq2SeqLMOutput(Seq2SeqLMOutput):
 
 
 @auto_docstring
+# Florence2PreTrainedModel：Florence-2 多模态预训练基类
 class Florence2PreTrainedModel(PreTrainedModel):
     config: Florence2Config
     base_model_prefix = "model"
@@ -663,6 +680,7 @@ class Florence2PreTrainedModel(PreTrainedModel):
     Florence-2 is a vision model for captioning, detection, and segmentation.
     """
 )
+# Florence2Model：视觉编码 + 文本解码器联合主干
 class Florence2Model(Florence2PreTrainedModel):
     def __init__(self, config: Florence2Config):
         super().__init__(config)
@@ -784,6 +802,7 @@ class Florence2Model(Florence2PreTrainedModel):
             return super().get_encoder(modality=modality)
 
 
+# shift_tokens_right：teacher forcing 时将 decoder 输入右移一位
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -805,6 +824,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     Florence-2 is a vision model for captioning, detection, and segmentation.
     """
 )
+# Florence2ForConditionalGeneration：Florence-2 视觉-语言条件生成（caption/OCR/检测等）
 class Florence2ForConditionalGeneration(Florence2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.language_model.shared.weight",

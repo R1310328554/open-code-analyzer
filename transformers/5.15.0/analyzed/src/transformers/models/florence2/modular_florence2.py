@@ -34,6 +34,7 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, is_to
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import CONFIG_MAPPING, AutoConfig
+# modular 复用 BART 的 eager 注意力与 decoder 输入右移
 from ..bart.modeling_bart import eager_attention_forward, shift_tokens_right
 from ..llama4.modeling_llama4 import Llama4VisionMLP
 from ..llava.modeling_llava import LlavaForConditionalGeneration, LlavaModel, LlavaPreTrainedModel
@@ -47,8 +48,10 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Florence-2 modular 源：配置/Processor/视觉塔/多模态生成的一体化实现
 @auto_docstring(checkpoint="florence-community/Florence-2-base")
 @strict
+# Florence2VisionConfig：Florence-2 视觉塔 DaViT 风格超参（多阶段 patch/窗口注意力）
 class Florence2VisionConfig(PreTrainedConfig):
     r"""
     depths (`Tuple[int]`, *optional*, defaults to `(1, 1, 9, 1)`):
@@ -105,6 +108,7 @@ class Florence2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="florence-community/Florence-2-base")
 @strict
+# Florence2Config：Florence-2 多模态联合配置（视觉塔 + BART 文本解码器）
 class Florence2Config(PreTrainedConfig):
     r"""
     Example:
@@ -156,6 +160,7 @@ class Florence2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Florence2ProcessorKwargs：Processor 可选参数字典类型
 class Florence2ProcessorKwargs(LlavaProcessorKwargs):
     _defaults = {
         "text_kwargs": {
@@ -168,6 +173,7 @@ class Florence2ProcessorKwargs(LlavaProcessorKwargs):
 
 
 @auto_docstring
+# Florence2Processor：图像处理器与分词器联合的多模态输入管线
 class Florence2Processor(ProcessorMixin):
     valid_processor_kwargs = Florence2ProcessorKwargs
 
@@ -409,6 +415,7 @@ class Florence2Processor(ProcessorMixin):
         return {task: final_answer}
 
 
+# Florence2PostProcessor：将模型文本输出解析为检测框/区域等结构化结果
 class Florence2PostProcessor:
     """
     Post-processor for Florence-2 model outputs. Parses generated text into structured results for various tasks
@@ -828,6 +835,7 @@ class Florence2PostProcessor:
         return parsed_dict
 
 
+# Florence2VisionLearnedAbsolutePositionEmbedding2D：2D 可学习绝对位置嵌入
 class Florence2VisionLearnedAbsolutePositionEmbedding2D(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -853,6 +861,7 @@ class Florence2VisionLearnedAbsolutePositionEmbedding2D(nn.Module):
         return pos
 
 
+# Florence2VisionPositionalEmbeddingCosine1D：1D 余弦位置嵌入（时序/序列维）
 class Florence2VisionPositionalEmbeddingCosine1D(nn.Module):
     """
     This module generates 1D cosine positional embeddings using precomputed sinusoidal functions.
@@ -888,6 +897,7 @@ class Florence2VisionPositionalEmbeddingCosine1D(nn.Module):
         return pos_embeds
 
 
+# Florence2VisionMLP：视觉塔前馈 MLP（GELU 激活）
 class Florence2VisionMLP(Llama4VisionMLP):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__(config)
@@ -896,6 +906,7 @@ class Florence2VisionMLP(Llama4VisionMLP):
         self.fc2 = nn.Linear(int(config.embed_dim[stage_idx] * config.mlp_ratio), config.embed_dim[stage_idx])
 
 
+# Florence2VisionConvEmbed：卷积 patch 嵌入与下采样
 class Florence2VisionConvEmbed(nn.Module):
     """Image to Patch Embedding"""
 
@@ -936,10 +947,12 @@ class Florence2VisionConvEmbed(nn.Module):
         return hidden_states
 
 
+# Florence2DropPath：随机深度 DropPath 正则化
 class Florence2DropPath(SwinDropPath):
     pass
 
 
+# Florence2VisionChannelAttention：通道维自注意力（DaViT 通道块）
 class Florence2VisionChannelAttention(nn.Module):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__()
@@ -979,6 +992,7 @@ class Florence2VisionChannelAttention(nn.Module):
         return hidden_states
 
 
+# Florence2VisionChannelBlock：通道注意力 + MLP 残差块
 class Florence2VisionChannelBlock(nn.Module):
     def __init__(
         self,
@@ -1041,6 +1055,7 @@ class Florence2VisionChannelBlock(nn.Module):
         return hidden_states
 
 
+# Florence2VisionWindowAttention：窗口化空间自注意力
 class Florence2VisionWindowAttention(nn.Module):
     def __init__(self, config: Florence2VisionConfig, stage_idx: int):
         super().__init__()
@@ -1118,6 +1133,7 @@ class Florence2VisionWindowAttention(nn.Module):
         return hidden_states
 
 
+# Florence2VisionSpatialBlock：空间窗口注意力 + MLP 残差块
 class Florence2VisionSpatialBlock(nn.Module):
     def __init__(
         self,
@@ -1178,6 +1194,7 @@ class Florence2VisionSpatialBlock(nn.Module):
         return hidden_states
 
 
+# Florence2VisionBlock：DaViT 单阶段（通道块 + 空间块）
 class Florence2VisionBlock(nn.Module):
     def __init__(
         self,
@@ -1205,6 +1222,7 @@ class Florence2VisionBlock(nn.Module):
 
 
 @auto_docstring
+# Florence2VisionPreTrainedModel：Florence-2 视觉塔预训练基类
 class Florence2VisionPreTrainedModel(PreTrainedModel):
     config_class = Florence2VisionConfig
     main_input_name = "pixel_values"
@@ -1221,6 +1239,7 @@ class Florence2VisionPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Florence2VisionBackbone：多阶段 DaViT 视觉骨干网络
 class Florence2VisionBackbone(Florence2VisionPreTrainedModel):
     def __init__(self, config: Florence2VisionConfig):
         super().__init__(config)
@@ -1285,6 +1304,7 @@ class Florence2VisionBackbone(Florence2VisionPreTrainedModel):
         )
 
 
+# Florence2MultiModalProjector：视觉特征投影到语言模型嵌入空间
 class Florence2MultiModalProjector(nn.Module):
     def __init__(self, config: Florence2Config):
         super().__init__()
@@ -1317,6 +1337,7 @@ class Florence2MultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# Florence2Seq2SeqModelOutput：编码器-解码器主干输出 dataclass
 class Florence2Seq2SeqModelOutput(Seq2SeqModelOutput):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -1334,6 +1355,7 @@ class Florence2Seq2SeqModelOutput(Seq2SeqModelOutput):
     """
 )
 @dataclass
+# Florence2Seq2SeqLMOutput：条件生成 LM 输出 dataclass
 class Florence2Seq2SeqLMOutput(Seq2SeqLMOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1349,6 +1371,7 @@ class Florence2Seq2SeqLMOutput(Seq2SeqLMOutput):
 
 
 @auto_docstring
+# Florence2PreTrainedModel：Florence-2 多模态预训练基类
 class Florence2PreTrainedModel(LlavaPreTrainedModel):
     config_class = Florence2Config
     base_model_prefix = "model"
@@ -1373,6 +1396,7 @@ class Florence2PreTrainedModel(LlavaPreTrainedModel):
     Florence-2 is a vision model for captioning, detection, and segmentation.
     """
 )
+# Florence2Model：视觉编码 + 文本解码器联合主干
 class Florence2Model(LlavaModel):
     def __init__(self, config: Florence2Config):
         super().__init__(config)
@@ -1471,6 +1495,7 @@ class Florence2Model(LlavaModel):
     Florence-2 is a vision model for captioning, detection, and segmentation.
     """
 )
+# Florence2ForConditionalGeneration：Florence-2 视觉-语言条件生成（caption/OCR/检测等）
 class Florence2ForConditionalGeneration(LlavaForConditionalGeneration):
     _tied_weights_keys = {
         "lm_head.weight": "model.language_model.shared.weight",

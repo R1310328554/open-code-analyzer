@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization classes for FNet model."""
 
+# FNet 分词：继承 Albert Unigram 词表，适配 FNet 预训练格式
+
 from ...utils import logging
 from ..albert.tokenization_albert import AlbertTokenizer
 
@@ -20,6 +22,7 @@ from ..albert.tokenization_albert import AlbertTokenizer
 logger = logging.get_logger(__name__)
 
 
+# FNetTokenizer：FNet 分词器（继承 Albert Unigram 词表）
 class FNetTokenizer(AlbertTokenizer):
     """
     Construct an FNet tokenizer. Based on [Unigram](https://huggingface.co/docs/tokenizers/python/latest/components.html?highlight=unigram#models).

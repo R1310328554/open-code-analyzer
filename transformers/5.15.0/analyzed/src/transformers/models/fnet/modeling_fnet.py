@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch FNet model."""
 
+# FNet 建模：以傅里叶变换替代自注意力的 BERT 风格编码器
+
 from dataclasses import dataclass
 from functools import partial
 
@@ -50,6 +52,7 @@ logger = logging.get_logger(__name__)
 
 
 # Adapted from https://github.com/google-research/google-research/blob/master/f_net/fourier.py
+# _two_dim_matmul：对 3D 张量沿两维分别做复数矩阵乘（傅里叶变换核心）
 def _two_dim_matmul(x, matrix_dim_one, matrix_dim_two):
     """Applies 2D matrix multiplication to 3D input arrays."""
     seq_length = x.shape[1]
@@ -59,11 +62,13 @@ def _two_dim_matmul(x, matrix_dim_one, matrix_dim_two):
 
 
 # # Adapted from https://github.com/google-research/google-research/blob/master/f_net/fourier.py
+# two_dim_matmul：TPU/GPU 自适应的二维傅里叶矩阵乘法封装
 def two_dim_matmul(x, matrix_dim_one, matrix_dim_two):
     return _two_dim_matmul(x, matrix_dim_one, matrix_dim_two)
 
 
 # Adapted from https://github.com/google-research/google-research/blob/master/f_net/fourier.py
+# fftn：n 维 FFT 封装（TPU 优化或 scipy 预计算 DFT 矩阵）
 def fftn(x):
     """
     Applies n-dimensional Fast Fourier Transform (FFT) to input array.
@@ -80,6 +85,7 @@ def fftn(x):
     return out
 
 
+# FNetEmbeddings：词嵌入 + 位置嵌入 + LayerNorm/Dropout
 class FNetEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -135,6 +141,7 @@ class FNetEmbeddings(nn.Module):
         return embeddings
 
 
+# FNetBasicFourierTransform：单层傅里叶变换（无 FFN）
 class FNetBasicFourierTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -171,6 +178,7 @@ class FNetBasicFourierTransform(nn.Module):
         return (outputs,)
 
 
+# FNetBasicOutput：傅里叶子层输出投影与 dropout
 class FNetBasicOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -181,6 +189,7 @@ class FNetBasicOutput(nn.Module):
         return hidden_states
 
 
+# FNetFourierTransform：傅里叶变换 + 输出投影子层
 class FNetFourierTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -195,6 +204,7 @@ class FNetFourierTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->FNet
+# FNetIntermediate：Transformer FFN 升维中间层
 class FNetIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -211,6 +221,7 @@ class FNetIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->FNet
+# FNetOutput：FFN 降维输出与残差 dropout
 class FNetOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -225,6 +236,7 @@ class FNetOutput(nn.Module):
         return hidden_states
 
 
+# FNetLayer：FNet 单层（傅里叶变换 + FFN + 残差/LayerNorm）
 class FNetLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -252,6 +264,7 @@ class FNetLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# FNetEncoder：堆叠多层 FNetLayer 编码器
 class FNetEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -280,6 +293,7 @@ class FNetEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->FNet
+# FNetPooler：CLS token 池化得到句向量
 class FNetPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -296,6 +310,7 @@ class FNetPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->FNet
+# FNetPredictionHeadTransform：预训练预测头前的 Dense+激活
 class FNetPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -313,6 +328,7 @@ class FNetPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# FNetLMPredictionHead：带 bias 的 MLM 预测头
 class FNetLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -326,6 +342,7 @@ class FNetLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# FNetOnlyMLMHead：仅 MLM 任务头
 class FNetOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -337,6 +354,7 @@ class FNetOnlyMLMHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyNSPHead with Bert->FNet
+# FNetOnlyNSPHead：仅下一句预测 NSP 二分类头
 class FNetOnlyNSPHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -348,6 +366,7 @@ class FNetOnlyNSPHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPreTrainingHeads with Bert->FNet
+# FNetPreTrainingHeads：MLM + NSP 联合预训练头
 class FNetPreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -361,6 +380,7 @@ class FNetPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# FNetPreTrainedModel：FNet 预训练基类与权重初始化
 class FNetPreTrainedModel(PreTrainedModel):
     config: FNetConfig
     base_model_prefix = "fnet"
@@ -379,6 +399,7 @@ class FNetPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# FNetForPreTrainingOutput：预训练阶段输出 dataclass
 class FNetForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -398,6 +419,7 @@ class FNetForPreTrainingOutput(ModelOutput):
 
 
 @auto_docstring
+# FNetModel：FNet 编码器主干（嵌入 + 傅里叶层堆叠）
 class FNetModel(FNetPreTrainedModel):
     """
 
@@ -506,6 +528,7 @@ class FNetModel(FNetPreTrainedModel):
     sentence prediction (classification)` head.
     """
 )
+# FNetForPreTraining：MLM + NSP 联合预训练包装
 class FNetForPreTraining(FNetPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -600,6 +623,7 @@ class FNetForPreTraining(FNetPreTrainedModel):
 
 
 @auto_docstring
+# FNetForMaskedLM：掩码语言建模下游任务
 class FNetForMaskedLM(FNetPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -671,6 +695,7 @@ class FNetForMaskedLM(FNetPreTrainedModel):
     FNet Model with a `next sentence prediction (classification)` head on top.
     """
 )
+# FNetForNextSentencePrediction：下一句预测 NSP 任务
 class FNetForNextSentencePrediction(FNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -754,6 +779,7 @@ class FNetForNextSentencePrediction(FNetPreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# FNetForSequenceClassification：序列分类下游任务头
 class FNetForSequenceClassification(FNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -829,6 +855,7 @@ class FNetForSequenceClassification(FNetPreTrainedModel):
 
 
 @auto_docstring
+# FNetForMultipleChoice：多选阅读理解任务头
 class FNetForMultipleChoice(FNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -922,6 +949,7 @@ class FNetForMultipleChoice(FNetPreTrainedModel):
 
 
 @auto_docstring
+# FNetForTokenClassification：Token 级序列标注头
 class FNetForTokenClassification(FNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -981,6 +1009,7 @@ class FNetForTokenClassification(FNetPreTrainedModel):
 
 
 @auto_docstring
+# FNetForQuestionAnswering：抽取式问答 span 预测头
 class FNetForQuestionAnswering(FNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

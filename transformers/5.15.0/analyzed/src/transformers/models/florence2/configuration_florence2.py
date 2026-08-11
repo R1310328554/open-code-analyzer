@@ -27,8 +27,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Florence2VisionConfig：Florence-2 DaViT 视觉塔默认 checkpoint 超参
 @auto_docstring(checkpoint="florence-community/Florence-2-base")
 @strict
+# Florence2VisionConfig：Florence-2 视觉塔 DaViT 风格超参（多阶段 patch/窗口注意力）
 class Florence2VisionConfig(PreTrainedConfig):
     r"""
     depths (`Tuple[int]`, *optional*, defaults to `(1, 1, 9, 1)`):
@@ -83,8 +85,10 @@ class Florence2VisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Florence2Config：Florence-2 视觉-语言联合默认超参
 @auto_docstring(checkpoint="florence-community/Florence-2-base")
 @strict
+# Florence2Config：Florence-2 多模态联合配置（视觉塔 + BART 文本解码器）
 class Florence2Config(PreTrainedConfig):
     r"""
     Example:

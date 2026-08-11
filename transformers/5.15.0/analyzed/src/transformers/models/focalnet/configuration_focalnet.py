@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FocalNetConfig：microsoft/focalnet-tiny 焦点调制 ViT 默认超参
 @auto_docstring(checkpoint="microsoft/focalnet-tiny")
 @strict
+# FocalNetConfig：Microsoft FocalNet 焦点调制视觉 Transformer 超参
 class FocalNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     use_conv_embed (`bool`, *optional*, defaults to `False`):

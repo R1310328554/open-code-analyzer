@@ -32,6 +32,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Florence2Processor：封装图像预处理、分词与任务后处理的多模态管线
 class Florence2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -44,6 +45,7 @@ class Florence2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Florence2Processor：图像处理器与分词器联合的多模态输入管线
 class Florence2Processor(ProcessorMixin):
     valid_processor_kwargs = Florence2ProcessorKwargs
 
@@ -285,6 +287,7 @@ class Florence2Processor(ProcessorMixin):
         return {task: final_answer}
 
 
+# Florence2PostProcessor：将模型文本输出解析为检测框/区域等结构化结果
 class Florence2PostProcessor:
     """
     Post-processor for Florence-2 model outputs. Parses generated text into structured results for various tasks
@@ -627,6 +630,7 @@ class Florence2PostProcessor:
                 instances.append(instance)
         return instances
 
+    # __call__：将图像与文本 prompt 编码为模型可消费的 batch 张量
     def __call__(self, text=None, sequence=None, image_size=None, parse_tasks=None) -> dict[str, Any]:
         """
         Process model output and parse into task-specific results.

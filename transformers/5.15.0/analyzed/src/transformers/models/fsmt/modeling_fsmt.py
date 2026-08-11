@@ -26,6 +26,8 @@
 #
 """PyTorch Fairseq model, ported from https://github.com/pytorch/fairseq/tree/master/examples/wmt19"""
 
+# FSMT 建模：Facebook Fairseq WMT19 神经机器翻译编码器-解码器
+
 import math
 from typing import Any
 
@@ -171,12 +173,14 @@ PYTHONPATH="src:examples/seq2seq" python examples/seq2seq/run_eval.py facebook/w
 """
 
 
+# invert_mask：将 padding 掩码转为注意力加性掩码
 def invert_mask(attention_mask):
     """Turns 1->0, 0->1, False->True, True-> False"""
     assert attention_mask.dim() == 2
     return attention_mask.eq(0)
 
 
+# triu_onnx：ONNX 兼容的上三角掩码（因果解码）
 def triu_onnx(x, diagonal=0):
     l = x.shape[0]
     arange = torch.arange(l, device=x.device)
@@ -188,6 +192,7 @@ def triu_onnx(x, diagonal=0):
     return x.masked_fill(mask == 0, 0)
 
 
+# _prepare_fsmt_decoder_inputs：构造 decoder 输入与缓存键值
 def _prepare_fsmt_decoder_inputs(
     config,
     input_ids,
@@ -215,6 +220,7 @@ def _prepare_fsmt_decoder_inputs(
 
 
 @auto_docstring
+# PretrainedFSMTModel：FSMT 预训练基类
 class PretrainedFSMTModel(PreTrainedModel):
     config: FSMTConfig
     base_model_prefix = "model"
@@ -237,6 +243,7 @@ class PretrainedFSMTModel(PreTrainedModel):
         return dummy_inputs
 
 
+# _make_linear_from_emb：从嵌入矩阵构造 tied 线性层
 def _make_linear_from_emb(emb):
     vocab_size, emb_size = emb.weight.shape
     lin_layer = nn.Linear(vocab_size, emb_size, bias=False)
@@ -245,11 +252,13 @@ def _make_linear_from_emb(emb):
 
 
 # Helper Functions, mostly for making masks
+# _check_shapes：断言张量形状一致
 def _check_shapes(shape_1, shape2):
     if shape_1 != shape2:
         raise AssertionError(f"shape mismatch: {shape_1} != {shape2}")
 
 
+# shift_tokens_right：teacher forcing 时将 decoder 输入右移一位
 def shift_tokens_right(input_ids, pad_token_id):
     """Shift input ids one token to the right, and wrap the last non pad token (usually <eos>)."""
 
@@ -263,6 +272,7 @@ def shift_tokens_right(input_ids, pad_token_id):
     return prev_output_tokens
 
 
+# make_padding_mask：由 input_ids 构造 padding 布尔掩码
 def make_padding_mask(input_ids, padding_idx=1):
     """True for pad tokens"""
     padding_mask = input_ids.eq(padding_idx)
@@ -274,6 +284,7 @@ def make_padding_mask(input_ids, padding_idx=1):
 # Helper Modules
 
 
+# EncoderLayer：FSMT 编码器单层（自注意力 + FFN）
 class EncoderLayer(nn.Module):
     def __init__(self, config: FSMTConfig):
         super().__init__()
@@ -320,6 +331,7 @@ class EncoderLayer(nn.Module):
         return x, attn_weights
 
 
+# FSMTEncoder：堆叠 EncoderLayer 的翻译编码器
 class FSMTEncoder(nn.Module):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a [`EncoderLayer`].
@@ -427,6 +439,7 @@ class FSMTEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=x, hidden_states=encoder_states, attentions=all_attentions)
 
 
+# DecoderLayer：FSMT 解码器单层（自注意力 + 交叉注意力 + FFN）
 class DecoderLayer(nn.Module):
     def __init__(self, config: FSMTConfig, layer_idx=None):
         super().__init__()
@@ -510,6 +523,7 @@ class DecoderLayer(nn.Module):
         )
 
 
+# FSMTDecoder：堆叠 DecoderLayer 的翻译解码器
 class FSMTDecoder(nn.Module):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`DecoderLayer`]
@@ -654,6 +668,7 @@ class FSMTDecoder(nn.Module):
         )
 
 
+# _reorder_buffer：beam search 重排 KV 缓存
 def _reorder_buffer(attn_cache, new_order):
     for k, input_buffer_k in attn_cache.items():
         if input_buffer_k is not None:
@@ -661,6 +676,7 @@ def _reorder_buffer(attn_cache, new_order):
     return attn_cache
 
 
+# Attention：FSMT 多头注意力（支持 encoder/decoder/cross 模式）
 class Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -788,17 +804,20 @@ class Attention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# fill_with_neg_inf：用负无穷填充掩码无效位置
 def fill_with_neg_inf(t):
     """FP16-compatible function that fills an input_ids with -inf."""
     return t.float().fill_(torch.finfo(t.dtype).min).type_as(t)
 
 
 # Public API
+# _get_shape：获取张量形状元组
 def _get_shape(t):
     return getattr(t, "shape", None)
 
 
 @auto_docstring
+# FSMTModel：FSMT 编码器-解码器联合主干
 class FSMTModel(PretrainedFSMTModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "decoder.embed_tokens.weight",
@@ -935,6 +954,7 @@ class FSMTModel(PretrainedFSMTModel):
     The FSMT Model with a language modeling head. Can be used for summarization.
     """
 )
+# FSMTForConditionalGeneration：神经机器翻译条件生成（beam/generate）
 class FSMTForConditionalGeneration(PretrainedFSMTModel, GenerationMixin):
     base_model_prefix = "model"
 
@@ -1052,6 +1072,7 @@ class FSMTForConditionalGeneration(PretrainedFSMTModel, GenerationMixin):
         self.model.decoder.embed_tokens = value
 
 
+# SinusoidalPositionalEmbedding：正弦位置嵌入（Fairseq 风格）
 class SinusoidalPositionalEmbedding(nn.Embedding):
     """
     This module produces sinusoidal positional embeddings of any length.

@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch FocalNet model."""
 
+# FocalNet 建模：焦点调制机制的多尺度视觉 Transformer
+
 import collections.abc
 import math
 from dataclasses import dataclass
@@ -40,6 +42,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# FocalNetEncoderOutput：编码器输出（含空间 reshape 隐状态）
 class FocalNetEncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -61,6 +64,7 @@ class FocalNetEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# FocalNetModelOutput：主干输出 dataclass（池化 + 隐状态）
 class FocalNetModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -85,6 +89,7 @@ class FocalNetModelOutput(ModelOutput):
     """
 )
 @dataclass
+# FocalNetMaskedImageModelingOutput：MIM 重建损失输出
 class FocalNetMaskedImageModelingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `bool_masked_pos` is provided):
@@ -111,6 +116,7 @@ class FocalNetMaskedImageModelingOutput(ModelOutput):
     """
 )
 @dataclass
+# FocalNetImageClassifierOutput：图像分类 logits 输出
 class FocalNetImageClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -131,6 +137,7 @@ class FocalNetImageClassifierOutput(ModelOutput):
     reshaped_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# FocalNetEmbeddings：patch 嵌入 + 可选绝对位置编码
 class FocalNetEmbeddings(nn.Module):
     """
     Construct the patch embeddings and layernorm. Optionally, also the mask token.
@@ -171,6 +178,7 @@ class FocalNetEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# FocalNetPatchEmbeddings：图像切 patch 并线性投影
 class FocalNetPatchEmbeddings(nn.Module):
     def __init__(
         self,
@@ -242,6 +250,7 @@ class FocalNetPatchEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# FocalNetModulation：焦点调制层（多尺度池化 + 门控聚合）
 class FocalNetModulation(nn.Module):
     def __init__(self, config, index, dim, focal_factor=2, bias=True, projection_dropout=0.0):
         super().__init__()
@@ -313,6 +322,7 @@ class FocalNetModulation(nn.Module):
         return x_out
 
 
+# FocalNetMlp：FocalNet 前馈 MLP 子层
 class FocalNetMlp(nn.Module):
     def __init__(self, config, in_features, hidden_features=None, out_features=None, drop=0.0):
         super().__init__()
@@ -333,6 +343,7 @@ class FocalNetMlp(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->FocalNetDropPath
+# FocalNetDropPath：随机深度 DropPath
 class FocalNetDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -357,6 +368,7 @@ class FocalNetDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# FocalNetLayer：单层焦点调制 + MLP（含 LayerScale）
 class FocalNetLayer(nn.Module):
     r"""Focal Modulation Network layer (block).
 
@@ -426,6 +438,7 @@ class FocalNetLayer(nn.Module):
         return hidden_state
 
 
+# FocalNetStage：单阶段堆叠多层 + 可选下采样
 class FocalNetStage(GradientCheckpointingLayer):
     def __init__(self, config, index, input_resolution):
         super().__init__()
@@ -492,6 +505,7 @@ class FocalNetStage(GradientCheckpointingLayer):
         return stage_outputs
 
 
+# FocalNetEncoder：多阶段 FocalNet 编码器
 class FocalNetEncoder(nn.Module):
     def __init__(self, config, grid_size):
         super().__init__()
@@ -568,6 +582,7 @@ class FocalNetEncoder(nn.Module):
 
 
 @auto_docstring
+# FocalNetPreTrainedModel：FocalNet 预训练基类
 class FocalNetPreTrainedModel(PreTrainedModel):
     config: FocalNetConfig
     base_model_prefix = "focalnet"
@@ -589,6 +604,7 @@ class FocalNetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# FocalNetModel：FocalNet 视觉主干（嵌入 + 编码器）
 class FocalNetModel(FocalNetPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True, use_mask_token=False):
         r"""
@@ -679,6 +695,7 @@ class FocalNetModel(FocalNetPreTrainedModel):
     </Tip>
     """
 )
+# FocalNetForMaskedImageModeling：掩码图像建模预训练头
 class FocalNetForMaskedImageModeling(FocalNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -786,6 +803,7 @@ class FocalNetForMaskedImageModeling(FocalNetPreTrainedModel):
     ImageNet.
     """
 )
+# FocalNetForImageClassification：ImageNet 风格分类头
 class FocalNetForImageClassification(FocalNetPreTrainedModel):
     # Copied from transformers.models.swin.modeling_swin.SwinForImageClassification.__init__ with Swin->FocalNet, swin->focalnet
     def __init__(self, config):
@@ -850,6 +868,7 @@ class FocalNetForImageClassification(FocalNetPreTrainedModel):
     FocalNet backbone, to be used with frameworks like X-Decoder.
     """
 )
+# FocalNetBackbone：BackboneMixin 封装供下游检测/分割使用
 class FocalNetBackbone(BackboneMixin, FocalNetPreTrainedModel):
     has_attentions = False
 

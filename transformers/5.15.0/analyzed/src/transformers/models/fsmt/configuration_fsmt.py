@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FSMTConfig：Facebook WMT19 英俄翻译 FSMT 默认超参
 @auto_docstring(checkpoint="facebook/wmt19-en-ru")
 @strict
+# FSMTConfig：Facebook WMT19 FSMT 编码器-解码器翻译超参
 class FSMTConfig(PreTrainedConfig):
     r"""
     langs (`list[str]`):

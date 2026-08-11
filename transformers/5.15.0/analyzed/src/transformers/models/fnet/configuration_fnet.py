@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FNetConfig：Google fnet-base 傅里叶 Transformer 默认超参
 @auto_docstring(checkpoint="google/fnet-base")
 @strict
+# FNetConfig：Google FNet 傅里叶变换替代自注意力的 BERT 风格超参
 class FNetConfig(PreTrainedConfig):
     r"""
     use_tpu_fourier_optimizations (`bool`, *optional*, defaults to `False`):
