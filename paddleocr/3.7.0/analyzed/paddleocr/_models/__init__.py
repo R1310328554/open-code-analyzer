@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# _models 子包公共导出：各单模型 PaddleX 预测器包装类
 from .chart_parsing import ChartParsing
 from .doc_img_orientation_classification import DocImgOrientationClassification
 from .doc_vlm import DocVLM
@@ -26,6 +27,7 @@ from .text_image_unwarping import TextImageUnwarping
 from .textline_orientation_classification import TextLineOrientationClassification
 from .text_recognition import TextRecognition
 
+    # 对外公开的全部模型类：检测、识别、版面、表格、VLM 等
 __all__ = [
     "ChartParsing",
     "DocImgOrientationClassification",

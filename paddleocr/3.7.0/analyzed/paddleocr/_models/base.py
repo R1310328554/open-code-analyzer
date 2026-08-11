@@ -14,6 +14,7 @@
 
 import abc
 
+# 单模型 PaddleX 预测器包装与 CLI 子命令执行器抽象基类
 from paddlex import create_predictor
 from paddlex.utils.deps import DependencyError
 
@@ -27,6 +28,7 @@ from .._common_args import (
 _DEFAULT_ENABLE_HPI = False
 
 
+    # 封装 create_predictor：统一 model_name、公共 CLI 参数与 predict/close
 class PaddleXPredictorWrapper(metaclass=abc.ABCMeta):
     def __init__(
         self,
@@ -50,9 +52,11 @@ class PaddleXPredictorWrapper(metaclass=abc.ABCMeta):
     def default_model_name(self):
         raise NotImplementedError
 
+        # 迭代式推理，直接委托底层 paddlex_predictor.predict
     def predict_iter(self, *args, **kwargs):
         return self.paddlex_predictor.predict(*args, **kwargs)
 
+        # 一次性推理：将 predict_iter 结果物化为 list
     def predict(self, *args, **kwargs):
         result = list(self.predict_iter(*args, **kwargs))
         return result
@@ -68,6 +72,7 @@ class PaddleXPredictorWrapper(metaclass=abc.ABCMeta):
     def _get_extra_paddlex_predictor_init_args(self):
         return {}
 
+        # 合并 common 与 extra 参数创建 predictor，DependencyError 转 RuntimeError
     def _create_paddlex_predictor(self):
         kwargs = prepare_common_init_args(self._model_name, self._common_args)
         kwargs = {**self._get_extra_paddlex_predictor_init_args(), **kwargs}
@@ -82,12 +87,14 @@ class PaddleXPredictorWrapper(metaclass=abc.ABCMeta):
             ) from e
 
 
+    # 预测器 CLI 基类：add_subparser 注册 model_name 与通用推理选项
 class PredictorCLISubcommandExecutor(CLISubcommandExecutor):
     @property
     @abc.abstractmethod
     def subparser_name(self):
         raise NotImplementedError
 
+        # 创建子解析器并挂载 _update_subparser 扩展点
     def add_subparser(self, subparsers):
         subparser = subparsers.add_parser(name=self.subparser_name)
         self._update_subparser(subparser)

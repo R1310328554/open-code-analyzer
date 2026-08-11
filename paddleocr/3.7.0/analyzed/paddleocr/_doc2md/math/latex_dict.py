@@ -12,18 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+OMML→LaTeX 符号映射表：Unicode/运算符/分数/矩阵等模板字典。
+
+LaTeX symbol dictionaries for OMML conversion."""
 LaTeX symbol dictionaries for OMML conversion.
 
 Adapted from https://github.com/xiilei/dwml/blob/master/dwml/latex_dict.py
 via MinerU 3.0.0 (MIT License)
 """
 
+# LaTeX 特殊字符，escape_latex 时需加反斜杠
 CHARS = ("{", "}", "_", "^", "#", "&", "$", "%")
 
 BLANK = ""
 BACKSLASH = "\\"
 ALN = "&"
 
+    # CHR 上下标、重音与括号类 Unicode → LaTeX 命令模板
 CHR = {
     # Unicode : Latex Math Symbols
     # Top accents
@@ -73,6 +78,7 @@ CHR = {
     "\u23df": "\\underbrace{{{0}}}",
 }
 
+    # CHR_BO 积分/求和/并交等大运算符映射
 CHR_BO = {
     # Big operators,
     "\u2140": "\\Bbbsum",
@@ -94,6 +100,7 @@ CHR_BO = {
     "\u2a02": "\\bigotimes",
 }
 
+    # T 希腊字母、关系符、运算符等文本字符映射
 T = {
     # Whitespace characters
     " ": " ",  # NON-BREAKING SPACE (U+00A0) — pylatexenc maps this to "~" (text-mode),
@@ -256,6 +263,7 @@ T = {
     "\U0001d467": "z",
 }
 
+    # FUNC 三角函数等对数函数名 → \sin({fe}) 等模板
 FUNC = {
     "sin": "\\sin({fe})",
     "cos": "\\cos({fe})",
@@ -296,6 +304,7 @@ SUB = "_{{{0}}}"
 
 SUP = "^{{{0}}}"
 
+    # F 分数排版样式：bar/skw/noBar/lin 等 OMML fPr.type
 F = {
     "bar": "\\frac{{{num}}}{{{den}}}",
     "skw": r"^{{{num}}}/_{{{den}}}",

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+Office Math Markup Language (OMML) 转 LaTeX 递归转换器（适配 dwml/MinerU）。
+
+Office Math Markup Language (OMML) to LaTeX converter."""
 Office Math Markup Language (OMML) to LaTeX converter.
 
 Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py
@@ -66,6 +69,7 @@ SCR_TO_LATEX = {
 }
 
 
+    # 为 LaTeX 特殊字符添加反斜杠转义
 def escape_latex(strs):
     last = None
     new_chr = []
@@ -79,6 +83,7 @@ def escape_latex(strs):
     return BLANK.join(new_chr)
 
 
+    # 从符号字典安全取值，缺失时回退 default 或原 key
 def get_val(key, default=None, store=CHR):
     if key is not None:
         return key if not store else store.get(key, key)
@@ -86,6 +91,7 @@ def get_val(key, default=None, store=CHR):
         return default
 
 
+    # OMML 标签分派基类：按 tag 名调用 do_* 方法遍历子节点
 class Tag2Method:
     def call_method(self, elm, stag=None):
         getmethod = self.tag2meth.get
@@ -138,6 +144,7 @@ class Tag2Method:
         return None
 
 
+    # 解析 OMML 属性元素（chr/pos/begChr/endChr/type 等）
 class Pr(Tag2Method):
     text = ""
 
@@ -178,6 +185,7 @@ class Pr(Tag2Method):
     }
 
 
+    # 将 m:oMath 子树递归转为 LaTeX 字符串，依赖 pylatexenc 编码 Unicode
 class oMath2Latex(Tag2Method):
     """
     Convert oMath element of omml to latex
@@ -222,6 +230,7 @@ class oMath2Latex(Tag2Method):
     def latex(self):
         return self._latex
 
+        # 重音符号 acc：从 accPr.chr 查 CHR 模板并套用到 e
     def do_acc(self, elm):
         """
         the accent function
@@ -266,6 +275,7 @@ class oMath2Latex(Tag2Method):
         text = self.process_children(elm)
         return SUP.format(text)
 
+        # 分数 f：按 fPr.type 选择 F 字典中的排版模板
     def do_f(self, elm):
         """
         the fraction object
@@ -426,6 +436,7 @@ class oMath2Latex(Tag2Method):
 
         return out_latex_str
 
+        # 文本 run r：Unicode→LaTeX 并处理 m:scr 数学字体样式
     def do_r(self, elm):
         """
         Get text from 'r' element,And try convert them to latex symbols

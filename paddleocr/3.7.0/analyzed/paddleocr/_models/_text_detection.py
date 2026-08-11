@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+    # 文本检测 Mixin：limit_side_len、thresh、unclip_ratio 等 DB 后处理参数
 class TextDetectionMixin:
     def __init__(
         self,
@@ -35,11 +36,14 @@ class TextDetectionMixin:
         }
         super().__init__(**kwargs)
 
+        # 将检测专用 kwargs 合并进 create_predictor 初始化
     def _get_extra_paddlex_predictor_init_args(self):
         return self._extra_init_args
 
 
+    # CLI Mixin：为 TextDetection 子命令批量添加检测超参 argparse 选项
 class TextDetectionSubcommandExecutorMixin:
+        # 注册 limit_side_len、box_thresh、input_shape 等检测 flags
     def _add_text_detection_args(self, subparser):
         subparser.add_argument(
             "--limit_side_len",

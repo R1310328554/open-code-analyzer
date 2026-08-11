@@ -19,9 +19,11 @@ from .._utils.cli import (
     get_subcommand_args,
     perform_simple_inference,
 )
+# 图像分类模型基类：top-k 预测参数与 CLI 推理子命令
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 分类预测包装：topk 写入 _extra_init_args 传给 PaddleX
 class ImageClassification(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -38,6 +40,7 @@ class ImageClassification(PaddleXPredictorWrapper):
         return self._extra_init_args
 
 
+    # 分类 CLI：添加 --topk 与通用推理参数
 class ImageClassificationSubcommandExecutor(PredictorCLISubcommandExecutor):
     def _update_subparser(self, subparser):
         add_simple_inference_args(subparser)
@@ -53,6 +56,7 @@ class ImageClassificationSubcommandExecutor(PredictorCLISubcommandExecutor):
     def wrapper_cls(self):
         raise NotImplementedError
 
+        # 收集 CLI 参数并委托 perform_simple_inference
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(self.wrapper_cls, params)

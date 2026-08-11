@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DrawingML 段落 OMML 公式探测与 LaTeX 提取的公共 API
 from .omml import OMML_NS, oMath2Latex
 
 # XML namespace constants shared by converters for DrawingML math extraction
@@ -18,6 +19,7 @@ _M = OMML_NS  # already includes braces: "{http://...}"
 _A14 = "{http://schemas.microsoft.com/office/drawing/2010/main}"
 
 
+    # 将单个 m:oMath 元素转为 LaTeX，失败时返回空串
 def convert_omath(omath_element) -> str:
     """Convert an m:oMath lxml element to LaTeX string. Returns empty string on failure."""
     try:
@@ -26,6 +28,7 @@ def convert_omath(omath_element) -> str:
         return ""
 
 
+    # 判断段落 XML 是否含 a14:m 或 m:oMath 数学节点
 def paragraph_has_math(para_element) -> bool:
     """Check if an XML element contains OMML math (a14:m or m:oMath)."""
     return (
@@ -34,6 +37,7 @@ def paragraph_has_math(para_element) -> bool:
     )
 
 
+    # 按 a14:m / oMathPara / 裸 oMath 三种嵌套模式收集 LaTeX 列表
 def extract_math_from_paragraph(para_element) -> list:
     """Extract LaTeX strings from math elements in a DrawingML paragraph XML element.
 

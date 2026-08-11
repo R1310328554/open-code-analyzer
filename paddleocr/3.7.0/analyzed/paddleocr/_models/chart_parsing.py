@@ -13,14 +13,17 @@
 # limitations under the License.
 
 from .._utils.cli import add_simple_inference_args
+# 图表解析模型 PP-Chart2Table：将图表图像转为结构化表格
 from ._doc_vlm import (
     BaseDocVLM,
     BaseDocVLMSubcommandExecutor,
 )
 
 
+    # 默认模型 PP-Chart2Table，复用 BaseDocVLM 多模态推理链路
 class ChartParsing(BaseDocVLM):
     @property
+        # 返回 PaddleX 预置图表解析模型名称
     def default_model_name(self):
         return "PP-Chart2Table"
 
@@ -29,6 +32,7 @@ class ChartParsing(BaseDocVLM):
         return ChartParsingSubcommandExecutor()
 
 
+    # chart_parsing 子命令：input 为含 image URL/路径 的 dict
 class ChartParsingSubcommandExecutor(BaseDocVLMSubcommandExecutor):
     @property
     def subparser_name(self):
@@ -38,6 +42,7 @@ class ChartParsingSubcommandExecutor(BaseDocVLMSubcommandExecutor):
     def wrapper_cls(self):
         return ChartParsing
 
+        # 添加简单推理参数，input 示例为 JSON dict 字符串
     def _update_subparser(self, subparser):
         add_simple_inference_args(
             subparser,

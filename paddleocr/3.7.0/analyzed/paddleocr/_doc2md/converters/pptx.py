@@ -18,6 +18,7 @@ from ..math import (
     extract_math_from_paragraph as _extract_math_from_paragraph,
     paragraph_has_math as _paragraph_has_math,
 )
+# PPTX 转 Markdown：解析幻灯片形状、图表、表格、OMML 公式与演讲者备注
 from ..registry import default_registry
 
 # pptx XML namespace for DrawingML run properties
@@ -56,6 +57,7 @@ _CHART_TYPE_NAMES = {
 }
 
 
+    # 从 DrawingML rPr 读取删除线属性（sngStrike/dblStrike）
 def _pptx_run_strike(run) -> bool:
     """Return True if the run has strikethrough (sngStrike or dblStrike) set in XML."""
     try:
@@ -68,6 +70,7 @@ def _pptx_run_strike(run) -> bool:
     return False
 
 
+    # 根据 baseline 偏移判断上标 super、下标 sub 或普通文本
 def _pptx_run_script(run) -> str:
     """Return 'super', 'sub', or '' based on DrawingML baseline attribute.
 
@@ -89,11 +92,13 @@ def _pptx_run_script(run) -> str:
     return ""
 
 
+    # 转义 Markdown 链接 URL 中的括号，避免解析歧义
 def _escape_md_url(url: str) -> str:
     """Escape parentheses in URL for Markdown link syntax."""
     return url.replace("(", "%28").replace(")", "%29")
 
 
+    # 按片段前缀分类内容类型，用于分组时插入空行隔离 HTML 块
 def _classify_part(part: str) -> str:
     """Classify a slide content part for grouping (heading/html/list/blockquote/other)."""
     s = part.lstrip()
@@ -108,6 +113,7 @@ def _classify_part(part: str) -> str:
     return "other"
 
 
+    # 为文本片段叠加粗体/斜体/下划线/删除线/上下标及超链接 Markdown
 def _format_run_segment(
     seg: str,
     bold: bool,
@@ -152,12 +158,15 @@ def _format_run_segment(
 
 
 @default_registry.register
+# 演示文稿转换器：遍历幻灯片形状并输出 Markdown + 内嵌 HTML
+class PptxConverter(BaseConverter):@default_registry.register
 class PptxConverter(BaseConverter):
     supported_extensions = ["pptx"]
     supported_mimetypes = [
         "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     ]
 
+        # 加载 Presentation，逐页处理形状与 AlternateContent 中的公式
     def convert_file(self, file_path: Path, **kwargs) -> ConvertResult:
         try:
             from pptx import Presentation
@@ -230,6 +239,7 @@ class PptxConverter(BaseConverter):
             },
         )
 
+        # 递归处理图片、组合、图表、表格与文本框，写入 slide_parts
     def _process_shape(
         self, shape, slide_parts, images, image_counter, slide_width, slide_part
     ):
@@ -341,6 +351,7 @@ class PptxConverter(BaseConverter):
                 text = text.replace("<br>\n", "<br>")
                 slide_parts.append(f"{indent}- {text}")
 
+        # 从 OOXML 提取轴标题与序列数据，渲染为 HTML 表格
     def _chart_to_html(self, chart) -> str:
         """Extract chart data as an HTML table."""
         try:
@@ -455,6 +466,7 @@ class PptxConverter(BaseConverter):
         except Exception:
             return f"[{chart_type_name}]"
 
+        # 将 PPTX 表格转为 HTML，处理合并单元格与单元格背景图
     @staticmethod
     def _table_to_html(
         table, slide_part, image_counter_list: list, images: dict

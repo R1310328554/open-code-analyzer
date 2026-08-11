@@ -15,12 +15,14 @@ from pathlib import Path
 from typing import Union, Optional
 
 from .base import ConvertResult
+# doc2md 核心入口：按扩展名选取转换器并可选写入 Markdown 与图片
 from .registry import default_registry
 
 # Trigger registration of all built-in converters
 from . import converters  # noqa: F401
 
 
+    # 将 Office 文档转为 Markdown；output 指定时同步落盘 images 目录
 def convert(
     source: Union[str, Path],
     *,
@@ -71,6 +73,7 @@ def convert(
     return result
 
 
+    # 返回注册表当前支持的全部文件扩展名
 def supported_formats() -> list[str]:
     """Return a list of supported file extensions."""
     return default_registry.supported_extensions()

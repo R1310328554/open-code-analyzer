@@ -20,9 +20,11 @@ from .._utils.cli import (
     perform_simple_inference,
     str2bool,
 )
+# 目标检测/版面检测基类：阈值、NMS、框扩展等推理超参
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 检测模型包装：img_size/threshold/layout_* 等参数注入 predictor
 class ObjectDetection(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -47,6 +49,7 @@ class ObjectDetection(PaddleXPredictorWrapper):
         return self._extra_init_args
 
 
+    # 检测 CLI：注册 img_size、threshold、layout_nms 等专用 flags
 class ObjectDetectionSubcommandExecutor(PredictorCLISubcommandExecutor):
     def _update_subparser(self, subparser):
         add_simple_inference_args(subparser)
@@ -82,6 +85,7 @@ class ObjectDetectionSubcommandExecutor(PredictorCLISubcommandExecutor):
     def wrapper_cls(self):
         raise NotImplementedError
 
+        # 解析检测相关 CLI 参数并执行单次推理
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(self.wrapper_cls, params)

@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 包级环境开关：PADDLEOCR_DISABLE_AUTO_LOGGING_CONFIG=1 时跳过自动 logging 配置
 import os
 
+    # 读取环境变量，默认 0 表示允许 PaddleOCR 自动配置日志
 DISABLE_AUTO_LOGGING_CONFIG = (
     os.getenv("PADDLEOCR_DISABLE_AUTO_LOGGING_CONFIG", "0") == "1"
 )

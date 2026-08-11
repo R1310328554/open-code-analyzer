@@ -20,6 +20,7 @@ from ..math import (
     extract_math_from_paragraph as _extract_math_from_paragraph,
     paragraph_has_math as _paragraph_has_math,
 )
+# XLSX 转 Markdown：工作表 HTML 表格、浮动图片与绘图层 OMML 公式
 from ..registry import default_registry
 
 # DrawingML main namespace
@@ -33,6 +34,7 @@ _REL_DRAWING = (
 _REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
 
+    # 从 sheet 关联的 drawing XML 中提取 mc:AlternateContent 内的 LaTeX
 def _extract_drawing_math(zf, sheet_index: int) -> list:
     """Extract LaTeX formulas from drawing layer of an xlsx sheet.
 
@@ -83,6 +85,7 @@ def _extract_drawing_math(zf, sheet_index: int) -> list:
     return results
 
 
+    # 按列宽累加工作表总宽度（EMU），用于图片百分比宽度计算
 def _get_sheet_width_emu(ws, openpyxl_mod) -> int:
     """Return the total column width of the worksheet in EMU. 1 char width ~ 7px, 1px = 9525 EMU."""
     CHAR_TO_EMU = 7 * 9525
@@ -97,6 +100,7 @@ def _get_sheet_width_emu(ws, openpyxl_mod) -> int:
     return int(total)
 
 
+    # OneCellAnchor 返回图片显示宽度 EMU；TwoCellAnchor 返回 None
 def _get_image_cx(anchor) -> Optional[int]:
     """Return image display width in EMU for OneCellAnchor; return None for TwoCellAnchor."""
     try:
@@ -109,6 +113,7 @@ def _get_image_cx(anchor) -> Optional[int]:
     return None
 
 
+    # 根据非空单元格、合并区域与图片锚点计算有效数据边界
 def _find_data_bounds(ws, image_map, max_rows=None):
     """Return (min_row, max_row, min_col, max_col) 1-based, or None if the sheet is empty."""
     min_r = min_c = float("inf")
@@ -153,12 +158,15 @@ def _find_data_bounds(ws, image_map, max_rows=None):
 
 
 @default_registry.register
+# 电子表格转换器：openpyxl 读表 + zip 内 drawing 公式提取
+class XlsxConverter(BaseConverter):@default_registry.register
 class XlsxConverter(BaseConverter):
     supported_extensions = ["xlsx"]
     supported_mimetypes = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ]
 
+        # 遍历目标 sheet，输出 ## 标题 + HTML 表格及可选公式块
     def convert_file(self, file_path: Path, **kwargs) -> ConvertResult:
         try:
             import openpyxl
