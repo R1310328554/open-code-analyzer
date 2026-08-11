@@ -1,0 +1,7 @@
+{
+  "project": "sqlalchemy",
+  "version": "rel_2_0_51",
+  "git_ref": "rel_2_0_51",
+  "repo_url": "https://github.com/sqlalchemy/sqlalchemy",
+  "source": "release"
+}

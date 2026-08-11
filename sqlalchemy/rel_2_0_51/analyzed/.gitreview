@@ -1,0 +1,7 @@
+[gerrit]
+host=ssh.gerrit.sqlalchemy.org
+project=sqlalchemy/sqlalchemy
+defaultbranch=rel_2_0
+
+# non-standard config, used by publishthing
+httphost=gerrit.sqlalchemy.org
