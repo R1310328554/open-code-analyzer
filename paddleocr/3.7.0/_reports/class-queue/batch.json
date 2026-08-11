@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T06:59:06Z",
   "files": [
-    "paddleocr/_api_client/_poller.py",
-    "paddleocr/_api_client/_resources.py",
-    "paddleocr/_api_client/async_client.py",
-    "paddleocr/_api_client/cli.py",
-    "paddleocr/_api_client/client.py",
-    "paddleocr/_api_client/errors.py",
-    "paddleocr/_api_client/models.py",
-    "paddleocr/_api_client/results.py",
-    "paddleocr/_cli.py",
-    "paddleocr/_common_args.py",
-    "paddleocr/_constants.py",
-    "paddleocr/_doc2md/__init__.py",
-    "paddleocr/_doc2md/base.py",
-    "paddleocr/_doc2md/converters/__init__.py",
-    "paddleocr/_doc2md/converters/docx.py",
     "paddleocr/_doc2md/converters/pptx.py",
     "paddleocr/_doc2md/converters/xlsx.py",
     "paddleocr/_doc2md/core.py",
@@ -33,5 +18,5 @@
     "paddleocr/_models/chart_parsing.py"
   ],
   "remaining_pending": 362,
-  "done": 210
+  "done": 225
 }
